@@ -6,6 +6,11 @@ eliminating insertions to enforce reference coordinate system.
 from gotoh2 import Aligner
 import argparse
 import re
+from mpi4py import MPI
+
+my_rank = MPI.COMM_WORLD.Get_rank()
+nprocs = MPI.COMM_WORLD.Get_size()
+
 
 # default alignment settings
 aligner = Aligner()
@@ -16,6 +21,7 @@ with open("data/NC_045512.fa") as handle:
     for line in handle:
         refseq += line.strip()
 
+# regex for terminal gaps
 pat = re.compile("^(-*)[^-].+[^-](-*)$")
 
 
@@ -46,18 +52,18 @@ def iter_fasta (handle):
     yield h, sequence
 
 
-def pair_align(ref, query, threshold=0):
+def pair_align(ref, query, threshold=3.0):
     """
     Pairwise alignment of query against reference.  Any insertions in the query
-    relative to the reference are excised and returned separately.
+    relative to the reference are excised and returned separately.  Filters
+    sequences with low alignment scores (when scaled to sequence length, a good
+    score should be around 5.0 - the minimum is 0).
 
     :param ref:  str, reference sequence
     :param query:  str, query sequence
     :return: str, list - aligned and trimmed query, list of insertions
     """
     aref, aquery, ascore = aligner.align(ref, query)
-    print(ascore)
-
     if ascore / len(aref) < threshold:
         # bad alignment
         return None, None
@@ -79,32 +85,51 @@ def pair_align(ref, query, threshold=0):
     return trim_seq, inserts
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Rapid pairwise alignment of SARS-COV-2 genomes against"
+                    "reference sequence.  Requires about 8GB RAM."
+    )
+    parser.add_argument("infile", type=argparse.FileType('r'),
+                        help="input, FASTA file of sequences to align")
+    parser.add_argument("outfile",
+                        help="output, FASTA file of aligned sequences")
+    parser.add_argument("insfile",
+                        help="output, text file of sequence insertions")
+    parser.add_argument("--threshold", '-t', type=float, default=3.0,
+                        help="optional, scaled alignment score threshold")
+    return parser.parse_args()
+
+
 def main():
     """
     Command-line interface
     """
-    parser = argparse.ArgumentParser(
-        description="Rapid pairwise alignment of SARS-COV-2 genomes against"
-                    "reference sequence."
-    )
-    parser.add_argument("infile", type=argparse.FileType('r'),
-                        help="input, FASTA file of sequences to align")
-    parser.add_argument("outfile", type=argparse.FileType('w'),
-                        help="output, FASTA file of aligned sequences")
-    parser.add_argument("insfile", type=argparse.FileType('w'),
-                        help="output, text file of sequence insertions")
-    parser.add_argument("--threshold", '-t', type=float, default=0.1,
-                        help="optional, scaled alignment score threshold")
-    args = parser.parse_args()
+    args = parse_args()
 
-    for h, s in iter_fasta(args.infile):
-        print(h)
+    outfile = open(args.outfile+'.'+my_rank, 'w')
+    insfile = open(args.insfile+'.'+my_rank, 'w')
+
+    for i, (h, s) in enumerate(iter_fasta(args.infile)):
+        if i % nprocs != my_rank:
+            continue
+
+        print('Process {} of {} running {}'.format(my_rank, nprocs, h))
+
         trim_seq, inserts = pair_align(refseq, s, threshold=args.threshold)
         if trim_seq is None:
             print("{} failed alignment", h)
             continue
 
-        args.outfile.write('>{}\n{}\n'.format(h, trim_seq))
+        outfile.write('>{}\n{}\n'.format(h, trim_seq))
+        outfile.flush()
+        for pos, ins in inserts:
+            insfile.write('{},{},{}\n'.format(h, pos, ins))
+            insfile.flush()
+
+    outfile.close()
+    insfile.close()
+
 
 if __name__ == '__main__':
     main()
