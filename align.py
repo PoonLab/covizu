@@ -107,8 +107,8 @@ def main():
     """
     args = parse_args()
 
-    outfile = open(args.outfile+'.'+my_rank, 'w')
-    insfile = open(args.insfile+'.'+my_rank, 'w')
+    outfile = open('{}.{}'.format(args.outfile, my_rank), 'w')
+    insfile = open('{}.{}'.format(args.insfile, my_rank), 'w')
 
     for i, (h, s) in enumerate(iter_fasta(args.infile)):
         if i % nprocs != my_rank:
