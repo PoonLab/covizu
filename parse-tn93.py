@@ -2,6 +2,7 @@ import networkx as nx
 from networkx.algorithms import tree
 from datetime import date
 from csv import DictWriter
+import math
 import sys
 
 G = nx.Graph()
@@ -28,9 +29,12 @@ for line in handle:
     if id2 not in G:
         G.add_node(id2)
 
-    if float(dist) < 0.000001:
+    if float(dist) < 1e-6:
         # some very small distances reported - mixtures?
         G.add_edge(id1, id2)
+
+components = list(nx.connected_components(G))
+#sys.exit()
 
 print("graph comprises {} sequences".format(len(G)))
 #clusters = [x for x in nx.connected_components(G) if len(x) > 1]
@@ -56,7 +60,9 @@ def parse_label(label):
 print("annotating clusters")
 node2cluster = {}
 clusters = {}
-for cluster in nx.connected_components(G):
+canada = {}
+
+for cluster in components:
     label = cluster.pop()  # arbitrary member
     clusters.update({label: len(cluster)+1})
     node2cluster.update({label: label})
@@ -92,8 +98,13 @@ for cluster in nx.connected_components(G):
     row.update(country_counts)
     clust_file.writerow(row)
 
+    # cache Canada status
+    canada.update({label: country_counts['Canada'] /
+                          (len(cluster)+1.)})
+
 
 # generate graph collapsing identical sequences
+# FIXME: this number is stochastic
 print("building graph from {} clusters".format(len(clusters)))
 
 G2 = nx.Graph()
@@ -106,10 +117,19 @@ for line in handle:
         continue
 
     if id1 not in G2:
-        G2.add_node(id1, size=len())
+        G2.add_node(id1, size=clusters[id1])
     if id2 not in G2:
-        G2.add_node(id2)
+        G2.add_node(id2, size=clusters[id2])
+
+    if float(dist) < 1e-6:
+        # this should never happen - problem with nx.connected_components?
+        #G2.remove_node(id2)
+        #nx.set_node_attributes(G2, {id1: clusters[id1]+clusters[id2]}, 'size')
+        print("NOOO!")
+        sys.exit()
+
     G2.add_edge(id1, id2, weight=float(dist))
+
 
 # generate minimum spanning tree
 print("generating minimum spanning tree")
@@ -119,13 +139,23 @@ mst = tree.minimum_spanning_tree(G2, weight='weight')
 print("generating DOT file")
 dotfile = open('mst.dot', 'w')
 dotfile.write('graph {\n')
-for node in mst.nodes():
-    dotfile.write('\t"{}";\n'.format(node))
+dotfile.write('\tnode [shape="circle" style="filled" label=""];\n')
+
+for node, size in mst.nodes(data='size'):
+    dotfile.write('\t"{}" [width={} fillcolor="{}"];\n'.format(
+        node,
+        0.05 * math.sqrt(size)+0.05,
+        #'red' if canada[node] else 'white'
+        '#ff%02x%02x' % (round(255*(1-canada[node])),
+                         round(255*(1-canada[node])))
+    ))
 
 # mean distance is 0.00035
 for id1, id2, dist in mst.edges(data='weight'):
     dotfile.write('\t"{}" -- "{}" [len={}];\n'.format(
-        id1, id2, dist/0.00035))
+        id1, id2, 0.4)#dist/0.0003)
+    )
 
 dotfile.write("}\n")
 dotfile.close()
+# dot -Kneato -Tpdf mst.dot > mst.pdf
