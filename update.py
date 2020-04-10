@@ -23,7 +23,8 @@ def progress(msg):
 
 
 # load SARS-COV-2 reference genome
-refseq = read_seq(args.ref)
+_, refseq = convert_fasta(args.ref)[0]
+
 aligner = Aligner()
 update = update_alignment(
     ref=refseq, src=args.srcfile, dest=args.destfile, aligner=aligner,
