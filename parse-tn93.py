@@ -5,6 +5,19 @@ from csv import DictWriter
 import math
 import sys
 
+
+# load country to region mapping
+country2region = {}
+with open('countries.csv') as handle:
+    for line in handle:
+        try:
+            country, region = line.strip().split(',')
+        except:
+            print(line)
+            raise
+        country2region.update({country: region})
+
+
 G = nx.Graph()
 
 # FIXME: we should exclude sequences with too many ambiguous nts
@@ -14,15 +27,12 @@ _ = next(handle)
 
 # generate equivalence graph
 print("building graph from nodes to find clusters")
-countries = []
+#countries = []
 for line in handle:
     id1, id2, dist = line.strip().split(',')
+
     co1 = id1.split('/')[1]
-    if co1 not in countries:
-        countries.append(co1)
     co2 = id2.split('/')[1]
-    if co2 not in countries:
-        countries.append(co2)
 
     if id1 not in G:
         G.add_node(id1)
@@ -34,78 +44,55 @@ for line in handle:
         G.add_edge(id1, id2)
 
 components = list(nx.connected_components(G))
-#sys.exit()
 
-print("graph comprises {} sequences".format(len(G)))
+
+print("graph comprises {} sequences and "
+      "{} components".format(len(G), len(components)))
 #clusters = [x for x in nx.connected_components(G) if len(x) > 1]
 
-clust_file = DictWriter(open('clusters.csv', 'w'),
-                        fieldnames=[
-                            'label', 'size', 'mindate', 'maxdate',
-                            'meandate'] + countries
-                        )
-clust_file.writeheader()
 
 def parse_label(label):
     info, epi_id, ymd = label.split('|')
     country = info.split('/')[1]
     try:
         year, month, day = list(map(int, ymd.split('-')))
-        return country, date(year, month, day).toordinal()
+        return country, date(year, month, day)
     except ValueError:
         return country, None
     except:
         raise
 
-print("annotating clusters")
-node2cluster = {}
+
+# generate cluster information
 clusters = {}
-canada = {}
-
 for cluster in components:
-    label = cluster.pop()  # arbitrary member
-    clusters.update({label: len(cluster)+1})
-    node2cluster.update({label: label})
+    intermed = [(parse_label(node)[1], node) for node in cluster]
+    intermed = [(x, y) for x, y in intermed if x is not None]
+    intermed.sort()  # increasing order of collection dates
 
-    # prepare containers
-    country_counts = dict([(country, 0) for country in countries])
-    dates = []
+    if len(intermed) == 0:
+        #print('Omitting cluster of {} with no coldates'.format(
+        #    len(cluster)
+        #))
+        continue
 
-    # parse label
-    country, coldate = parse_label(label)
-    country_counts[country] += 1
-    if coldate:
-        dates.append(coldate)
-
+    label = intermed[0][1]  # label cluster by earliest case
+    clusters.update({label: {}})
     for node in cluster:
-        node2cluster.update({node: label})
         country, coldate = parse_label(node)
+        region = country2region[country]
 
-        country_counts[country] += 1
-        if coldate:
-            dates.append(coldate)
+        if coldate is None:
+            #print("Skipping node {} with no coldate".format(node))
+            continue
 
-    mindate = date.fromordinal(min(dates)) if dates else 'NA'
-    maxdate = date.fromordinal(max(dates)) if dates else 'NA'
-    meandate = date.fromordinal(round(sum(dates)/len(dates))) if \
-        dates else 'NA'
-
-    # write cluster info to file
-    row = dict(
-        label=label, size=len(cluster)+1,
-        mindate=mindate, maxdate=maxdate, meandate=meandate
-    )
-    row.update(country_counts)
-    clust_file.writerow(row)
-
-    # cache Canada status
-    canada.update({label: country_counts['Canada'] /
-                          (len(cluster)+1.)})
+        if coldate not in clusters[label]:
+            clusters[label].update({coldate: []})
+        clusters[label][coldate].append(region)
 
 
 # generate graph collapsing identical sequences
-# FIXME: this number is stochastic
-print("building graph from {} clusters".format(len(clusters)))
+print("building cluster graph".format(len(clusters)))
 
 G2 = nx.Graph()
 handle.seek(0)  # reset file stream
@@ -117,9 +104,9 @@ for line in handle:
         continue
 
     if id1 not in G2:
-        G2.add_node(id1, size=clusters[id1])
+        G2.add_node(id1)
     if id2 not in G2:
-        G2.add_node(id2, size=clusters[id2])
+        G2.add_node(id2)
 
     if float(dist) < 1e-6:
         # this should never happen - problem with nx.connected_components?
@@ -134,28 +121,65 @@ for line in handle:
 # generate minimum spanning tree
 print("generating minimum spanning tree")
 mst = tree.minimum_spanning_tree(G2, weight='weight')
+edgelist = {}
+for n1, n2, dist in mst.edges(data='weight'):
+    if n1 not in edgelist:
+        edgelist.update({n1: {}})
+    edgelist[n1].update({n2: dist})
 
-# write to dot file
-print("generating DOT file")
-dotfile = open('mst.dot', 'w')
-dotfile.write('graph {\n')
-dotfile.write('\tnode [shape="circle" style="filled" label=""];\n')
+    if n2 not in edgelist:
+        edgelist.update({n2: {}})
+    edgelist[n2].update({n1: dist})
 
-for node, size in mst.nodes(data='size'):
-    dotfile.write('\t"{}" [width={} fillcolor="{}"];\n'.format(
-        node,
-        0.05 * math.sqrt(size)+0.05,
-        #'red' if canada[node] else 'white'
-        '#ff%02x%02x' % (round(255*(1-canada[node])),
-                         round(255*(1-canada[node])))
-    ))
 
-# mean distance is 0.00035
-for id1, id2, dist in mst.edges(data='weight'):
-    dotfile.write('\t"{}" -- "{}" [len={}];\n'.format(
-        id1, id2, 0.4)#dist/0.0003)
-    )
+# traverse MST from earliest label (cluster)
+# search edge list for children of root node and recurse
+def traversal(node, parent, edgelist, history=[]):
+    history.append(node)
+    yield (node, parent)
 
-dotfile.write("}\n")
-dotfile.close()
-# dot -Kneato -Tpdf mst.dot > mst.pdf
+    children = [child for child, _ in edgelist[node].items()
+                if child not in history]
+
+    # sort child nodes by earliest collection dates
+    intermed = [(min(list(clusters[child].keys())), child)
+                for child in children]
+    intermed.sort()
+
+    for _, child in intermed:
+        for obj in traversal(child, node, edgelist, history=history):
+            yield obj
+
+
+# root the MST on the cluster with the most collection dates
+intermed = [(len(clusters[node]), node) for node in clusters.keys()]
+intermed.sort(reverse=True)
+root = intermed[0][1]
+
+
+# write clusters out to file
+#dotfile = open('clusters.dot', 'w')
+#dotfile.write('digraph {\n')
+outfile = open('clusters.csv', 'w')
+
+for child, parent in traversal(root, None, edgelist):
+    #if parent is None:
+    #    continue
+    #dotfile.write('\t"{}"->"{}";\n'.format(
+    #    parent.split('|')[0],
+    #    child.split('|')[0]
+    #))
+    cases = list(clusters[child].items())
+    cases.sort()
+    for coldate, counts in cases:
+        outfile.write(','.join([
+            child,
+            str(parent),
+            str(coldate),
+            '"{}"'.format(','.join(counts))
+        ]))
+        outfile.write('\n')
+
+outfile.close()
+#dotfile.write('}\n')
+#dotfile.close()
