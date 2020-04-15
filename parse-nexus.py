@@ -4,6 +4,7 @@ from clustering import date2float
 from datetime import date
 import sys
 from Bio import Phylo
+from io import StringIO
 
 DATE_TOL = 0.1
 
@@ -17,7 +18,7 @@ parser.add_argument('infile', type=argparse.FileType('r'),
 parser.add_argument('csvfile', type=argparse.FileType('w'),
                     help="output, CSV file with node date estimates")
 parser.add_argument('outfile', type=argparse.FileType('w'),
-                    help="output, cleaned NEXUS file")
+                    help="output, cleaned Newick file")
 args = parser.parse_args()
 
 handle = open('data/clusters.info.csv')
@@ -52,10 +53,22 @@ args.csvfile.close()
 # second pass to excise all comment fields
 pat = re.compile('\[&U\]|\[&mutations="[^"]*",date=[0-9]+\.[0-9]+\]')
 args.infile.seek(0)
+nexus = ''
 for line in args.infile:
-    args.outfile.write(pat.sub('', line))
-args.outfile.close()
+    nexus += pat.sub('', line)
 
 # read in tree to prune problematic tips
-phy = Phylo.read(args.outfile.name, format='nexus')
-#for node_name in remove:
+phy = Phylo.read(StringIO(nexus), format='nexus')
+
+for node_name in remove:
+    phy.prune(node_name)
+
+for node in phy.get_terminals():
+    node.comment = None
+
+for node in phy.get_nonterminals():
+    node.name = node.confidence
+    node.confidence = None
+    node.comment = None
+
+Phylo.write(phy, file=args.outfile, format='newick')
