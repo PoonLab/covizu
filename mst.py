@@ -63,11 +63,10 @@ root = intermed[0][1]
 
 
 # write clusters out to file
-dotfile = open('clusters.dot', 'w')
+dotfile = open('mst/mst.dot', 'w')
 dotfile.write('digraph {\n')
 dotfile.write('  node [label="" shape="circle"];\n')
-#outfile = open('mst-traversal.csv', 'w')
-#outfile.write("parent,child\n")
+
 for node, count in clusters.items():
     dotfile.write('  "{}" [width={}];\n'.format(
         node, math.sqrt(count)/10.
@@ -77,7 +76,10 @@ for child, parent in traversal(root, None, edgelist):
     if parent is None:
         continue
 
+    # cut at nodes with outdegree of 20+
     if mst.degree[child] > 20:
+        # remove edge
+        mst.remove_edge(parent, child)
         continue
 
     #outfile.write("{},{},{}\n".format(parent, child, clusters[child]))
@@ -88,3 +90,13 @@ for child, parent in traversal(root, None, edgelist):
 #outfile.close()
 dotfile.write('}\n')
 dotfile.close()
+
+for i, comp in enumerate(nx.connected_components(mst)):
+    outfile = open('mst/cluster-{}.edgelist.csv'.format(i), 'w')
+    outfile.write('parent,child,dist\n')
+
+    sg = nx.subgraph(mst, comp)
+    for e in sg.edges(data='weight'):
+        outfile.write('{},{},{}\n'.format(*e))
+
+    outfile.close()
