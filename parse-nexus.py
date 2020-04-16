@@ -67,8 +67,9 @@ for node in phy.get_terminals():
     node.comment = None
 
 for node in phy.get_nonterminals():
-    node.name = node.confidence
-    node.confidence = None
+    if node.name is None and node.confidence:
+        node.name = node.confidence
+        node.confidence = None
     node.comment = None
 
 Phylo.write(phy, file=args.outfile, format='newick')
