@@ -4,7 +4,7 @@ from datetime import date
 regions = ['Canada', 'USA', 'China', 'Asia', 'SAmerica', 'Europe',
            'Australia', 'Africa']
 
-cutoff = 2e-4
+cutoff = 2.5e-4
 
 def parse_isodate(iso):
     year, month, day = tuple(map(int, iso.split('-')))
@@ -41,6 +41,8 @@ with open('data/clusters.tn93.dot', 'w') as f:
         f.write('  "{}";\n'.format(node))
 
     for id1, id2, dist in edges:
-        f.write('  "{}"--"{}";\n'.format(id1, id2))
+        f.write('  "{}"--"{}" [len={}];\n'.format(id1, id2, dist/1e-4))
 
     f.write('}\n')
+
+# dot -Kneato -Tpdf data/clusters.tn93.dot > clusters.tn93.dot.pdf

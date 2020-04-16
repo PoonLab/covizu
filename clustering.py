@@ -1,8 +1,6 @@
 import networkx as nx
-from networkx.algorithms import tree
 from datetime import date
 from csv import DictWriter
-import math
 import sys
 from gotoh2 import iter_fasta
 
