@@ -4,10 +4,35 @@ Scratch file of minimum spanning tree code
 
 import networkx as nx
 
-# generate graph collapsing identical sequences
-print("building cluster graph".format(len(clusters)))
+# load cluster data
+nodes = {}
+with open('data/clusters.info.csv') as f:
+    _ = next(f)
+    for line in f:
+        label, node, coldate, region, country = line.strip().split(',')
+        if label not in nodes:
+            nodes.update({label: {
+                'coldates': [],
+                'regions': dict([(r, 0) for r in regions])
+            }})
+        nodes[label]['coldates'].append(parse_isodate(coldate))
 
-G2 = nx.Graph()
+# populate graph with nodes
+G = nx.Graph()
+for node, ndata in nodes.items():
+    min_date =
+
+# load cluster TN93
+edges = []
+with open('data/clusters.tn93.csv') as f:
+    _ = next(f)
+    for line in f:
+        id1, id2, dist = line.strip().split(',')
+        d = float(dist)
+        if d < cutoff:
+            edges.append((id1, id2, d))
+
+
 handle.seek(0)  # reset file stream
 _ = next(handle)
 for line in handle:

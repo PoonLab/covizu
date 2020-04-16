@@ -1,4 +1,6 @@
+import networkx as nx
 from datetime import date
+
 regions = ['Canada', 'USA', 'China', 'Asia', 'SAmerica', 'Europe',
            'Australia', 'Africa']
 
@@ -7,6 +9,8 @@ cutoff = 2e-4
 def parse_isodate(iso):
     year, month, day = tuple(map(int, iso.split('-')))
     return date(year, month, day)
+
+G = nx.Graph()
 
 nodes = {}
 with open('data/clusters.info.csv') as f:
@@ -39,4 +43,4 @@ with open('data/clusters.tn93.dot', 'w') as f:
     for id1, id2, dist in edges:
         f.write('  "{}"--"{}";\n'.format(id1, id2))
 
-    f.write('};\n')
+    f.write('}\n')

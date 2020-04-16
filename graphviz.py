@@ -28,6 +28,7 @@ cutoff = 2e-4
 nodes = {}
 edges = []
 
+
 with open('data/gisaid.tn93.csv') as f:
     _ = next(f)
     for line in f:
