@@ -77,7 +77,7 @@ for node, count in clusters.items():
     ))
 
 edgelist = get_edgelist(mst)
-components = {root: []}
+dg = nx.DiGraph()
 
 for child, parent in traversal(root, None, edgelist, history=[]):
     if parent is None:
@@ -85,30 +85,26 @@ for child, parent in traversal(root, None, edgelist, history=[]):
 
     # cut at nodes with outdegree of 20+
     if mst.degree[child] > 20:  #if clusters[child] > 10:
-        # start new component
-        components.update({child: []})
-        root = child
         continue
 
     #outfile.write("{},{},{}\n".format(parent, child, clusters[child]))
     dotfile.write('  "{}"->"{}" [len={}];\n'.format(
         parent, child, edgelist[parent][child] / 0.0001
     ))
-    components[root].append((parent, child))
+    dg.add_edge(parent, child)
 
 #outfile.close()
 dotfile.write('}\n')
 dotfile.close()
 
-for root, edges in components.items():
-    if len(edges) == 0:
-        print('orphan node {}'.format(root))
-        continue
+components = list(nx.weakly_connected_components(dg))
 
-    outfile = open('mst/{}.edgelist.csv'.format(root), 'w')
+for i, comp in enumerate(components):
+    outfile = open('mst/component-{}.edgelist.csv'.format(i), 'w')
     outfile.write('parent,child,dist\n')
 
-    for parent, child in edges:
+    sg = nx.subgraph(dg, comp)
+    for parent, child in sg.edges():
         dist = edgelist[parent][child]
         outfile.write('{},{},{}\n'.format(parent, child, dist))
 
