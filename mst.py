@@ -1,12 +1,11 @@
 import math
 import networkx as nx
 from networkx.algorithms import tree
+import sys
 
-# populate graph with nodes
+
+print("populate complete graph with TN93 distances")
 G = nx.Graph()
-
-# load cluster TN93
-edges = []
 with open('data/clusters.tn93.csv') as f:
     _ = next(f)
     for line in f:
@@ -16,21 +15,26 @@ with open('data/clusters.tn93.csv') as f:
                 G.add_node(node)
         G.add_edge(id1, id2, weight=float(dist))
 
+
 # generate minimum spanning tree
 print("generating minimum spanning tree")
 mst = tree.minimum_spanning_tree(G, weight='weight')
 
-edgelist = {}
-for n1, n2, dist in mst.edges(data='weight'):
-    if n1 not in edgelist:
-        edgelist.update({n1: {}})
-    edgelist[n1].update({n2: dist})
 
-    if n2 not in edgelist:
-        edgelist.update({n2: {}})
-    edgelist[n2].update({n1: dist})
+def get_edgelist(g):
+    edgelist = {}
+    for n1, n2, dist in g.edges(data='weight'):
+        if n1 not in edgelist:
+            edgelist.update({n1: {}})
+        edgelist[n1].update({n2: dist})
+        if n2 not in edgelist:
+            edgelist.update({n2: {}})
+        edgelist[n2].update({n1: dist})
+    return edgelist
 
-# load cluster info
+
+# count the number of cases per cluster
+print('counting number of cases per cluster')
 clusters = {}
 with open('data/clusters.info.csv') as f:
     _ = next(f)
@@ -46,7 +50,7 @@ with open('data/clusters.info.csv') as f:
 
 # traverse MST from earliest label (cluster)
 # search edge list for children of root node and recurse
-def traversal(node, parent, edgelist, history=[]):
+def traversal(node, parent, edgelist, history):
     history.append(node)
     yield (node, parent)
     children = [child for child, _ in edgelist[node].items()
@@ -64,39 +68,51 @@ root = intermed[0][1]
 
 # write clusters out to file
 dotfile = open('mst/mst.dot', 'w')
-dotfile.write('digraph {\n')
-dotfile.write('  node [label="" shape="circle"];\n')
+dotfile.write('digraph {\nrankdir=LR;\n')
+#dotfile.write('  node [label="" shape="circle"];\n')
 
 for node, count in clusters.items():
     dotfile.write('  "{}" [width={}];\n'.format(
         node, math.sqrt(count)/10.
     ))
 
-for child, parent in traversal(root, None, edgelist):
+edgelist = get_edgelist(mst)
+components = {root: []}
+
+for child, parent in traversal(root, None, edgelist, history=[]):
     if parent is None:
         continue
 
     # cut at nodes with outdegree of 20+
-    if mst.degree[child] > 20:
-        # remove edge
-        mst.remove_edge(parent, child)
+    if mst.degree[child] > 20:  #if clusters[child] > 10:
+        # start new component
+        components.update({child: []})
+        root = child
         continue
 
     #outfile.write("{},{},{}\n".format(parent, child, clusters[child]))
     dotfile.write('  "{}"->"{}" [len={}];\n'.format(
         parent, child, edgelist[parent][child] / 0.0001
     ))
+    components[root].append((parent, child))
 
 #outfile.close()
 dotfile.write('}\n')
 dotfile.close()
 
-for i, comp in enumerate(nx.connected_components(mst)):
-    outfile = open('mst/cluster-{}.edgelist.csv'.format(i), 'w')
+for root, edges in components.items():
+    if len(edges) == 0:
+        print('orphan node {}'.format(root))
+        continue
+
+    outfile = open('mst/{}.edgelist.csv'.format(root), 'w')
     outfile.write('parent,child,dist\n')
 
-    sg = nx.subgraph(mst, comp)
-    for e in sg.edges(data='weight'):
-        outfile.write('{},{},{}\n'.format(*e))
+    for parent, child in edges:
+        dist = edgelist[parent][child]
+        outfile.write('{},{},{}\n'.format(parent, child, dist))
 
     outfile.close()
+
+
+# dot -Kneato -Tpdf mst/mst.dot > mst/mst.dot.pdf

@@ -9,18 +9,32 @@ clusters$accession <- sapply(clusters$label, function(x) {
   strsplit(as.character(x), "\\|")[[1]][2]
 })
 
-component <- read.csv('mst/cluster-0.edgelist.csv', header=T)
+# load first component of split MST
+files <- Sys.glob('mst/*.edgelist.csv')
+f <- files[1]
+
+edges <- read.csv(f, header=T)
 
 # assign earliest collection date of child node to edges in component
-component$c.date <- sapply(component$child, function(x) {
+edges$coldate <- sapply(edges$child, function(x) {
   min(clusters$coldate[clusters$accession==x])
 })
-component$c.date <- as.Date(component$c.date, origin='1970-01-01')
+edges$coldate <- as.Date(edges$coldate, origin='1970-01-01')
 
-component$p.date <- sapply(component$parent, function(x) {
+
+nodes <- data.frame(accession=unique(edges$parent, edges$child))
+nodes$coldate <- sapply(edges$parent, function(x) {
   min(clusters$coldate[clusters$accession==x])
 })
-component$p.date <- as.Date(component$p.date, origin='1970-01-01')
+nodes$coldate <- as.Date(nodes$coldate, origin='1970-01-01')
 
-component <- component[order(component$p.date, component$parent, 
-                             component$c.date), ]
+
+par(mar=c(2,0,0,0))
+plot(NA, xlim=range(c(edges$c.date, edges$p.date)), 
+     ylim=c(1, nrow(edges)),
+     bty='n', xaxt='n'
+     )
+for (e in edges) {
+  segments(x0=e$p.date, x)
+}
+
