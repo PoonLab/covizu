@@ -11,3 +11,6 @@
 4. A pairwise genetic distance matrix is generated using [TN93](http://github.com/veg/tn93).
 5. Clusters of effectively identical genome sequences are identified using the Python script `clustering.py` and a minimum spanning tree is generated using the [networkx](https://networkx.github.io/) module.  The tree is partitioned into clusters by cutting branches at nodes with a high degree size.
 6. A plot is generated from a given cluster using the R script `draw-mst.R`.
+
+## Acknowledgements
+The development and validation of these scripts was made possible by the labs who have generated and contributed SARS-COV-2 genomic sequence data that is curated and published by [GISAID](https://www.gisaid.org/).  We sincerely thank these labs for making this information available to the public and open science.
