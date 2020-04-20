@@ -1,0 +1,146 @@
+---
+title: "CoVizu: Real-time visualization of SARS-COV-2 genomic diversity"
+author: '@ArtPoon'
+date: "19/04/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.width=4, fig.height=4)
+```
+
+
+## Background and rationale
+
+There is a rapidly accumulating number of genome sequences of severe acute respiratory syndrome coronavirus 2 (SARS-COV-2) collected at sites around the world, predominantly available through the Global Intiative on Sharing All Influenza Data (GISAID) database.
+
+This figure summarizes the number of SARS-COV-2 genome records in GISAID since January 1, 2020, up to April 19, 2020, based on the sample collection dates:
+
+```{r, echo=F, fig.width=4, fig.height=3, message=FALSE}
+# derived from GISAID acknowledgements table
+ack <- read.csv('~/git/covizu/data/acknow.csv', row.names=1)
+ack$coldate <- as.Date(ack$coldate)
+
+require(ggfree, quietly=T)
+
+par(xpd=FALSE, mar=c(5,5,1,1))
+plot(NA,
+     xlim=c(as.Date('2020-01-01'), 
+            max(ack$coldate, na.rm=T)),
+     ylim=c(1, nrow(ack)),
+     xlab='', ylab='Number of genomes',
+     xaxt='n', bty='n', col='cadetblue', lwd=2, las=1, cex.axis=0.75)
+add.grid(mode='x', bg.col = 'white', fg.col='grey90')
+lines(sort(ack$coldate), 1:sum(!is.na(ack$coldate)), 
+      type='s', col='cadetblue', lwd=2)
+
+
+xt <- seq(as.Date('2020-01-01'), max(ack$coldate, na.rm=T), length.out=10)
+
+axis(side=1, at=xt, labels=strftime(xt, '%b %d'), 
+     las=2, cex.axis=0.7, mgp=c(3,0.6,0))
+title(xlab='Collection date', line=3.)
+```
+
+Note that the diminishing number of records in the most recent time period may reflect the delay between sample collection and submission of the genome sequence (including sample processing, next-generation sequencing and analysis).
+
+
+The public release of these genome sequences in near real-time is an unprecedented resource for molecular epidemiology and public health.
+For example, [nextstrain](http://nextstrain.org) has been at the forefront of analyzing and communicating the global distribution of SARS-COV-2 genomic variation.
+About four months into the pandemic, a substantial amount of genetic variation has accumulated, as illustrated by the following root-to-tip plot that we generated from a maximum likelihood tree reconstructed (using a double-precision build of FastTree) from an alignment of 2,443 unique genomic variants:
+
+```{r echo=F}
+require(ape)
+phy <- read.tree('~/git/covizu/data/clusters.ft2.nwk')
+info <- read.csv('~/git/covizu/data/clusters.info.csv')
+
+# map sample collection dates to tips of tree
+labels <- as.data.frame(matrix(unlist(sapply(unique(info$label), function(x) {
+  strsplit(as.character(x), "\\|")[[1]]
+  })), ncol=3, byrow=T))
+names(labels) <- c('label', 'accession', 'coldate')
+labels$coldate <- sapply(labels$coldate, as.Date)
+index <- match(phy$tip.label, labels$accession)
+phy$coldate <- as.Date(labels$coldate[index], origin='1970-01-01')
+phy$label <- labels$label[index]
+
+# reroot the tree on earliest sample from Wuhan 
+i <- which.min(phy$coldate[grepl('Wuhan', phy$label)])
+root.label <- phy$tip.label[grepl('Wuhan', phy$label)][i]
+rooted <- root(phy, root.label)
+
+y <- node.depth.edgelength(rooted)
+par(mar=c(5,5,1,1))
+plot(rooted$coldate, y[1:Ntip(rooted)]+rnorm(Ntip(phy), 0, 1e-5), bty='n', xaxt='n',
+     pch=16, cex=0.5, col='yellowgreen',
+     xlab='Collection date', ylab='Root-to-tip distance (ESS)')
+
+xt <- seq(as.Date('2020-01-01'), max(phy$coldate, na.rm=T), length.out=10)
+axis(side=1, at=xt, labels=strftime(xt, '%b %d'), 
+     las=2, cex.axis=0.7, mgp=c(3,0.6,0))
+
+fit <- lm(y[1:Ntip(rooted)] ~ rooted$coldate)
+abline(fit, lwd=2)
+```
+
+where the tree was rooted on the earliest genome sampled in Wuhan, China, and the root-to-tip distance was measured in units of the expected number of nucleotide substitutions.
+
+Based on this tree, we estimate that two genomes sampled at random from around the world would differ at roughly 13.5 positions (ignoring the potential for mutations at the same sites, and comparing pairs of genomes sampled since March 29, 2020):
+
+```{r echo=FALSE, fig.height=3}
+# 95% quantile - most recent collection dates
+cutoff <- as.Date(quantile(as.integer(phy$coldate), 0.95), origin='1970-01-01')
+
+# approx. genome length 30k
+pat.dists <- cophenetic(rooted)
+idx <- which(rooted$coldate > cutoff)
+temp <- 3e4*pat.dists[idx, idx]
+#summary(temp[upper.tri(temp)])
+
+par(mar=c(5,5,1,1))
+hist(temp[upper.tri(temp)], main=NA, col='grey', border='white',
+     xlab='Expected number of substitutions')
+```
+
+The central feature of [nextstrain](nextstrain.org) is a reconstruction of a time-scaled phylogeny (a tree-based model of how infections are related by common ancestors back in time).
+Geographic locations of samples are mapped onto the tree by colour to communicate the global distribution of the pandemic over time.
+However, it is not obvious how useful (actionable) information can be best extracted from these data, particularly in the context of a regional public health authority.
+
+A significant challenge in using a time-scaled tree to visualize the evolutionary (and, to some approximation, epidemiological) relationships among sampled infections is that most of the image is occupied by ancestral lineages whose existence was reconstructed from the observed infections.
+We illustrate this with a time-scaled tree that we reconstructed from 2,430 unique genome sequences using the [TreeTime](https://github.com/neherlab/treetime) program released by the nextstrain developers:
+
+```{r fig.height=8, fig.width=6, echo=FALSE, warning=FALSE}
+phy <- read.tree('~/git/covizu/data/2020-04-14_timetree.nwk')
+phy <- ladderize(phy, right=F)
+require(ggfree)
+L <- tree.layout(phy)
+plot(L, label='n', mar=c(0,0,0,0))
+index <- match(phy$tip.label, labels$accession)
+z <- grepl('Canada', labels$label[index])
+tip.data <- L$nodes[L$nodes$n.tips==0, ]
+points(tip.data$x[!z], tip.data$y[!z], pch=16, cex=0.8)
+points(tip.data$x[z], tip.data$y[z], pch=16, col='red2')
+```
+
+
+
+### Objectives
+The objectives of this project are:
+
+1. to develop an open-source toolset to efficiently analyze the entire contents of the GISAID SARS-COV-2 database (making perpetual updates feasible), and;
+
+2. to generate data visualizations for the purpose of distinguishing between cases of ongoing community transmission versus the new importation of infection from other countries.
+
+
+## Results
+
+
+
+## Workflow
+
+### Alignment
+
+### Sequence analysis
+
+
+
