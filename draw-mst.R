@@ -17,7 +17,8 @@ files <- Sys.glob('mst/component-*.edgelist.csv')
 f <- files[4]
 
 
-plot.mst <- function(f, count.threshold=5) {
+plot.mst <- function(f, threshold=5, mar=c(2,6,0,1)+0.1, 
+                     col1='black', col2='slategray2', ...) {
   edges <- read.csv(f, header=T)
   
   # assign earliest collection date of child node to edges in component
@@ -60,9 +61,9 @@ plot.mst <- function(f, count.threshold=5) {
   
   x <- c(nodes$mindate, nodes$maxdate)
   
-  par(mar=c(2,6,0,1)+0.1)
+  par(mar=mar)
   plot(NA, xlim=range(x), ylim=c(1, nrow(nodes)), 
-       ylab='', bty='n', xaxt='n', yaxt='n')
+       ylab='', bty='n', xaxt='n', yaxt='n', ...)
   axis(side=1, at=pretty(x), label=strftime(pretty(x), format='%b %d'), 
        cex.axis=0.8, mgp=c(4,0.5,0))
   
@@ -70,12 +71,13 @@ plot.mst <- function(f, count.threshold=5) {
     e <- edges[j, ]
     n1 <- nodes[as.character(nodes$accession)==as.character(e$parent), ]
     n2 <- nodes[as.character(nodes$accession)==as.character(e$child), ]
-    arrows(x0=e$coldate, y0=n1$y, y1=n2$y, length=0.05, col='grey')  
+    arrows(x0=e$coldate, y0=n1$y, y1=n2$y, length=0.05, col=col2)  
   }
   
+  par(xpd=NA)
   for (i in 1:nrow(nodes)) {
     n <- nodes[i,]
-    segments(x0=n$mindate, x1=n$maxdate, y0=n$y, col='cadetblue')
+    segments(x0=n$mindate, x1=n$maxdate, y0=n$y, col=col1)
     
     # draw bubbles
     cluster <- clusters[clusters$accession==n$accession,]
@@ -84,12 +86,15 @@ plot.mst <- function(f, count.threshold=5) {
     
     points(x=as.Date(names(temp)), y=rep(n$y, length(temp)), 
            cex=sqrt(temp), pch=21, 
-           bg=sapply(reg, function(x) ifelse('Canada' %in% x, 'red', 'white'))
+           bg=sapply(reg, function(x) {
+             ifelse('Canada' %in% x, 'red', 'white')
+             })
     )
-    if (n$count > count.threshold) {
+    if (n$count > threshold) {
       text(min(n$mindate)-0.5, n$y, 
            label=clusters$desc[clusters$accession==n$accession][1], 
            cex=0.5, adj=1)
     }
   }
+  par(xpd=FALSE)
 }

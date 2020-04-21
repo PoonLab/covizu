@@ -84,7 +84,7 @@ for child, parent in traversal(root, None, edgelist, history=[]):
         continue
 
     # cut at nodes with outdegree of 20+
-    if mst.degree[child] > 20:  #if clusters[child] > 10:
+    if mst.degree[child] > 15:  #if clusters[child] > 10:
         continue
 
     #outfile.write("{},{},{}\n".format(parent, child, clusters[child]))
