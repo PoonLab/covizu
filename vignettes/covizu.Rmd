@@ -160,8 +160,8 @@ However, it is not obvious how useful (actionable) information can be best extra
 A significant challenge in using a time-scaled tree to visualize the evolutionary (and, to some approximation, epidemiological) relationships among sampled infections is that most of the image is occupied by ancestral lineages whose existence was reconstructed from the observed infections.
 We illustrate this with a time-scaled tree that we reconstructed from 2,430 unique genome sequences using the [TreeTime](https://github.com/neherlab/treetime) program released by the nextstrain developers:
 
-```{r fig.height=6, fig.width=6, echo=FALSE, warning=FALSE}
-phy <- read.tree('~/git/covizu/data/2020-04-14_timetree.nwk')
+```{r fig.height=5, fig.width=6, echo=FALSE, warning=FALSE}
+phy <- read.tree('timetree.nwk')  # 2020-04-14
 phy <- ladderize(phy, right=F)
 require(ggfree)
 L <- tree.layout(phy)
@@ -173,16 +173,57 @@ points(tip.data$x[!z], tip.data$y[!z], pch=16, cex=0.8)
 points(tip.data$x[z], tip.data$y[z], pch=16, col='red2')
 ```
 
+From this image, we can observe that genomes sampled in Canada are distributed throughout the tree, indicating multiple importations of SARS-CoV-2 into Canada.
+However, it is difficult to distinguish between importations and community transmission from the location of Canadian samples in this tree.
+This problem is not ameliorated by colouring the branches of the tree to indicate the different countries where samples were collected.
 
-
-
+Another limitation of the tree visualization is that it does not convey information about observing the same genome sequence from multiple samples over time.
+There is no means to differentiate identical sequences in a phylogeny because there are no phylogenetically informative sites that separate them.
+We could extend the tips of the tree to span the time period of sample collection and mark sampled genomes as in the beadplot above.
+However, the time scale of sampling identical genomes is relatively short compared to the evolutionary history of the virus that is represented by the tree.
 
 
 ### Workflow
 
 #### Alignment
 
-#### Sequence analysis
+Generating a multiple sequence alignment (MSA) from thousands of genomes that are about 30,000 nt in length is challenging.
+The time complexity of standard heuristic algorithms for alignment is roughly on the order of $n^2L$, where $L$ is the sequence length and $n$ is the number of sequences.
+In other words, the time it takes to reconstruct the entire MSA increases quadratically with a growing number of sequences.
+
+We use a pairwise alignment approach to greatly reduce the amount of time required to align the sequences.
+By aligning each sequence to a reference genome, and *most importantly* by discarding any sequence insertions relative to the reference genome, we are forcing each sequence into the same coordinate system.
+(We refer to this strategy as Procrustean sequence alignment after the myth of Procrustes, the innkeeper who amputates travellers so they will fit into his only bed.)
+
+A major advantage of this approach is that once a query sequence is aligned, it is no longer necessary to re-align it with the addition of other sequences.
+In contrast, a conventional MSA must re-process all sequences in the database to accommodate any novel insertions or deletions.
+
+We use an implementation of Altschul and Erikkson's algorithm for pairwise alignment in C that is released as a Python module at:
+http://github.com/ArtPoon/gotoh2.
+
+
+#### Genetic distance analysis
+
+To quickly analyze the evolutionary relationships among genomes in the database, we calculate the pairwise matrix using the Tamura-Nei (TN93) genetic distance
+A genetic distance is a formula that maps two sequences to the non-negative real number line, $d(s,t)\rightarrow\mathcal{R}^{+}$, such that $d(s,s)=0$ and $d(s,t) = d(t,s)$.
+Simply put, a genetic distance estimates the amount of evolutionary time separating two sequences based on the number of observed differences between them.
+The TN93 distance is the most biologically realistic distance that has a closed form expression for rapid calculation.
+We use a fast implementation of the TN93 distance in C that is released at http://github.com/veg/tn93.
+
+From this distance matrix, we construct a weighted complete graph in Python using the Python module [networkx](https://networkx.github.io/), where each node represents a genome sequence.
+We group nodes that are separated by a distance below $10^{-6}$, which indicates that the genomes are essentially identical.
+(This ignores ambiguous nucleotides resulting from incomplete sequencing or low quality base calls.)
+Each group is replaced by a single representative genome record with the earliest sample collection date.
+
+
+#### Minimum spanning tree analysis
+
+The reduced graph that results from merging identical genomes is analyzed with a minimum spanning tree (MST) algorithm, which attempts to find the shortest tree that connects every node in the graph.
+By rooting the resulting tree on the genome with the earliest sample collection date, we derive a rough approximation of the epidemiological history of the pandemic.
+This approach assumes that the "ancestral nodes" that represent transmission sources have all been sampled in the database.
+Thus, an MST-based approach is inherently inferior to a phylogenetic analysis that is able to reconstruct ancestral nodes as latent (unobserved) variables.
+
+On the other hand, 
 
 
 

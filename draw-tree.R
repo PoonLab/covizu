@@ -48,14 +48,14 @@ png(file='vignettes/tree.png', width=4*150, height=4*150, res=150)
 
 plot(L, label='n', mar=c(0,0,0,0), xlim=c(0, 0.6), lwd=1)
 #axis(side=1)
-#for (i in 1:length(by.acc)) {
-#  stopifnot(names(by.acc)[index[i]] == L$nodes$label[i])
-#  cluster <- by.acc[[index[i]]]
-#  xr <- range(cluster$coldate)
-#  if (xr[1] < xr[2]) {
-#    segments(x0=date.to.x(xr[1]), x1=date.to.x(xr[2]), 
-#             y0=L$nodes$y[i], lwd=2)  
-#  }
-#}
+for (i in 1:length(by.acc)) {
+  stopifnot(names(by.acc)[index[i]] == L$nodes$label[i])
+  cluster <- by.acc[[index[i]]]
+  xr <- range(cluster$coldate)
+  if (xr[1] < xr[2]) {
+    segments(x0=date.to.x(xr[1]), x1=date.to.x(xr[2]), 
+             y0=L$nodes$y[i], lwd=2)  
+  }
+}
 dev.off()
 
