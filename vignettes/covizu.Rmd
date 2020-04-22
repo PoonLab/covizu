@@ -254,7 +254,19 @@ By rooting the resulting tree on the genome with the earliest sample collection 
 This approach assumes that the "ancestral nodes" that represent transmission sources have all been sampled in the database.
 Thus, an MST-based approach is inherently inferior to a phylogenetic analysis that is able to reconstruct ancestral nodes as latent (unobserved) variables.
 
-On the other hand, 
+On the other hand, the relatively slow rate of molecular evolution of SARS-COV-2, in comparison to the time scale of transmission, supports the assumption that ancestral variants are often sampled.
+In addition, using a graph that comprises exclusively of observed variants, instead of having to extrapolate back to unobserved ancestors in a phylogeny, enables us to make more efficient use of space in a visualization.
 
 
+#### Cluster analysis
 
+Whether we use a phylogeny or an MST, the resulting graph is too large for the purpose of visualization because of the large number of genomic variants that exist in the database.
+In other words, we have to partition the database into smaller subsets that are more feasible to display individually.
+A phylogeny can be partitioned into subtrees.
+However, we are required to decide on quantitative criteria for partitioning the tree that resolves the trade-off between data reduction (the benefit of drawing smaller trees) and loss of information.
+Similarly, an MST can be partitioned into some number of subgraphs, each of which can be transformed into a visualization.
+This partition is also the outcome of applying some criteria, for which there are no guidelines for setting.
+
+Currently we are using the out-degree of nodes in the MST as the sole criterion for partitioning the graph.
+A node with a high out-degree represents a genomc variant that occupies a "central" (average/consensus) position among a relatively large number of other variants.
+This is an area that is still under active investigation, and we may decide on a different approach to clustering nodes in the future.
