@@ -18,6 +18,8 @@ The objectives of this project are:
 
 2. to generate data visualizations for the purpose of distinguishing between cases of ongoing community transmission versus the new importation of infection from other countries.
 
+3. to continually update these visualizations with new genomic data to identify potentially actionable features for public health.
+
 
 ### Summary
 
@@ -43,6 +45,8 @@ plot.mst(files[14], mar=c(2,6,0,0), xlab='', threshold=5)
 
   > The first red circle in a series of cases on the same horizontal line represents the first sample of that variant in Canada and implies a new importation.  A series of red circles on the same line implies community transmission.
 
+* Variants are labelled with the name of the earliest genome record.  To reduce clutter, however, it may become necessary to filter labels to only variants that have a minimum number of cases.
+
 * Vertical lines connect variants that are related by a minimum spanning tree, which gives a *rough* approximation of transmission links.  The variant at the bottom terminus of the vertical line is the putative source.  
 
 * It is not feasible to reconstruct accurate links using only genomic data.  However, our objective is to identify population-level events like importations into Canada, not to attribute a transmission to a specific source individual.
@@ -52,6 +56,33 @@ plot.mst(files[14], mar=c(2,6,0,0), xlab='', threshold=5)
   > If none of the ancestral cases were sampled in Canada, then a first "bead" of a new variant that is red implies importation and mutation.
 
 * The relative location of variants along the vertical axis does not convey any information.  The variants are sorted with respect to the vertical axis such that ancestral variants are always below their "descendant" variants.
+
+#### A cosmopolitan cluster
+
+Let's examine another beadplot from the current dataset:
+
+```{r echo=FALSE, fig.width=5}
+setwd('~/git/covizu')
+plot.mst(files[15], mar=c(2,7,0,0), xlab='', threshold=0)
+```
+
+This cluster "starts" with a genome that was sampled in Ontario (`Canada/ON_PHL8751`); the corresponding point is located in the lower-left of the beadplot.
+In total, the genome variant represented by this instance was observed 49 times.
+The time period represented by the horizontal line extends past the last date that this variant was observed (March 24) because one of the "descendant" variants (`England/20139042904`) was first observed at a later date (March 28).
+
+This beadplot provides evidence of movement between Ontario and British Columbia (BC).
+Specifically, there are two genomes (`Canada/BC_5979789` and `Canada/BC_5275718`) that are putative descendants of the first variant (`Canada/ON_PHL8751`).
+Because sampling is very incomplete, we cannot conclude that these lineages moved specifically from Ontario to BC.
+The plot also comprises variants that have been sampled in other countries around the world, including the USA, Japan, Saudi Arabia, Finland, Belgium, Australia, Argentina, and the United Kingdom.
+Again, incomplete sampling makes it impossible to attribute the source of transmission to Canada or any other country.
+
+
+#### Caveats
+
+This is an experimental method that is under development.
+The vertical lines can mask multiple connections between variants that were mapped to the same day.
+Lengths of vertical lines do not correspond to genetic distance.
+The absence of any other related genomic variants in the database can result in a connection being drawn between two variants that are separated by a substantial genetic distance, since the method used to deduce epidemiological relationships is forced to find connections to *every* variant in the database.
 
 
 ### Background and rationale
