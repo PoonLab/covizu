@@ -14,7 +14,6 @@ clusters$desc <- sapply(clusters$label, function(x) {
 
 # load first component of split MST
 files <- Sys.glob('mst/component-*.edgelist.csv')
-f <- files[4]
 
 
 plot.mst <- function(f, threshold=5, mar=c(2,6,0,1)+0.1, 
@@ -91,10 +90,25 @@ plot.mst <- function(f, threshold=5, mar=c(2,6,0,1)+0.1,
              })
     )
     if (n$count > threshold) {
-      text(min(n$mindate)-0.5, n$y, 
-           label=clusters$desc[clusters$accession==n$accession][1], 
-           cex=0.5, adj=1)
+      label <- gsub("hCoV-19/([^/]+)/([^/]+)/[0-9]+", "\\1/\\2", 
+                    clusters$desc[clusters$accession==n$accession][1])
+      text(min(n$mindate)-0.5, n$y, label=label, cex=0.5, adj=1)
     }
   }
   par(xpd=FALSE)
 }
+
+for (f in files) {
+  # look ahead to see number of edges
+  edges <- read.csv(f)
+  nodes <- c(as.character(edges$parent), as.character(edges$child))
+  n.nodes <- length(unique(nodes))
+  
+  #pdf(file=gsub("\\.edgelist\\.csv", ".pdf", f), 
+  #    width=5, height=n.nodes/10)
+  png(file=gsub("\\.edgelist\\.csv", ".png", f), 
+      width=5*150, height=n.nodes/10*150, res=150)
+  plot.mst(f, mar=c(2,4,1,1), threshold=0)
+  dev.off()
+}
+
