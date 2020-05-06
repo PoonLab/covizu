@@ -1,6 +1,6 @@
 Japan,Asia
 Brazil,SAmerica
-USA,USA
+USA,NAmerica
 England,Europe
 Canada,Canada
 Belgium,Europe
@@ -32,7 +32,7 @@ Saudi Arabia,Asia
 New Zealand,Australia
 Beijing,China
 India,Asia
-Mexico,USA
+Mexico,NAmerica
 Finland,Europe
 Slovakia,Europe
 Greece,Europe
@@ -64,7 +64,7 @@ NewZealand,Australia
 Peru,SAmerica
 Senegal,Africa
 Hefei,China
-Panama,USA
+Panama,NAmerica
 Norway,Europe
 Denmark,Europe
 Chongqing,China
@@ -111,3 +111,8 @@ Croatia,Europe
 Lishui,China
 Uruguay,SAmerica
 Gambia,Africa
+Jordan,Asia
+Costa Rica,NAmerica
+Puerto Rico,NAmerica
+Egypt,Africa
+Philippines,Asia
