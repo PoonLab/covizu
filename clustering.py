@@ -36,9 +36,6 @@ def clustering(tn93_file, country_file, callback=None):
 
     @param country_file: input, path to CSV file with country data
     @param tn93_file: input, path to CSV file with TN93 distances
-    @param info_file: output, path to write cluster information
-    @param fasta_file: output, path to write FASTA of cluster sequences
-    @param dates_file: output, path to write cluster dates for TreeTime
     """
 
     # load country to region mapping
@@ -143,7 +140,7 @@ def write_info(G, country2region, info_file, callback=None):
 
         # label cluster by earliest case
         coldate, _, label = intermed[0]
-        clusters.update({label: coldate})
+        clusters.update({label: {'coldate': coldate, 'count': len(cluster)}})
 
         # write cluster contents to info file
         for coldate, country, node in intermed:
@@ -154,27 +151,33 @@ def write_info(G, country2region, info_file, callback=None):
     return clusters
 
 
-def write_treetime(G, clusters, fasta_in, fasta_out, dates_out):
+def write_treetime_inputs(k, clusters, fasta_in, fasta_out, dates_out):
     """
     Export cluster sequences for TimeTree analysis
-    :param G:  networkx graph object
-    :param clusters:  
-    :param fasta_in:
-    :param fasta_out:
-    :param dates_out:
-    :return:
+    :param k:  int, number of cluster sequences to output
+    :param clusters:  dict, returned from write_info()
+    :param fasta_in:  input, path to FASTA containing genome sequences
+    :param fasta_out: output, path to write FASTA of cluster sequences
+    :param dates_out: output, path to write cluster dates for TreeTime
     """
-    # outputs for TreeTime
+
+    # filter the largest clusters
+    intermed = [(v['count'], k) for k, v in clusters.items()]
+    intermed.sort(reverse=True)
+    keys = [key for count, key in intermed[:k]]
+
+    # open file streams
     outfile = open(fasta_out, 'w')
     datefile = open(dates_out, 'w')
     datefile.write('name,date\n')
+
     for h, s in iter_fasta(open(fasta_in)):
-        if h in clusters:
-            accession = h.split('|')[1]
-            outfile.write(">{}\n{}\n".format(accession, s.replace('?', 'N')))
-            datefile.write('{},{}\n'.format(
-                accession, clusters[h])
-            )
+        if h not in keys:
+            continue
+        accession = h.split('|')[1]
+        outfile.write(">{}\n{}\n".format(accession, s.replace('?', 'N')))
+        datefile.write('{},{}\n'.format(accession, clusters[h]['coldate']))
+
     outfile.close()
 
 
@@ -206,6 +209,8 @@ def parse_args():
     parser.add_argument('--dates', default='data/clusters.dates.csv',
                         help='Path to file to write dates in CSV format '
                              '(for TreeTime analysis).')
+    parser.add_argument('-k', default=20,
+                        help='Number of sequences to export to TreeTime.')
 
     return parser.parse_args()
 
@@ -219,4 +224,7 @@ if __name__ == "__main__":
     G, c2r = clustering(
         tn93_file=args.tn93, country_file=args.country, callback=callback
     )
-    write_info(G, country2region=c2r, info_file=args.info, callback=callback)
+    clusters = write_info(G, country2region=c2r, info_file=args.info,
+                          callback=callback)
+    write_treetime_inputs(clusters, fasta_in=args.infasta, fasta_out=args.outfasta,
+                          dates_out=args.dates)
