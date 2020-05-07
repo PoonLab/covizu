@@ -3,6 +3,7 @@ from datetime import date
 import sys
 import argparse
 from gotoh2 import iter_fasta
+import csv
 
 MIN_DIST_CUTOFF = 0.0005  # ~15 nt differences from any other genome
 
@@ -25,21 +26,13 @@ def parse_label(label):
     except:
         raise
 
-
-def clustering(tn93_file, country_file, callback=None):
+def read_countries(country_file):
     """
-    Use TN93 distances:
-     tn93 -o data/gisaid.tn93.csv data/gisaid-filtered.fa
-
-    to cluster genome sequences into unique variants.  Simultaneously,
-    exclude sequences that are too distant from any other sequence.
-
-    @param country_file: input, path to CSV file with country data
-    @param tn93_file: input, path to CSV file with TN93 distances
+    :param country_file: path to CSV of country, continent
+    :return dict
     """
-
     # load country to region mapping
-    country2region = {}
+    countries = {}
     with open(country_file) as handle:
         for line in handle:
             try:
@@ -47,8 +40,21 @@ def clustering(tn93_file, country_file, callback=None):
             except:
                 print(line)
                 raise
-            country2region.update({country: region})
+            countries.update({country: region})
+    return countries
 
+
+def clustering(tn93_file, countries, callback=None):
+    """
+    Use TN93 distances:
+     tn93 -o data/gisaid.tn93.csv data/gisaid-filtered.fa
+
+    to cluster genome sequences into unique variants.  Simultaneously,
+    exclude sequences that are too distant from any other sequence.
+
+    @param tn93_file: input, path to CSV file with TN93 distances
+    @param countries: dict, from read_countries()
+    """
     if callback:
         callback("Filter sequences that are too distant")
     min_dists = {}
@@ -63,7 +69,7 @@ def clustering(tn93_file, country_file, callback=None):
                 min_dists.update({node: 10.0})
                 # check for new country values while we're at it
                 country, coldate = parse_label(node)
-                if country not in country2region:
+                if country not in countries:
                     unknown_country.append(country)
             if dist < min_dists[node]:
                 min_dists[node] = dist
@@ -108,14 +114,14 @@ def clustering(tn93_file, country_file, callback=None):
             # some very small distances reported - mixtures?
             G.add_edge(id1, id2)
 
-    return G, country2region
+    return G
 
 
-def write_info(G, country2region, info_file, callback=None):
+def write_info(G, countries, info_file, fasta_in, fasta_out, callback=None):
     """
     Write CSV file describing the content of each genome variant cluster.
     :param G:  networkx.graph object from clustering()
-    :param country2region:  dict, mapping country to region (continent)
+    :param countries:  dict, mapping country to region (continent)
     :param info_file:  output file path
     :return: dict, label: collection date
     """
@@ -125,7 +131,9 @@ def write_info(G, country2region, info_file, callback=None):
           "{} components".format(len(G), len(components)))
 
     # generate cluster information
-    infofile = open(info_file, 'w')
+    writer = csv.writer(open(info_file, 'w'))
+    writer.writerow(['cluster', 'label', 'coldate', 'region', 'country'])
+
     clusters = {}
     for cluster in components:
         subG = G.subgraph(cluster)
@@ -139,53 +147,21 @@ def write_info(G, country2region, info_file, callback=None):
             continue
 
         # label cluster by earliest case
-        coldate, _, label = intermed[0]
-        clusters.update({label: {'coldate': coldate, 'count': len(cluster)}})
+        _, _, label = intermed[0]
+        clusters.update({label: len(cluster)})
 
         # write cluster contents to info file
         for coldate, country, node in intermed:
-            region = country2region[country]
-            infofile.write('{},{},{},{},{}\n'.format(
-                label, node, coldate, region, country
-            ))
-    return clusters
+            region = countries[country]
+            writer.writerow([label, node, coldate, region, country])
 
-
-def write_treetime_inputs(k, clusters, fasta_in, fasta_out, dates_out):
-    """
-    Export cluster sequences for TimeTree analysis
-    :param k:  int, number of cluster sequences to output
-    :param clusters:  dict, returned from write_info()
-    :param fasta_in:  input, path to FASTA containing genome sequences
-    :param fasta_out: output, path to write FASTA of cluster sequences
-    :param dates_out: output, path to write cluster dates for TreeTime
-    """
-
-    # filter the largest clusters
-    intermed = [(v['count'], k) for k, v in clusters.items()]
-    intermed.sort(reverse=True)
-    keys = [key for count, key in intermed[:k]]
-
-    # open file streams
     outfile = open(fasta_out, 'w')
-    datefile = open(dates_out, 'w')
-    datefile.write('name,date\n')
-
     for h, s in iter_fasta(open(fasta_in)):
-        if h not in keys:
+        if h not in clusters:
             continue
-        accession = h.split('|')[1]
-        outfile.write(">{}\n{}\n".format(accession, s.replace('?', 'N')))
-        datefile.write('{},{}\n'.format(accession, clusters[h]['coldate']))
+        outfile.write(">{}\n{}\n".format(h, s.replace('?', 'N')))
 
-    outfile.close()
-
-
-# pass outputs to fasttree2 and treetime
-# fasttree2 -nt < clusters.fa > clusters.ft2.nwk
-# python3 prune-long-tips.py
-# treetime --tree data/clusters.pruned.nwk --aln data/clusters.fa --dates data/clusters.dates.csv
-# python3 parse-nexus.py
+    return clusters
 
 
 def parse_args():
@@ -193,38 +169,32 @@ def parse_args():
         description="Processing and clustering of aligned SARS-CoV-2"
                     " genome sequences into unique variants."
     )
-    parser.add_argument('--country', default='countries.csv',
-                        help='Path to CSV file linking countries to '
-                             'regions.')
     parser.add_argument('--tn93', default='data/gisaid.tn93.csv',
-                        help='Path to CSV file containing TN93 '
+                        help='input, path to CSV file containing TN93 '
                              'distances.')
+    parser.add_argument('--country', default='countries.csv',
+                        help='input, path to CSV file linking countries '
+                             'to geographic regions (continents).')
     parser.add_argument('--info', default='data/clusters.info.csv',
-                        help='Path to CSV containing cluster info '
-                             '(generated by clustering.py)')
-    parser.add_argument('--infasta', default='data/gisaid-aligned.fa',
-                        help='Path to FASTA file with aligned GISAID data.')
-    parser.add_argument('--outfasta', default='data/clusters.fa',
-                        help='Path to file to write FASTA output.')
-    parser.add_argument('--dates', default='data/clusters.dates.csv',
-                        help='Path to file to write dates in CSV format '
-                             '(for TreeTime analysis).')
-    parser.add_argument('-k', default=20,
-                        help='Number of sequences to export to TreeTime.')
+                        help='output, path to write CSV containing '
+                             'cluster info')
+    parser.add_argument('--fasta_in', default='data/gisaid-aligned.fa',
+                        help='input, path to FASTA with aligned genomes')
+    parser.add_argument('--fasta_out', default='data/clusters.fa',
+                        help='output, path to write cluster FASTA')
 
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     def callback(msg):
-        sys.stdout.write(msg)
+        sys.stdout.write(msg+'\n')
         sys.stdout.flush()
 
     args = parse_args()
-    G, c2r = clustering(
-        tn93_file=args.tn93, country_file=args.country, callback=callback
-    )
-    clusters = write_info(G, country2region=c2r, info_file=args.info,
-                          callback=callback)
-    write_treetime_inputs(clusters, fasta_in=args.infasta, fasta_out=args.outfasta,
-                          dates_out=args.dates)
+
+    countries = read_countries(args.country)
+    G = clustering(args.tn93, countries=countries, callback=callback)
+    write_info(G, countries=countries, info_file=args.info,
+               fasta_in=args.fasta_in, fasta_out=args.fasta_out,
+               callback=callback)
