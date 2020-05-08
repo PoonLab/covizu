@@ -1,7 +1,7 @@
 setwd('~/git/covizu/')
 
 # load cluster info
-clusters <- read.csv('data/clusters.info.csv', header=T)
+clusters <- read.csv('data/clusters.info.csv', header=T, stringsAsFactors = FALSE)
 names(clusters) <- c('label', 'node.name', 'coldate', 'region', 'country')
 
 clusters$coldate <- as.Date(clusters$coldate)
@@ -12,40 +12,44 @@ clusters$desc <- sapply(clusters$label, function(x) {
   strsplit(as.character(x), "\\|")[[1]][1]
 })
 
-# load first component of split MST
-files <- Sys.glob('mst/component-*.edgelist.csv')
 
-
+#' plot.mst
+#' Generate a beadplot given an edgelist (CSV) describing the 
+#' variants in a subtree of a minimum spanning tree.
+#' 
+#' @param f:  path to CSV summarizing an MST cluster
+#' @param threshold:  integer, minimum number of instances for a given 
+#'                    variant to be labelled in the plot
+#' @param mar:  margin argument for par()
+#' @param col1:  colour for horizontal (variant) line segments
+#' @param col2:  colour for vertical (link) line segments
 plot.mst <- function(f, threshold=5, mar=c(2,6,0,1)+0.1, 
                      col1='black', col2='slategray2', ...) {
-  edges <- read.csv(f, header=T)
+  edges <- read.csv(f, header=T, stringsAsFactors = FALSE)
   
   # assign earliest collection date of child node to edges in component
   edges$coldate <- sapply(edges$child, function(x) {
-    min(clusters$coldate[clusters$accession==x])
+    min(clusters$coldate[clusters$node.name==x])
   })
   edges$coldate <- as.Date(edges$coldate, origin='1970-01-01')
   
-  
-  nodes <- data.frame(accession=unique(
-    c(as.character(edges$parent), as.character(edges$child))
+  nodes <- data.frame(label=unique(
+    c(edges$parent, edges$child)
   ))
   
-  
-  temp <- sapply(nodes$accession, function(a) {
-    c(edges$coldate[as.character(edges$parent)==a],
-      clusters$coldate[clusters$accession==a])
+  # match node names in cluster to the sample collection date as 
+  # well as the coldates of related nodes
+  temp <- sapply(nodes$label, function(a) {
+    c(edges$coldate[edges$parent==a],
+      clusters$coldate[clusters$label==a])
   })
   nodes$mindate <- as.Date(sapply(temp, min), origin='1970-01-01')
   nodes$maxdate <- as.Date(sapply(temp, max), origin='1970-01-01')
   nodes$count <- sapply(temp, length)
-  
-  
-  #nodes <- nodes[order(nodes$mindate), ]
-  # sort nodes in pre-order traversal
+
+  # sort nodes by pre-order traversal
   temp <- unique(edges$parent)
   root <- as.character(temp[which(!is.element(temp, edges$child))])
-  
   traverse <- function(node, edges, res=c()) {
     res <- c(res, node)
     children <- edges$child[edges$parent==node]
@@ -55,31 +59,36 @@ plot.mst <- function(f, threshold=5, mar=c(2,6,0,1)+0.1,
     return(res)
   }
   res <- traverse(root, edges)
-  nodes <- nodes[match(res, nodes$accession), ]
+  nodes <- nodes[match(res, nodes$label), ]
+  #nodes <- nodes[order(nodes$mindate), ]
   nodes$y <- 1:nrow(nodes)
   
+  # horizontal range
   x <- c(nodes$mindate, nodes$maxdate)
   
+  # prepare plot region
   par(mar=mar)
   plot(NA, xlim=range(x), ylim=c(1, nrow(nodes)), 
        ylab='', bty='n', xaxt='n', yaxt='n', ...)
   axis(side=1, at=pretty(x), label=strftime(pretty(x), format='%b %d'), 
        cex.axis=0.8, mgp=c(4,0.5,0))
   
+  # draw vertical segments representing edges in minimum spanning tree
   for (j in 1:nrow(edges)) {
     e <- edges[j, ]
-    n1 <- nodes[as.character(nodes$accession)==as.character(e$parent), ]
-    n2 <- nodes[as.character(nodes$accession)==as.character(e$child), ]
+    n1 <- nodes[nodes$label==e$parent, ]
+    n2 <- nodes[nodes$label==e$child, ]
     arrows(x0=e$coldate, y0=n1$y, y1=n2$y, length=0.05, col=col2)  
   }
   
+  # draw horizontal segments representing genome variants
   par(xpd=NA)
   for (i in 1:nrow(nodes)) {
     n <- nodes[i,]
     segments(x0=n$mindate, x1=n$maxdate, y0=n$y, col=col1)
     
-    # draw bubbles
-    cluster <- clusters[clusters$accession==n$accession,]
+    # draw "beads"
+    cluster <- clusters[clusters$label==n$label,]
     temp <- table(cluster$coldate)
     reg <- split(cluster$region, cluster$coldate)
     
@@ -91,13 +100,15 @@ plot.mst <- function(f, threshold=5, mar=c(2,6,0,1)+0.1,
     )
     if (n$count > threshold) {
       label <- gsub("hCoV-19/([^/]+)/([^/]+)/[0-9]+", "\\1/\\2", 
-                    clusters$desc[clusters$accession==n$accession][1])
+                    clusters$desc[clusters$label==n$label][1])
       text(min(n$mindate)-0.5, n$y, label=label, cex=0.5, adj=1)
     }
   }
   par(xpd=FALSE)
 }
 
+# batch processing
+files <- Sys.glob('mst/component-*.edgelist.csv')
 for (f in files) {
   # look ahead to see number of edges
   edges <- read.csv(f)
