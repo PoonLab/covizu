@@ -175,12 +175,12 @@ def parse_args():
     parser.add_argument('--country', default='countries.csv',
                         help='input, path to CSV file linking countries '
                              'to geographic regions (continents).')
-    parser.add_argument('--info', default='data/clusters.info.csv',
-                        help='output, path to write CSV containing '
-                             'cluster info')
+    parser.add_argument('--info', default='data/variants.csv',
+                        help='output, path to write CSV describing '
+                             'composition of variants')
     parser.add_argument('--fasta_in', default='data/gisaid-aligned.fa',
                         help='input, path to FASTA with aligned genomes')
-    parser.add_argument('--fasta_out', default='data/clusters.fa',
+    parser.add_argument('--fasta_out', default='data/variants.fa',
                         help='output, path to write cluster FASTA')
 
     return parser.parse_args()

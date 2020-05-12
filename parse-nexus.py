@@ -1,10 +1,16 @@
 import re
 import argparse
-from clustering import date2float
 from datetime import date
 import sys
 from Bio import Phylo
 from io import StringIO
+
+
+def date2float(dt):
+    origin = date(dt.year, 1, 1)
+    td = (dt-origin).days
+    return dt.year + td/365.25
+
 
 DATE_TOL = 0.1
 
@@ -13,15 +19,20 @@ parser = argparse.ArgumentParser(
                   "from NEXUS output of TreeTime and write to a "
                   "separate CSV file.  Remove problematic tips."
 )
-parser.add_argument('infile', type=argparse.FileType('r'),
+parser.add_argument('--infile', type=argparse.FileType('r'),
+                    default=open('treetime/timetree.nexus'),
                     help="input, TreeTime NEXUS output file")
-parser.add_argument('csvfile', type=argparse.FileType('w'),
+parser.add_argument('--csvfile', type=argparse.FileType('w'),
+                    default=open('treetime/nodedate.csv', 'w'),
                     help="output, CSV file with node date estimates")
-parser.add_argument('outfile', type=argparse.FileType('w'),
+parser.add_argument('--outfile', type=argparse.FileType('w'),
+                    default=open('treetime/timetree.nwk', 'w'),
                     help="output, cleaned Newick file")
 args = parser.parse_args()
 
-handle = open('data/clusters.info.csv')
+
+handle = open('data/variants.csv')
+_ = next(handle)  # skip header line
 coldates = {}
 for line in handle:
     _, node, dt, _, _ = line.strip().split(',')

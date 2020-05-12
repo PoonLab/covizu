@@ -1,12 +1,12 @@
 require(igraph)
 require(jsonlite)
 
-tn93 <- read.csv('data/clusters.tn93.txt', skip=1, header=F)
-info <- read.csv('data/clusters.info.csv')
+tn93 <- read.csv('data/variants.tn93.txt', skip=1, header=F)
+variants <- read.csv('data/variants.csv')
 
 # read headers from FASTA
 headers <- rep(NA, times=nrow(tn93))
-con <- file('data/clusters.fa', open='r')
+con <- file('data/variants.fa', open='r')
 i <- 1
 while (length(line <- readLines(con, n=1, warn=FALSE)) > 0) {
   if (grepl("^>", line)) {
@@ -57,12 +57,22 @@ result <- lapply(1:max(clusters), function(i) {
       return(edges)
     }
     edges <- traverse(subroot, NA, edgelist)
-    nodes <- unique(edges)
     edges <- matrix(edges, ncol=2, byrow=TRUE)
+
+    # store variant data
+    nodes <- list()
+    for (node in unique(edges)) {
+      temp <- variants[variants$cluster==node, ]
+      temp$label1 <- sapply(as.character(temp$label), function(x) {
+        strsplit(x, "\\|")[[1]][1]
+      })
+      nodes[[node]] <- temp[c('label1', 'region', 'country', 'coldate')]
+    }
+
     list(nodes=nodes, edges=edges)  
   }
 })
 
-write(toJSON(result, pretty=TRUE), file="cluster.json")
+write(toJSON(result, pretty=TRUE), file="data/clusters.json")
 
 # record subroots

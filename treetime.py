@@ -3,9 +3,10 @@ from subprocess import Popen, PIPE, check_call
 import json
 from gotoh2 import iter_fasta
 from tempfile import NamedTemporaryFile
+import sys
 
 
-def filter_fasta(fasta_file, json_file):
+def filter_fasta(fasta_file, json_file, cutoff=10):
     """
     :param fasta_file:  path to FASTA file containing cluster sequences
     :param json_file:  path to JSON file with cluster information
@@ -15,8 +16,22 @@ def filter_fasta(fasta_file, json_file):
     fasta = dict(list(iter_fasta(fasta_file)))
     clusters = json.load(json_file)
     for cluster in clusters:
-        header = cluster['nodes'][0]
+        # record variant in cluster that is closest to root
+        if type(cluster['nodes']) is list:
+            # omit problematic cluster of one
+            print(cluster['nodes'])
+            continue
+
+        header = list(cluster['nodes'].keys())[0]
         result.update({header: fasta[header]})
+
+        # extract variants in cluster that have high counts
+        major = [label for label, samples in
+                 cluster['nodes'].items() if
+                 len(samples) > cutoff and label != header]
+        for label in major:
+            result.update({label: fasta[label]})
+
     return result
 
 
@@ -30,7 +45,7 @@ def fasttree(fasta):
     in_str = ''
     for h, s in fasta.items():
         in_str += '>{}\n{}\n'.format(h, s)
-    p = Popen(['fasttree2', '-nt'], stdin=PIPE, stdout=PIPE)
+    p = Popen(['fasttree2', '-nt', '-quote'], stdin=PIPE, stdout=PIPE)
     # TODO: exception handling with stderr?
     stdout, stderr = p.communicate(input=in_str.encode('utf-8'))
     return stdout.decode('utf-8')
@@ -46,13 +61,15 @@ def treetime(nwk, fasta, outdir):
     datefile.write('name,date\n')
     alnfile = NamedTemporaryFile('w', delete=False)
     for h, s in fasta.items():
+        # TreeTime seems to have trouble handling labels with spaces
+        h = h.replace(' ', '')
         datefile.write('{},{}\n'.format(h, h.split('|')[-1]))
         alnfile.write('>{}\n{}\n'.format(h, s))
     datefile.close()
     alnfile.close()
 
     with NamedTemporaryFile('w', delete=False) as nwkfile:
-        nwkfile.write(nwk)
+        nwkfile.write(nwk.replace(' ', ''))
 
     check_call(['treetime', '--tree', nwkfile.name,
                 '--aln', alnfile.name, '--dates', datefile.name,
@@ -74,6 +91,9 @@ def parse_args():
                         default=open('data/clusters.fa'),
                         help='input, FASTA file with unique variant '
                              'sequences')
+    parser.add_argument('--mincount', type=int, default=10,
+                        help='option, minimum count of variant to be '
+                             'added to tree')
     parser.add_argument('--outdir', default='treetime/',
                         help='directory to write TreeTime output files')
     return parser.parse_args()
