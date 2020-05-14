@@ -1,3 +1,7 @@
+#!/bin/bash
+
+# TODO: add download and updater scripts -> data/gisaid-aligned.fa
+
 # screen for non-human and low-coverage samples -> gisaid-filtered.fa
 python3 filtering.py
 
@@ -17,4 +21,7 @@ sed -i 's/[{}]//g' data/variants.tn93.txt
 Rscript hclust.R
 
 # run FastTree and TreeTime
+if [ ! -d "treetime" ]; then
+  mkdir treetime
+fi
 python3 treetime.py
