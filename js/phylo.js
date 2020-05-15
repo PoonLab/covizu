@@ -1,4 +1,6 @@
 
+var df, edgeset;
+
 /**
  * Parse a Newick tree string into a doubly-linked
  * list of JS Objects.  Assigns node labels, branch
@@ -74,8 +76,8 @@ function readTree(text) {
     // if root node is unlabelled
     curnode.id = nodeId;
 
-    return (root);
-    //return({json: root, error: null});
+    drawtree(root);
+    return(root);
 }
 
 //var s = "(A:0.1,B:0.2,(C:0.3,D:0.4)E:0.5)F;";
@@ -134,9 +136,46 @@ function numTips(thisnode) {
 
 
 /**
+ * Rectangular layout of tree, update nodes in place with x,y coordinates
+ * @param {object} root
+ */
+function rectLayout(root) {
+    // assign vertical positions to tips by postorder traversal
+    var counter = 0;
+    for (const node of postorder(root)) {
+        if (node.children.length == 0) {
+            // assign position to tip
+            node.y = counter;
+            counter++;
+        } else {
+            // ancestral node position is average of child nodes
+            node.y = 0;
+            for (var i = 0; i < node.children.length; i++) {
+                var child = node.children[i];
+                node.y += child.y;
+            }
+            node.y /= node.children.length;
+        }
+    }
+
+    // assign horizontal positions by preorder traversal
+    for (const node of preorder(root)) {
+        if (node.parent === null) {
+            // assign root to x=0
+            node.x = 0.;
+        } else {
+            node.x = node.parent.x + node.branchLength;
+        }
+    }
+}
+
+
+
+/**
  * Convert parsed Newick tree from readTree() into data
  * frame.
- * @param {object} tree Return value of readTree
+ * @param {object} tree: Return value of readTree
+ * @param {boolean} sort: if true, sort data frame by node name
  * @return Array of Objects
  */
 function fortify(tree, sort=true) {
@@ -192,21 +231,23 @@ function edges(df, rectangular=false) {
     })
 
     for (const row of df) {
-        x1 = row.x;
-        y1 = row.y;
         if (row.parentId === null) {
+            console.log('skip root')
             continue  // skip the root
         }
         parent = df[row.parentId];
-        if (parent === null || parent === undefined) continue;
+        if (parent === null || parent === undefined) {
+            console.log('parent null/undefined');
+            continue;
+        }
 
         if (rectangular) {
-          var pair = {
+          pair = {
               x1: row.x, y1: row.y, id1: row.thisId,
               x2: parent.x, y2: row.y, id2: undefined
           };
           result.push(pair);
-          var pair = {
+          pair = {
               x1: parent.x, y1: row.y, id1: undefined,
               x2: parent.x, y2: parent.y, id2: row.parentId
           };
@@ -224,53 +265,66 @@ function edges(df, rectangular=false) {
 }
 
 
-/**
- * Equal-angle layout algorithm for unrooted trees.
- * Populates the nodes of a tree object with information on
- * the angles to draw branches such that they do not
- * intersect.
- * @param {object} node
- */
-function equalAngleLayout(node) {
-    if (node.parent === null) {
-        // node is root
-        node.start = 0.;  // guarantees no arcs overlap 0
-        node.end = 2.; // *pi
-        node.angle = 0.;  // irrelevant
-        node.ntips = numTips(node);
-        node.x = 0;
-        node.y = 0;
-    }
+function drawtree(timetree) {
+    var margin = {top: 10, right: 10, bottom: 10, left: 10},
+      width = 1200,
+      height = 400,
+      svg = d3.select("div#svg-timetree")
+        .append("svg")
+        .attr("width", width)
+        .attr("height", height)
+        .append("g");
 
-    var child, arc, lastStart = node.start;
+    // set up plotting scales
+    var xValue = function(d) { return d.x; },
+      xScale = d3.scaleLinear().range([0, width]),
+      xMap = function(d) { return xScale(xValue(d)); },  // points
+      xMap1 = function(d) { return xScale(d.x1); },  // lines
+      xMap2 = function(d) { return xScale(d.x2); },
+      xAxis = d3.axisBottom(xScale);
 
-    for (var i=0; i<node.children.length; i++) {
-        child = node.children[i];
-        child.ntips = numTips(child);
+    var yValue = function(d) { return d.y; },
+      yScale = d3.scaleLinear().range([height, 0]),
+      yMap = function(d) { return yScale(yValue(d)); },
+      yMap1 = function(d) { return yScale(d.y1); },
+      yMap2 = function(d) { return yScale(d.y2); },
+      yAxis = d3.axisLeft(yScale);
 
-        // assign proportion of arc to this child
-        arc = (node.end-node.start) * child.ntips/node.ntips;
-        child.start = lastStart;
-        child.end = child.start + arc;
+    // generate tree layout (x, y coordinates
+    rectLayout(timetree);
 
-        // bisect the arc
-        child.angle = child.start + (child.end-child.start)/2.;
-        lastStart = child.end;
+    df = fortify(timetree),
+      edgeset = edges(df, rectangular=true);
 
-        // map to coordinates
-        child.x = node.x + child.branchLength * Math.sin(child.angle*Math.PI);
-        child.y = node.y + child.branchLength * Math.cos(child.angle*Math.PI);
+    // add buffer to data domain
+    xScale.domain([
+        d3.min(df, xValue)-1, d3.max(df, xValue)+1
+    ])
+    yScale.domain([
+        d3.min(df, yValue)-1, d3.max(df, yValue)+1
+    ])
 
-        // climb up
-        equalAngleLayout(child);
-    }
-}
+    // draw x-axis
+    svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis);
 
+    // draw y-axis
+    svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis);
 
-/**
- * Rectangular layout
- * @param {object} root
- */
-function rectLayout(root) {
+    // draw lines
+    svg.selectAll("lines")
+      .data(edgeset)
+      .enter().append("line")
+      .attr("class", "lines")
+      .attr("x1", xMap1)
+      .attr("y1", yMap1)
+      .attr("x2", xMap2)
+      .attr("y2", yMap2)
+      .attr("stroke-width", 2)
+      .attr("stroke", "#777");
 
 }

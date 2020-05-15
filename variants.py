@@ -172,7 +172,7 @@ def parse_args():
     parser.add_argument('--tn93', default='data/gisaid.tn93.csv',
                         help='input, path to CSV file containing TN93 '
                              'distances.')
-    parser.add_argument('--country', default='countries.csv',
+    parser.add_argument('--country', default='data/countries.csv',
                         help='input, path to CSV file linking countries '
                              'to geographic regions (continents).')
     parser.add_argument('--info', default='data/variants.csv',

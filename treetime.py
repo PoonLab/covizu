@@ -55,6 +55,8 @@ def treetime(nwk, fasta, outdir):
     """
     :param nwk: str, Newick tree string from fasttree()
     :param fasta: dict, header-sequence pairs
+    :param outdir:  path to write output files
+    :return:  path to NEXUS output file
     """
     # extract dates from sequence headers
     datefile = NamedTemporaryFile('w', delete=False)
@@ -75,7 +77,11 @@ def treetime(nwk, fasta, outdir):
                 '--aln', alnfile.name, '--dates', datefile.name,
                 '--outdir', outdir])
 
-
+    nexus_file = os.path.join(outdir, 'timetree.nexus')
+    if not os.path.exists(nexus_file):
+        print("Error: missing expected NEXUS output file {}".format(nexus_file))
+        return None
+    return nexus_file
 
 
 def parse_args():

@@ -6,32 +6,35 @@
 </head>
 <body>
     <div class="container">
-        <header>header</header>
-        <article>
-            <canvas>
 
-            </canvas>
-        </article>
-        <nav>
-            sidebar
-        </nav>
-        <footer>footer</footer>
+        <div id="svg-timetree">
+
+        </div>
+        <div id="svg-cluster">
+
+        </div>
+
     </div>
-    <script src="js/jquery-3.5.1.js"></script>
+    <script src="js/jquery.js"></script>
+    <script src="js/d3.js"></script>
     <script src="js/phylo.js"></script>
     <script>
-        // load time-scaled phylogeny from server
+        // load time-scaled phylogeny (treetime.py) from server
         var timetree;
         $.ajax({
             url: "/treetime/timetree.nwk",
-            success: function(data) { timetree = readTree(data); }
+            success: function(data) {
+              timetree = readTree(data);
+            }
         });
-        // load cluster data from server
+        // load cluster data (hclust.R) from server
         var clusters;
         $.ajax({
           url: "/data/clusters.json",
           success: function(data) { clusters = data; }
         })
     </script>
+
+    <script src="js/cluster.js"></script>
 </body>
 </html>
