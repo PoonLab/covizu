@@ -11,12 +11,15 @@ var df, edgeset;
  */
 function readTree(text) {
     // remove whitespace
-    text = text.replace(/ \t/g, '');
+    text = text.replace(/ |\t|\r?\n|\r/g, '');
 
     var tokens = text.split(/(;|\(|\)|,)/),
         root = {'parent': null, 'children':[]},
         curnode = root,
-        nodeId = 0;
+        nodeId = 0,
+        nodeinfo;
+
+    var node_labels = [];
 
     for (const token of tokens) {
         if (token == "" || token == ';') {
@@ -50,7 +53,8 @@ function readTree(text) {
             }
         }
         else {
-            var nodeinfo = token.split(':');
+            nodeinfo = token.split(':');
+            node_labels.push(nodeinfo);
 
             if (nodeinfo.length==1) {
                 if (token.startsWith(':')) {
@@ -74,7 +78,9 @@ function readTree(text) {
     }
 
     // if root node is unlabelled
-    curnode.id = nodeId;
+    if (node_labels.length < nodeId) {
+        curnode.id = nodeId;
+    }
 
     drawtree(root);
     return(root);
