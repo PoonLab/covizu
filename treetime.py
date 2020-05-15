@@ -88,7 +88,7 @@ def parse_args():
                              'identifying representative cluster '
                              'sequences')
     parser.add_argument('--fasta', type=argparse.FileType('r'),
-                        default=open('data/clusters.fa'),
+                        default=open('data/variants.fa'),
                         help='input, FASTA file with unique variant '
                              'sequences')
     parser.add_argument('--mincount', type=int, default=10,
@@ -104,10 +104,3 @@ if __name__ == '__main__':
     fasta = filter_fasta(args.fasta, args.json)
     nwk = fasttree(fasta)
     treetime(nwk, fasta, args.outdir)
-
-
-# pass outputs to fasttree2 and treetime
-# fasttree2 -nt < clusters.fa > clusters.ft2.nwk
-# python3 prune-long-tips.py
-# treetime --tree data/clusters.pruned.nwk --aln data/clusters.fa --dates data/clusters.dates.csv
-# python3 parse-nexus.py

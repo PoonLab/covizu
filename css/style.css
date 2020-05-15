@@ -16,12 +16,12 @@ header {
   grid-row: 1;
 }
 
-sidebar {
+nav {
   grid-column: 1;
   grid-row: 2;
 }
 
-interface {
+article {
   grid-column: 2 / 3;
   grid-row: 2;
 }

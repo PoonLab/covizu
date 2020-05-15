@@ -7,16 +7,31 @@
 <body>
     <div class="container">
         <header>header</header>
-        <interface>
+        <article>
             <canvas>
 
             </canvas>
-        </interface>
-        <sidebar>
+        </article>
+        <nav>
             sidebar
-        </sidebar>
+        </nav>
         <footer>footer</footer>
     </div>
-    <script src="js/covizu.js"></script>
+    <script src="js/jquery-3.5.1.js"></script>
+    <script src="js/phylo.js"></script>
+    <script>
+        // load time-scaled phylogeny from server
+        var timetree;
+        $.ajax({
+            url: "/treetime/timetree.nwk",
+            success: function(data) { timetree = readTree(data); }
+        });
+        // load cluster data from server
+        var clusters;
+        $.ajax({
+          url: "/data/clusters.json",
+          success: function(data) { clusters = data; }
+        })
+    </script>
 </body>
 </html>
