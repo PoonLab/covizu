@@ -1,6 +1,3 @@
-
-var df, edgeset;
-
 /**
  * Parse a Newick tree string into a doubly-linked
  * list of JS Objects.  Assigns node labels, branch
@@ -90,54 +87,20 @@ function readTree(text) {
 //readTree(s);
 
 /**
- * Recursive function for pre-order traversal of tree
+ * Recursive function for traversal of tree
  * (output parent before children).
  * @param {object} node
- * @param {Array} list An Array of nodes
+ * @param {string} 'preorder' or 'postorder' traversal
+ * @param {Array}  an Array of nodes
  * @return An Array of nodes in pre-order
  */
-function preorder(node, list=[]) {
-    list.push(node);
+function traverse(node, order='preorder', list=Array()) {
+    if (order=='preorder') list.push(node);
     for (var i=0; i < node.children.length; i++) {
-        list = preorder(node.children[i], list);
+        list = traverse(node.children[i], order, list);
     }
+    if (order=='postorder') list.push(node);
     return(list);
-}
-
-function postorder(node, list=[]) {
-    for (var i=0; i < node.children.length; i++) {
-        list = postorder(node.children[i], list);
-    }
-    list.push(node);
-    return(list);
-}
-
-function levelorder(root) {
-    // aka breadth-first search
-    var queue = [root],
-        result = [],
-        curnode;
-
-    while (queue.length > 0) {
-        curnode = queue.pop();
-        result.push(curnode);
-        for (const child of curnode.children) {
-            queue.push(child);
-        }
-    }
-    return(result);
-}
-
-/**
- * Count the number of tips that descend from this node
- * @param {object} thisnode
- */
-function numTips(thisnode) {
-    var result = 0;
-    for (const node of levelorder(thisnode)) {
-        if (node.children.length == 0) result++;
-    }
-    return(result);
 }
 
 
@@ -148,7 +111,7 @@ function numTips(thisnode) {
 function rectLayout(root) {
     // assign vertical positions to tips by postorder traversal
     var counter = 0;
-    for (const node of postorder(root)) {
+    for (const node of traverse(root, 'postorder')) {
         if (node.children.length == 0) {
             // assign position to tip
             node.y = counter;
@@ -165,7 +128,7 @@ function rectLayout(root) {
     }
 
     // assign horizontal positions by preorder traversal
-    for (const node of preorder(root)) {
+    for (const node of traverse(root, 'preorder')) {
         if (node.parent === null) {
             // assign root to x=0
             node.x = 0.;
@@ -187,7 +150,7 @@ function rectLayout(root) {
 function fortify(tree, sort=true) {
     var df = [];
 
-    for (const node of preorder(tree)) {
+    for (const node of traverse(tree, 'preorder')) {
         if (node.parent === null) {
             df.push({
                 'parentId': null,
@@ -238,7 +201,6 @@ function edges(df, rectangular=false) {
 
     for (const row of df) {
         if (row.parentId === null) {
-            console.log('skip root')
             continue  // skip the root
         }
         parent = df[row.parentId];
@@ -290,7 +252,7 @@ function drawtree(timetree) {
       xAxis = d3.axisBottom(xScale);
 
     var yValue = function(d) { return d.y; },
-      yScale = d3.scaleLinear().range([height, 0]),
+      yScale = d3.scaleLinear().range([height, 0]),  // inversion
       yMap = function(d) { return yScale(yValue(d)); },
       yMap1 = function(d) { return yScale(d.y1); },
       yMap2 = function(d) { return yScale(d.y2); },
@@ -299,27 +261,22 @@ function drawtree(timetree) {
     // generate tree layout (x, y coordinates
     rectLayout(timetree);
 
-    df = fortify(timetree),
-      edgeset = edges(df, rectangular=true);
+    var df = fortify(timetree),
+        edgeset = edges(df, rectangular=true);
 
     // add buffer to data domain
     xScale.domain([
-        d3.min(df, xValue)-1, d3.max(df, xValue)+1
-    ])
+        d3.min(df, xValue)-0.05, d3.max(df, xValue)+0.05
+    ]);
     yScale.domain([
         d3.min(df, yValue)-1, d3.max(df, yValue)+1
-    ])
+    ]);
 
     // draw x-axis
     svg.append("g")
       .attr("class", "x axis")
       .attr("transform", "translate(0," + height + ")")
       .call(xAxis);
-
-    // draw y-axis
-    svg.append("g")
-      .attr("class", "y axis")
-      .call(yAxis);
 
     // draw lines
     svg.selectAll("lines")
