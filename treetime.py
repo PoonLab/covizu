@@ -4,10 +4,15 @@ import json
 from gotoh2 import iter_fasta
 from tempfile import NamedTemporaryFile
 import sys
+import math
 
 
 def filter_fasta(fasta_file, json_file, cutoff=10):
     """
+    Filter the variants FASTA file for genomes representing clusters
+    identified by hierarchical clustering (hclust.R).  Add variants
+    that are observed N > [cutoff] times in the data.
+
     :param fasta_file:  path to FASTA file containing cluster sequences
     :param json_file:  path to JSON file with cluster information
     :return:  dict, filtered header-sequence pairs
@@ -51,11 +56,13 @@ def fasttree(fasta):
     return stdout.decode('utf-8')
 
 
-def treetime(nwk, fasta, outdir):
+def treetime(nwk, fasta, outdir, clock=None):
     """
     :param nwk: str, Newick tree string from fasttree()
     :param fasta: dict, header-sequence pairs
     :param outdir:  path to write output files
+    :param clock: float, clock rate to constrain analysis - defaults
+                  to None (no constraint)
     :return:  path to NEXUS output file
     """
     # extract dates from sequence headers
@@ -73,9 +80,12 @@ def treetime(nwk, fasta, outdir):
     with NamedTemporaryFile('w', delete=False) as nwkfile:
         nwkfile.write(nwk.replace(' ', ''))
 
-    check_call(['treetime', '--tree', nwkfile.name,
-                '--aln', alnfile.name, '--dates', datefile.name,
-                '--outdir', outdir])
+    call = ['treetime', '--tree', nwkfile.name,
+            '--aln', alnfile.name, '--dates', datefile.name,
+            '--outdir', outdir]
+    if clock:
+        call.extend(['--clock-rate', clock])
+    check_call(call)
 
     nexus_file = os.path.join(outdir, 'timetree.nexus')
     if not os.path.exists(nexus_file):
@@ -97,9 +107,12 @@ def parse_args():
                         default=open('data/variants.fa'),
                         help='input, FASTA file with unique variant '
                              'sequences')
-    parser.add_argument('--mincount', type=int, default=10,
-                        help='option, minimum count of variant to be '
-                             'added to tree')
+    parser.add_argument('--mincount', type=int, default=math.inf,
+                        help='optional, minimum count of variant to be '
+                             'added to tree (default: infinity)')
+    parser.add_argument('--clock', type=float, default=8e-4,
+                        help='optional, specify molecular clock rate for '
+                             'constraining Treetime analysis (default 8e-4).')
     parser.add_argument('--outdir', default='treetime/',
                         help='directory to write TreeTime output files')
     return parser.parse_args()

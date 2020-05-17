@@ -79,8 +79,7 @@ function readTree(text) {
         curnode.id = nodeId;
     }
 
-    drawtree(root);
-    return(root);
+    return (drawtree(root));
 }
 
 //var s = "(A:0.1,B:0.2,(C:0.3,D:0.4)E:0.5)F;";
@@ -141,8 +140,8 @@ function rectLayout(root) {
 
 
 /**
- * Convert parsed Newick tree from readTree() into data
- * frame.
+ * Convert parsed Newick tree from readTree() into more convenient
+ * tabular data frame.
  * @param {object} tree: Return value of readTree
  * @param {boolean} sort: if true, sort data frame by node name
  * @return Array of Objects
@@ -190,6 +189,14 @@ function fortify(tree, sort=true) {
 }
 
 
+/**
+ * Generate edge list with x,y coordinates extracted from the
+ * respective nodes.
+ * @param {Array} df:  tabular data frame from fortify()
+ * @param {boolean} rectangular:  if true, draw two line segments connected
+ *                                by right angle
+ * @returns {Array}
+ */
 function edges(df, rectangular=false) {
     var result = [],
         parent, pair;
@@ -233,27 +240,29 @@ function edges(df, rectangular=false) {
 }
 
 
+/**
+ * Draw time-scaled tree in SVG
+ * @param {Object} timetree:  time-scaled phylogenetic tree imported as JSON
+ * @returns {Array}  data frame
+ */
 function drawtree(timetree) {
-    var margin = {top: 10, right: 10, bottom: 10, left: 10},
-      width = 1200,
-      height = 400,
-      svg = d3.select("div#svg-timetree")
-        .append("svg")
-        .attr("width", width)
-        .attr("height", height)
-        .append("g");
+    var width = 900,
+        height = 400,
+        svg = d3.select("div#svg-timetree")
+          .append("svg")
+          .attr("width", width)
+          .attr("height", height)
+          .append("g");
 
     // set up plotting scales
     var xValue = function(d) { return d.x; },
       xScale = d3.scaleLinear().range([0, width]),
-      xMap = function(d) { return xScale(xValue(d)); },  // points
       xMap1 = function(d) { return xScale(d.x1); },  // lines
       xMap2 = function(d) { return xScale(d.x2); },
       xAxis = d3.axisBottom(xScale);
 
     var yValue = function(d) { return d.y; },
       yScale = d3.scaleLinear().range([height, 0]),  // inversion
-      yMap = function(d) { return yScale(yValue(d)); },
       yMap1 = function(d) { return yScale(d.y1); },
       yMap2 = function(d) { return yScale(d.y2); },
       yAxis = d3.axisLeft(yScale);
@@ -290,4 +299,37 @@ function drawtree(timetree) {
       .attr("stroke-width", 2)
       .attr("stroke", "#777");
 
+    return(df);
+}
+
+
+/**
+ * Add subtree objects to time-scaled tree.
+ * @param {Array} df
+ * @param {Object} clusters
+ */
+function draw_clusters(df, clusters) {
+    var svg = document.querySelector("#svg-timetree > svg");
+
+    var xValue = function(d) { return d.x; },
+        xScale = d3.scaleLinear().range([0, width]),
+        xMap = function(d) { return xScale(xValue(d)); };  // points
+
+    var yValue = function(d) { return d.y; },
+        yScale = d3.scaleLinear().range([height, 0]),  // inversion
+        yMap = function(d) { return yScale(yValue(d)); };
+
+    for (const cluster in clusters) {
+        var labels = Object.keys(cluster['nodes']),
+            root = df.filter(x => x.thisLabel == labels[0])[0],
+            origin = new Date(cluster[root]['coldate']),
+            dt;
+
+        // find most recent sample collection date
+        var coldates = Array();
+        for (const label in labels) {
+            var variant = cluster['nodes'][label];
+            coldates.push(variant.filter(x => x['coldate']));
+        }
+    }
 }

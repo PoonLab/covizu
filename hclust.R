@@ -69,7 +69,7 @@ result <- lapply(1:max(clusters), function(i) {
       nodes[[node]] <- temp[c('label1', 'region', 'country', 'coldate')]
     }
 
-    list(nodes=nodes, edges=edges)  
+    list(qnodes=nodes, edges=edges)
   }
 })
 

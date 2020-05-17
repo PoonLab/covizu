@@ -35,21 +35,24 @@
     <script src="js/phylo.js"></script>
     <script>
         // load time-scaled phylogeny (treetime.py) from server
-        var timetree;
+        var df;
         $.ajax({
             url: "/treetime/timetree.nwk",
             success: function(data) {
-              timetree = readTree(data);
+              df = readTree(data);
             }
         });
         // load cluster data (hclust.R) from server
         var clusters;
         $.ajax({
           url: "/data/clusters.json",
-          success: function(data) { clusters = data; }
+          success: function(data) {
+            clusters = data;
+            //draw_clusters(df, clusters);
+          }
         })
     </script>
 
-    <script src="js/cluster.js"></script>
+    <script src="js/beadplot.js"></script>
 </body>
 </html>
