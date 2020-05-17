@@ -51,13 +51,12 @@ result <- lapply(1:max(clusters), function(i) {
       children <- temp[!is.element(temp, c(node, parent))]
       
       for (child in children) {
-        edges <- c(edges, node, child)  
+        edges <- c(edges, node, child)
         edges <- traverse(child, node, edgelist, edges)
       }
       return(edges)
     }
     edges <- traverse(subroot, NA, edgelist)
-    edges <- matrix(edges, ncol=2, byrow=TRUE)
 
     # store variant data
     nodes <- list()
@@ -69,6 +68,10 @@ result <- lapply(1:max(clusters), function(i) {
       })
       nodes[[accn]] <- temp[c('label1', 'region', 'country', 'coldate')]
     }
+
+    # shorten edge list to accession numbers only
+    edges <- gsub("^.+(EPI_[A-Z]+_[0-9]+).+$", "\\1", edges)
+    edges <- matrix(edges, ncol=2, byrow=TRUE)
 
     list(nodes=nodes, edges=edges)
   }
