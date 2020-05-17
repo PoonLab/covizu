@@ -3,7 +3,7 @@ from subprocess import Popen, PIPE, check_call
 import json
 from gotoh2 import iter_fasta
 from tempfile import NamedTemporaryFile
-import sys
+import os
 import math
 
 
@@ -49,7 +49,8 @@ def fasttree(fasta):
     """
     in_str = ''
     for h, s in fasta.items():
-        in_str += '>{}\n{}\n'.format(h, s)
+        accn = h.split('|')[1]
+        in_str += '>{}\n{}\n'.format(accn, s)
     p = Popen(['fasttree2', '-nt', '-quote'], stdin=PIPE, stdout=PIPE)
     # TODO: exception handling with stderr?
     stdout, stderr = p.communicate(input=in_str.encode('utf-8'))
@@ -71,9 +72,9 @@ def treetime(nwk, fasta, outdir, clock=None):
     alnfile = NamedTemporaryFile('w', delete=False)
     for h, s in fasta.items():
         # TreeTime seems to have trouble handling labels with spaces
-        h = h.replace(' ', '')
-        datefile.write('{},{}\n'.format(h, h.split('|')[-1]))
-        alnfile.write('>{}\n{}\n'.format(h, s))
+        _, accn, coldate = h.split('|')
+        datefile.write('{},{}\n'.format(accn, coldate))
+        alnfile.write('>{}\n{}\n'.format(accn, s))
     datefile.close()
     alnfile.close()
 
@@ -84,7 +85,7 @@ def treetime(nwk, fasta, outdir, clock=None):
             '--aln', alnfile.name, '--dates', datefile.name,
             '--outdir', outdir]
     if clock:
-        call.extend(['--clock-rate', clock])
+        call.extend(['--clock-rate', str(clock)])
     check_call(call)
 
     nexus_file = os.path.join(outdir, 'timetree.nexus')
@@ -119,6 +120,6 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
-    fasta = filter_fasta(args.fasta, args.json)
+    fasta = filter_fasta(args.fasta, args.json, cutoff=args.mincount)
     nwk = fasttree(fasta)
-    treetime(nwk, fasta, args.outdir)
+    treetime(nwk, fasta, outdir=args.outdir, clock=args.clock)
