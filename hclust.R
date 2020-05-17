@@ -62,14 +62,15 @@ result <- lapply(1:max(clusters), function(i) {
     # store variant data
     nodes <- list()
     for (node in unique(edges)) {
+      accn <- strsplit(node, "\\|")[[1]][2]
       temp <- variants[variants$cluster==node, ]
       temp$label1 <- sapply(as.character(temp$label), function(x) {
         strsplit(x, "\\|")[[1]][1]
       })
-      nodes[[node]] <- temp[c('label1', 'region', 'country', 'coldate')]
+      nodes[[accn]] <- temp[c('label1', 'region', 'country', 'coldate')]
     }
 
-    list(qnodes=nodes, edges=edges)
+    list(nodes=nodes, edges=edges)
   }
 })
 

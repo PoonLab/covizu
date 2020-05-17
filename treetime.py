@@ -5,6 +5,11 @@ from gotoh2 import iter_fasta
 from tempfile import NamedTemporaryFile
 import os
 import math
+from Bio import Phylo
+from io import StringIO
+from datetime import date
+import re
+import sys
 
 
 def filter_fasta(fasta_file, json_file, cutoff=10):
@@ -18,7 +23,8 @@ def filter_fasta(fasta_file, json_file, cutoff=10):
     :return:  dict, filtered header-sequence pairs
     """
     result = {}
-    fasta = dict(list(iter_fasta(fasta_file)))
+    fasta = dict([(h.split('|')[1], {'sequence': s, 'label': h}) for
+                  h, s in iter_fasta(fasta_file)])
     clusters = json.load(json_file)
     for cluster in clusters:
         # record variant in cluster that is closest to root
@@ -27,15 +33,16 @@ def filter_fasta(fasta_file, json_file, cutoff=10):
             print(cluster['nodes'])
             continue
 
-        header = list(cluster['nodes'].keys())[0]
-        result.update({header: fasta[header]})
+        # first entry is representative variant
+        accn = list(cluster['nodes'].keys())[0]
+        result.update({fasta[accn]['label']: fasta[accn]['sequence']})
 
-        # extract variants in cluster that have high counts
+        # extract other variants in cluster that have high counts
         major = [label for label, samples in
                  cluster['nodes'].items() if
-                 len(samples) > cutoff and label != header]
+                 len(samples) > cutoff and label != accn]
         for label in major:
-            result.update({label: fasta[label]})
+            result.update({fasta[label]['label']: fasta[label]['sequence']})
 
     return result
 
@@ -95,6 +102,67 @@ def treetime(nwk, fasta, outdir, clock=None):
     return nexus_file
 
 
+def date2float(isodate):
+    """ Convert ISO date string to float """
+    year, month, day = map(int, isodate.split('-'))
+    dt = date(year, month, day)
+    origin = date(dt.year, 1, 1)
+    td = (dt-origin).days
+    return dt.year + td/365.25
+
+
+def parse_nexus(nexus_file, fasta, date_tol):
+    """
+    @param nexus_file:  str, path to write Newick tree string
+    @param fasta:  dict, {header: seq} from filter_fasta()
+    @param date_tol:  float, tolerance in tip date discordance
+    """
+    coldates = {}
+    for h, _ in fasta.items():
+        _, accn, coldate = h.split('|')
+        coldates.update({accn: date2float(coldate)})
+
+    # extract comment fields and store date estimates
+    pat = re.compile('([^)(,:]+):([0-9]+\.[0-9]+)\[[^d]+date=([0-9]+\.[0-9]+)\]')
+
+    # extract date estimates and internal node names
+    remove = []
+    with open(nexus_file) as handle:
+        for line in handle:
+            for m in pat.finditer(line):
+                node_name, branch_length, date_est = m.groups()
+                coldate = coldates.get(node_name, None)
+                if coldate and (float(date_est) - coldate) > date_tol:
+                    sys.stdout.write('removing {}:  {:0.3f} < {}\n'.format(
+                        node_name, coldate, date_est
+                    ))
+                    sys.stdout.flush()
+                    remove.append(node_name)
+
+    # second pass to excise all comment fields
+    pat = re.compile('\[&U\]|\[&mutations="[^"]*",date=[0-9]+\.[0-9]+\]')
+    nexus = ''
+    for line in open(nexus_file):
+        nexus += pat.sub('', line)
+
+    # read in tree to prune problematic tips
+    phy = Phylo.read(StringIO(nexus), format='nexus')
+    for node_name in remove:
+        phy.prune(node_name)
+
+    for node in phy.get_terminals():
+        node.comment = None
+
+    for node in phy.get_nonterminals():
+        if node.name is None and node.confidence:
+            node.name = node.confidence
+            node.confidence = None
+        node.comment = None
+
+    Phylo.write(phy, file=nexus_file.replace('.nexus', '.nwk'),
+                format='newick')
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Generate inputs for TreeTime analysis."
@@ -114,6 +182,11 @@ def parse_args():
     parser.add_argument('--clock', type=float, default=8e-4,
                         help='optional, specify molecular clock rate for '
                              'constraining Treetime analysis (default 8e-4).')
+    parser.add_argument('--datetol', type=float, default=0.1,
+                        help='optional, exclude tips from time-scaled tree '
+                             'with high discordance between estimated and '
+                             'known sample collection dates (year units,'
+                             'default: 0.1)')
     parser.add_argument('--outdir', default='treetime/',
                         help='directory to write TreeTime output files')
     return parser.parse_args()
@@ -123,4 +196,5 @@ if __name__ == '__main__':
     args = parse_args()
     fasta = filter_fasta(args.fasta, args.json, cutoff=args.mincount)
     nwk = fasttree(fasta)
-    treetime(nwk, fasta, outdir=args.outdir, clock=args.clock)
+    nexus_file = treetime(nwk, fasta, outdir=args.outdir, clock=args.clock)
+    parse_nexus(nexus_file, fasta, date_tol=args.datetol)
