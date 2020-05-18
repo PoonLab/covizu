@@ -1,3 +1,6 @@
+var width = 900,
+    height = 400;
+
 /**
  * Parse a Newick tree string into a doubly-linked
  * list of JS Objects.  Assigns node labels, branch
@@ -246,9 +249,7 @@ function edges(df, rectangular=false) {
  * @returns {Array}  data frame
  */
 function drawtree(timetree) {
-    var width = 900,
-        height = 400,
-        svg = d3.select("div#svg-timetree")
+     var svg = d3.select("div#svg-timetree")
           .append("svg")
           .attr("width", width)
           .attr("height", height)
@@ -309,6 +310,8 @@ function drawtree(timetree) {
  * @param {Object} clusters
  */
 function draw_clusters(df, clusters) {
+    console.log('in draw_clusters()');
+
     var svg = document.querySelector("#svg-timetree > svg");
 
     var xValue = function(d) { return d.x; },
@@ -319,17 +322,36 @@ function draw_clusters(df, clusters) {
         yScale = d3.scaleLinear().range([height, 0]),  // inversion
         yMap = function(d) { return yScale(yValue(d)); };
 
-    for (const cluster in clusters) {
+    // extract accession numbers from phylogeny data frame
+    var tip_labels = df.map(x => x.thisLabel);
+        //tip_accns = tip_labels.filter(x => x.startsWith("EPI"));
+
+    for (const cidx in clusters) {
+        var cluster = clusters[cidx];
+        if (cluster["nodes"].length == 1) {
+            continue
+        }
+
+        // find variant in cluster that matches a tip label
         var labels = Object.keys(cluster['nodes']),
-            root = df.filter(x => x.thisLabel == labels[0])[0],
-            origin = new Date(cluster[root]['coldate']),
-            dt;
+            root = tip_labels.filter(value => -1 !== labels.indexOf(value))[0],
+            root_idx = tip_labels.indexOf(root),
+            origin = new Date(cluster['nodes'][root][0]['coldate']);
 
         // find most recent sample collection date
-        var coldates = Array();
-        for (const label in labels) {
-            var variant = cluster['nodes'][label];
-            coldates.push(variant.filter(x => x['coldate']));
+        var coldates = Array(),
+            label, variant;
+        for (const i=0; i<labels.length; i++) {
+            label = labels[i];
+            variant = cluster['nodes'][label];
+            coldates = coldates.concat(variant.map(x => x.coldate));
         }
+        coldates.sort();  // in place, ascending order
+
+        var first_date = new Date(coldates[0]),
+            last_date = new Date(coldates[coldates.length-1]),
+            dt = (last_date - origin) / 3.154e10;  // convert ms to years
+
+
     }
 }

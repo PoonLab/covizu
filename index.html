@@ -42,15 +42,15 @@
               df = readTree(data);
             }
         });
+
         // load cluster data (hclust.R) from server
         var clusters;
-        $.ajax({
-          url: "/data/clusters.json",
-          success: function(data) {
-            clusters = data;
-            //draw_clusters(df, clusters);
-          }
-        })
+        var req = $.getJSON("/data/clusters.json", function(data) {
+          clusters = data;
+        });
+        req.done(function() {
+          draw_clusters(df, clusters);
+        });
     </script>
 
     <script src="js/beadplot.js"></script>

@@ -1,10 +1,17 @@
 require(igraph)
 require(jsonlite)
 
+# open TN93 distance matrix
 tn93 <- read.csv('data/variants.tn93.txt', skip=1, header=F)
-variants <- read.csv('data/variants.csv')
+stopifnot(nrow(tn93) == ncol(tn93))
 
-# read headers from FASTA
+# apply hierarchical clustering to distance matrix
+hc <- hclust(as.dist(tn93), method='ward.D')
+clusters <- cutree(hc, h=0.002)
+#hist(log10(table(clusters)), breaks=20, col='grey', border='white')
+
+
+# use regex to extract headers from FASTA
 headers <- rep(NA, times=nrow(tn93))
 con <- file('data/variants.fa', open='r')
 i <- 1
@@ -14,11 +21,10 @@ while (length(line <- readLines(con, n=1, warn=FALSE)) > 0) {
     i <- i + 1
   }
 }
+close(con)
+stopifnot(length(headers) == nrow(tn93))
 
-hc <- hclust(as.dist(tn93), method='ward.D')
-clusters <- cutree(hc, h=0.002)
-#hist(log10(table(clusters)), breaks=20, col='grey', border='white')
-
+# extract sample collection dates from headers
 dates <- as.Date(sapply(headers, function(x) {
   strsplit(x, "\\|")[[1]][3]
   }))
@@ -26,14 +32,26 @@ dates <- as.Date(sapply(headers, function(x) {
 # identify the earliest sample (Wuhan, IPBCAMS-WH-01)
 root <- which.min(dates)
 
+
+# open CSV with SARS-COV-2 genome variant information
+variants <- read.csv('data/variants.csv')
+stopifnot(all(is.element(variants$cluster, headers)))
+
+
 result <- lapply(1:max(clusters), function(i) {
-  # find node in cluster that is closest to root
-  idx <- which(clusters==i)
+  # extract cluster indices to map to headers vector
+  idx <- as.integer(which(clusters==i))
+  
   if (length(idx)==1) {
     list(nodes=headers[idx], edges=NA)
   } 
   else {
-    subroot <- headers[idx[which.min(tn93[root, idx])]]
+    # find earliest variant in cluster that is closest to root
+    min.dist <- min(tn93[root, idx])
+    candidates <- headers[idx[which(tn93[root, idx] == min.dist)]]
+    subroot <- candidates[which.min(sapply(candidates, function(x) { 
+      as.Date(strsplit(x, "\\|")[[1]][3])
+      }))]
     
     # generate minimum spanning tree
     mx <- as.matrix(tn93[idx, idx])
