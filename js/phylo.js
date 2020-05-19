@@ -1,5 +1,26 @@
-var width = 900,
-    height = 400;
+var margin = {top: 10, right: 10, bottom: 10, left: 10},
+    width = 900 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+// set up plotting scales
+var xValue = function(d) { return d.x; },
+  xScale = d3.scaleLinear().range([0, width]),
+  xMap1 = function(d) { return xScale(d.x1); },  // lines
+  xMap2 = function(d) { return xScale(d.x2); };
+
+var yValue = function(d) { return d.y; },
+  yScale = d3.scaleLinear().range([height, 0]),  // inversion
+  yMap1 = function(d) { return yScale(d.y1); },
+  yMap2 = function(d) { return yScale(d.y2); },
+  yMap = function(d) { return yScale(yValue(d)+0.4); };
+
+
+var vis = d3.select("div#svg-timetree")
+  .append("svg")
+  .attr("width", width + margin.left + margin.right)
+  .attr("height", height + margin.top + margin.bottom)
+  .append("g");
+
 
 /**
  * Parse a Newick tree string into a doubly-linked
@@ -248,33 +269,15 @@ function edges(df, rectangular=false) {
  * @param {Object} timetree:  time-scaled phylogenetic tree imported as JSON
  * @returns {Array}  data frame
  */
+
 function drawtree(timetree) {
-     var svg = d3.select("div#svg-timetree")
-          .append("svg")
-          .attr("width", width)
-          .attr("height", height)
-          .append("g");
-
-    // set up plotting scales
-    var xValue = function(d) { return d.x; },
-      xScale = d3.scaleLinear().range([0, width]),
-      xMap1 = function(d) { return xScale(d.x1); },  // lines
-      xMap2 = function(d) { return xScale(d.x2); },
-      xAxis = d3.axisBottom(xScale);
-
-    var yValue = function(d) { return d.y; },
-      yScale = d3.scaleLinear().range([height, 0]),  // inversion
-      yMap1 = function(d) { return yScale(d.y1); },
-      yMap2 = function(d) { return yScale(d.y2); },
-      yAxis = d3.axisLeft(yScale);
-
     // generate tree layout (x, y coordinates
     rectLayout(timetree);
 
     var df = fortify(timetree),
         edgeset = edges(df, rectangular=true);
 
-    // add buffer to data domain
+    // adjust d3 scales to data frame
     xScale.domain([
         d3.min(df, xValue)-0.05, d3.max(df, xValue)+0.05
     ]);
@@ -282,14 +285,8 @@ function drawtree(timetree) {
         d3.min(df, yValue)-1, d3.max(df, yValue)+1
     ]);
 
-    // draw x-axis
-    svg.append("g")
-      .attr("class", "x axis")
-      .attr("transform", "translate(0," + height + ")")
-      .call(xAxis);
-
     // draw lines
-    svg.selectAll("lines")
+    vis.selectAll("lines")
       .data(edgeset)
       .enter().append("line")
       .attr("class", "lines")
@@ -309,10 +306,11 @@ function drawtree(timetree) {
  * @param {Array} df
  * @param {Object} clusters
  */
+var tips;
 function draw_clusters(df, clusters) {
     // extract accession numbers from phylogeny data frame
-    var tip_labels = df.map(x => x.thisLabel);
-        //tip_accns = tip_labels.filter(x => x.startsWith("EPI"));
+    tips = df.filter(x => x.children.length==0);
+     var   tip_labels = tips.map(x => x.thisLabel);
 
     for (const cidx in clusters) {
         var cluster = clusters[cidx];
@@ -323,9 +321,9 @@ function draw_clusters(df, clusters) {
         // find variant in cluster that matches a tip label
         var labels = Object.keys(cluster['nodes']),
             root = tip_labels.filter(value => -1 !== labels.indexOf(value))[0],
-
-            // corresponding row in data frame
-            root_idx = tip_labels.indexOf(root);
+            root_idx = tip_labels.indexOf(root),  // row index in data frame
+            root_xcoord = tips[root_idx].x,
+            dt;
 
         // find most recent sample collection date
         var coldates = Array(),
@@ -338,21 +336,49 @@ function draw_clusters(df, clusters) {
         coldates.sort();  // in place, ascending order
 
         // augment data frame with cluster data
-        df[root_idx].cluster_idx = cidx;
-        df[root_idx].origin = new Date(cluster['nodes'][root][0]['coldate']);
-        df[root_idx].first_date = new Date(coldates[0]);
-        df[root_idx].last_date = new Date(coldates.length-1);
-            //dt = (last_date - origin) / 3.154e10;  // convert ms to years
-        df[root_idx].count = coldates.length;
+        tips[root_idx].cluster_idx = cidx;
+        tips[root_idx].count = coldates.length;
+
+        var origin = new Date(cluster['nodes'][root][0]['coldate']),
+            first_date = new Date(coldates[0]),
+            last_date = new Date(coldates[coldates.length-1]);
+        tips[root_idx].coldate = origin;
+        dt = (first_date - origin) / 3.154e10;  // convert ms to years
+        tips[root_idx].x1 = root_xcoord + dt;
+        dt = (last_date - origin) / 3.154e10;
+        tips[root_idx].x2 = root_xcoord + dt;
     }
 
-    var svg = document.querySelector("#svg-timetree > svg");
+    // draw x-axis
+    var xaxis_to_date = function(x) {
+        var origin = tips[0],
+          coldate = new Date(origin.coldate),
+          dx = x - origin.x;  // year units
+        coldate.setDate(coldate.getDate() + 365.25*dx)
+        return (coldate.toISOString().split('T')[0]);
+    };
 
-    var xValue = function(d) { return d.x; },
-      xScale = d3.scaleLinear().range([0, width]),
-      xMap = function(d) { return xScale(xValue(d)); };  // points
+    vis.append("g")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(xScale).tickFormat(d => xaxis_to_date(d)));
 
-    var yValue = function(d) { return d.y; },
-      yScale = d3.scaleLinear().range([height, 0]),  // inversion
-      yMap = function(d) { return yScale(yValue(d)); };
+
+    vis.selectAll("rect")
+      .data(tips)
+      .enter()
+      .append("rect")
+      .attr("x", xMap1)
+      .attr("y", yMap)
+      .attr("width", xMap2)
+      .attr("height", 8)
+      .attr("fill", "#000000")
+      .attr("fill-opacity", "0.25")
+      .on('mouseover', function() {
+          d3.select(this)
+            .attr("fill", "red");
+      })
+      .on("mouseout", function() {
+          d3.select(this)
+            .attr("fill", "#000000");
+      });
 }

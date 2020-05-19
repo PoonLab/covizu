@@ -5,3 +5,6 @@ body {
   font: .9em/1.2 Cabin, Lato, sans-serif;
 }
 
+.hover {
+  background-color: rgba(0, 0, 0, .5);
+}
