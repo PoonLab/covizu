@@ -335,23 +335,25 @@ function draw_clusters(df, clusters) {
         // find variant in cluster that matches a tip label
         var labels = Object.keys(cluster['nodes']),
             root = tip_labels.filter(value => -1 !== labels.indexOf(value))[0],
-            root_idx = tip_labels.indexOf(root),
-            origin = new Date(cluster['nodes'][root][0]['coldate']);
+
+            // corresponding row in data frame
+            root_idx = tip_labels.indexOf(root);
 
         // find most recent sample collection date
         var coldates = Array(),
             label, variant;
-        for (const i=0; i<labels.length; i++) {
+        for (var i=0; i<labels.length; i++) {
             label = labels[i];
             variant = cluster['nodes'][label];
             coldates = coldates.concat(variant.map(x => x.coldate));
         }
         coldates.sort();  // in place, ascending order
 
-        var first_date = new Date(coldates[0]),
-            last_date = new Date(coldates[coldates.length-1]),
-            dt = (last_date - origin) / 3.154e10;  // convert ms to years
-
-
+        // augment data frame with cluster data
+        df[root_idx].origin = new Date(cluster['nodes'][root][0]['coldate']);
+        df[root_idx].first_date = new Date(coldates[0]);
+        df[root_idx].last_date = new Date(coldates.length-1);
+            //dt = (last_date - origin) / 3.154e10;  // convert ms to years
+        df[root_idx].count = coldates.length;
     }
 }
