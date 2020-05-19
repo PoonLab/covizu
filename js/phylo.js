@@ -380,5 +380,9 @@ function draw_clusters(df, clusters) {
       .on("mouseout", function() {
           d3.select(this)
             .attr("fill", "#000000");
+      })
+      .on("click", function() {
+          vis.selectAll("rect").attr("fill", "black").attr("fill-opacity", "0.25")
+          d3.select(this).attr("fill-opacity", "0.5");
       });
 }
