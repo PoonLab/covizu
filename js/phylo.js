@@ -306,11 +306,10 @@ function drawtree(timetree) {
  * @param {Array} df
  * @param {Object} clusters
  */
-var tips;
 function draw_clusters(df, clusters) {
     // extract accession numbers from phylogeny data frame
-    tips = df.filter(x => x.children.length==0);
-     var   tip_labels = tips.map(x => x.thisLabel);
+    var tips = df.filter(x => x.children.length==0),
+        tip_labels = tips.map(x => x.thisLabel);
 
     for (const cidx in clusters) {
         var cluster = clusters[cidx];
@@ -352,10 +351,15 @@ function draw_clusters(df, clusters) {
     // draw x-axis
     var xaxis_to_date = function(x) {
         var origin = tips[0],
-          coldate = new Date(origin.coldate),
-          dx = x - origin.x;  // year units
+            coldate = new Date(origin.coldate),
+            dx = x - origin.x;  // year units
         coldate.setDate(coldate.getDate() + 365.25*dx)
         return (coldate.toISOString().split('T')[0]);
+    };
+    var date_to_xaxis = function(isodate) {
+        const origin = new Date(xaxis_to_date(0));
+        var coldate = new Date(isodate);
+        return ((coldate - origin) / 3.154e10);
     };
 
     vis.append("g")
@@ -385,7 +389,6 @@ function draw_clusters(df, clusters) {
           // reset all rectangles to high transparency
           vis.selectAll("rect").attr("fill-opacity", "0.25")
           d3.select(this).attr("fill-opacity", "0.5");
-          console.log(d);
-          beadplot(d);
+          beadplot(d.cluster_idx);
       });
 }
