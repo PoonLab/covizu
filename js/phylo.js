@@ -310,20 +310,9 @@ function drawtree(timetree) {
  * @param {Object} clusters
  */
 function draw_clusters(df, clusters) {
-    console.log('in draw_clusters()');
-
-    var svg = document.querySelector("#svg-timetree > svg");
-
-    var xValue = function(d) { return d.x; },
-        xScale = d3.scaleLinear().range([0, width]),
-        xMap = function(d) { return xScale(xValue(d)); };  // points
-
-    var yValue = function(d) { return d.y; },
-        yScale = d3.scaleLinear().range([height, 0]),  // inversion
-        yMap = function(d) { return yScale(yValue(d)); };
-
     // extract accession numbers from phylogeny data frame
-    var tip_labels = df.map(x => x.thisLabel);
+    var tips = df.filter(x => x.children.length==0),
+        tip_labels = tips.map(x => x.thisLabel);
         //tip_accns = tip_labels.filter(x => x.startsWith("EPI"));
 
     for (const cidx in clusters) {
@@ -356,4 +345,14 @@ function draw_clusters(df, clusters) {
             //dt = (last_date - origin) / 3.154e10;  // convert ms to years
         df[root_idx].count = coldates.length;
     }
+
+    var svg = document.querySelector("#svg-timetree > svg");
+
+    var xValue = function(d) { return d.x; },
+        xScale = d3.scaleLinear().range([0, width]),
+        xMap = function(d) { return xScale(xValue(d)); };  // points
+
+    var yValue = function(d) { return d.y; },
+        yScale = d3.scaleLinear().range([height, 0]),  // inversion
+        yMap = function(d) { return yScale(yValue(d)); };
 }
