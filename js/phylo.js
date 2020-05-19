@@ -310,18 +310,6 @@ function drawtree(timetree) {
  * @param {Object} clusters
  */
 function draw_clusters(df, clusters) {
-    console.log('in draw_clusters()');
-
-    var svg = document.querySelector("#svg-timetree > svg");
-
-    var xValue = function(d) { return d.x; },
-        xScale = d3.scaleLinear().range([0, width]),
-        xMap = function(d) { return xScale(xValue(d)); };  // points
-
-    var yValue = function(d) { return d.y; },
-        yScale = d3.scaleLinear().range([height, 0]),  // inversion
-        yMap = function(d) { return yScale(yValue(d)); };
-
     // extract accession numbers from phylogeny data frame
     var tip_labels = df.map(x => x.thisLabel);
         //tip_accns = tip_labels.filter(x => x.startsWith("EPI"));
@@ -350,10 +338,21 @@ function draw_clusters(df, clusters) {
         coldates.sort();  // in place, ascending order
 
         // augment data frame with cluster data
+        df[root_idx].cluster_idx = cidx;
         df[root_idx].origin = new Date(cluster['nodes'][root][0]['coldate']);
         df[root_idx].first_date = new Date(coldates[0]);
         df[root_idx].last_date = new Date(coldates.length-1);
             //dt = (last_date - origin) / 3.154e10;  // convert ms to years
         df[root_idx].count = coldates.length;
     }
+
+    var svg = document.querySelector("#svg-timetree > svg");
+
+    var xValue = function(d) { return d.x; },
+      xScale = d3.scaleLinear().range([0, width]),
+      xMap = function(d) { return xScale(xValue(d)); };  // points
+
+    var yValue = function(d) { return d.y; },
+      yScale = d3.scaleLinear().range([height, 0]),  // inversion
+      yMap = function(d) { return yScale(yValue(d)); };
 }
