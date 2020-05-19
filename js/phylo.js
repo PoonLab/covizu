@@ -371,7 +371,7 @@ function draw_clusters(df, clusters) {
       .attr("y", yMap)
       .attr("width", xMap2)
       .attr("height", 8)
-      .attr("fill", "#000000")
+      .attr("fill", "#6a5acd")
       .attr("fill-opacity", "0.25")
       .on('mouseover', function() {
           d3.select(this)
@@ -379,10 +379,13 @@ function draw_clusters(df, clusters) {
       })
       .on("mouseout", function() {
           d3.select(this)
-            .attr("fill", "#000000");
+            .attr("fill", "#6a5acd");
       })
-      .on("click", function() {
-          vis.selectAll("rect").attr("fill", "black").attr("fill-opacity", "0.25")
+      .on("click", function(d) {
+          // reset all rectangles to high transparency
+          vis.selectAll("rect").attr("fill-opacity", "0.25")
           d3.select(this).attr("fill-opacity", "0.5");
+          console.log(d);
+          beadplot(d);
       });
 }
