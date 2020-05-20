@@ -1,15 +1,19 @@
-var marginB = {top: 10, right: 10, bottom: 10, left: 10},
+var marginB = {top: 50, right: 10, bottom: 50, left: 10},
     widthB = 900 - marginB.left - marginB.right,
-    heightB = 500 - marginB.top - marginB.bottom;
+    heightB = 900 - marginB.top - marginB.bottom;
 
 // set up plotting scales
-var xValueB = function(d) { return d.x; },
+var xValueB = function(d) { return d.x },
+  xValue1B = function(d) { return d.x1; },
+  xValue2B =  function(d) { return d.x2; },
   xScaleB = d3.scaleLinear().range([0, widthB]),
   xMap1B = function(d) { return xScaleB(d.x1); },
-  xMap2B = function(d) { return xScaleB(d.x2); };
+  xMap2B = function(d) { return xScaleB(d.x2); },
+  xMapB = function(d) { return xScaleB(xValueB(d)); };
 
 var yValueB = function(d) { return d.y; },
-  yScaleB = d3.scaleLinear().range([heightB, 0]),  // inversion
+  yValue1B = function(d) { return d.y1; },
+  yScaleB = d3.scaleLinear().range([0, heightB]),  // inversion
   yMap1B = function(d) { return yScaleB(d.y1); },
   yMap2B = function(d) { return yScaleB(d.y2); },
   yMapB = function(d) { return yScaleB(yValueB(d)); };
@@ -58,10 +62,11 @@ function parse_clusters(clusters) {
       variants.push({
         'accession': accn,
         'label': variant[0].label1,
-        'mindate': new Date(coldates[0]),  // x1
-        'maxdate': new Date(coldates[coldates.length-1]),  // x2
+        'x1': new Date(coldates[0]),  // min date
+        'x2': new Date(coldates[coldates.length-1]),  // max date
         'count': coldates.length,
-        'y': y
+        'y1': y,  // horizontal line segment
+        'y2': y
       });
 
       var isodates = coldates.filter(onlyUnique),
@@ -88,9 +93,10 @@ function parse_clusters(clusters) {
       parent = variants.filter(x => x.accession == edge[0])[0];
       child = variants.filter(x => x.accession == edge[1])[0];
       edgelist.push({
-        'y1': parent.y,
-        'y2': child.y,
-        'mindate': child.mindate  // x-coordinate
+        'y1': parent.y1,
+        'y2': child.y1,
+        'x1': child.x1,  // vertical line segment
+        'x2': child.x1
       });
     }
 
@@ -98,4 +104,56 @@ function parse_clusters(clusters) {
   }
 
   return(beaddata);
+}
+
+
+/**
+ * Draw the beadplot for a specific cluster (identified through its
+ * integer index <cid>) in the SVG.
+ * @param cid
+ */
+function beadplot(cid) {
+
+  var variants = beaddata[cid].variants,
+      edgelist = beaddata[cid].edgelist,
+      points = beaddata[cid].points;
+
+  // set plotting domain
+  xScaleB.domain([d3.min(variants, xValue1B), d3.max(variants, xValue2B)]);
+  yScaleB.domain([
+    d3.min(variants, yValue1B)-1, d3.max(variants, yValue1B)+1
+  ]);
+
+  visB.selectAll('*').remove();
+
+  visB.selectAll("lines")
+    .data(variants)
+    .enter().append("line")
+    .attr("class", "lines")
+    .attr("x1", xMap1B)
+    .attr("x2", xMap2B)
+    .attr("y1", yMap1B)
+    .attr("y2", yMap2B)
+    .attr("stroke-width", 3)
+    .attr("stroke", "#777");
+
+  visB.selectAll("lines")
+    .data(edgelist)
+    .enter().append("line")
+    .attr("class", "lines")
+    .attr("x1", xMap1B)
+    .attr("x2", xMap2B)
+    .attr("y1", yMap1B)
+    .attr("y2", yMap2B)
+    .attr("stroke-width", 1)
+    .attr("stroke", "#777");
+
+  visB.selectAll("circle")
+    .data(points)
+    .enter().append("circle")
+    .attr("r", function(d) { return (4*Math.sqrt(d.count)); })
+    .attr("cx", xMapB)
+    .attr("cy", yMapB)
+    .attr("fill", "white")
+    .attr("stroke", "black");
 }
