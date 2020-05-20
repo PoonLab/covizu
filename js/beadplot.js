@@ -22,16 +22,24 @@ var visB = d3.select("div#svg-cluster")
   .append("g");
 
 
+// https://stackoverflow.com/questions/1960473/get-all-unique-values-in-a-javascript-array-remove-duplicates
+function onlyUnique(value, index, self) {
+  return self.indexOf(value) === index;
+}
+
 /**
  * Parse node and edge data from clusters JSON to a format that is
  * easier to map to SVG.
  * @param {Object} clusters:
  */
 function parse_clusters(clusters) {
-  var cluster, variant, coldates, variants, edgelist, beaddata = [];
+  var cluster, variant, coldates,
+      variants,  // horizontal line segment data + labels
+      edgelist,  // vertical line segment data
+      points,  // the "beads"
+      beaddata = [];  // return value
 
-  for (var cidx=0; cidx < clusters.length; cidx++) {
-    variants = [];
+  for (var cidx = 0; cidx < clusters.length; cidx++) {
     cluster = clusters[cidx];
     if (cluster.nodes.length == 1) {
       console.log('skip '+ cluster.nodes);
@@ -39,22 +47,40 @@ function parse_clusters(clusters) {
     }
 
     // extract the date range for each variant in cluster
-    var count = 1;
+    var y = 1;
+    variants = [];
+    points = [];
     for (const accn in cluster.nodes) {
       variant = cluster.nodes[accn];
-
-      coldates = variant.map(x => new Date(x.coldate));
+      coldates = variant.map(x => x.coldate);
       coldates.sort();
+
       variants.push({
         'accession': accn,
         'label': variant[0].label1,
-        'mindate': coldates[0],
-        'maxdate': coldates[coldates.length-1],
-        'y': count++  // assign then increment
+        'mindate': new Date(coldates[0]),  // x1
+        'maxdate': new Date(coldates[coldates.length-1]),  // x2
+        'count': coldates.length,
+        'y': y
       });
+
+      var isodates = coldates.filter(onlyUnique),
+          isodate, count;
+
+      for (var i=0; i<isodates.length; i++) {
+        isodate = isodates[i];
+        count = coldates.filter(x => x == isodate).length;
+        // TODO: store labels, country data for each point
+        points.push({
+          'x': new Date(isodate),
+          'y': y,
+          'count': count
+        })
+      }
+      y++;
     }
 
-    // map earliest collection dates to vertical edges
+    // map earliest collection date of child node to vertical edges
     var edge, parent, child;
     edgelist = [];
     for (var e = 0; e < cluster.edges.length; e++) {
@@ -62,13 +88,13 @@ function parse_clusters(clusters) {
       parent = variants.filter(x => x.accession == edge[0])[0];
       child = variants.filter(x => x.accession == edge[1])[0];
       edgelist.push({
-        'parent': parent.accession,
-        'child': child.accession,
-        'mindate': parent.mindate < child.mindate ? parent.mindate : child.mindate
+        'y1': parent.y,
+        'y2': child.y,
+        'mindate': child.mindate  // x-coordinate
       });
     }
 
-    beaddata.push({'variants': variants, 'edgelist': edgelist})
+    beaddata.push({'variants': variants, 'edgelist': edgelist, 'points': points})
   }
 
   return(beaddata);
