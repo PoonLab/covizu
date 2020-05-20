@@ -56,11 +56,12 @@
         });
 
         // load cluster data (hclust.R) from server
-        var clusters;
+        var clusters, beaddata;
         var req = $.getJSON("/data/clusters.json", function(data) {
           clusters = data;
         });
         req.done(function() {
+          beaddata = parse_clusters(clusters);
           draw_clusters(df, clusters);
         });
     </script>

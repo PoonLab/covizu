@@ -391,6 +391,6 @@ function draw_clusters(df, clusters) {
           // reset all rectangles to high transparency
           vis.selectAll("rect").attr("fill-opacity", "0.25")
           d3.select(this).attr("fill-opacity", "0.67");
-          beadplot(d.cluster_idx);
+          //beadplot(d.cluster_idx);
       });
 }

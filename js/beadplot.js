@@ -21,23 +21,55 @@ var visB = d3.select("div#svg-cluster")
   .attr("height", heightB + marginB.top + marginB.bottom)
   .append("g");
 
+
 /**
- *
- * @param {Number} cid:  integer index of cluster to draw
+ * Parse node and edge data from clusters JSON to a format that is
+ * easier to map to SVG.
+ * @param {Object} clusters:
  */
-function beadplot(cid) {
-  var cluster = clusters[cid];
-  if (cluster === undefined) {
-    alert("Unknown cluster ID " + cid);
+function parse_clusters(clusters) {
+  var cluster, variant, coldates, variants, edgelist, beaddata = [];
+
+  for (var cidx=0; cidx < clusters.length; cidx++) {
+    variants = [];
+    cluster = clusters[cidx];
+    if (cluster.nodes.length == 1) {
+      console.log('skip '+ cluster.nodes);
+      continue;
+    }
+
+    // extract the date range for each variant in cluster
+    var count = 1;
+    for (const accn in cluster.nodes) {
+      variant = cluster.nodes[accn];
+
+      coldates = variant.map(x => new Date(x.coldate));
+      coldates.sort();
+      variants.push({
+        'accession': accn,
+        'label': variant[0].label1,
+        'mindate': coldates[0],
+        'maxdate': coldates[coldates.length-1],
+        'y': count++  // assign then increment
+      });
+    }
+
+    // map earliest collection dates to vertical edges
+    var edge, parent, child;
+    edgelist = [];
+    for (var e = 0; e < cluster.edges.length; e++) {
+      edge = cluster.edges[e];
+      parent = variants.filter(x => x.accession == edge[0])[0];
+      child = variants.filter(x => x.accession == edge[1])[0];
+      edgelist.push({
+        'parent': parent.accession,
+        'child': child.accession,
+        'mindate': parent.mindate < child.mindate ? parent.mindate : child.mindate
+      });
+    }
+
+    beaddata.push({'variants': variants, 'edgelist': edgelist})
   }
 
-  var variant,
-      coldates,
-      beaddata = Array();
-  for (const accn in cluster.nodes) {
-    variant = cluster.nodes[accn];
-    coldates = variant.map(x => xfunc(x.coldate));
-    coldates.sort();
-    beaddata.push({})
-  }
+  return(beaddata);
 }
