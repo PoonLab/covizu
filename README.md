@@ -1,25 +1,12 @@
 # CoVizu: Real-time visualization of SARS-COV-2 genomic diversity
 
-## Objectives
-
-The objectives of this project are:
-
-1. to develop an open-source toolset to efficiently analyze the entire contents of the GISAID SARS-CoV-2 database (making perpetual updates feasible as new genome data become available), and;
-
-2. to generate data visualizations for the purpose of distinguishing between cases of ongoing community transmission versus the new importation of infection from other countries.
-
-3. to continually update these visualizations with new genomic data to identify potentially actionable features for public health.
-
-
-## Summary
-
 CoVizu is an open source project to develop a `near real time' SARS-CoV-2 genome analysis and visualization system that highlights potential cases of importation from other countries or ongoing community transmission.
 
 The current mode of visualization employed by CoVizu that we are tentatively referring to as a "beadplot":
 ![](vignettes/beadplot.png)
 
 
-#### How to read a beadplot:
+### How to read a beadplot:
 
 * Each horizontal line segment represents a unique SARS-CoV-2 genomic sequence variant.  The emergence of a single new mutation in an infection is sufficient to establish a new variant.  A given variant may be observed multiple times as identical genome sequences, where `identity' is loosely defined to accommodate genomes with incomplete coverage and ambiguous base calls.  (Following GISAID's definition of a "complete genome", we require a minimum sequence length of 29,000 nt.)
 
@@ -35,7 +22,7 @@ The current mode of visualization employed by CoVizu that we are tentatively ref
 
 * Vertical lines connect variants that are related by a minimum spanning tree, which gives a *rough* approximation of transmission links.  The variant at the bottom terminus of the vertical line is the putative source.  
 
-It is not feasible to reconstruct accurate links using only genomic data.  However, our objective is to identify population-level events like importations into Canada, not to attribute a transmission to a specific source individual.
+**It is not feasible to reconstruct accurate links using only genomic data.**  However, our objective is to identify population-level events like importations into Canada, not to attribute a transmission to a specific source individual.
 
 * Circles that are the first "bead" on the horizontal line are related to the same ancestral variant if they intersect the same vertical line.  This scenario implies that multiple lineages descend from the same ancestor.
 
@@ -48,7 +35,7 @@ It is not feasible to reconstruct accurate links using only genomic data.  Howev
 
 1. Sequences are bulk downloaded from the GISAID database.  All developers have signed the GISAID data access agreement, and sequences are not being re-distributed.
 
-2. Sequences are aligned pairwise against the SARS-COV-2 reference genome using the Procrustean method implemented in [gotoh2](http://github.com/ArtPoon/gotoh2).  This module provides a method that progressively updates an existing alignment file with new sequence records, avoiding the re-alignment of previously released genomes.
+2. Sequences are aligned pairwise against the SARS-COV-2 reference genome using the Procrustean method implemented in [gotoh2](http://github.com/ArtPoon/gotoh2) - see `updater.py`.  This module provides a method that progressively updates an existing alignment file with new sequence records, avoiding the re-alignment of previously released genomes.
 
 3. Sequences are filtered using `filtering.py` for entries that are derived from non-human sources, incomplete genomes, and genomes that contain >5% fully ambiguous base calls (`N`s).
 
