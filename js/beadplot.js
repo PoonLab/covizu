@@ -31,12 +31,13 @@ function beadplot(cid) {
     alert("Unknown cluster ID " + cid);
   }
 
-  var variant, coldates, y = 1,
-      node_to_y = Object();
+  var variant,
+      coldates,
+      beaddata = Array();
   for (const accn in cluster.nodes) {
     variant = cluster.nodes[accn];
     coldates = variant.map(x => xfunc(x.coldate));
     coldates.sort();
-
+    beaddata.push({})
   }
 }

@@ -6,7 +6,8 @@ var margin = {top: 10, right: 10, bottom: 10, left: 10},
 var xValue = function(d) { return d.x; },
   xScale = d3.scaleLinear().range([0, width]),
   xMap1 = function(d) { return xScale(d.x1); },  // lines
-  xMap2 = function(d) { return xScale(d.x2); };
+  xMap2 = function(d) { return xScale(d.x2); },
+  xWide = function(d) { return xScale(d.x2 - d.x1)};
 
 var yValue = function(d) { return d.y; },
   yScale = d3.scaleLinear().range([height, 0]),  // inversion
@@ -341,6 +342,7 @@ function draw_clusters(df, clusters) {
         var origin = new Date(cluster['nodes'][root][0]['coldate']),
             first_date = new Date(coldates[0]),
             last_date = new Date(coldates[coldates.length-1]);
+
         tips[root_idx].coldate = origin;
         dt = (first_date - origin) / 3.154e10;  // convert ms to years
         tips[root_idx].x1 = root_xcoord + dt;
@@ -373,7 +375,7 @@ function draw_clusters(df, clusters) {
       .append("rect")
       .attr("x", xMap1)
       .attr("y", yMap)
-      .attr("width", xMap2)
+      .attr("width", xWide)
       .attr("height", 8)
       .attr("fill", "#6a5acd")
       .attr("fill-opacity", "0.25")
@@ -388,7 +390,7 @@ function draw_clusters(df, clusters) {
       .on("click", function(d) {
           // reset all rectangles to high transparency
           vis.selectAll("rect").attr("fill-opacity", "0.25")
-          d3.select(this).attr("fill-opacity", "0.5");
+          d3.select(this).attr("fill-opacity", "0.67");
           beadplot(d.cluster_idx);
       });
 }
