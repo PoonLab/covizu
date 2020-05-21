@@ -1,4 +1,4 @@
-var marginB = {top: 50, right: 10, bottom: 50, left: 10},
+var marginB = {top: 50, right: 50, bottom: 50, left: 50},
     widthB = 900 - marginB.left - marginB.right,
     heightB = 900 - marginB.top - marginB.bottom;
 
@@ -50,11 +50,14 @@ function parse_clusters(clusters) {
       continue;
     }
 
+    // deconvolute edge list to get node list in preorder
+    var nodelist = cluster.edges.flat().filter(onlyUnique);
+
     // extract the date range for each variant in cluster
     var y = 1;
     variants = [];
     points = [];
-    for (const accn in cluster.nodes) {
+    for (const accn of nodelist) {
       variant = cluster.nodes[accn];
       coldates = variant.map(x => x.coldate);
       coldates.sort();
@@ -98,6 +101,14 @@ function parse_clusters(clusters) {
         'x1': child.x1,  // vertical line segment
         'x2': child.x1
       });
+
+      // update variant time range
+      if (parent.x1 > child.x1) {
+        parent.x1 = child.x1;
+      }
+      if (parent.x2 < child.x1) {
+        parent.x2 = child.x1;
+      }
     }
 
     beaddata.push({'variants': variants, 'edgelist': edgelist, 'points': points})
@@ -113,13 +124,16 @@ function parse_clusters(clusters) {
  * @param cid
  */
 function beadplot(cid) {
+  console.log(cid);
 
   var variants = beaddata[cid].variants,
       edgelist = beaddata[cid].edgelist,
       points = beaddata[cid].points;
 
   // set plotting domain
-  xScaleB.domain([d3.min(variants, xValue1B), d3.max(variants, xValue2B)]);
+  xScaleB.domain([
+    d3.min(variants, xValue1B), d3.max(variants, xValue2B)
+  ]);
   yScaleB.domain([
     d3.min(variants, yValue1B)-1, d3.max(variants, yValue1B)+1
   ]);
@@ -136,6 +150,16 @@ function beadplot(cid) {
     .attr("y2", yMap2B)
     .attr("stroke-width", 3)
     .attr("stroke", "#777");
+
+  visB.selectAll("text")
+    .data(variants)
+    .enter().append("text")
+    .style("font-size", "10px")
+    .attr("text-anchor", "end")
+    .attr("alignment-baseline", "middle")
+    .attr("x", function(d) { return(xScaleB(d.x1)); })
+    .attr("y", function(d) { return(yScaleB(d.y1)); })
+    .text(function(d) { return(d.label); });
 
   visB.selectAll("lines")
     .data(edgelist)

@@ -2,10 +2,12 @@ require(igraph)
 require(jsonlite)
 
 # open TN93 distance matrix
+cat("loading TN93 distance matrix\n")
 tn93 <- read.csv('data/variants.tn93.txt', skip=1, header=F)
 stopifnot(nrow(tn93) == ncol(tn93))
 
 # apply hierarchical clustering to distance matrix
+cat("hierarchical clustering\n")
 hc <- hclust(as.dist(tn93), method='ward.D')
 clusters <- cutree(hc, h=0.002)
 #hist(log10(table(clusters)), breaks=20, col='grey', border='white')
@@ -39,6 +41,8 @@ stopifnot(all(is.element(variants$cluster, headers)))
 
 
 result <- lapply(1:max(clusters), function(i) {
+  cat ('.')
+  
   # extract cluster indices to map to headers vector
   idx <- as.integer(which(clusters==i))
   
@@ -63,13 +67,16 @@ result <- lapply(1:max(clusters), function(i) {
     el <- get.edgelist(g.mst)
     
     traverse <- function(node, parent, edgelist, edges=c()) {
+      if (!is.na(parent)) {
+        edges <- c(edges, parent, node)  
+      }
+      
       # get local edges
       temp <- el[apply(el, 1, function(e) is.element(node, e)), ]
       temp <- unique(as.vector(temp))
       children <- temp[!is.element(temp, c(node, parent))]
       
       for (child in children) {
-        edges <- c(edges, node, child)
         edges <- traverse(child, node, edgelist, edges)
       }
       return(edges)
@@ -94,7 +101,7 @@ result <- lapply(1:max(clusters), function(i) {
     list(nodes=nodes, edges=edges)
   }
 })
-
+cat ('\nwriting JSON file\n')
 write(toJSON(result, pretty=TRUE), file="data/clusters.json")
 
 # record subroots
