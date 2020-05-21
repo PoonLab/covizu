@@ -1,6 +1,6 @@
 var marginB = {top: 50, right: 50, bottom: 50, left: 50},
-    widthB = 900 - marginB.left - marginB.right,
-    heightB = 900 - marginB.top - marginB.bottom;
+    widthB = 400 - marginB.left - marginB.right,
+    heightB = 800 - marginB.top - marginB.bottom;
 
 // set up plotting scales
 var xValueB = function(d) { return d.x },
@@ -25,6 +25,7 @@ var visB = d3.select("div#svg-cluster")
   .attr("height", heightB + marginB.top + marginB.bottom)
   .append("g");
 
+const regex = /^hCoV-19\/.+\/.+\/20[0-9]{2}$/g;
 
 // https://stackoverflow.com/questions/1960473/get-all-unique-values-in-a-javascript-array-remove-duplicates
 function onlyUnique(value, index, self) {
@@ -47,6 +48,7 @@ function parse_clusters(clusters) {
     cluster = clusters[cidx];
     if (cluster.nodes.length == 1) {
       console.log('skip '+ cluster.nodes);
+      beaddata.push({'variants': [], 'edgelist': [], 'points': []})
       continue;
     }
 
@@ -143,7 +145,7 @@ function beadplot(cid) {
   visB.selectAll("lines")
     .data(variants)
     .enter().append("line")
-    .attr("class", "lines")
+    .attr(  "class", "lines")
     .attr("x1", xMap1B)
     .attr("x2", xMap2B)
     .attr("y1", yMap1B)

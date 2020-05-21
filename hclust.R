@@ -1,17 +1,26 @@
 require(igraph)
 require(jsonlite)
+require(Rtsne)
 
 # open TN93 distance matrix
 cat("loading TN93 distance matrix\n")
 tn93 <- read.csv('data/variants.tn93.txt', skip=1, header=F)
 stopifnot(nrow(tn93) == ncol(tn93))
 
+
 # apply hierarchical clustering to distance matrix
 cat("hierarchical clustering\n")
-hc <- hclust(as.dist(tn93), method='ward.D')
-clusters <- cutree(hc, h=0.002)
-#hist(log10(table(clusters)), breaks=20, col='grey', border='white')
 
+# direct clustering
+# hc <- hclust(as.dist(tn93), method='complete')
+# clusters <- cutree(hc, h=0.002)
+# hist(log10(table(clusters)), breaks=20, col='grey', border='white')
+
+# cluster t-stochastic neighbor embedding
+set.seed(1)
+res <- Rtsne(tn93, is_distance=TRUE, verbose=TRUE)
+hc <- hclust(dist(res$Y))
+clusters <- cutree(hc, h=10)
 
 # use regex to extract headers from FASTA
 headers <- rep(NA, times=nrow(tn93))
@@ -104,4 +113,3 @@ result <- lapply(1:max(clusters), function(i) {
 cat ('\nwriting JSON file\n')
 write(toJSON(result, pretty=TRUE), file="data/clusters.json")
 
-# record subroots
