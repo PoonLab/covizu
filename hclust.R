@@ -34,6 +34,7 @@ while (length(line <- readLines(con, n=1, warn=FALSE)) > 0) {
 }
 close(con)
 stopifnot(length(headers) == nrow(tn93))
+accns <- gsub("^.+(EPI_[A-Z]+_[0-9]+).+$", "\\1", headers)
 
 # extract sample collection dates from headers
 dates <- as.Date(sapply(headers, function(x) {
@@ -48,9 +49,26 @@ root <- which.min(dates)
 variants <- read.csv('data/variants.csv')
 stopifnot(all(is.element(variants$cluster, headers)))
 
+traverse <- function(node, parent, edgelist, edges=c()) {
+  if (!is.na(parent)) {
+    edges <- c(edges, parent, node)  
+  }
+  # get local edges
+  temp <- el[apply(el, 1, function(e) is.element(node, e)), ]
+  temp <- unique(as.vector(temp))
+  children <- temp[!is.element(temp, c(node, parent))]
+  
+  for (child in children) {
+    edges <- traverse(child, node, edgelist, edges)
+  }
+  return(edges)
+}
 
-result <- lapply(1:max(clusters), function(i) {
-  cat ('.')
+result <- list()
+for (i in 1:max(clusters)) {
+#result <- lapply(1:max(clusters), function(i) {
+  #cat (paste0(i, '\n'))
+  cat('.')
   
   # extract cluster indices to map to headers vector
   idx <- as.integer(which(clusters==i))
@@ -74,22 +92,6 @@ result <- lapply(1:max(clusters), function(i) {
     
     # traverse MST and export node and edge lists
     el <- get.edgelist(g.mst)
-    
-    traverse <- function(node, parent, edgelist, edges=c()) {
-      if (!is.na(parent)) {
-        edges <- c(edges, parent, node)  
-      }
-      
-      # get local edges
-      temp <- el[apply(el, 1, function(e) is.element(node, e)), ]
-      temp <- unique(as.vector(temp))
-      children <- temp[!is.element(temp, c(node, parent))]
-      
-      for (child in children) {
-        edges <- traverse(child, node, edgelist, edges)
-      }
-      return(edges)
-    }
     edges <- traverse(subroot, NA, edgelist)
 
     # store variant data
@@ -106,10 +108,15 @@ result <- lapply(1:max(clusters), function(i) {
     # shorten edge list to accession numbers only
     edges <- gsub("^.+(EPI_[A-Z]+_[0-9]+).+$", "\\1", edges)
     edges <- matrix(edges, ncol=2, byrow=TRUE)
+    
+    dists <- apply(edges, 1, function(e) {
+      tn93[which(accns==e[1]), which(accns==e[2])]
+    })
+    edges <- cbind(edges, round(dists*29903, 2))
 
-    list(nodes=nodes, edges=edges)
+    result[[length(result)+1]] <- list(nodes=nodes, edges=edges)
   }
-})
+}#)
 cat ('\nwriting JSON file\n')
 write(toJSON(result, pretty=TRUE), file="data/clusters.json")
 

@@ -1,5 +1,5 @@
 var margin = {top: 10, right: 10, bottom: 10, left: 10},
-    width = 500 - margin.left - margin.right,
+    width = 400 - margin.left - margin.right,
     height = 600 - margin.top - margin.bottom;
 
 // set up plotting scales
@@ -366,7 +366,9 @@ function draw_clusters(df, clusters) {
 
     vis.append("g")
       .attr("transform", "translate(0," + height + ")")
-      .call(d3.axisBottom(xScale).tickFormat(d => xaxis_to_date(d)));
+      .call(d3.axisBottom(xScale)
+      .ticks(5)
+      .tickFormat(d => xaxis_to_date(d)));
 
 
     vis.selectAll("rect")

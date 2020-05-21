@@ -39,8 +39,6 @@
             </tr>
         </table>
 
-
-
     </div>
     <script src="js/jquery.js"></script>
     <script src="js/d3.js"></script>
@@ -64,6 +62,9 @@
         req.done(function() {
           beaddata = parse_clusters(clusters);
           draw_clusters(df, clusters);
+          var rect = d3.selectAll("#svg-timetree > svg > g > rect"),
+              node = rect.nodes()[rect.size()-1];
+          d3.select(node).dispatch("click");
         });
     </script>
 </body>

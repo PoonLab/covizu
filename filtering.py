@@ -16,8 +16,8 @@ def filter_gisaid(fasta_file, outfile, max_prop_n=0.05, minlen=29000):
     """
     # lower-case label in place of country identifies non-human samples
     pat = re.compile('^[^/]+/[a-z]')
-
-    discards = {'nonhuman': [], 'ambiguous': [], 'short': []}
+    accessions = {}
+    discards = {'nonhuman': [], 'ambiguous': [], 'short': [], 'duplicates': []}
 
     for h, s in iter_fasta(fasta_file):
         if pat.findall(h):
@@ -29,6 +29,12 @@ def filter_gisaid(fasta_file, outfile, max_prop_n=0.05, minlen=29000):
         if len(s.replace('-', '')) < minlen:
             discards['short'].append(h)
             continue
+
+        desc, accn, coldate = h.split('|')
+        if accn in accessions:
+            discards['duplicates'].append(h)
+            continue
+        accessions.update({accn: desc})
 
         # write genome to output file
         outfile.write('>{}\n{}\n'.format(h, s))
@@ -77,4 +83,11 @@ if __name__ == '__main__':
     ))
     if args.verbose:
         for h in discards['short']:
+            print('  {}'.format(h))
+
+    print("Discarded {} sequences with duplicate accession numbers".format(
+        len(discards['duplicates'])
+    ))
+    if args.verbose:
+        for h in discards['duplicates']:
             print('  {}'.format(h))

@@ -1,5 +1,5 @@
 var marginB = {top: 50, right: 50, bottom: 50, left: 50},
-    widthB = 400 - marginB.left - marginB.right,
+    widthB = 600 - marginB.left - marginB.right,
     heightB = 800 - marginB.top - marginB.bottom;
 
 // set up plotting scales
@@ -25,7 +25,7 @@ var visB = d3.select("div#svg-cluster")
   .attr("height", heightB + marginB.top + marginB.bottom)
   .append("g");
 
-const regex = /^hCoV-19\/.+\/.+\/20[0-9]{2}$/g;
+const pat = /^hCoV-19\/(.+\/.+)\/20[0-9]{2}$/g
 
 // https://stackoverflow.com/questions/1960473/get-all-unique-values-in-a-javascript-array-remove-duplicates
 function onlyUnique(value, index, self) {
@@ -53,7 +53,7 @@ function parse_clusters(clusters) {
     }
 
     // deconvolute edge list to get node list in preorder
-    var nodelist = cluster.edges.flat().filter(onlyUnique);
+    var nodelist = cluster.edges.map(x => x.slice(0,2)).flat().filter(onlyUnique);
 
     // extract the date range for each variant in cluster
     var y = 1;
@@ -66,7 +66,7 @@ function parse_clusters(clusters) {
 
       variants.push({
         'accession': accn,
-        'label': variant[0].label1,
+        'label': variant[0].label1.replace(pat, "$1"),
         'x1': new Date(coldates[0]),  // min date
         'x2': new Date(coldates[coldates.length-1]),  // max date
         'count': coldates.length,
@@ -101,7 +101,8 @@ function parse_clusters(clusters) {
         'y1': parent.y1,
         'y2': child.y1,
         'x1': child.x1,  // vertical line segment
-        'x2': child.x1
+        'x2': child.x1,
+        'dist': parseFloat(edge[2])
       });
 
       // update variant time range
