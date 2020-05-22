@@ -1,6 +1,6 @@
 var margin = {top: 10, right: 10, bottom: 10, left: 10},
     width = 400 - margin.left - margin.right,
-    height = 600 - margin.top - margin.bottom;
+    height = 800 - margin.top - margin.bottom;
 
 // set up plotting scales
 var xValue = function(d) { return d.x; },
@@ -114,8 +114,8 @@ function readTree(text) {
  * Recursive function for traversal of tree
  * (output parent before children).
  * @param {object} node
- * @param {string} 'preorder' or 'postorder' traversal
- * @param {Array}  an Array of nodes
+ * @param {string} order: 'preorder' or 'postorder' traversal
+ * @param {Array} list: an Array of nodes
  * @return An Array of nodes in pre-order
  */
 function traverse(node, order='preorder', list=Array()) {
@@ -229,7 +229,7 @@ function edges(df, rectangular=false) {
     // make sure data frame is sorted
     df.sort(function(a, b) {
         return a.thisId - b.thisId;
-    })
+    });
 
     for (const row of df) {
         if (row.parentId === null) {
@@ -254,7 +254,7 @@ function edges(df, rectangular=false) {
           result.push(pair);
         }
         else {
-          var pair = {
+          pair = {
               x1: row.x, y1: row.y, id1: row.thisId,
               x2: parent.x, y2: parent.y, id2: row.parentId
           };
@@ -270,7 +270,6 @@ function edges(df, rectangular=false) {
  * @param {Object} timetree:  time-scaled phylogenetic tree imported as JSON
  * @returns {Array}  data frame
  */
-
 function drawtree(timetree) {
     // generate tree layout (x, y coordinates
     rectLayout(timetree);
@@ -312,6 +311,9 @@ function draw_clusters(df, clusters) {
     var tips = df.filter(x => x.children.length==0),
         tip_labels = tips.map(x => x.thisLabel);
 
+    if (tips.length != clusters.length) {
+        alert("Error: number of tips does not match number of clusters - did you update both JSON files?")
+    }
     for (const cidx in clusters) {
         var cluster = clusters[cidx];
         if (cluster["nodes"].length == 1) {

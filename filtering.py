@@ -17,7 +17,8 @@ def filter_gisaid(fasta_file, outfile, max_prop_n=0.05, minlen=29000):
     # lower-case label in place of country identifies non-human samples
     pat = re.compile('^[^/]+/[a-z]')
     accessions = {}
-    discards = {'nonhuman': [], 'ambiguous': [], 'short': [], 'duplicates': []}
+    discards = {'nonhuman': [], 'ambiguous': [], 'short': [],
+                'duplicates': []}
 
     for h, s in iter_fasta(fasta_file):
         if pat.findall(h):

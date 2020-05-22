@@ -1,6 +1,6 @@
 var marginB = {top: 50, right: 50, bottom: 50, left: 50},
     widthB = 600 - marginB.left - marginB.right,
-    heightB = 800 - marginB.top - marginB.bottom;
+    heightB = 1000 - marginB.top - marginB.bottom;
 
 // set up plotting scales
 var xValueB = function(d) { return d.x },
@@ -173,7 +173,23 @@ function beadplot(cid) {
     .attr("y1", yMap1B)
     .attr("y2", yMap2B)
     .attr("stroke-width", 1)
-    .attr("stroke", "#777");
+    .attr("stroke", function(d) {
+      if (d.dist < 1.5) {
+        return("#55b7");
+      }
+      else if (d.dist < 2.5) {
+        return("#77d7");
+      }
+      else {
+        return("#99f7");
+      }
+    })
+      .on("mouseover", function() {
+        d3.select(this).attr("stroke-width", 3);
+      })
+      .on("mouseout", function() {
+        d3.select(this).attr("stroke-width", 1);
+      });
 
   visB.selectAll("circle")
     .data(points)
@@ -182,9 +198,19 @@ function beadplot(cid) {
     .attr("cx", xMapB)
     .attr("cy", yMapB)
     .attr("fill", "white")
-    .attr("stroke", "black");
+    .attr("stroke", "black")
+      .on("mouseover", function(d) {
+        d3.select(this).attr("stroke-width", 2)
+            .attr("r", 4*Math.sqrt(d.count)+3);
+      })
+      .on("mouseout", function(d) {
+        d3.select(this).attr("stroke-width", 1)
+            .attr("r", 4*Math.sqrt(d.count));
+      });
   
   visB.append("g")
     .attr("transform", "translate(0,20)")
-    .call(d3.axisTop(xScaleB).tickFormat(d3.timeFormat("%Y-%m-%d")));
+    .call(d3.axisTop(xScaleB)
+        .ticks(6)
+        .tickFormat(d3.timeFormat("%Y-%m-%d")));
 }
