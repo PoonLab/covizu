@@ -25,7 +25,7 @@ var visB = d3.select("div#svg-cluster")
   .attr("height", heightB + marginB.top + marginB.bottom)
   .append("g");
 
-const pat = /^hCoV-19\/(.+\/.+)\/20[0-9]{2}$/g
+const pat = /^hCoV-19\/(.+\/.+)\/20[0-9]{2}$/g;
 
 // https://stackoverflow.com/questions/1960473/get-all-unique-values-in-a-javascript-array-remove-duplicates
 function onlyUnique(value, index, self) {
@@ -135,10 +135,10 @@ function beadplot(cid) {
 
   // set plotting domain
   xScaleB.domain([
-    d3.min(variants, xValue1B), d3.max(variants, xValue2B)
+    d3.min(variants, xValue1B)-1e9, d3.max(variants, xValue2B)
   ]);
   yScaleB.domain([
-    d3.min(variants, yValue1B)-1, d3.max(variants, yValue1B)+1
+    d3.min(variants, yValue1B)-3, d3.max(variants, yValue1B)+3
   ]);
 
   visB.selectAll('*').remove();
@@ -183,4 +183,8 @@ function beadplot(cid) {
     .attr("cy", yMapB)
     .attr("fill", "white")
     .attr("stroke", "black");
+  
+  visB.append("g")
+    .attr("transform", "translate(0,20)")
+    .call(d3.axisTop(xScaleB).tickFormat(d3.timeFormat("%Y-%m-%d")));
 }
