@@ -157,6 +157,7 @@ def write_info(G, countries, info_file, fasta_in, fasta_out, callback=None):
 
     outfile = open(fasta_out, 'w')
     for h, s in iter_fasta(open(fasta_in)):
+        h = h.strip()
         if h not in clusters:
             continue
         outfile.write(">{}\n{}\n".format(h, s.replace('?', 'N')))
@@ -178,7 +179,7 @@ def parse_args():
     parser.add_argument('--info', default='data/variants.csv',
                         help='output, path to write CSV describing '
                              'composition of variants')
-    parser.add_argument('--fasta_in', default='data/gisaid-aligned.fa',
+    parser.add_argument('--fasta_in', default='data/gisaid-filtered.fa',
                         help='input, path to FASTA with aligned genomes')
     parser.add_argument('--fasta_out', default='data/variants.fa',
                         help='output, path to write cluster FASTA')
