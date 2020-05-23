@@ -141,12 +141,19 @@ function beadplot(cid) {
       max_y = d3.max(variants, yValue1B),
       span_y = max_y - min_y;
 
-  xScaleB.domain([mindate - 0.5*spandate, maxdate]);
-  yScaleB.domain([min_y - 0.05*span_y, max_y]);
-  // TODO: update vertical range for consistent spacing between variants
 
+
+  // update vertical range for consistent spacing between variants
+  heightB = max_y * 10;
+  $("#svg-cluster > svg").attr("height", heightB + marginB.top + marginB.bottom);
+  yScaleB = d3.scaleLinear().range([40, heightB]);
+  xScaleB.domain([mindate - 0.5*spandate, maxdate]);
+  yScaleB.domain([min_y, max_y]);
+  
+  // clear SVG
   visB.selectAll('*').remove();
 
+  // draw horizontal line segments that represent variants in cluster
   visB.selectAll("lines")
     .data(variants)
     .enter().append("line")
@@ -158,6 +165,7 @@ function beadplot(cid) {
     .attr("stroke-width", 3)
     .attr("stroke", "#777");
 
+  // label variants with earliest sample name
   visB.selectAll("text")
     .data(variants)
     .enter().append("text")
@@ -168,6 +176,7 @@ function beadplot(cid) {
     .attr("y", function(d) { return(yScaleB(d.y1)); })
     .text(function(d) { return(d.label); });
 
+  // draw vertical line segments that represent edges in minimum spanning tree
   visB.selectAll("lines")
     .data(edgelist)
     .enter().append("line")
@@ -180,21 +189,20 @@ function beadplot(cid) {
     .attr("stroke", function(d) {
       if (d.dist < 1.5) {
         return("#55b7");
-      }
-      else if (d.dist < 2.5) {
+      } else if (d.dist < 2.5) {
         return("#77d7");
-      }
-      else {
+      } else {
         return("#99f7");
       }
     })
-      .on("mouseover", function() {
-        d3.select(this).attr("stroke-width", 3);
-      })
-      .on("mouseout", function() {
-        d3.select(this).attr("stroke-width", 1);
-      });
+    .on("mouseover", function() {
+      d3.select(this).attr("stroke-width", 3);
+    })
+    .on("mouseout", function() {
+      d3.select(this).attr("stroke-width", 1);
+    });
 
+  // draw "beads" to represent samples per collection date
   visB.selectAll("circle")
     .data(points)
     .enter().append("circle")
@@ -211,10 +219,11 @@ function beadplot(cid) {
         d3.select(this).attr("stroke-width", 1)
             .attr("r", 4*Math.sqrt(d.count));
       });
-  
+
+  // draw x-axis
   visB.append("g")
     .attr("transform", "translate(0,20)")
     .call(d3.axisTop(xScaleB)
-        .ticks(6)
+        .ticks(5)
         .tickFormat(d3.timeFormat("%Y-%m-%d")));
 }
