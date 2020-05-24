@@ -7,3 +7,8 @@ body {
 .hover {
   background-color: rgba(0, 0, 0, .5);
 }
+
+.textbox {
+  width: 90%;
+  margin: 1em auto;
+}

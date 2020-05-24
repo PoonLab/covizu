@@ -38,7 +38,7 @@ function onlyUnique(value, index, self) {
  * @param {Object} clusters:
  */
 function parse_clusters(clusters) {
-  var cluster, variant, coldates,
+  var cluster, variant, coldates, samples,
       variants,  // horizontal line segment data + labels
       edgelist,  // vertical line segment data
       points,  // the "beads"
@@ -80,11 +80,15 @@ function parse_clusters(clusters) {
       for (var i=0; i<isodates.length; i++) {
         isodate = isodates[i];
         count = coldates.filter(x => x == isodate).length;
-        // TODO: store labels, country data for each point
+        samples = variant.filter(x => x.coldate == isodate);
+        
         points.push({
           'x': new Date(isodate),
           'y': y,
-          'count': count
+          'count': count,
+          'labels': samples.map(x => x.label1.replace(pat, "$1")),
+          'region': samples.map(x => x.region),
+          'country': samples.map(x => x.country)
         })
       }
       y++;
@@ -172,7 +176,7 @@ function beadplot(cid) {
     .style("font-size", "10px")
     .attr("text-anchor", "end")
     .attr("alignment-baseline", "middle")
-    .attr("x", function(d) { return(xScaleB(d.x1)); })
+    .attr("x", function(d) { return(xScaleB(d.x1)-5); })
     .attr("y", function(d) { return(yScaleB(d.y1)); })
     .text(function(d) { return(d.label); });
 
