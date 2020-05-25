@@ -21,7 +21,4 @@ sed -i 's/[{}]//g' data/variants.tn93.txt
 Rscript scripts/hclust.R
 
 # run FastTree and TreeTime
-if [ ! -d "treetime" ]; then
-  mkdir treetime
-fi
 python3 scripts/treetime.py

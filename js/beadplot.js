@@ -1,5 +1,5 @@
-var marginB = {top: 50, right: 50, bottom: 50, left: 50},
-    widthB = 600 - marginB.left - marginB.right,
+var marginB = {top: 50, right: 10, bottom: 50, left: 10},
+    widthB = 500 - marginB.left - marginB.right,
     heightB = 1000 - marginB.top - marginB.bottom;
 
 // set up plotting scales
@@ -27,9 +27,46 @@ var visB = d3.select("div#svg-cluster")
 
 const pat = /^hCoV-19\/(.+\/.+)\/20[0-9]{2}$/gi;
 
-// https://stackoverflow.com/questions/1960473/get-all-unique-values-in-a-javascript-array-remove-duplicates
-function onlyUnique(value, index, self) {
-  return self.indexOf(value) === index;
+/**
+ * Returns unique elements in given array.
+ * @param {Array} arr
+ * @returns {string[]}
+ */
+function unique(arr) {
+  var key, history = {};
+  for (var i = 0; i< arr.length; i++) {
+    key = arr[i];
+    if (history[key] === undefined) {
+      history[key] = 1;
+    }
+  }
+  return (Object.keys(history));
+}
+
+/**
+ * Returns most common element of array.  If there is a tie, then
+ * the function returns the right-most value.
+ * @param {Array} arr:  array of elements to sort
+ */
+function mode(arr) {
+  if (arr.length == 0) {
+    return undefined;
+  }
+  var counts = {},
+      key, max_key=arr[0], max_count = 1;
+  for (var i = 0; i < arr.length; i++) {
+    key = arr[i];
+    if (counts[key] == null) {
+      counts[key] = 1
+      continue
+    }
+    counts[key]++;
+    if (counts[key] > max_count) {
+      max_count = counts[key];
+      max_key = key;
+    }
+  }
+  return(max_key);
 }
 
 /**
@@ -38,7 +75,7 @@ function onlyUnique(value, index, self) {
  * @param {Object} clusters:
  */
 function parse_clusters(clusters) {
-  var cluster, variant, coldates, samples,
+  var cluster, variant, coldates, samples, regions, country,
       variants,  // horizontal line segment data + labels
       edgelist,  // vertical line segment data
       points,  // the "beads"
@@ -53,7 +90,8 @@ function parse_clusters(clusters) {
     }
 
     // deconvolute edge list to get node list in preorder
-    var nodelist = cluster.edges.map(x => x.slice(0,2)).flat().filter(onlyUnique);
+    var nodelist = unique(cluster.edges.map(x => x.slice(0,2)).flat());
+    //cluster.edges.map(x => x.slice(0,2)).flat().filter(onlyUnique);
 
     // extract the date range for each variant in cluster
     var y = 1;
@@ -74,21 +112,22 @@ function parse_clusters(clusters) {
         'y2': y
       });
 
-      var isodates = coldates.filter(onlyUnique),
+      var isodates = unique(coldates), //coldates.filter(onlyUnique),
           isodate, count;
 
       for (var i=0; i<isodates.length; i++) {
         isodate = isodates[i];
-        count = coldates.filter(x => x == isodate).length;
         samples = variant.filter(x => x.coldate == isodate);
-        
+        country = samples.map(x => x.country);
+        regions = country.map(x => countries[x]);
         points.push({
           'x': new Date(isodate),
           'y': y,
-          'count': count,
+          'count': samples.length,
           'labels': samples.map(x => x.label1.replace(pat, "$1")),
-          'region': samples.map(x => countries[x.country]),
-          'country': samples.map(x => x.country)
+          'region1': mode(regions),
+          'region': regions,
+          'country': country
         })
       }
       y++;
@@ -118,11 +157,18 @@ function parse_clusters(clusters) {
       }
     }
 
-    beaddata.push({'variants': variants, 'edgelist': edgelist, 'points': points})
+    // calculate consensus region for cluster
+    beaddata.push({
+      'variants': variants,
+      'edgelist': edgelist,
+      'points': points
+    })
+    cluster['region'] = mode(points.map(x => x.region).flat());
   }
 
   return(beaddata);
 }
+
 
 
 /**
@@ -213,7 +259,9 @@ function beadplot(cid) {
     .attr("r", function(d) { return (4*Math.sqrt(d.count)); })
     .attr("cx", xMapB)
     .attr("cy", yMapB)
-    .attr("fill", "white")
+    .attr("fill", function(d) {
+      return(country_pal[d.region1]);
+    })
     .attr("stroke", "black")
       .on("mouseover", function(d) {
         d3.select(this).attr("stroke-width", 2)

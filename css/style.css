@@ -1,7 +1,31 @@
+@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+/* https://github.com/tholman/github-corners */
+.github-corner:hover .octo-arm {
+  animation:octocat-wave 560ms ease-in-out
+}
+@keyframes octocat-wave {
+  0%,100%{transform:rotate(0)}
+  20%,60%{transform:rotate(-25deg)}
+  40%,80%{transform:rotate(10deg)}
+}
+@media (max-width:500px) {
+  .github-corner:hover .octo-arm {
+    animation:none
+  }
+  .github-corner .octo-arm {
+    animation:octocat-wave 560ms ease-in-out
+  }
+}
+
 body {
   width: 97%;
   margin: 1em auto;
-  font: .9em/1.2 Cabin, Lato, sans-serif;
+  font: .9em/1.2 Lato, sans-serif;
+}
+
+svg text {
+  font: 1em/1.2 Lato, sans-serif;
 }
 
 .hover {

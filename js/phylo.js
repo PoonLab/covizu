@@ -10,7 +10,7 @@ var xValue = function(d) { return d.x; },
   xWide = function(d) { return xScale(d.x2 - d.x1)};
 
 var yValue = function(d) { return d.y; },
-  yScale = d3.scaleLinear().range([height, 0]),  // inversion
+  yScale = d3.scaleLinear().range([height, 30]),  // inversion
   yMap1 = function(d) { return yScale(d.y1); },
   yMap2 = function(d) { return yScale(d.y2); },
   yMap = function(d) { return yScale(yValue(d)+0.4); };
@@ -339,6 +339,7 @@ function draw_clusters(df, clusters) {
 
         // augment data frame with cluster data
         tips[root_idx].cluster_idx = cidx;
+        tips[root_idx].region = cluster.region;
         tips[root_idx].count = coldates.length;
 
         var origin = new Date(cluster['nodes'][root][0]['coldate']),
@@ -367,11 +368,10 @@ function draw_clusters(df, clusters) {
     };
 
     vis.append("g")
-      .attr("transform", "translate(0," + height + ")")
-      .call(d3.axisBottom(xScale)
+      .attr("transform", "translate(0,20)")
+      .call(d3.axisTop(xScale)
       .ticks(3)
       .tickFormat(d => xaxis_to_date(d)));
-
 
     vis.selectAll("rect")
       .data(tips)
@@ -381,20 +381,21 @@ function draw_clusters(df, clusters) {
       .attr("y", yMap)
       .attr("width", xWide)
       .attr("height", 8)
-      .attr("fill", "#6a5acd")
-      .attr("fill-opacity", "0.25")
+      .attr("fill", function(d) {
+          return(country_pal[d.region]);
+      })
+      .attr("fill-opacity", "0.33")
       .on('mouseover', function() {
-          d3.select(this)
-            .attr("fill", "red");
+          d3.select(this).attr("fill-opacity", "0.67");
       })
       .on("mouseout", function() {
-          d3.select(this)
-            .attr("fill", "#6a5acd");
+          d3.select(this).attr("fill-opacity", "0.33");
       })
       .on("click", function(d) {
           // reset all rectangles to high transparency
-          vis.selectAll("rect").attr("fill-opacity", "0.25")
-          d3.select(this).attr("fill-opacity", "0.67");
+          vis.selectAll("rect").attr("stroke", null);
+          d3.select(this).attr("stroke", "grey")
+              .attr("stroke-width", "2");
           beadplot(d.cluster_idx);
       });
 }
