@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
 <head>
     <title>CoVizu</title>
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <a href="https://github.com/PoonLab/covizu" class="github-corner" aria-label="View source on GitHub">
@@ -49,18 +49,18 @@
         // load time-scaled phylogeny (treetime.py) from server
         var df, countries;
         $.ajax({
-            url: "/data/timetree.nwk",
+            url: "data/timetree.nwk",
             success: function(data) {
               df = readTree(data);
             }
         });
-        $.getJSON("/data/countries.json", function(data) {
+        $.getJSON("data/countries.json", function(data) {
             countries = data;
         });
 
         // load cluster data (hclust.R) from server
         var clusters, beaddata;
-        var req = $.getJSON("/data/clusters.json", function(data) {
+        var req = $.getJSON("data/clusters.json", function(data) {
           clusters = data;
         });
         req.done(function() {

@@ -1,5 +1,5 @@
 var marginB = {top: 50, right: 10, bottom: 50, left: 10},
-    widthB = 500 - marginB.left - marginB.right,
+    widthB = 600 - marginB.left - marginB.right,
     heightB = 1000 - marginB.top - marginB.bottom;
 
 // set up plotting scales

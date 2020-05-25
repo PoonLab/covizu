@@ -1,6 +1,6 @@
-var margin = {top: 10, right: 10, bottom: 10, left: 10},
-    width = 300 - margin.left - margin.right,
-    height = 800 - margin.top - margin.bottom;
+var margin = {top: 10, right: 20, bottom: 10, left: 0},
+    width = 200 - margin.left - margin.right,
+    height = 1000 - margin.top - margin.bottom;
 
 // set up plotting scales
 var xValue = function(d) { return d.x; },
@@ -368,6 +368,7 @@ function draw_clusters(df, clusters) {
     };
 
     vis.append("g")
+        .attr("class", "treeaxis")
       .attr("transform", "translate(0,20)")
       .call(d3.axisTop(xScale)
       .ticks(3)
@@ -380,7 +381,7 @@ function draw_clusters(df, clusters) {
       .attr("x", xMap1)
       .attr("y", yMap)
       .attr("width", xWide)
-      .attr("height", 8)
+      .attr("height", 10)
       .attr("fill", function(d) {
           return(country_pal[d.region]);
       })

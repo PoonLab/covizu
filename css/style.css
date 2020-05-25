@@ -28,6 +28,16 @@ svg text {
   font: 1em/1.2 Lato, sans-serif;
 }
 
+.treeaxis line {
+  stroke: lightslategrey;
+}
+.treeaxis path {
+  stroke: lightslategrey;
+}
+.treeaxis text {
+  fill: lightslategrey;
+}
+
 .hover {
   background-color: rgba(0, 0, 0, .5);
 }
