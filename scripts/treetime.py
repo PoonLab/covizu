@@ -186,7 +186,7 @@ def parse_args():
                              'with high discordance between estimated and '
                              'known sample collection dates (year units,'
                              'default: 0.1)')
-    parser.add_argument('--outdir', default='treetime/',
+    parser.add_argument('--outdir', default='data/',
                         help='directory to write TreeTime output files')
     return parser.parse_args()
 

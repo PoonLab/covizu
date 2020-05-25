@@ -26,25 +26,8 @@ def parse_label(label):
     except:
         raise
 
-def read_countries(country_file):
-    """
-    :param country_file: path to CSV of country, continent
-    :return dict
-    """
-    # load country to region mapping
-    countries = {}
-    with open(country_file) as handle:
-        for line in handle:
-            try:
-                country, region = line.strip().split(',')
-            except:
-                print(line)
-                raise
-            countries.update({country: region})
-    return countries
 
-
-def clustering(tn93_file, countries, callback=None):
+def clustering(tn93_file, callback=None):
     """
     Use TN93 distances:
      tn93 -o data/gisaid.tn93.csv data/gisaid-filtered.fa
@@ -53,12 +36,12 @@ def clustering(tn93_file, countries, callback=None):
     exclude sequences that are too distant from any other sequence.
 
     @param tn93_file: input, path to CSV file with TN93 distances
-    @param countries: dict, from read_countries()
+    @param callback: optional, function to pass messages to stdout
+    @return networkx Graph object
     """
     if callback:
         callback("Filter sequences that are too distant")
     min_dists = {}
-    unknown_country = []
     handle = open(tn93_file)
     _ = next(handle)
     for line in handle:
@@ -67,19 +50,8 @@ def clustering(tn93_file, countries, callback=None):
         for node in [id1, id2]:
             if node not in min_dists:
                 min_dists.update({node: 10.0})
-                # check for new country values while we're at it
-                country, coldate = parse_label(node)
-                if country not in countries:
-                    unknown_country.append(country)
             if dist < min_dists[node]:
                 min_dists[node] = dist
-
-    if unknown_country:
-        print('Error: unrecognized <country> annotations detected:')
-        for country in set(unknown_country):
-            print(country)
-        print("Please update the countries.csv file.")
-        sys.exit()
 
     intermed = [(dist, node) for node, dist in min_dists.items()]
     intermed.sort(reverse=True)
@@ -117,13 +89,15 @@ def clustering(tn93_file, countries, callback=None):
     return G
 
 
-def write_info(G, countries, info_file, fasta_in, fasta_out, callback=None):
+def write_variants(G, csv_file, fasta_in, fasta_out, callback=None):
     """
     Write CSV file describing the content of each genome variant cluster.
     :param G:  networkx.graph object from clustering()
-    :param countries:  dict, mapping country to region (continent)
-    :param info_file:  output file path
-    :return: dict, label: collection date
+    :param csv_file:  path to write variants in CSV format
+    :param fasta_in:  path to FASTA file of aligned genomes
+    :param fasta_out:  path to write FASTA file of unique genome variants
+    :param callback:  optional, for passing messages to stdout
+    :return: dict, {label: collection date}
     """
     components = list(nx.connected_components(G))
     if callback:
@@ -131,8 +105,8 @@ def write_info(G, countries, info_file, fasta_in, fasta_out, callback=None):
           "{} components".format(len(G), len(components)))
 
     # generate cluster information
-    writer = csv.writer(open(info_file, 'w'))
-    writer.writerow(['cluster', 'label', 'coldate', 'region', 'country'])
+    writer = csv.writer(open(csv_file, 'w'))
+    writer.writerow(['cluster', 'label', 'coldate', 'country'])
 
     clusters = {}
     for cluster in components:
@@ -152,8 +126,7 @@ def write_info(G, countries, info_file, fasta_in, fasta_out, callback=None):
 
         # write cluster contents to info file
         for coldate, country, node in intermed:
-            region = countries[country]
-            writer.writerow([label, node, coldate, region, country])
+            writer.writerow([label, node, coldate, country])
 
     outfile = open(fasta_out, 'w')
     for h, s in iter_fasta(open(fasta_in)):
@@ -173,10 +146,7 @@ def parse_args():
     parser.add_argument('--tn93', default='data/gisaid.tn93.csv',
                         help='input, path to CSV file containing TN93 '
                              'distances.')
-    parser.add_argument('--country', default='data/countries.csv',
-                        help='input, path to CSV file linking countries '
-                             'to geographic regions (continents).')
-    parser.add_argument('--info', default='data/variants.csv',
+    parser.add_argument('--csv_out', default='data/variants.csv',
                         help='output, path to write CSV describing '
                              'composition of variants')
     parser.add_argument('--fasta_in', default='data/gisaid-filtered.fa',
@@ -193,9 +163,7 @@ if __name__ == "__main__":
         sys.stdout.flush()
 
     args = parse_args()
-
-    countries = read_countries(args.country)
-    G = clustering(args.tn93, countries=countries, callback=callback)
-    write_info(G, countries=countries, info_file=args.info,
+    G = clustering(args.tn93, callback=callback)
+    write_variants(G, csv_file=args.csv_out,
                fasta_in=args.fasta_in, fasta_out=args.fasta_out,
                callback=callback)

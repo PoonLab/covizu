@@ -50,12 +50,15 @@
     <script src="js/phylo.js"></script>
     <script>
         // load time-scaled phylogeny (treetime.py) from server
-        var df;
+        var df, countries;
         $.ajax({
             url: "/treetime/timetree.nwk",
             success: function(data) {
               df = readTree(data);
             }
+        });
+        $.getJSON("/data/countries.json", function(data) {
+            countries = data;
         });
 
         // load cluster data (hclust.R) from server

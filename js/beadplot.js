@@ -87,7 +87,7 @@ function parse_clusters(clusters) {
           'y': y,
           'count': count,
           'labels': samples.map(x => x.label1.replace(pat, "$1")),
-          'region': samples.map(x => x.region),
+          'region': samples.map(x => countries[x.country]),
           'country': samples.map(x => x.country)
         })
       }
