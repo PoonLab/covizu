@@ -21,12 +21,22 @@
                     <button id="search-button">Search</button>
                 </div></td>
             </tr>
+            <tr>
+                <td>Time-scaled tree</td>
+                <td>Beadplot</td>
+                <td></td>
+            </tr>
             <tr style="vertical-align: top">
                 <td><div id="svg-timetree"></div></td>
                 <td><div id="svg-cluster"></div></td>
                 <td>
-                    <p>This is the CoVizu test server.</p>
-                    <div id="text-node"></div>
+                    <h1>CoVizu</h1>
+                    <h3>Near real-time visualization of SARS-CoV-2 genomic variation</h3>
+                    <p>TEST SERVER</p>
+                    <p>Last update: 2020-05-22</p>
+
+                    <h4>Variant/node info:</h4>
+                    <div class="breaker" id="text-node"></div>
                 </td>
             </tr>
         </table>
@@ -68,7 +78,15 @@
           draw_clusters(df, clusters);
           var rect = d3.selectAll("#svg-timetree > svg > g > rect"),
               node = rect.nodes()[rect.size()-1];
+
+          // initial display
           d3.select(node).dispatch("click");
+
+          /*
+          rect = d3.selectAll("#svg-cluster > svg > g > circle");
+          node = rect.nodes()[0];
+          d3.select(node).dispatch("click");//.dispatch("mouseover");
+           */
         });
     </script>
 </body>

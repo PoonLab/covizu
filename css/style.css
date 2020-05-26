@@ -24,8 +24,17 @@ body {
   font: .9em/1.2 Lato, sans-serif;
 }
 
+h1, h2, h3, h4 {
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+
 svg text {
   font: 1em/1.2 Lato, sans-serif;
+}
+
+div .breaker {
+  white-space: pre;
 }
 
 .treeaxis line {

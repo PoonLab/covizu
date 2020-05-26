@@ -69,6 +69,18 @@ function mode(arr) {
   return(max_key);
 }
 
+function table(arr) {
+  var val, counts = {};
+  for (var i=0; i<arr.length; i++) {
+    val = arr[i];
+    if (counts[val] === undefined) {
+      counts[val] = 0;
+    }
+    counts[val]++;
+  }
+  return(counts);
+}
+
 /**
  * Parse node and edge data from clusters JSON to a format that is
  * easier to map to SVG.
@@ -108,6 +120,7 @@ function parse_clusters(clusters) {
         'x1': new Date(coldates[0]),  // min date
         'x2': new Date(coldates[coldates.length-1]),  // max date
         'count': coldates.length,
+        'country': table(variant.map(x => x.country)),
         'y1': y,  // horizontal line segment
         'y2': y
       });
@@ -145,6 +158,8 @@ function parse_clusters(clusters) {
         'y2': child.y1,
         'x1': child.x1,  // vertical line segment
         'x2': child.x1,
+        'parent': parent.label,
+        'child': child.label,
         'dist': parseFloat(edge[2])
       });
 
@@ -170,7 +185,6 @@ function parse_clusters(clusters) {
 }
 
 
-
 /**
  * Draw the beadplot for a specific cluster (identified through its
  * integer index <cid>) in the SVG.
@@ -188,10 +202,7 @@ function beadplot(cid) {
       maxdate = d3.max(variants, xValue2B),
       spandate = maxdate-mindate,  // in milliseconds
       min_y = d3.min(variants, yValue1B),
-      max_y = d3.max(variants, yValue1B),
-      span_y = max_y - min_y;
-
-
+      max_y = d3.max(variants, yValue1B);
 
   // update vertical range for consistent spacing between variants
   heightB = max_y * 10;
@@ -213,7 +224,20 @@ function beadplot(cid) {
     .attr("y1", yMap1B)
     .attr("y2", yMap2B)
     .attr("stroke-width", 3)
-    .attr("stroke", "#777");
+    .attr("stroke", "#777")
+      .on("mouseover", function() {
+        d3.select(this).attr("stroke-width", 5);
+      })
+      .on("mouseout", function() {
+        d3.select(this).attr("stroke-width", 3);
+      })
+      .on("click", function(d) {
+        var mystr = "";
+        for (let [key, value] of Object.entries(d.country)) {
+          mystr += `${key}: ${value}\n`;
+        }
+        $("#text-node").text(mystr);
+      });
 
   // label variants with earliest sample name
   visB.selectAll("text")
@@ -250,7 +274,10 @@ function beadplot(cid) {
     })
     .on("mouseout", function() {
       d3.select(this).attr("stroke-width", 1);
-    });
+    })
+      .on("click", function(d) {
+        $("#text-node").text(`Parent: ${d.parent}\nChild: ${d.child}\nGenomic distance: ${d.dist}`);
+      });
 
   // draw "beads" to represent samples per collection date
   visB.selectAll("circle")
@@ -270,6 +297,21 @@ function beadplot(cid) {
       .on("mouseout", function(d) {
         d3.select(this).attr("stroke-width", 1)
             .attr("r", 4*Math.sqrt(d.count));
+      })
+      .on("click", function(d) {
+        // TODO: display first 3, collapsed text
+        console.log(d.labels);
+
+        // TODO: incorporate the following into tool-tip
+        var my_countries = table(d.country),
+            mystr = "";
+        for (let [key, value] of Object.entries(my_countries)) {
+          mystr += `${key}: ${value}\n`;
+        }
+        $("#text-node").text(mystr);
+
+        // TODO: render as a barchart?
+        console.log(table(d.region));
       });
 
   // draw x-axis
