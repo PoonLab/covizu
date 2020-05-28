@@ -3,8 +3,10 @@
 CoVizu is an open source project to develop a `near real time' SARS-CoV-2 genome analysis and visualization system that highlights potential cases of importation from other countries or ongoing community transmission.
 
 The current mode of visualization employed by CoVizu that we are tentatively referring to as a "beadplot":
-![](doc/beadplot.png)
 
+<p align="center">
+<img src="doc/beadplot.png" width="500px"/>
+</p>
 
 ### How to read a beadplot:
 
