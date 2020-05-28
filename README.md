@@ -9,26 +9,55 @@ The current mode of visualization employed by CoVizu that we are tentatively ref
 ### How to read a beadplot:
 
 * Each horizontal line segment represents a unique SARS-CoV-2 genomic sequence variant.  The emergence of a single new mutation in an infection is sufficient to establish a new variant.  A given variant may be observed multiple times as identical genome sequences, where `identity' is loosely defined to accommodate genomes with incomplete coverage and ambiguous base calls.  (Following GISAID's definition of a "complete genome", we require a minimum sequence length of 29,000 nt.)
-
 * Each circle represents one or more cases of a variant that were sampled on a given date.  The size (area) of the circle is proportional to the number of sequences.
-
 * Cases are arranged in chronological order from left to right.
-
-* Circles are coloured red if *any* of the genomes was sampled in Canada on that date.
-
-  > The first red circle in a series of cases on the same horizontal line represents the first sample of that variant in Canada and implies a new importation.  A series of red circles on the same line implies community transmission.
-
-* Variants are labelled with the name of the earliest genome record.  To reduce clutter, however, it may become necessary to filter labels to only variants that have a minimum number of cases.
-
 * Vertical lines connect variants that are related by a minimum spanning tree, which gives a *rough* approximation of transmission links.  The variant at the bottom terminus of the vertical line is the putative source.  
+* The relative location of variants along the vertical axis does not convey any information.  The variants are sorted with respect to the vertical axis such that ancestral variants are always below their "descendant" variants.
 
 **It is not feasible to reconstruct accurate links using only genomic data.**  However, our objective is to identify population-level events like importations into Canada, not to attribute a transmission to a specific source individual.
 
-* Circles that are the first "bead" on the horizontal line are related to the same ancestral variant if they intersect the same vertical line.  This scenario implies that multiple lineages descend from the same ancestor.
 
-  > If none of the ancestral cases were sampled in Canada, then a first "bead" of a new variant that is red implies importation and mutation.
+## Rationale
 
-* The relative location of variants along the vertical axis does not convey any information.  The variants are sorted with respect to the vertical axis such that ancestral variants are always below their "descendant" variants.
+There is a rapidly accumulating number of genome sequences of severe acute 
+respiratory syndrome coronavirus 2 (SARS-CoV-2) collected at sites around 
+the world, predominantly available through the Global Intiative on Sharing 
+All Influenza Data (GISAID) database.
+The public release of these genome sequences in near real-time is an 
+unprecedented resource for molecular epidemiology and public health.
+For example, [nextstrain](http://nextstrain.org) has been at the forefront 
+of analyzing and communicating the global distribution of SARS-CoV-2 genomic 
+variation.
+
+The central feature of [nextstrain](nextstrain.org) is a reconstruction of 
+a time-scaled phylogeny (a tree-based model of how infections are related 
+by common ancestors back in time).
+Geographic locations of samples are mapped onto the tree by colour to 
+communicate the global distribution of the pandemic over time.
+However, it is not obvious how useful (actionable) information can be best 
+extracted from these data, particularly in the context of a regional public 
+health authority.
+
+A significant challenge in using a time-scaled tree to visualize the 
+evolutionary (and, to some approximation, epidemiological) relationships 
+among sampled infections is that most of the image is occupied by 
+ancestral lineages whose existence were reconstructed from the observed 
+infections.
+One of our basic assumptions in developing CoVizu is that ancestral genomes 
+are directly sampled --- we think this is not unreasonable given the 
+relatively slow rate of molecular evolution in comparison to the virus 
+transmission rate.
+
+Another limitation of the tree visualization is that it does not convey 
+information about observing the same genome sequence from multiple samples 
+over time.
+There is no means to differentiate identical sequences in a phylogeny 
+because there are no phylogenetically informative sites that separate them.
+One could extend the tips of the tree to span the time period of sample 
+collection and mark sampled genomes as in the beadplot above.
+However, the time scale of sampling identical genomes is relatively short 
+compared to the evolutionary history of the virus that is represented by 
+the tree.
 
 
 ## Current workflow
@@ -47,7 +76,7 @@ The current mode of visualization employed by CoVizu that we are tentatively ref
 
 7. Variants are clustered with respect to the pairwise distance matrix using hierarchical clustering.  A [minimum spanning tree](https://en.wikipedia.org/wiki/Minimum_spanning_tree) is reconstructed for each cluster, and rooted at the variant that is closest to the earliest sampled variant (Wuhan, IPBCAMS-WH-01).  The results are written to [JSON](https://en.wikipedia.org/wiki/JSON) files.
 
-8. Visualizations are genearted from the JSON data using the [d3.js](https://en.wikipedia.org/wiki/D3.js) Javascript framework.
+8. Visualizations are generated from the JSON data using the [d3.js](https://en.wikipedia.org/wiki/D3.js) Javascript framework.
 
 
 ## Acknowledgements
