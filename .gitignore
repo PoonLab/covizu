@@ -3,3 +3,4 @@ data/
 treetime/*
 scripts/geckodriver.log
 geckodriver.log
+debug/*
