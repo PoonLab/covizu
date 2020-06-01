@@ -122,13 +122,13 @@ process = subprocess.Popen(bashcmd.split(), stdout=outfile)
 
 
 #run update script 
-bashcmd = '/usr/bin/python /home/covid/update.py -ref /home/covid/NC_045512.fa '+ destination+' /home/covid/gisaid-aligned.fa'
+bashcmd = '/usr/bin/python /home/covid/update.py -ref /home/covid/NC_045512.fa '+ destination+' /home/covid/covizu/data/gisaid-aligned.fa'
 #print(bashcmd)
 process = subprocess.Popen(bashcmd.split(), stdout=subprocess.PIPE)
 output, error = process.communicate()
 print('Updater output')
 print('===========')
-#print(output +'\n')
+print(output +'\n')
 
 #write latest update string
 file= open('/home/covid/covizu/data/lastupdate.json', 'w')

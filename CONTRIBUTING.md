@@ -40,6 +40,12 @@ This does mean that these database access credentials are written to a plain tex
 Consequently, you should only use this approach if you are running CoVizu in a fairly secure computing environment (*e.g.*, a physically- and password-secured workstation, ideally with multi-factor authentication). 
 
 
+The downloading scripts can be automated through `crontab` on Linux:
+```
+0 0 * * * nohup python /home/covid/SeliniumAutobot.py >> /home/covid/Autobot.log 2>&1
+```
+
+
 # Workflow
 
 ## Back-end
@@ -59,4 +65,6 @@ Genome records that were retrieved in a previous query do not have to be re-alig
 ## Front-end
 
 ### Data serialization
+
+
 
