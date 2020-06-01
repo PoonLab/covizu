@@ -1,9 +1,7 @@
 #!/bin/bash
 
 # download and update gisaid-aligned.fa
-mv /home/covid/gisaid-aligned.fa data/
-
-#python scripts/SeleniumAutobot.py
+python scripts/SeleniumAutobot.py
 
 # screen for non-human and low-coverage samples -> gisaid-filtered.fa
 python3 scripts/filtering.py
