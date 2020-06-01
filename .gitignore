@@ -1,4 +1,5 @@
 data/
 .idea/
 treetime/*
-
+scripts/geckodriver.log
+geckodriver.log
