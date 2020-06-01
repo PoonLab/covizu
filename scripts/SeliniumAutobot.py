@@ -31,7 +31,7 @@ driver = webdriver.Firefox(firefox_profile=profile, options=opts, executable_pat
 driver.get('https://www.epicov.org/epi3/cfrontend')
 
 time.sleep(15)
-#please don't steal my password
+#Reads login credentials from Environment Variables
 pw= os.environ['gisaid_pw_variable']
 user= os.environ['gisaid_u_variable']
 print('logging in')
@@ -43,11 +43,9 @@ driver.execute_script('doLogin()')
 time.sleep(5)
 
 #find prefix variable
-print('finding stupid variable')
 element = driver.find_element_by_xpath("//div[@class='buttons container-slot']")
 htmlid_as_list = element.get_attribute('id').split('_')
 variable = htmlid_as_list[1]
-print(variable)
 
 #navigate to corona virus page
 print('navigating to corona db')
@@ -59,10 +57,6 @@ time.sleep(5)
 print('Selecting date')
 yesterday = datetime.strftime(datetime.now() - timedelta(1), '%Y-%m-%d')
 
-##These don't work if element names change
-#driver.find_element_by_xpath("//div[@class='sys-form-fi-date']/input[@type='text']") 
-#driver.execute_script("document.getElementById('ce_"+ variable + "_9i_input').value = '"+ yesterday + "'")
-#driver.execute_script("document.getElementById('ce_"+ variable + "_9i_input').onchange()")
 
 time_string =  '[id^="ce_' + variable + '"][id$="_input"]'
 driver.execute_script("document.querySelectorAll('" + time_string +"')[2].value = '" + yesterday +"'")
@@ -78,9 +72,7 @@ checkbox = driver.find_element_by_xpath("//span[@class='yui-dt-label']/input[@ty
 checkbox.click()
 time.sleep(5)
 
-#click download button, look for button that contains Download txt
-#driver.execute_script('onclick="sys.getC(\'c_'+ variable + '_he\').selectAll(this)"')
-#driver.execute_script("sys.getC('c_"+ variable + "_he').buttonClick('DownloadAllSequences')")
+#download seqs
 element = driver.find_element_by_xpath("//*[contains(text(), 'Download')]")
 driver.execute_script("arguments[0].click();", element)
 #element.click()
