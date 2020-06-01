@@ -45,6 +45,7 @@
     <script src="js/d3.js"></script>
     <script src="js/beadplot.js"></script>
     <script src="js/phylo.js"></script>
+    <script src="js/drawtree.js"></script>
     <script src="js/search.js"></script>
     <script>
         var country_pal = {
@@ -70,13 +71,15 @@
         });
 
         // load cluster data (hclust.R) from server
-        var clusters, beaddata;
+        var clusters, beaddata, tips;
         var req = $.getJSON("data/clusters.json", function(data) {
           clusters = data;
         });
         req.done(function() {
           beaddata = parse_clusters(clusters);
-          draw_clusters(df, clusters);
+          tips = map_clusters_to_tips(df, clusters);
+          draw_clusters(tips);
+
           var rect = d3.selectAll("#svg-timetree > svg > g > rect"),
               node = rect.nodes()[rect.size()-1];
 
