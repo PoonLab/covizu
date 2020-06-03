@@ -1,3 +1,6 @@
+/**
+ *  Configure SVG to display beadplots
+ */
 var marginB = {top: 50, right: 10, bottom: 50, left: 10},
     widthB = 600 - marginB.left - marginB.right,
     heightB = 1000 - marginB.top - marginB.bottom;
@@ -25,7 +28,10 @@ var visB = d3.select("div#svg-cluster")
   .attr("height", heightB + marginB.top + marginB.bottom)
   .append("g");
 
+
+// regular expression to remove redundant sequence name components
 const pat = /^hCoV-19\/(.+\/.+)\/20[0-9]{2}$/gi;
+
 
 /**
  * Returns unique elements in given array.
@@ -43,10 +49,12 @@ function unique(arr) {
   return (Object.keys(history));
 }
 
+
 /**
  * Returns most common element of array.  If there is a tie, then
  * the function returns the right-most value.
  * @param {Array} arr:  array of elements to sort
+ * @return most common element
  */
 function mode(arr) {
   if (arr.length == 0) {
@@ -69,6 +77,12 @@ function mode(arr) {
   return(max_key);
 }
 
+
+/**
+ * Entabulate values in array.
+ * @param {Array} arr:  Array of values to entabulate
+ * @returns {{}} Associative list of value: count pairs
+ */
 function table(arr) {
   var val, counts = {};
   for (var i=0; i<arr.length; i++) {
@@ -80,6 +94,7 @@ function table(arr) {
   }
   return(counts);
 }
+
 
 /**
  * Parse node and edge data from clusters JSON to a format that is
@@ -125,8 +140,8 @@ function parse_clusters(clusters) {
         'y2': y
       });
 
-      var isodates = unique(coldates), //coldates.filter(onlyUnique),
-          isodate, count;
+      var isodates = unique(coldates),
+          isodate;
 
       for (var i=0; i<isodates.length; i++) {
         isodate = isodates[i];
@@ -137,6 +152,7 @@ function parse_clusters(clusters) {
           'x': new Date(isodate),
           'y': y,
           'count': samples.length,
+          'accessions': samples.map(x => x.accession),
           'labels': samples.map(x => x.label1.replace(pat, "$1")),
           'region1': mode(regions),
           'region': regions,
@@ -177,7 +193,7 @@ function parse_clusters(clusters) {
       'variants': variants,
       'edgelist': edgelist,
       'points': points
-    })
+    });
     cluster['region'] = mode(points.map(x => x.region).flat());
   }
 
@@ -188,7 +204,7 @@ function parse_clusters(clusters) {
 /**
  * Draw the beadplot for a specific cluster (identified through its
  * integer index <cid>) in the SVG.
- * @param cid
+ * @param {Number} cid:  integer index of cluster to draw as beadplot
  */
 function beadplot(cid) {
   console.log(cid);
@@ -216,15 +232,15 @@ function beadplot(cid) {
 
   // draw horizontal line segments that represent variants in cluster
   visB.selectAll("lines")
-    .data(variants)
-    .enter().append("line")
-    .attr(  "class", "lines")
-    .attr("x1", xMap1B)
-    .attr("x2", xMap2B)
-    .attr("y1", yMap1B)
-    .attr("y2", yMap2B)
-    .attr("stroke-width", 3)
-    .attr("stroke", "#777")
+      .data(variants)
+      .enter().append("line")
+      .attr(  "class", "lines")
+      .attr("x1", xMap1B)
+      .attr("x2", xMap2B)
+      .attr("y1", yMap1B)
+      .attr("y2", yMap2B)
+      .attr("stroke-width", 3)
+      .attr("stroke", "#777")
       .on("mouseover", function() {
         d3.select(this).attr("stroke-width", 5);
       })
@@ -241,55 +257,55 @@ function beadplot(cid) {
 
   // label variants with earliest sample name
   visB.selectAll("text")
-    .data(variants)
-    .enter().append("text")
-    .style("font-size", "10px")
-    .attr("text-anchor", "end")
-    .attr("alignment-baseline", "middle")
-    .attr("x", function(d) { return(xScaleB(d.x1)-5); })
-    .attr("y", function(d) { return(yScaleB(d.y1)); })
-    .text(function(d) { return(d.label); });
+      .data(variants)
+      .enter().append("text")
+      .style("font-size", "10px")
+      .attr("text-anchor", "end")
+      .attr("alignment-baseline", "middle")
+      .attr("x", function(d) { return(xScaleB(d.x1)-5); })
+      .attr("y", function(d) { return(yScaleB(d.y1)); })
+      .text(function(d) { return(d.label); });
 
   // draw vertical line segments that represent edges in minimum spanning tree
   visB.selectAll("lines")
-    .data(edgelist)
-    .enter().append("line")
-    .attr("class", "lines")
-    .attr("x1", xMap1B)
-    .attr("x2", xMap2B)
-    .attr("y1", yMap1B)
-    .attr("y2", yMap2B)
-    .attr("stroke-width", 1)
-    .attr("stroke", function(d) {
-      if (d.dist < 1.5) {
-        return("#55b7");
-      } else if (d.dist < 2.5) {
-        return("#77d7");
-      } else {
-        return("#99f7");
-      }
-    })
-    .on("mouseover", function() {
-      d3.select(this).attr("stroke-width", 3);
-    })
-    .on("mouseout", function() {
-      d3.select(this).attr("stroke-width", 1);
-    })
+      .data(edgelist)
+      .enter().append("line")
+      .attr("class", "lines")
+      .attr("x1", xMap1B)
+      .attr("x2", xMap2B)
+      .attr("y1", yMap1B)
+      .attr("y2", yMap2B)
+      .attr("stroke-width", 1)
+      .attr("stroke", function(d) {
+        if (d.dist < 1.5) {
+          return("#55b7");
+        } else if (d.dist < 2.5) {
+          return("#77d7");
+        } else {
+          return("#99f7");
+        }
+      })
+      .on("mouseover", function() {
+        d3.select(this).attr("stroke-width", 3);
+      })
+      .on("mouseout", function() {
+        d3.select(this).attr("stroke-width", 1);
+      })
       .on("click", function(d) {
         $("#text-node").text(`Parent: ${d.parent}\nChild: ${d.child}\nGenomic distance: ${d.dist}`);
       });
 
   // draw "beads" to represent samples per collection date
   visB.selectAll("circle")
-    .data(points)
-    .enter().append("circle")
-    .attr("r", function(d) { return (4*Math.sqrt(d.count)); })
-    .attr("cx", xMapB)
-    .attr("cy", yMapB)
-    .attr("fill", function(d) {
-      return(country_pal[d.region1]);
-    })
-    .attr("stroke", "black")
+      .data(points)
+      .enter().append("circle")
+      .attr("r", function(d) { return (4*Math.sqrt(d.count)); })
+      .attr("cx", xMapB)
+      .attr("cy", yMapB)
+      .attr("fill", function(d) {
+        return(country_pal[d.region1]);
+      })
+      .attr("stroke", "black")
       .on("mouseover", function(d) {
         d3.select(this).attr("stroke-width", 2)
             .attr("r", 4*Math.sqrt(d.count)+3);
@@ -316,8 +332,10 @@ function beadplot(cid) {
 
   // draw x-axis
   visB.append("g")
-    .attr("transform", "translate(0,20)")
-    .call(d3.axisTop(xScaleB)
-        .ticks(5)
-        .tickFormat(d3.timeFormat("%Y-%m-%d")));
+      .attr("transform", "translate(0,20)")
+      .call(
+        d3.axisTop(xScaleB)
+          .ticks(5)
+          .tickFormat(d3.timeFormat("%Y-%m-%d"))
+      );
 }
