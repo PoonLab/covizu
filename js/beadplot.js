@@ -311,8 +311,10 @@ function beadplot(cid) {
             .attr("r", 4*Math.sqrt(d.count)+3);
       })
       .on("mouseout", function(d) {
-        d3.select(this).attr("stroke-width", 1)
-            .attr("r", 4*Math.sqrt(d.count));
+        if (!selected.includes(this)) {
+          d3.select(this).attr("stroke-width", 1)
+              .attr("r", 4*Math.sqrt(d.count));
+        }
       })
       .on("click", function(d) {
         // TODO: display first 3, collapsed text
