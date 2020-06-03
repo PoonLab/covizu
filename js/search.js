@@ -1,4 +1,4 @@
-// to store references to SVG objects
+// to store references to SVG objects (nodes)
 var selected = [];
 
 
@@ -10,14 +10,16 @@ function select_bead_by_accession(accn) {
 	// switch to cluster beadplot
 	var cid = accn_to_cid[accn];
 	if (cid !== undefined) {
-		beadplot(cid);
+		var rect = d3.selectAll("#svg-timetree > svg > g > rect")
+				.filter(function(d) { return(d.cluster_idx === cid); });
+		d3.select(rect.node()).dispatch("click");
+
 		var bead = d3.selectAll("circle").filter(function(d) {
 			return d.accessions.includes(accn);
 		});
 		bead.dispatch('mouseover');
-		selected.push(bead);
+		selected.push(bead.node());
 	}
-
 }
 
 

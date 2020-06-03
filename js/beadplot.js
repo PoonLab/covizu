@@ -340,4 +340,10 @@ function beadplot(cid) {
           .ticks(5)
           .tickFormat(d3.timeFormat("%Y-%m-%d"))
       );
+
+  // re-highlight selected objects (in case user navigates away)
+  // FIXME: this doesn't work - I think if beadplot is redrawn, node is different
+  if (selected !== undefined) {
+    d3.select(selected).dispatch("mouseover");
+  }
 }
