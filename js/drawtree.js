@@ -135,6 +135,7 @@ function map_clusters_to_tips(df, clusters) {
     tips[root_idx].cluster_idx = cidx;
     tips[root_idx].region = cluster.region;
     tips[root_idx].count = coldates.length;
+    tips[root_idx].varcount = labels.length;
     
     var origin = new Date(cluster['nodes'][root][0]['coldate']),
       first_date = new Date(coldates[0]),
@@ -200,6 +201,7 @@ function draw_clusters(tips) {
       d3.select(this).attr("stroke", "grey")
         .attr("stroke-width", "2");
       $("#text-node").text(null);
+      $("#text-node").text(`Number of cases: ${d.count}\nNumber of variants: ${d.varcount}`);
       beadplot(d.cluster_idx);
     });
 }
