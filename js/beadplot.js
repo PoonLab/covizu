@@ -57,7 +57,7 @@ function unique(arr) {
  * @return most common element
  */
 function mode(arr) {
-  if (arr.length == 0) {
+  if (arr.length === 0) {
     return undefined;
   }
   var counts = {},
@@ -110,7 +110,7 @@ function parse_clusters(clusters) {
 
   for (var cidx = 0; cidx < clusters.length; cidx++) {
     cluster = clusters[cidx];
-    if (cluster.nodes.length == 1) {
+    if (cluster.nodes.length === 1) {
       console.log('skip '+ cluster.nodes);
       beaddata.push({'variants': [], 'edgelist': [], 'points': []})
       continue;
@@ -145,7 +145,7 @@ function parse_clusters(clusters) {
 
       for (var i=0; i<isodates.length; i++) {
         isodate = isodates[i];
-        samples = variant.filter(x => x.coldate == isodate);
+        samples = variant.filter(x => x.coldate === isodate);
         country = samples.map(x => x.country);
         regions = country.map(x => countries[x]);
         points.push({
@@ -167,8 +167,8 @@ function parse_clusters(clusters) {
     edgelist = [];
     for (var e = 0; e < cluster.edges.length; e++) {
       edge = cluster.edges[e];
-      parent = variants.filter(x => x.accession == edge[0])[0];
-      child = variants.filter(x => x.accession == edge[1])[0];
+      parent = variants.filter(x => x.accession === edge[0])[0];
+      child = variants.filter(x => x.accession === edge[1])[0];
       edgelist.push({
         'y1': parent.y1,
         'y2': child.y1,

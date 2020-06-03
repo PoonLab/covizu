@@ -102,7 +102,10 @@ for (i in 1:max(clusters)) {
       temp$label1 <- sapply(as.character(temp$label), function(x) {
         strsplit(x, "\\|")[[1]][1]
       })
-      nodes[[accn]] <- temp[c('label1', 'country', 'coldate')]
+      temp$accession <- sapply(as.character(temp$label), function(x) {
+        strsplit(x, "\\|")[[1]][2]
+      })
+      nodes[[accn]] <- temp[c('label1', 'accession', 'country', 'coldate')]
     }
 
     # shorten edge list to accession numbers only
