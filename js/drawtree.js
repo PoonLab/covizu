@@ -199,6 +199,7 @@ function draw_clusters(tips) {
       vis.selectAll("rect").attr("stroke", null);
       d3.select(this).attr("stroke", "grey")
         .attr("stroke-width", "2");
+      $("#text-node").text(null);
       beadplot(d.cluster_idx);
     });
 }
