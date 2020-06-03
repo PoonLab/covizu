@@ -6,6 +6,9 @@ from selenium.webdriver.firefox.options import Options
 import shutil  
 import subprocess
 
+
+cwd = os.getcwd()
+download_folder = cwd+ '/data/tmpdownloads/'
 today = datetime.strftime(datetime.now(), '%Y-%m-%d')
 
 print(today + ' log')
@@ -16,7 +19,7 @@ print('initializing options & profile')
 profile = webdriver.FirefoxProfile()
 profile.set_preference('browser.download.folderList', 2) 
 profile.set_preference('browser.download.manager.showWhenStarting', False)
-profile.set_preference("browser.download.dir", '/home/covid/tmpdownloads/')
+profile.set_preference("browser.download.dir", download_folder)
 profile.set_preference('browser.helperApps.alwaysAsk.force', False)
 profile.set_preference("browser.helperApps.neverAsk.saveToDisk", "application/octet-stream,octet-stream")
 profile.set_preference("browser.helperApps.neverAsk.openFile", "application/octet-stream,octet-stream")
@@ -92,7 +95,7 @@ time.sleep(5)
 # wait for download to complete
 downloading = True
 while downloading:
-	for file in os.listdir('/home/covid/tmpdownloads/'):
+	for file in os.listdir(download_folder):
 		downloading = False
 		if file.endswith('.part'):
 			time.sleep(5)
@@ -103,26 +106,21 @@ print('Downloading complete, moving files')
 
 yesterday = datetime.strftime(datetime.now() - timedelta(1), '%Y-%m-%d')
 
-downloadedfile = os.listdir('/home/covid/tmpdownloads/')[0]
-source = '/home/covid/tmpdownloads/' + downloadedfile
-destination = '/home/covid/GISAID-' +  datetime.strftime(datetime.now(), '%Y-%m-%d') + '.fasta'
+downloadedfile = os.listdir(download_folder)[0]
+source = download_folder + downloadedfile
+destination = cwd + '/data/GISAID-' +  datetime.strftime(datetime.now(), '%Y-%m-%d') + '.fasta'
 
 #call Sed command to fix  missing line characters
 
 outfile = open(destination, 'w')
 bashcmd = "sed s/[ACGT?]>hCoV/\\n>hCov/g " + source
 process = subprocess.Popen(bashcmd.split(), stdout=outfile)
+outfile.close()
 driver.quit()
 
-bashcmd  = 'rm /home/covid/tmpdownloads/'+downloadedfile
-print(bashcmd)
-process = subprocess.Popen(bashcmd.split(), stdout=outfile)
-
-# bash cmd python update.py -ref NC_045512.fa GISAID-2020-05-15.fasta test.fa
-
-
 #run update script 
-bashcmd = '/usr/bin/python /home/covid/update.py -ref /home/covid/NC_045512.fa '+ destination+' /home/covid/covizu/data/gisaid-aligned.fa'
+print('Running updater script')
+bashcmd = '/usr/bin/python ' + cwd + '/scripts/update.py -ref '+ cwd + '/data/NC_045512.fa '+ destination+' ' + cwd +'/data/gisaid-aligned.fa'
 #print(bashcmd)
 process = subprocess.Popen(bashcmd.split(), stdout=subprocess.PIPE)
 output, error = process.communicate()
@@ -131,6 +129,6 @@ print('===========')
 print(output +'\n')
 
 #write latest update string
-file= open('/home/covid/covizu/data/lastupdate.json', 'w')
+file= open(cwd + '/data/lastupdate.json', 'w')
 file.write('var lastupdate="' + datetime.strftime(datetime.now(), '%Y-%m-%d') + '\";')
 file.close()
