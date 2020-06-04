@@ -98,7 +98,7 @@ if __name__ == '__main__':
         print('  {}'.format(h))
 
     print("Discarded {} sequences with mangled headres".format(
-        len(discards['mangled headers'])
+        len(discards['mangled header'])
     ))
-    for h in discards['mangled headers']:
+    for h in discards['mangled header']:
         print('  {}'.format(h))
