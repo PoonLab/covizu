@@ -2,7 +2,6 @@ from gotoh2 import iter_fasta
 import re
 import argparse
 
-pat = re.compile("^hCoV-19/[A-Z][^/]+/[^/]+/[0-9]+\|[^|]+\|[0-9]{4}-[0-9]{2}-[0-9]{2}")
 
 
 def filter_gisaid(fasta_file, outfile, max_prop_n=0.05, minlen=29000):
@@ -18,6 +17,8 @@ def filter_gisaid(fasta_file, outfile, max_prop_n=0.05, minlen=29000):
     """
     # lower-case label in place of country identifies non-human samples
     pat = re.compile('^[^/]+/[a-z]')
+    pat2 = re.compile("^hCoV-19/[A-Z][^/]+/[^/]+/[0-9]+\|[^|]+\|[0-9]{4}-[0-9]{2}-[0-9]{2}")
+
     accessions = {}
     discards = {'nonhuman': [], 'ambiguous': [], 'short': [],
                 'duplicates': [], 'mangled header': []}
@@ -32,7 +33,7 @@ def filter_gisaid(fasta_file, outfile, max_prop_n=0.05, minlen=29000):
         if len(s.replace('-', '')) < minlen:
             discards['short'].append(h)
             continue
-        if pat.search(h) is None:
+        if pat2.search(h) is None:
             discards['mangled header'].append(h)
             continue
 
@@ -97,7 +98,7 @@ if __name__ == '__main__':
     for h in discards['duplicates']:
         print('  {}'.format(h))
 
-    print("Discarded {} sequences with mangled headres".format(
+    print("Discarded {} sequences with mangled headers".format(
         len(discards['mangled header'])
     ))
     for h in discards['mangled header']:
