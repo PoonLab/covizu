@@ -116,13 +116,14 @@ and then directing your web browser to `localhost:8001`.
 These JSON files are not regularly updated - they are provided for the purpose of front-end
 development and demonstration.
 
+### Running the back-end
 The following workflow to generate the JSON files from the database is automated by the bash script `covizu.sh`:
 
 1. Sequences are bulk downloaded from the GISAID database.  All developers have signed the GISAID data access agreement, and sequences are not being re-distributed.
 
 2. Sequences are aligned pairwise against the SARS-COV-2 reference genome using the Procrustean method implemented in [gotoh2](http://github.com/ArtPoon/gotoh2) - see `updater.py`.  This module provides a method that progressively updates an existing alignment file with new sequence records, avoiding the re-alignment of previously released genomes.
 
-3. Sequences are filtered using `filtering.py` for entries that are derived from non-human sources, incomplete genomes, and genomes that contain >5% fully ambiguous base calls (`N`s).  **If you prefer to use your own alignment software, this would be your entry point using a FASTA file as input.**
+3. Sequences are filtered using `filtering.py` for entries that are derived from non-human sources, incomplete genomes, and genomes that contain >5% fully ambiguous base calls (`N`s).  **If you prefer to use your own alignment software, this would be your entry point using a FASTA file as input, with the original GISAID sequence headers.**
 
 4. A pairwise genetic distance matrix is generated using [TN93](http://github.com/veg/tn93) - only distances below a cutoff of `0.0001` are recorded to the output file.
 
