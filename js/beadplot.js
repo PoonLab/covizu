@@ -340,5 +340,5 @@ function beadplot(cid) {
           .ticks(5)
           .tickFormat(d3.timeFormat("%Y-%m-%d"))
       );
-  
+
 }

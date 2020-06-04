@@ -71,7 +71,9 @@
         });
 
         // load cluster data (hclust.R) from server
-        var clusters, beaddata, tips;
+        var clusters, beaddata, tips,
+            accn_to_cid;
+
         var req = $.getJSON("data/clusters.json", function(data) {
           clusters = data;
         });
@@ -91,6 +93,8 @@
           node = rect.nodes()[0];
           d3.select(node).dispatch("click");//.dispatch("mouseover");
            */
+
+          accn_to_cid = index_accessions(clusters);
         });
     </script>
 </body>
