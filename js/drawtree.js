@@ -134,6 +134,7 @@ function map_clusters_to_tips(df, clusters) {
     // augment data frame with cluster data
     tips[root_idx].cluster_idx = cidx;
     tips[root_idx].region = cluster.region;
+    tips[root_idx].allregions = cluster.allregions;
     tips[root_idx].count = coldates.length;
     tips[root_idx].varcount = labels.length;
     
@@ -201,7 +202,13 @@ function draw_clusters(tips) {
       d3.select(this).attr("stroke", "grey")
         .attr("stroke-width", "2");
       $("#text-node").text(null);
-      $("#text-node").text(`Number of cases: ${d.count}\nNumber of variants: ${d.varcount}`);
+      
+      const sum = d.allregions.reduce((prev, curr) => (prev[curr] = ++prev[curr] || 1, prev), {});
+      
+      var allregionsstr = "";
+      Object.keys(sum).sort().forEach(function(key) {allregionsstr += `${key}: ${sum[key]}\n`});
+      
+      $("#text-node").text(`Number of cases: ${d.count}\nNumber of variants: ${d.varcount}\n\nRegion:\n${allregionsstr}`);
       beadplot(d.cluster_idx);
     });
 }

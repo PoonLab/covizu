@@ -195,6 +195,7 @@ function parse_clusters(clusters) {
       'points': points
     });
     cluster['region'] = mode(points.map(x => x.region).flat());
+    cluster['allregions'] = points.map(x => x.region).flat();
   }
 
   return(beaddata);
