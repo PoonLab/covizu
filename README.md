@@ -16,14 +16,17 @@ The current mode of visualization employed by CoVizu that we are tentatively ref
 * Vertical lines connect variants that are related by a minimum spanning tree, which gives a *rough* approximation of transmission links.  The variant at the bottom terminus of the vertical line is the putative source.  
 * The relative location of variants along the vertical axis does not convey any information.  The variants are sorted with respect to the vertical axis such that ancestral variants are always below their "descendant" variants.
 
-**It is not feasible to reconstruct accurate links using only genomic data.**  However, our objective is to identify population-level events like importations into Canada, not to attribute a transmission to a specific source individual.
+**It is not feasible to reconstruct accurate epidemiological links using only genomic data.**  
+However, our objective is to identify population-level events like ongoing community transmission or movement between countries, not to attribute a transmission to a specific individual.
 
 
 ## Rationale
 
+### An enormous number of genomes
 There is a rapidly accumulating number of genome sequences of severe acute 
-respiratory syndrome coronavirus 2 (SARS-CoV-2) collected at sites around 
-the world, predominantly available through the Global Intiative on Sharing 
+respiratory syndrome coronavirus 2 (SARS-CoV-2) --- as many as thousands 
+every day -- that have been collected at sites around the world.  
+These data are predominantly available through the Global Intiative on Sharing 
 All Influenza Data (GISAID) database.
 The public release of these genome sequences in near real-time is an 
 unprecedented resource for molecular epidemiology and public health.
@@ -31,6 +34,12 @@ For example, [nextstrain](http://nextstrain.org) has been at the forefront
 of analyzing and communicating the global distribution of SARS-CoV-2 genomic 
 variation.
 
+Visualizing the entirety of this genome database represents a significant
+challenge.  Although it is possible to reconstruct a tree relating all
+genome sequences, for example, it is difficult to display the entire tree in a 
+meaningful way.
+
+### Trees are limiting
 The central feature of [nextstrain](nextstrain.org) is a reconstruction of 
 a time-scaled phylogeny (a tree-based model of how infections are related 
 by common ancestors back in time).
@@ -50,9 +59,13 @@ are directly sampled --- we think this is not unreasonable given the
 relatively slow rate of molecular evolution in comparison to the virus 
 transmission rate.
 
+### A majority of genomes are identical
 Another limitation of the tree visualization is that it does not convey 
 information about observing the same genome sequence from multiple samples 
 over time.
+About two-thirds of the SARS-CoV-2 genome sequences in GISAID are identical to
+another genome.
+
 There is no means to differentiate identical sequences in a phylogeny 
 because there are no phylogenetically informative sites that separate them.
 One could extend the tips of the tree to span the time period of sample 
@@ -61,6 +74,30 @@ However, the time scale of sampling identical genomes is relatively short
 compared to the evolutionary history of the virus that is represented by 
 the tree.
 
+Sampling identical genomes in different locations or over different
+points in time from the same location is useful information for public health.
+Our primary motivation for developing beadplots was to place greater visual 
+emphasis on this information.
+
+
+## Dependencies
+CoVizu is being developed on [Ubuntu Linux](https://ubuntu.com/) and macOS platforms.
+
+* Mozilla [geckodriver](https://github.com/mozilla/geckodriver) v0.26+ (optional for data retrieval)
+* [Python](https://www.python.org/) 3.6 or higher, and the following modules:
+  * [Selenium](https://github.com/SeleniumHQ/selenium/) version 3.14.1+ (optional for data retrieval)
+  * [gotoh2](https://github.com/ArtPoon/gotoh2/) - requires a build environment for C
+  * [networkx](https://networkx.github.io/) version 2.3+
+  * [BioPython](https://biopython.org/) version 1.7+
+* GNU [sed](https://www.gnu.org/software/sed/) stream editor
+* [TN93](https://github.com/veg/tn93) v1.0.6
+* [R](https://cran.r-project.org/) 3.6+, and the following packages:
+  * [igraph](https://igraph.org/r/) version 1.2+
+  * [jsonlite](https://cran.r-project.org/web/packages/jsonlite/index.html) version 1.6+
+  * [Rtsne](https://cran.r-project.org/web/packages/Rtsne/index.html) version 0.15
+* [FastTree2](http://www.microbesonline.org/fasttree/) version 2.1.10+, compiled for [double precision](http://www.microbesonline.org/fasttree/#BranchLen)
+* [TreeTime](https://github.com/neherlab/treetime) version 0.7.5+
+
 
 ## Current workflow
 
@@ -68,7 +105,7 @@ the tree.
 
 2. Sequences are aligned pairwise against the SARS-COV-2 reference genome using the Procrustean method implemented in [gotoh2](http://github.com/ArtPoon/gotoh2) - see `updater.py`.  This module provides a method that progressively updates an existing alignment file with new sequence records, avoiding the re-alignment of previously released genomes.
 
-3. Sequences are filtered using `filtering.py` for entries that are derived from non-human sources, incomplete genomes, and genomes that contain >5% fully ambiguous base calls (`N`s).
+3. Sequences are filtered using `filtering.py` for entries that are derived from non-human sources, incomplete genomes, and genomes that contain >5% fully ambiguous base calls (`N`s).  **If you prefer to use your own alignment software, this would be your entry point using a FASTA file as input.**
 
 4. A pairwise genetic distance matrix is generated using [TN93](http://github.com/veg/tn93) - only distances below a cutoff of `0.0001` are recorded to the output file.
 
@@ -82,4 +119,5 @@ the tree.
 
 
 ## Acknowledgements
-The development and validation of these scripts was made possible by the labs who have generated and contributed SARS-COV-2 genomic sequence data that is curated and published by [GISAID](https://www.gisaid.org/).  We sincerely thank these labs for making this information available to the public and open science.
+CoVizu was made possible by the labs who have generated and contributed SARS-COV-2 genomic sequence data that is curated and published by [GISAID](https://www.gisaid.org/).  We sincerely thank these labs for making this information available to the public and open science.
+The development of CoVizu is supported in part by a Project Grant from the [Canadian Institutes of Health Research](https://cihr-irsc.gc.ca/e/193.html) (PJT-156178).
