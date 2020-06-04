@@ -95,11 +95,13 @@ if __name__ == '__main__':
     print("Discarded {} sequences with duplicate accession numbers".format(
         len(discards['duplicates'])
     ))
-    for h in discards['duplicates']:
-        print('  {}'.format(h))
+    if args.verbose:
+        for h in discards['duplicates']:
+            print('  {}'.format(h))
 
     print("Discarded {} sequences with mangled headers".format(
         len(discards['mangled header'])
     ))
-    for h in discards['mangled header']:
-        print('  {}'.format(h))
+    if args.verbose:
+        for h in discards['mangled header']:
+            print('  {}'.format(h))
