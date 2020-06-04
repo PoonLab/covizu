@@ -2,6 +2,11 @@
 
 CoVizu is an open source project to develop a `near real time' SARS-CoV-2 genome analysis and visualization system that highlights potential cases of importation from other countries or ongoing community transmission.
 
+* [Rationale](https://github.com/PoonLab/covizu#rationale)
+* [Dependencies](https://github.com/PoonLab/covizu#dependencies)
+* [Getting started](https://github.com/PoonLab/covizu#getting-started)
+* [Acknowledgements](https://github.com/PoonLab/covizu#acknowledgements)
+
 The current mode of visualization employed by CoVizu that we are tentatively referring to as a "beadplot":
 
 <p align="center">
@@ -99,7 +104,19 @@ CoVizu is being developed on [Ubuntu Linux](https://ubuntu.com/) and macOS platf
 * [TreeTime](https://github.com/neherlab/treetime) version 0.7.5+
 
 
-## Current workflow
+## Getting started
+
+Our source code is distributed with JSON data files, so you can launch a local 
+instance of CoVizu by running the bash script:
+```console
+Elzar:covizu artpoon$ bash run-server.sh 
+Serving HTTP on 127.0.0.1 port 8001 (http://127.0.0.1:8001/) ...
+```
+and then directing your web browser to `localhost:8001`.
+These JSON files are not regularly updated - they are provided for the purpose of front-end
+development and demonstration.
+
+The following workflow to generate the JSON files from the database is automated by the bash script `covizu.sh`:
 
 1. Sequences are bulk downloaded from the GISAID database.  All developers have signed the GISAID data access agreement, and sequences are not being re-distributed.
 
