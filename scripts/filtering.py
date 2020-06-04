@@ -17,7 +17,7 @@ def filter_gisaid(fasta_file, outfile, max_prop_n=0.05, minlen=29000):
     """
     # lower-case label in place of country identifies non-human samples
     pat = re.compile('^[^/]+/[a-z]')
-    pat2 = re.compile("^hCoV-19/[A-Z][^/]+/[^/]+/[0-9]+\|[^|]+\|[0-9]{4}-[0-9]{2}-[0-9]{2}")
+    pat2 = re.compile("^[HhCcOoVv]-19/[A-Z][^/]+/[^/]+/[0-9-]+\|[^|]+\|[0-9]{4}-[0-9]+-[0-9]+")
 
     accessions = {}
     discards = {'nonhuman': [], 'ambiguous': [], 'short': [],
