@@ -1,5 +1,6 @@
 import argparse
 from gotoh2 import *
+# TODO: implement MPI
 
 
 def update(srcfile, destfile, reffile, callback=None):
