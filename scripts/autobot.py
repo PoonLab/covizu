@@ -65,11 +65,14 @@ def login(driver):
 	return driver
 
 
-def retrieve_genomes(driver, dt, download_folder):
+def retrieve_genomes(driver, start, end, download_folder):
 	"""
-	Retrieve genomes with a specified deposition date in the GISAID database.
+	Retrieve genomes with a specified deposition date range in the GISAID database.
+	Adding several time delays to avoid spamming the database.
+
 	:param driver:  webdriver.Firefox object from login()
-	:param dt:  date in ISO format (yyyy-mm-dd)
+	:param start:  date in ISO format (yyyy-mm-dd)
+	:param end:  date in ISO format (yyyy-mm-dd)
 	:return:  path to file download
 	"""
 
@@ -79,21 +82,29 @@ def retrieve_genomes(driver, dt, download_folder):
 	variable = htmlid_as_list[1]
 
 	# navigate to corona virus page
-	print('navigating to corona db')
+	print('navigating to CoV db')
 	element = driver.find_element_by_xpath("//*[contains(text(), 'Browse')]")
 	element.click()
 	time.sleep(5)
 
 	# trigger selection change
 	time_string = '[id^="ce_' + variable + '"][id$="_input"]'
-	driver.execute_script("document.querySelectorAll('{}')[2].value = '{}'".format(time_string, dt))
+
+	driver.execute_script("document.querySelectorAll('{}')[2].value = '{}'".format(time_string, start))
 	driver.execute_script("document.querySelectorAll('{}')[2].onchange()".format(time_string))
-	driver.execute_script(
-		"document.querySelectorAll('[id^=\"ce_{}\"][id$=_input]')[2].onchange()".format(variable)
-	)
-	time.sleep(5)
+
+	driver.execute_script("document.querySelectorAll('{}')[3].value = '{}'".format(time_string, end))
+	driver.execute_script("document.querySelectorAll('{}')[3].onchange()".format(time_string))
+
+	driver.execute_script("document.querySelectorAll('[id^=\"ce_{}\"][id$=_input]')[2].onchange()".format(variable))
+	time.sleep(15)
 
 	print('selecting all seqs')
+	element = driver.find_element_by_xpath("//*[contains(text(), 'Total')]")
+	count = element.get_attribute('innerHTML').split()[1].replace(',', '')
+	if int(count) > 10000:
+		time.sleep(15)
+
 	checkbox = driver.find_element_by_xpath("//span[@class='yui-dt-label']/input[@type='checkbox']")
 	checkbox.click()
 	time.sleep(5)
@@ -115,19 +126,25 @@ def retrieve_genomes(driver, dt, download_folder):
 	time.sleep(5)
 
 	# wait for download to complete
-	downloading = True
-	while downloading:
-		time.sleep(5)
-		for file in os.listdir(download_folder):
-			downloading = False
-			if file.endswith('.part'):
-				# FIXME: is this platform specific?
-				downloading = True
-				break
+	while True:
+		files = os.listdir(download_folder)
+		if len(files) == 0:
+			# download has not started yet
+			time.sleep(10)
+			continue
+		if any([f.endswith('.part') for f in files]):
+			# FIXME: is this platform specific?
+			time.sleep(5)
+			continue
+		break
 
-	print('Downloading complete, moving files')
+	print('Downloading complete')
 	downloaded_file = os.listdir(download_folder)[0]
-	driver.quit()
+
+	# reset browser
+	driver.switch_to.default_content()
+	element = driver.find_element_by_xpath("//button[@class='sys-event-hook sys-form-button']")
+	element.click()
 
 	return os.path.join(download_folder, downloaded_file)
 
@@ -163,8 +180,12 @@ def parse_args():
 		description="Automate retrieval of genomes deposited in a given day."
 	)
 	parser.add_argument(
-		'date', type=str, default=(date.today() - timedelta(days=1)).isoformat(),
-		help="Start date of 24h interval to query database in ISO format (yyyy-mm-dd)."
+		'start', type=str, default=(date.today() - timedelta(days=1)).isoformat(),
+		help="Start date to query database in ISO format (yyyy-mm-dd)."
+	)
+	parser.add_argument(
+		'end', type=str, default=date.today().isoformat(),
+		help='End date to query database in ISO format (yyyy-mm-dd)'
 	)
 	parser.add_argument(
 		'destfile', type=argparse.FileType('r+'),
@@ -186,5 +207,7 @@ if __name__ == '__main__':
 	args = parse_args()
 	driver = get_driver(download_folder=args.dir, executable_path=args.binpath)
 	driver = login(driver=driver)
-	srcfile = retrieve_genomes(driver=driver, dt=args.date, download_folder=args.dir)
+	srcfile = retrieve_genomes(driver=driver, start=args.start, end=args.end,
+							   download_folder=args.dir)
 	update_local(srcfile=srcfile, destfile=args.destfile)
+	driver.quit()
