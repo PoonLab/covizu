@@ -26,7 +26,7 @@ function select_bead_by_accession(accn) {
 			return d.accessions.includes(accn);
 		});
 		bead.dispatch('mouseover');
-		bead.scrollIntoView();
+		bead.node().scrollIntoView();
 		selected.push(bead.node());
 	}
 }
