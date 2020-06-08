@@ -177,7 +177,7 @@ def update_local(srcfile, destfile):
 def parse_args():
 	""" Command line interface """
 	parser = argparse.ArgumentParser(
-		description="Automate retrieval of genomes deposited in a given day."
+		description="Python3 Script to Automate retrieval of genomes deposited in a given day."
 	)
 	parser.add_argument(
 		'start', type=str, default=(date.today() - timedelta(days=1)).isoformat(),
@@ -188,8 +188,8 @@ def parse_args():
 		help='End date to query database in ISO format (yyyy-mm-dd)'
 	)
 	parser.add_argument(
-		'destfile', type=argparse.FileType('r+'),
-		default=open('data/gisaid-aligned.fa', 'r+'),
+		'destfile', type=str,
+		default='data/gisaid-aligned.fa',
 		help="Destination file to align and append downloaded sequences."
 	)
 	parser.add_argument(
@@ -205,9 +205,9 @@ def parse_args():
 
 if __name__ == '__main__':
 	args = parse_args()
-	driver = get_driver(download_folder=args.dir, executable_path=args.binpath)
+	driver = get_driver(download_folder=args.d, executable_path=args.binpath)
 	driver = login(driver=driver)
 	srcfile = retrieve_genomes(driver=driver, start=args.start, end=args.end,
-							   download_folder=args.dir)
+							   download_folder=args.d)
 	update_local(srcfile=srcfile, destfile=args.destfile)
 	driver.quit()
