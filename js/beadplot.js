@@ -221,6 +221,12 @@ function beadplot(cid) {
       min_y = d3.min(variants, yValue1B),
       max_y = d3.max(variants, yValue1B);
 
+  // Create a div for the tooltip
+  var bTooltip = d3.select("body")
+      .append("div")
+      .attr("class", "tooltip")
+      .style("opacity", 0);
+
   // update vertical range for consistent spacing between variants
   heightB = max_y * 10;
   $("#svg-cluster > svg").attr("height", heightB + marginB.top + marginB.bottom);
@@ -310,11 +316,38 @@ function beadplot(cid) {
       .on("mouseover", function(d) {
         d3.select(this).attr("stroke-width", 2)
             .attr("r", 4*Math.sqrt(d.count)+3);
+
+        // Animation to show tooltip
+        bTooltip.transition()
+            .duration(200)
+            .style("opacity", 0.9);
+
+        // Display information in tooltip
+        var my_regions = table(d.region),
+            tooltipText = `<b>Number of cases</b><br>`;
+        for (let [r_key, r_value] of Object.entries(my_regions)) {
+          tooltipText += `${r_key}: ${r_value}<br>`
+        }
+
+        // Display total number of cases if variants are from multiple countries
+        if(Object.keys(my_regions).length > 1) {
+          console.log(Object.keys(my_regions))
+          tooltipText += `Total: ${d.count} <br>`
+        }
+
+        bTooltip.html(tooltipText)
+            .style("left", (d3.event.pageX + 10) + "px")
+            .style("top", (d3.event.pageY + "px"));
       })
       .on("mouseout", function(d) {
         if (!selected.includes(this)) {
           d3.select(this).attr("stroke-width", 1)
               .attr("r", 4*Math.sqrt(d.count));
+
+          // Animation to hide tooltip
+          bTooltip.transition()
+              .duration(500)
+              .style("opacity", 0);
         }
       })
       .on("click", function(d) {
