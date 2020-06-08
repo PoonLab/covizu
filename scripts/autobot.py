@@ -62,6 +62,12 @@ def login(driver):
 	driver.execute_script('doLogin()')
 	time.sleep(5)
 
+        # navigate to corona virus page
+	print('navigating to CoV db')
+	element = driver.find_element_by_xpath("//*[contains(text(), 'Browse')]")
+	element.click()
+	time.sleep(5)
+
 	return driver
 
 
@@ -80,12 +86,6 @@ def retrieve_genomes(driver, start, end, download_folder):
 	element = driver.find_element_by_xpath("//div[@class='buttons container-slot']")
 	htmlid_as_list = element.get_attribute('id').split('_')
 	variable = htmlid_as_list[1]
-
-	# navigate to corona virus page
-	print('navigating to CoV db')
-	element = driver.find_element_by_xpath("//*[contains(text(), 'Browse')]")
-	element.click()
-	time.sleep(5)
 
 	# trigger selection change
 	time_string = '[id^="ce_' + variable + '"][id$="_input"]'
@@ -133,7 +133,6 @@ def retrieve_genomes(driver, start, end, download_folder):
 			time.sleep(10)
 			continue
 		if any([f.endswith('.part') for f in files]):
-			# FIXME: is this platform specific?
 			time.sleep(5)
 			continue
 		break
@@ -142,6 +141,7 @@ def retrieve_genomes(driver, start, end, download_folder):
 	downloaded_file = os.listdir(download_folder)[0]
 
 	# reset browser
+	time.sleep(30)
 	driver.switch_to.default_content()
 	element = driver.find_element_by_xpath("//button[@class='sys-event-hook sys-form-button']")
 	element.click()
