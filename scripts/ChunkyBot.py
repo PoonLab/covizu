@@ -1,205 +1,258 @@
-from selenium import webdriver
-import time
-from datetime import datetime, timedelta
 import os
+import sys
+import time
+from datetime import date, timedelta, datetime
+
+from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
-import shutil 
+
 import subprocess
+import argparse
+import tempfile
+import getpass
+
 from gotoh2 import *
 
 todaystr = datetime.strftime(datetime.now(), '%Y-%m-%d')
 cwd = os.getcwd()
 
-print(todaystr + ' log')
-print('===================')
+def get_driver(download_folder, executable_path):
+	"""
+	Instantiate remote control interface for Firefox web browser
+	
+	:param download_folder:  path to write downloaded files
+	:param executable_path:  path to geckodriver executable
+	:return:
+	"""
+	profile = webdriver.FirefoxProfile()
+	profile.set_preference('browser.download.folderList', 2)
+	profile.set_preference('browser.download.manager.showWhenStarting', False)
+	profile.set_preference("browser.download.dir", download_folder)
+	profile.set_preference('browser.helperApps.alwaysAsk.force', False)
+	profile.set_preference("browser.helperApps.neverAsk.saveToDisk", "application/octet-stream,octet-stream")
+	profile.set_preference("browser.helperApps.neverAsk.openFile", "application/octet-stream,octet-stream")
 
-destdir = cwd + '/data/weeklydumps/'+ todaystr +'/' 
-bashcmd = 'mkdir -p ' + destdir
-process = subprocess.Popen(bashcmd.split(), stdout=subprocess.PIPE)
+	opts = Options()
+	opts.headless = True  # opts.set_headless()
+	assert opts.headless
 
-#set profile settings (mostly so that it downloads automatically )
-print('initializing options & profile')
-profile = webdriver.FirefoxProfile()
-profile.set_preference('browser.download.folderList', 2) 
-profile.set_preference('browser.download.manager.showWhenStarting', False)
-profile.set_preference("browser.download.dir", cwd + '/data/tmpdownloads')
-profile.set_preference('browser.helperApps.alwaysAsk.force', False)
-profile.set_preference("browser.helperApps.neverAsk.saveToDisk", "application/octet-stream,octet-stream")
-profile.set_preference("browser.helperApps.neverAsk.openFile", "application/octet-stream,octet-stream")
-opts = Options()
-opts.set_headless()
-assert opts.headless 
-
-#initialize browser
-print('launching browser ')
-driver = webdriver.Firefox(firefox_profile=profile, options=opts, executable_path = '/usr/local/bin/geckodriver')
-#print(driver)
-driver.get('https://www.epicov.org/epi3/cfrontend')
-
-time.sleep(5)
-pw= os.environ['gisaid_pw_variable']
-user= os.environ['gisaid_u_variable']
-print('logging in')
-driver.execute_script('document.getElementById("elogin").value="'+ user + '"')
-driver.execute_script('document.getElementById("epassword").value="'+ pw + '"')
-
-#call javascript login function 
-driver.execute_script('doLogin()')
-time.sleep(5)
-
-#find prefix variable
-element = driver.find_element_by_xpath("//div[@class='buttons container-slot']")
-htmlid_as_list = element.get_attribute('id').split('_')
-variable = htmlid_as_list[1]
-
-#navigate to corona virus page
-print('navigating to corona db')
-element = driver.find_element_by_xpath("//*[contains(text(), 'Browse')]")
-element.click()
-time.sleep(5)
-
-#change date range, and trigger selection change 
-print('Selecting date')
-yesterday = datetime.strftime(datetime.now() - timedelta(1), '%Y-%m-%d')
-
-time.sleep(5)
+	return webdriver.Firefox(firefox_profile=profile, options=opts, executable_path=executable_path)
 
 
-def SelectAndDownload(start, end, filename):
-	print('Selecting '+ start + ', '+ end)
-	#takes start, end (two strings in format 2020-mm-dd) + filename and downloads sequences within that range 
-	time_string =  '[id^="ce_' + variable + '"][id$="_input"]'
-	#set start date 
-	driver.execute_script("document.querySelectorAll('" + time_string +"')[2].value = '" + start +"'")
-	driver.execute_script("document.querySelectorAll('" + time_string +"')[2].onchange()")
-	#set end date 
-	driver.execute_script("document.querySelectorAll('" + time_string +"')[3].value = '" + end +"'")
-	driver.execute_script("document.querySelectorAll('" + time_string +"')[3].onchange()")
-	driver.execute_script('''document.querySelectorAll('[id^="ce_''' + variable + '''"][id$=_input]')[2].onchange()''')
-	#select all sequences 
-	print('selecting all seqs')
+def login(driver):
+	"""
+	Use GISAID access credentials to login to database.
+	:param driver: webdriver.Firefox object
+	:return:
+	"""
+	driver.get('https://www.epicov.org/epi3/cfrontend')
+	time.sleep(15)  # seconds
+
+	# read login credentials from Environment Variables
+	try:
+		user = os.environ['gisaid_u_variable']
+		pw = os.environ['gisaid_pw_variable']
+	except KeyError:
+		# variables not set, get access credentials interactively
+		user = getpass.getpass(prompt='GISAID username: ')
+		pw = getpass.getpass(prompt='GISAID password: ')
+
+	print('logging in')
+	driver.execute_script('document.getElementById("elogin").value="{}"'.format(user))
+	driver.execute_script('document.getElementById("epassword").value="{}"'.format(pw))
+	time.sleep(5)
+
+	# call javascript login function
+	driver.execute_script('doLogin()')
+	time.sleep(5)
+
+	#navigate to corona virus page
+	print('navigating to CoV db')
+	element = driver.find_element_by_xpath("//*[contains(text(), 'Browse')]")
+	element.click()
+	time.sleep(5)
+
+	return driver
+
+def find_prefix(driver):
+	#find prefix variable
+	element = driver.find_element_by_xpath("//div[@class='buttons container-slot']")
+	return element.get_attribute('id').split('_')[1]
+
+def retrieve_genomes(driver, start, end, download_folder):
+	"""
+	Retrieve genomes with a specified deposition date range in the GISAID database.
+	Adding several time delays to avoid spamming the database.
+
+	:param driver:  webdriver.Firefox object from login()
+	:param start:  date in ISO format (yyyy-mm-dd)
+	:param end:  date in ISO format (yyyy-mm-dd)
+	:return:  path to file download
+	"""
+
+	# find prefix variable
+	element = driver.find_element_by_xpath("//div[@class='buttons container-slot']")
+	htmlid_as_list = element.get_attribute('id').split('_')
+	variable = htmlid_as_list[1]
+
+	# navigate to corona virus page
+	print('navigating to CoV db')
+	element = driver.find_element_by_xpath("//button[contains(text(), 'Reset')]")
+	element.click()
+	time.sleep(5)
+
+	# trigger selection change
+	time_string = '[id^="ce_' + variable + '"][id$="_input"]'
+
+	driver.execute_script("document.querySelectorAll('{}')[2].value = '{}'".format(time_string, start))
+	driver.execute_script("document.querySelectorAll('{}')[2].onchange()".format(time_string))
+
+	driver.execute_script("document.querySelectorAll('{}')[3].value = '{}'".format(time_string, end))
+	driver.execute_script("document.querySelectorAll('{}')[3].onchange()".format(time_string))
+
+	driver.execute_script("document.querySelectorAll('[id^=\"ce_{}\"][id$=_input]')[2].onchange()".format(variable))
 	time.sleep(15)
+
+	print('selecting all seqs')
 	element = driver.find_element_by_xpath("//*[contains(text(), 'Total')]")
-	count = element.get_attribute('innerHTML').split()[1].replace(',','')
+	count = element.get_attribute('innerHTML').split()[1].replace(',', '')
 	if int(count) > 10000:
-		time.sleep(15)  
+		time.sleep(15)
+
 	checkbox = driver.find_element_by_xpath("//span[@class='yui-dt-label']/input[@type='checkbox']")
 	checkbox.click()
 	time.sleep(5)
-	#click download button, look for button that contains Download txt
+
+	# download seqs
 	element = driver.find_element_by_xpath("//*[contains(text(), 'Download')]")
 	driver.execute_script("arguments[0].click();", element)
-	#element.click()
 	time.sleep(5)
-	#switch to iframe to download 
+
+	# switch to iframe to download
 	driver.switch_to_frame(driver.find_element_by_tag_name("iframe"))
-	# download
 	print("Download")
 	time.sleep(5)
-	button = driver.find_element_by_xpath("//*[contains(text(), 'Download')]//ancestor::div[@style='float: right']")
+
+	button = driver.find_element_by_xpath(
+		"//*[contains(text(), 'Download')]//ancestor::div[@style='float: right']"
+	)
 	button.click()
 	time.sleep(5)
+
 	# wait for download to complete
-	downloading = True
-	while downloading:
-		if os.listdir(cwd +'/data/tmpdownloads/') == []:
+	while True:
+		files = os.listdir(download_folder)
+		if len(files) == 0:
+			# download has not started yet
 			time.sleep(10)
-		for file in os.listdir(cwd + '/data/tmpdownloads/'):
-			if file.endswith('.part'):
-				time.sleep(5)
-				downloading = True
-		if len(os.listdir(cwd+'/data/tmpdownloads/')) == 1:
-			downloading = False
+			continue
+		if any([f.endswith('.part') for f in files]):
+			time.sleep(5)
+			continue
+		break
 
-	print('Downloading complete, moving files')
-	#move file
-	yesterday = datetime.strftime(datetime.now() - timedelta(1), '%Y-%m-%d')
-	downloadedfile = os.listdir(cwd+'/data/tmpdownloads/')[0]
-	source = cwd+'/data/tmpdownloads/' + downloadedfile
-	destination = destdir + 'GISAID-' +  filename + '.fasta'
-	shutil.move(source, destination)
+	print('Downloading complete')
+	downloaded_file = os.listdir(download_folder)[0]
 	driver.switch_to.default_content()
-	element = driver.find_element_by_xpath("//button[@class='sys-event-hook sys-form-button']")
+
+	# reset browser
+	element = driver.find_element_by_xpath("//button[contains(text(), 'Reset')]")
 	element.click()
-
-#predefined blocks one, two and three have <10k sequences 
-SelectAndDownload('2019-01-01', '2020-04-16', '0101_0416')
-time.sleep(300)
-driver.switch_to.default_content()
-SelectAndDownload('2020-04-17', '2020-05-08', '0417_0508')
-time.sleep(300)
-driver.switch_to.default_content()
-SelectAndDownload('2020-05-08', '2020-05-15', '0508_0515')
-time.sleep(300)
-driver.switch_to.default_content()
-#next do the chunks afterwards in weekly increments 
-#find how many new chunks we need to get 
-startdate = datetime(2020,5,16)
-today = datetime.now()
-delta = (today- startdate).days
-#find number of weekly blocks
-newchunks = delta//7 + 1 
-
-for count in range(1, newchunks + 1):
-	#get the chunk dates
-	enddate = startdate + timedelta(6)
-	startmonthstr = str(startdate.month) if startdate.month > 9 else '0'+ str(startdate.month)
-	startdaystr = str(startdate.day) if startdate.day > 9 else '0' + str(startdate.day)
-	endmonthstr = str(enddate.month) if enddate.month > 9 else '0'+ str(enddate.month)
-	enddaystr = str(enddate.day) if enddate.day > 9 else '0' + str(enddate.day)
-	blockname = startmonthstr+startdaystr + '_' + endmonthstr+enddaystr
-	SelectAndDownload(datetime.strftime(startdate, '%Y-%m-%d'), datetime.strftime(enddate, '%Y-%m-%d'), blockname)
-	time.sleep(20)
-	driver.switch_to.default_content()
-	startdate = enddate +timedelta(1)
-	#set up for next iteration 
+	return os.path.join(download_folder, downloaded_file)
 
 
-driver.quit()
-
-#move latest file directly to baseline
-
-shutil.move(destdir + 'GISAID' +blockname+ '.fasta', cwd+'/data/weeklydumps/baseline')
-
-#Load and compare Fasta seqs
-
-all_diff_headers =[]
-
-#compare blocks:
-
-def import_dicts(old_fasta, new_fasta):
-	base_fasta = convert_fasta(open(old_fasta))
-	new_fasta = convert_fasta(open(new_fasta))
-	return (dict(base_fasta), dict(new_fasta))
-
-def compare_dicts(old_dict, new_dict):
-	block_diff=[]
-	for key, value in old_dict.iteritems():
+def compare_dicts(old_fasta, new_fasta):
+	old_dict = dict(convert_fasta(open(old_fasta)))
+	new_dict = dict(convert_fasta(open(new_fasta)))
+	block_diff={}
+	for key, value in old_dict.items():
 		try:
 			newval = new_dict[key]
 			if newval != value:
-				block_diff.append(key)
+				block_diff[key] = newval
 		except:
-			block_diff.append(key)
+			block_diff[key] = value
 	return block_diff
 
-for file in os.listdir(cwd +'/data/weeklydumps/baseline'):
-	old_dict, new_dict = import_dicts(cwd +'/data/weeklydumps/baseline/'+file, destdir +file)
-	for diff_header in compare_dicts(old_dict, new_dict):
-		all_diff_headers.append(diff_header)
+def parse_args():
+	""" Command line interface """
+	parser = argparse.ArgumentParser(
+		description="Python3 Script to Automate retrieval of genomes deposited in a given day."
+	)
+	parser.add_argument(
+		'-d', '-dir', type=str, default=tempfile.TemporaryDirectory(),
+		help="Temporary directory to download files."
+	)
+	parser.add_argument(
+		'-b', '--binpath', type=str, default='/usr/local/bin/geckodriver',
+		help='Path to geckodriver binary executable'
+	)
+	parser.add_argument(
+		'-l', '--baselinedir', type=str, default='data/baseline',
+		help='Folder containing baseline downloads'
+		)
+	parser.add_argument(
+		'-o', '--outputdiffFasta', type=str, default='data/weeklydumps/diff.fasta',
+		help='Directory for Output file containing sequences that are modified or missing'
+		)
+	return parser.parse_args()
 
-#write report
-reportFile = open(cwd+'/debug/'+ todaystr + '_report.txt', 'w+')
 
-for header in all_diff_headers:
-	reportFile.write(header +'\n')
+if __name__ == '__main__':
+	args = parse_args()
+	download_folder = args.d.name
+	driver = get_driver(download_folder=download_folder, executable_path=args.binpath)
+	driver = login(driver=driver)
+	bfiles = ['data/baseline/'+ s for s in os.listdir(args.baselinedir)]
+	difffasta ={}
+	#predefined blocks one, two and three have <10k sequences
+	srcfile = retrieve_genomes(driver=driver, start='2019-01-01', end='2020-04-16',
+							   download_folder=download_folder)
+	difffasta.update(compare_dicts(bfiles[0],srcfile))
+	time.sleep(300)
 
-#destroy additional files in no differences reported
-if len(all_diff_headers) == 0:
-	reportFile.write('No Differences Found')
-	shutil.rmtree(destdir)
- 
-reportFile.close()
+	srcfile = retrieve_genomes(driver=driver, start='2020-04-17', end='2020-05-08',
+							   download_folder=download_folder)
+	difffasta.update(compare_dicts(bfiles[1],srcfile))
+	time.sleep(300)
+
+	srcfile = retrieve_genomes(driver=driver, start='2020-05-08', end='2020-05-15',
+							   download_folder=download_folder)
+	difffasta.update(compare_dicts(bfiles[2],srcfile))
+	time.sleep(300)
+
+	#next do the chunks afterwards in weekly increments
+	#find how many new chunks we need to get
+	startdate = datetime(2020,5,16)
+	today = datetime.now()
+	delta = (today- startdate).days
+	#find number of weekly blocks
+	newchunks = delta//7 + 1
 
 
+	for count in range(1, newchunks + 1):
+		osdircount = 3
+		#get the chunk dates
+		enddate = startdate + timedelta(6)
+		startmonthstr = str(startdate.month) if startdate.month > 9 else '0'+ str(startdate.month)
+		startdaystr = str(startdate.day) if startdate.day > 9 else '0' + str(startdate.day)
+		endmonthstr = str(enddate.month) if enddate.month > 9 else '0'+ str(enddate.month)
+		enddaystr = str(enddate.day) if enddate.day > 9 else '0' + str(enddate.day)
+		blockname = startmonthstr+startdaystr + '_' + endmonthstr+enddaystr
 
+		srcfile = retrieve_genomes(driver=driver, start=datetime.strftime(startdate, '%Y-%m-%d'),
+								   end=datetime.strftime(enddate, '%Y-%m-%d'), download_folder=download_folder)
+		difffasta.update(compare_dicts(bfiles[osdircount],srcfile))
+		osdircount +=1
+		time.sleep(300)
+		startdate = enddate +timedelta(1)
+		#set up for next iteration
+
+	#move latest file directly to baseline
+	shutil.move(src, cwd+'/data/weeklydumps/baseline/'+blockname+ '.fasta')
+
+	driver.quit()
+
+	with open(args.outputdiffFasta, mode='w+') as out:
+		for h,s in difffasta.items():
+			out.write('>{}\n{}\n'.format(h, s))
