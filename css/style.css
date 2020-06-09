@@ -1,4 +1,118 @@
 @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+/* https://github.com/tholman/github-corners */
+.github-corner:hover .octo-arm {
+  animation:octocat-wave 560ms ease-in-out
+}
+@keyframes octocat-wave {
+  0%,100%{transform:r@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+/* https://github.com/tholman/github-corners */
+.github-corner:hover .octo-arm {
+  animation:octocat-wave 560ms ease-in-out
+}
+@keyframes octocat-wave {
+  0%,100%{transform:rotate(0)}
+  20%,60%{transform:rotate(-25deg)}
+  40%,80%{transform:rotate(10deg)}
+}
+@media (max-width:500px) {
+  .github-corner:hover .octo-arm {
+    animation:none
+  }
+  .github-corner .octo-arm {
+    animation:octocat-wave 560ms ease-in-out
+  }
+}
+
+body {
+  width: 97%;
+  margin: 42px auto;
+  font: .9em/1.2 Lato, sans-serif;
+}
+
+h1, h2, h3, h4 {
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+
+svg text {
+  font: 1em/1.2 Lato, sans-serif;
+}
+
+div .breaker {
+  white-space: pre;
+}
+
+.treeaxis line {
+  stroke: lightslategrey;
+}
+.treeaxis path {
+  stroke: lightslategrey;
+}
+.treeaxis text {
+  fill: lightslategrey;
+}
+
+.hover {
+  background-color: rgba(0, 0, 0, .5);
+}
+
+.textbox {
+  width: 90%;
+  margin: 1em auto;
+}
+otate(0)}
+  20%,60%{transform:rotate(-25deg)}
+  40%,80%{transform:rotate(10deg)}
+}
+@media (max-width:500px) {
+  .github-corner:hover .octo-arm {
+    animation:none
+  }
+  .github-corner .octo-arm {
+    animation:octocat-wave 560ms ease-in-out
+  }
+}
+
+body {
+  width: 97%;
+  margin: 42px auto;
+  font: .9em/1.2 Lato, sans-serif;
+}
+
+h1, h2, h3, h4 {
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+
+svg text {
+  font: 1em/1.2 Lato, sans-serif;
+}
+
+div .breaker {
+  white-space: pre;
+}
+
+.treeaxis line {
+  stroke: lightslategrey;
+}
+.treeaxis path {
+  stroke: lightslategrey;
+}
+.treeaxis text {
+  fill: lightslategrey;
+}
+
+.hover {
+  background-color: rgba(0, 0, 0, .5);
+}
+
+.textbox {
+  width: 90%;
+  margin: 1em auto;
+}
 
 /* https://github.com/tholman/github-corners */
 .github-corner:hover .octo-arm {
