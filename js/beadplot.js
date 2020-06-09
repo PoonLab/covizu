@@ -355,13 +355,11 @@ function beadplot(cid) {
         console.log(d.labels);
 
         // TODO: incorporate the following into tool-tip
-        var my_countries = table(d.country),
-            mystr = "";
-        for (let [key, value] of Object.entries(my_countries)) {
-          mystr += `${key}: ${value}\n`;
-        }
-        $("#text-node").text(mystr);
-
+        var my_countries = table(d.country)
+        var mystr = gentable(my_countries);
+	console.log(mystr)
+        $("#text-node").html(mystr);
+	console.log(mystr)
         // TODO: render as a barchart?
         console.log(table(d.region));
       });
@@ -376,3 +374,17 @@ function beadplot(cid) {
       );
 
 }
+/**
+ * Function to generate table from my_countries object on bead click 
+ * @param {json object} my_countries: json object containing key (countries) value (cases count) pairs 
+ */
+function gentable(my_countries){
+	tablehtml = '<table><tr><th id="Countryheader">Country</th><th id="ccheader">Case Count</th></tr>';
+	for (let [key, value] of Object.entries(my_countries)) {
+		tablehtml += '<tr><td>' + `${key}` + '</td><td>' + `${value}` + '</td></tr>';
+		console.log(key,value)		
+	} 
+	return tablehtml+= '</table>';
+}
+
+
