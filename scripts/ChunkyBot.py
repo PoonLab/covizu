@@ -6,6 +6,7 @@ from datetime import date, timedelta, datetime
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 
+import shutil
 import subprocess
 import argparse
 import tempfile
