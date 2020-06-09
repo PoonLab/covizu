@@ -169,9 +169,10 @@ def update_local(srcfile, destfile):
 	print('==============')
 	print(output + b'\n')
 
-	# write latest update string
-	with open('data/lastupdate.json', 'w') as jsonfile:
-		jsonfile.write('var lastupdate="{}";'.format(date.today().isoformat()))
+	# write latest update string, with number of seqs
+	num = len([1 for line in open("data/gisaid-aligned.fa") if line.startswith(">")])
+	with open('data/dbstats.json', 'w') as jsonfile:
+		jsonfile.write('var lastupdate="{}"; var noseqs="{}"'.format(date.today().isoformat(),num))
 
 
 def parse_args():
