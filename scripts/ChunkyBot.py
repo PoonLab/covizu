@@ -15,6 +15,7 @@ import getpass
 from gotoh2 import *
 from autobot import get_driver, login, retrieve_genomes
 
+
 todaystr = datetime.strftime(datetime.now(), '%Y-%m-%d')
 cwd = os.getcwd()
 
@@ -67,9 +68,11 @@ if __name__ == '__main__':
 	download_folder = args.d.name
 	driver = get_driver(download_folder=download_folder, executable_path=args.binpath)
 	driver = login(driver=driver)
+
 	bfiles = ['data/baseline/'+ s for s in os.listdir(args.baselinedir)]
 	difffasta = {}
 	missfasta = {}
+
 	#predefined blocks one, two and three have <10k sequences
 	srcfile = retrieve_genomes(driver=driver, start='2019-01-01', end='2020-04-16',
 							   download_folder=download_folder)
@@ -94,7 +97,7 @@ if __name__ == '__main__':
 
 	#next do the chunks afterwards in weekly increments
 	#find how many new chunks we need to get
-	startdate = datetime(2020,5,16)
+	startdate = datetime(2020, 5, 16)
 	today = datetime.now()
 	delta = (today- startdate).days
 	#find number of weekly blocks
@@ -116,6 +119,7 @@ if __name__ == '__main__':
 		miss_dict, val_dict = compare_dicts(bfiles[osdircount],srcfile)
 		difffasta.update(val_dict)
 		missfasta.update(miss_dict)
+
 		osdircount +=1
 		time.sleep(300)
 		startdate = enddate +timedelta(1)

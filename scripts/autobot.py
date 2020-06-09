@@ -170,9 +170,12 @@ def update_local(srcfile, destfile):
 	print(output + b'\n')
 
 	# write latest update string, with number of seqs
+	# FIXME: replace file path with destfile.name
+	# FIXME: use subprocess.check_output to `grep -c ">"`
 	num = len([1 for line in open("data/gisaid-aligned.fa") if line.startswith(">")])
 	with open('data/dbstats.json', 'w') as jsonfile:
-		jsonfile.write('var lastupdate="{}"; var noseqs="{}"'.format(date.today().isoformat(),num))
+		# TODO: simplify JSON format?
+		jsonfile.write('var lastupdate="{}"; var noseqs="{}"'.format(date.today().isoformat(), num))
 
 
 def parse_args():
