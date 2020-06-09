@@ -195,6 +195,7 @@ function parse_clusters(clusters) {
       'points': points
     });
     cluster['region'] = mode(points.map(x => x.region).flat());
+    cluster['allregions'] = points.map(x => x.region).flat();
   }
 
   return(beaddata);
@@ -219,6 +220,12 @@ function beadplot(cid) {
       spandate = maxdate-mindate,  // in milliseconds
       min_y = d3.min(variants, yValue1B),
       max_y = d3.max(variants, yValue1B);
+
+  // Create a div for the tooltip
+  var bTooltip = d3.select("body")
+      .append("div")
+      .attr("class", "tooltip")
+      .style("opacity", 0);
 
   // update vertical range for consistent spacing between variants
   heightB = max_y * 10;
@@ -309,11 +316,38 @@ function beadplot(cid) {
       .on("mouseover", function(d) {
         d3.select(this).attr("stroke-width", 2)
             .attr("r", 4*Math.sqrt(d.count)+3);
+
+        // Animation to show tooltip
+        bTooltip.transition()
+            .duration(200)
+            .style("opacity", 0.9);
+
+        // Display information in tooltip
+        var my_regions = table(d.region),
+            tooltipText = `<b>Number of cases</b><br>`;
+        for (let [r_key, r_value] of Object.entries(my_regions)) {
+          tooltipText += `${r_key}: ${r_value}<br>`
+        }
+
+        // Display total number of cases if variants are from multiple countries
+        if(Object.keys(my_regions).length > 1) {
+          console.log(Object.keys(my_regions))
+          tooltipText += `Total: ${d.count} <br>`
+        }
+
+        bTooltip.html(tooltipText)
+            .style("left", (d3.event.pageX + 10) + "px")
+            .style("top", (d3.event.pageY + "px"));
       })
       .on("mouseout", function(d) {
         if (!selected.includes(this)) {
           d3.select(this).attr("stroke-width", 1)
               .attr("r", 4*Math.sqrt(d.count));
+
+          // Animation to hide tooltip
+          bTooltip.transition()
+              .duration(500)
+              .style("opacity", 0);
         }
       })
       .on("click", function(d) {
@@ -321,13 +355,11 @@ function beadplot(cid) {
         console.log(d.labels);
 
         // TODO: incorporate the following into tool-tip
-        var my_countries = table(d.country),
-            mystr = "";
-        for (let [key, value] of Object.entries(my_countries)) {
-          mystr += `${key}: ${value}\n`;
-        }
-        $("#text-node").text(mystr);
-
+        var my_countries = table(d.country)
+        var mystr = gentable(my_countries);
+	console.log(mystr)
+        $("#text-node").html(mystr);
+	console.log(mystr)
         // TODO: render as a barchart?
         console.log(table(d.region));
       });
@@ -342,3 +374,17 @@ function beadplot(cid) {
       );
 
 }
+/**
+ * Function to generate table from my_countries object on bead click 
+ * @param {json object} my_countries: json object containing key (countries) value (cases count) pairs 
+ */
+function gentable(my_countries){
+	tablehtml = '<table><tr><th id="Countryheader">Country</th><th id="ccheader">Case Count</th></tr>';
+	for (let [key, value] of Object.entries(my_countries)) {
+		tablehtml += '<tr><td>' + `${key}` + '</td><td>' + `${value}` + '</td></tr>';
+		console.log(key,value)		
+	} 
+	return tablehtml+= '</table>';
+}
+
+
