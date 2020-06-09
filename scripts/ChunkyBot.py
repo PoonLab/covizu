@@ -108,7 +108,7 @@ if __name__ == '__main__':
 		#set up for next iteration
 
 	#move latest file directly to baseline
-	shutil.move(src, cwd+'/data/weeklydumps/baseline/'+blockname+ '.fasta')
+	shutil.move(srcfile, cwd+'/data/baseline/'+blockname+ '.fasta')
 
 	driver.quit()
 
