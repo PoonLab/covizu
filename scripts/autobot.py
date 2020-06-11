@@ -186,15 +186,15 @@ def parse_args():
 		description="Python3 Script to Automate retrieval of genomes deposited in a given day."
 	)
 	parser.add_argument(
-		'start', type=str, default=(date.today() - timedelta(days=1)).isoformat(),
+		'--start', type=str, default=(date.today() - timedelta(days=1)).isoformat(),
 		help="Start date to query database in ISO format (yyyy-mm-dd)."
 	)
 	parser.add_argument(
-		'end', type=str, default=date.today().isoformat(),
+		'--end', type=str, default=date.today().isoformat(),
 		help='End date to query database in ISO format (yyyy-mm-dd)'
 	)
 	parser.add_argument(
-		'destfile', type=str,
+		'--destfile', type=str,
 		default='data/gisaid-aligned.fa',
 		help="Destination file to align and append downloaded sequences."
 	)
