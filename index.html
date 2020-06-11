@@ -33,7 +33,7 @@
                     <h1>CoVizu</h1>
                     <h3>Near real-time visualization of SARS-CoV-2 genomic variation</h3>
                     <p>TEST SERVER</p>
-                    <p>Last update: 2020-05-22</p>
+                    <p><div id="div-last-update"></div><div id="div-number-genomes"></div></p>
 
                     <h4>Variant/node info:</h4>
                     <div class="breaker" id="text-node"></div>
@@ -48,6 +48,16 @@
     <script src="js/drawtree.js"></script>
     <script src="js/search.js"></script>
     <script>
+        // load database statistics
+        var dbstats, req;
+        req = $.getJSON("data/dbstats.json", function(data) {
+            dbstats = data;
+        });
+        req.done(function() {
+          $("#div-last-update").text(`Last update: ${dbstats.lastupdate}`);
+          $("#div-number-genomes").text(`Number of genomes: ${dbstats.noseqs}`);
+        });
+
         var country_pal = {
             "Africa": "#66D7DF",
             "Asia": "#EBBE8F",
@@ -74,7 +84,7 @@
         var clusters, beaddata, tips,
             accn_to_cid;
 
-        var req = $.getJSON("data/clusters.json", function(data) {
+        req = $.getJSON("data/clusters.json", function(data) {
           clusters = data;
         });
         req.done(function() {

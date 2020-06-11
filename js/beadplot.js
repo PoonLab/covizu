@@ -148,6 +148,15 @@ function parse_clusters(clusters) {
         samples = variant.filter(x => x.coldate === isodate);
         country = samples.map(x => x.country);
         regions = country.map(x => countries[x]);
+        
+        // warn developers if no region for country
+        if (regions.includes(undefined)) {
+          console.log("Developer msg, need to update countries.json:")
+          for (const j in regions.filter(x => x===undefined)) {
+            console.log(samples[j].country);
+          }
+        }
+        
         points.push({
           'x': new Date(isodate),
           'y': y,

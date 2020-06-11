@@ -10,6 +10,7 @@ import subprocess
 import argparse
 import tempfile
 import getpass
+import json
 
 
 def get_driver(download_folder, executable_path):
@@ -170,12 +171,13 @@ def update_local(srcfile, destfile):
 	print(output + b'\n')
 
 	# write latest update string, with number of seqs
-	# FIXME: replace file path with destfile.name
-	# FIXME: use subprocess.check_output to `grep -c ">"`
-	num = len([1 for line in open("data/gisaid-aligned.fa") if line.startswith(">")])
+	numseq = subprocess.check_output(['grep', '-c', '>', destfile.name])
 	with open('data/dbstats.json', 'w') as jsonfile:
-		# TODO: simplify JSON format?
-		jsonfile.write('var lastupdate="{}"; var noseqs="{}"'.format(date.today().isoformat(), num))
+		data = {
+    		'lastupdate': date.today().isoformat(),
+    		'noseqs': int(numseq.strip())
+		}
+		json.dump(data, jsonfile, indent=2)
 
 
 def parse_args():
