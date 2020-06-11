@@ -10,6 +10,7 @@ import subprocess
 import argparse
 import tempfile
 import getpass
+import json
 
 
 def get_driver(download_folder, executable_path):
@@ -62,6 +63,12 @@ def login(driver):
 	driver.execute_script('doLogin()')
 	time.sleep(5)
 
+        # navigate to corona virus page
+	print('navigating to CoV db')
+	element = driver.find_element_by_xpath("//*[contains(text(), 'Browse')]")
+	element.click()
+	time.sleep(5)
+
 	return driver
 
 
@@ -80,12 +87,6 @@ def retrieve_genomes(driver, start, end, download_folder):
 	element = driver.find_element_by_xpath("//div[@class='buttons container-slot']")
 	htmlid_as_list = element.get_attribute('id').split('_')
 	variable = htmlid_as_list[1]
-
-	# navigate to corona virus page
-	print('navigating to CoV db')
-	element = driver.find_element_by_xpath("//*[contains(text(), 'Browse')]")
-	element.click()
-	time.sleep(5)
 
 	# trigger selection change
 	time_string = '[id^="ce_' + variable + '"][id$="_input"]'
@@ -133,7 +134,6 @@ def retrieve_genomes(driver, start, end, download_folder):
 			time.sleep(10)
 			continue
 		if any([f.endswith('.part') for f in files]):
-			# FIXME: is this platform specific?
 			time.sleep(5)
 			continue
 		break
@@ -142,6 +142,7 @@ def retrieve_genomes(driver, start, end, download_folder):
 	downloaded_file = os.listdir(download_folder)[0]
 
 	# reset browser
+	time.sleep(30)
 	driver.switch_to.default_content()
 	element = driver.find_element_by_xpath("//button[@class='sys-event-hook sys-form-button']")
 	element.click()
@@ -169,15 +170,20 @@ def update_local(srcfile, destfile):
 	print('==============')
 	print(output + b'\n')
 
-	# write latest update string
-	with open('data/lastupdate.json', 'w') as jsonfile:
-		jsonfile.write('var lastupdate="{}";'.format(date.today().isoformat()))
+	# write latest update string, with number of seqs
+	numseq = subprocess.check_output(['grep', '-c', '>', destfile.name])
+	with open('data/dbstats.json', 'w') as jsonfile:
+		data = {
+    		'lastupdate': date.today().isoformat(),
+    		'noseqs': int(numseq.strip())
+		}
+		json.dump(data, jsonfile, indent=2)
 
 
 def parse_args():
 	""" Command line interface """
 	parser = argparse.ArgumentParser(
-		description="Automate retrieval of genomes deposited in a given day."
+		description="Python3 Script to Automate retrieval of genomes deposited in a given day."
 	)
 	parser.add_argument(
 		'start', type=str, default=(date.today() - timedelta(days=1)).isoformat(),
@@ -188,8 +194,8 @@ def parse_args():
 		help='End date to query database in ISO format (yyyy-mm-dd)'
 	)
 	parser.add_argument(
-		'destfile', type=argparse.FileType('r+'),
-		default=open('data/gisaid-aligned.fa', 'r+'),
+		'destfile', type=str,
+		default='data/gisaid-aligned.fa',
 		help="Destination file to align and append downloaded sequences."
 	)
 	parser.add_argument(
@@ -205,9 +211,9 @@ def parse_args():
 
 if __name__ == '__main__':
 	args = parse_args()
-	driver = get_driver(download_folder=args.dir, executable_path=args.binpath)
+	driver = get_driver(download_folder=args.d, executable_path=args.binpath)
 	driver = login(driver=driver)
 	srcfile = retrieve_genomes(driver=driver, start=args.start, end=args.end,
-							   download_folder=args.dir)
+							   download_folder=args.d)
 	update_local(srcfile=srcfile, destfile=args.destfile)
 	driver.quit()

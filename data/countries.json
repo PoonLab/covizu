@@ -108,9 +108,7 @@
     "Croatia": "Europe",
     "Sri Lanka": "Asia",
     "Qatar": "Africa",
-    "Croatia": "Europe",
     "Lishui": "China",
-    "Uruguay": "South America",
     "Gambia": "Africa",
     "Jordan": "Asia",
     "Costa Rica": "North America",
@@ -126,5 +124,15 @@
     "Serbia": "Europe",
     "Kazakhstan": "Asia",
     "Lebanon": "Asia",
-    "United Arab Emirates": "Asia"
+    "United Arab Emirates": "Asia",
+    "Oman": "Asia",
+    "Timor-Leste": "Asia",
+    "JAM": "North America",
+    "SouthAfrica": "Africa",
+    "Yichun": "China",
+    "Uganda": "Africa",
+    "Kenya": "Africa",
+    "Morocco": "Africa",
+    "Yingtan": "China",
+    "Fuzhou": "China"
 }
