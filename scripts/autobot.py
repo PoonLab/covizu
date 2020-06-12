@@ -199,7 +199,7 @@ def parse_args():
 		help="Destination file to align and append downloaded sequences."
 	)
 	parser.add_argument(
-		'-d', '-dir', type=str, default=tempfile.TemporaryDirectory().name,
+		'-d', '-dir', type=str, default=tempfile.TemporaryDirectory(),
 		help="Temporary directory to download files."
 	)
 	parser.add_argument(
@@ -211,9 +211,10 @@ def parse_args():
 
 if __name__ == '__main__':
 	args = parse_args()
-	driver = get_driver(download_folder=args.d, executable_path=args.binpath)
+	tempfolder = args.d.name
+	driver = get_driver(download_folder=tempfolder, executable_path=args.binpath)
 	driver = login(driver=driver)
 	srcfile = retrieve_genomes(driver=driver, start=args.start, end=args.end,
-							   download_folder=args.d)
+							   download_folder=tempfolder)
 	update_local(srcfile=srcfile, destfile=args.destfile)
 	driver.quit()
