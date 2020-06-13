@@ -168,7 +168,7 @@ def update_local(srcfile, destfile):
 	output, error = process.communicate()
 	print('Updater output')
 	print('==============')
-	print(output + b'\n')
+	print(output + '\n')
 
 	# write latest update string, with number of seqs
 	numseq = subprocess.check_output(['grep', '-c', '>', destfile.name])

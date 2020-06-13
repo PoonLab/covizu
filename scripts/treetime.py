@@ -132,7 +132,7 @@ def parse_nexus(nexus_file, fasta, date_tol):
             for m in pat.finditer(line):
                 node_name, branch_length, date_est = m.groups()
                 coldate = coldates.get(node_name, None)
-                if coldate and (float(date_est) - coldate) > date_tol:
+                if coldate and abs(float(date_est) - coldate) > date_tol:
                     sys.stdout.write('removing {}:  {:0.3f} < {}\n'.format(
                         node_name, coldate, date_est
                     ))
