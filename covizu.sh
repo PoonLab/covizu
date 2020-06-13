@@ -1,6 +1,9 @@
 #!/bin/bash
 
+source ~/.bashrc
+
 # download and update gisaid-aligned.fa
+
 python3 scripts/autobot.py >> debug/Autobot.log
 
 # screen for non-human and low-coverage samples -> gisaid-filtered.fa
