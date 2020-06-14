@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import re
 from datetime import date, timedelta, datetime
 
 from selenium import webdriver
@@ -60,7 +61,7 @@ def compare_dicts(old_fasta, new_fasta):
 			pass
 	return new_old_header, seq_diff
 
-def download_compare(baselinefile, startdate, endate, download_folder=download_folder, driver=driver):
+def download_compare(baselinefile, startdate, endate, download_folder, driver):
 	""" Wrapper function for download & compare function
 	:params:
 		:baselinefile: string, path to baseline file
@@ -77,24 +78,41 @@ def download_compare(baselinefile, startdate, endate, download_folder=download_f
 	"""
 	srcfile = retrieve_genomes(driver=driver, start=startdate, end=endate,
                                                            download_folder=download_folder)
-	#update baseline files if this is the last chunk
-	if baselinefile == bfiles[-1]:
-		shutil.move(srcfile, cwd+ '/' +baselinefile)
 
 	new_old_header, seq_diff= compare_dicts(baselinefile,srcfile) #compare & report needed changes
-	modify_fasta(baselinefile, new_old_header, seq_diff) #change the baselinefile with changes
+	shutil.move(srcfile, baselinefile) #take new latest download as new baseline
 
 	return new_old_header, seq_diff
 
-def modify_fasta(fasta, new_old_header, seq_diff):
+def modify_fasta(alignment, new_old_header, seq_diff):
 	"""Function that replaces headers and sequences
 	:params:
 		:fasta: str, path to fasta file to be modified
 		:new_old_header: list containing tuples of headers that need to be modified
 		:seq_diff: dictionary containing sequences that need to be changed
 	:output:
+		#TODO: maybe log this ?
+		N/A
 	"""
-	pass
+	with open('data/gisaid-aligned.fa', 'r') as alignment:
+		seqs = convert_fasta(alignment)
+	alignment.close()
+	for new, old in new_old_header:
+		try:
+			seqs[new]= seqs.pop(old)
+		except:
+			pass
+	for h in seq_diff.keys():
+		try:
+			seqs[h] = seq_diff.keys()
+
+		except:
+			pass
+	with open('data/gisaid-aligned.fa', 'w') as alignment:
+        	for h, s in seqs.keys():
+	                aligment.write('>{}\n{}\n'.format(h, s))
+	alignment.close()
+
 def parse_args():
 	""" Command line interface """
 	parser = argparse.ArgumentParser(
@@ -130,9 +148,9 @@ if __name__ == '__main__':
 
 	#load in existing file names with their pre-defined date ranges
 	bfiles = ['data/baseline/'+ s for s in os.listdir(args.baselinedir)]
-	bdates= [('2019-01-01','2020-04-16'),('2020-04-17','2020-05-08'),('2020-05-08','2020-05-15')]
-	difffasta = {}
-	missfasta = {}
+	bdates= [['2019-01-01','2020-04-16'],['2020-04-17','2020-05-08'],['2020-05-08','2020-05-15']]
+	all_new_old_header = []
+	all_seq_diff = {}
 
 	#find the date ranges for all non-predefined chunks
 	startdate = datetime(2020, 5, 16)
@@ -140,31 +158,35 @@ if __name__ == '__main__':
 	delta = (today- startdate).days
 	newchunks = delta//7 + 1 	#find number of weekly blocks
 	#Calculate the date ranges for each chunk
-	for count in range(1, newchunks + 1):
+	for count in range(1, newchunks):
 		enddate = startdate + timedelta(6)
 		startmonthstr = str(startdate.month) if startdate.month > 9 else '0'+ str(startdate.month)
 		startdaystr = str(startdate.day) if startdate.day > 9 else '0' + str(startdate.day)
 		endmonthstr = str(enddate.month) if enddate.month > 9 else '0'+ str(enddate.month)
 		enddaystr = str(enddate.day) if enddate.day > 9 else '0' + str(enddate.day)
 		blockname = 'data/baseline/'+ startmonthstr+startdaystr + '_' + endmonthstr+enddaystr
-			bfiles.append(blockname)
-		bdates.append(( datetime.strftime(startdate, '%Y-%m-%d'),
-				datetime.strftime(enddate, '%Y-%m-%d')
-			     ))
+		bfiles.append(blockname)
+		bdates.append([ datetime.strftime(startdate, '%Y-%m-%d'),
+				datetime.strftime(enddate, '%Y-%m-%d')]
+			     )
 		startdate = enddate +timedelta(1)
 
 	#start downloading & comparing
-	for file, index in enumerate(bfiles):
-		new_old_header, seq_diff = download_compare(file, bdates[index][0], bdates[index][1],
-							    download_folder=download_folder, driver=driver)
-		modify_alignment(new_old_header, seq_diff, gsaid_alignment)
-		for tuple in new_older_header:
-			log+= tuple + '\n'
-		for header in seq_diff.keys():
-			log+= header +'\n'
-
+	for index, file in enumerate(bfiles[:-1]):
+		new_old_header, seq_diff = download_compare(file, bdates[index][0], bdates[index][1], 
+			download_folder=download_folder, driver=driver)
+		all_new_old_header += new_old_header
+		all_seq_diff.update(seq_diff)
 
 	driver.quit()
 
+	modify_fasta(alignment, all_new_old_header, all_seq_diff) #modify alignment
+
 	#debug section
+	log+= 'Header changes \n'
+	for header in all_new_old_header:
+		log += header + '\n'
+	log+= 'Seq changes\n'
+	for keys in all_seq_diff.keys():
+		log += keys + '\n'
 	print(log)
