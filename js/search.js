@@ -3,7 +3,10 @@ var selected = [];
 
 function select_beads_by_substring(substr) {
 	selected = [];
-	d3.selectAll('circle')
+	// this only works for the currently displayed SVG
+	d3.selectAll("#svg-cluster > svg > g > circle").filter(function(d) {
+		return(d.labels.some(x => x.includes(substr)));
+	});
 }
 
 /**
