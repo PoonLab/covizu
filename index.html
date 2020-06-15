@@ -3,6 +3,7 @@
 <head>
     <title>CoVizu</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
 </head>
 <body>
     <a href="https://github.com/PoonLab/covizu" class="github-corner" aria-label="View source on GitHub">
@@ -17,7 +18,7 @@
         <table>
             <tr>
                 <td colspan="3"><div id="search-bar">
-                    <input type="search" id="search-input">
+                    <input type="search" id="search-input" placeholder="Enter an accession number">
                     <button id="search-button">Search</button>
                 </div></td>
             </tr>
@@ -33,7 +34,7 @@
                     <h1>CoVizu</h1>
                     <h3>Near real-time visualization of SARS-CoV-2 genomic variation</h3>
                     <p>TEST SERVER</p>
-                    <p>Last update: 2020-05-22</p>
+                    <p><div id="div-last-update"></div><div id="div-number-genomes"></div></p>
 
                     <h4>Variant/node info:</h4>
                     <div class="breaker" id="text-node"></div>
@@ -42,12 +43,23 @@
         </table>
     </div>
     <script src="js/jquery.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
     <script src="js/d3.js"></script>
     <script src="js/beadplot.js"></script>
     <script src="js/phylo.js"></script>
     <script src="js/drawtree.js"></script>
     <script src="js/search.js"></script>
     <script>
+        // load database statistics
+        var dbstats, req;
+        req = $.getJSON("data/dbstats.json", function(data) {
+            dbstats = data;
+        });
+        req.done(function() {
+          $("#div-last-update").text(`Last update: ${dbstats.lastupdate}`);
+          $("#div-number-genomes").text(`Number of genomes: ${dbstats.noseqs}`);
+        });
+
         var country_pal = {
             "Africa": "#66D7DF",
             "Asia": "#EBBE8F",
@@ -74,7 +86,7 @@
         var clusters, beaddata, tips,
             accn_to_cid;
 
-        var req = $.getJSON("data/clusters.json", function(data) {
+        req = $.getJSON("data/clusters.json", function(data) {
           clusters = data;
         });
         req.done(function() {
@@ -95,6 +107,14 @@
            */
 
           accn_to_cid = index_accessions(clusters);
+
+          $('#search-input').autocomplete({
+            source: get_autocomplete_source_fn(accn_to_cid),
+            select: function( event, ui ) {
+               const accn = ui.item.value;
+               search(accn);
+            }
+          });
         });
     </script>
 </body>

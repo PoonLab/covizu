@@ -1,6 +1,6 @@
 var margin = {top: 10, right: 20, bottom: 10, left: 0},
   width = 200 - margin.left - margin.right,
-  height = 1000 - margin.top - margin.bottom;
+  height = 1200 - margin.top - margin.bottom;
 
 // set up plotting scales
 var xValue = function(d) { return d.x; },
