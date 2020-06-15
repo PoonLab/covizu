@@ -95,7 +95,7 @@ def modify_fasta(alignment, new_old_header, seq_diff):
 		N/A
 	"""
 	with open('data/gisaid-aligned.fa', 'r') as alignment:
-		seqs = convert_fasta(alignment)
+		seqs = dict(convert_fasta(alignment))
 	alignment.close()
 	for new, old in new_old_header:
 		try:
@@ -108,10 +108,10 @@ def modify_fasta(alignment, new_old_header, seq_diff):
 
 		except:
 			pass
-	with open('data/gisaid-aligned.fa', 'w') as alignment:
-        	for h, s in seqs.keys():
-	                aligment.write('>{}\n{}\n'.format(h, s))
-	alignment.close()
+	with open('data/gisaid-aligned.fa', 'w') as alignout:
+        	for h, s in seqs.items():
+	                alignout.write('>{}\n{}\n'.format(h, s))
+	alignout.close()
 
 def parse_args():
 	""" Command line interface """
@@ -164,23 +164,25 @@ if __name__ == '__main__':
 		startdaystr = str(startdate.day) if startdate.day > 9 else '0' + str(startdate.day)
 		endmonthstr = str(enddate.month) if enddate.month > 9 else '0'+ str(enddate.month)
 		enddaystr = str(enddate.day) if enddate.day > 9 else '0' + str(enddate.day)
-		blockname = 'data/baseline/'+ startmonthstr+startdaystr + '_' + endmonthstr+enddaystr
-		bfiles.append(blockname)
+		blockname = 'data/baseline/GISAID-{}{}_{}{}.fasta'.format(startmonthstr,startdaystr,endmonthstr,enddaystr)
+		if blockname not in bfiles:
+			bfiles.append(blockname)
 		bdates.append([ datetime.strftime(startdate, '%Y-%m-%d'),
 				datetime.strftime(enddate, '%Y-%m-%d')]
 			     )
 		startdate = enddate +timedelta(1)
 
 	#start downloading & comparing
+	bfiles.sort()
 	for index, file in enumerate(bfiles[:-1]):
-		new_old_header, seq_diff = download_compare(file, bdates[index][0], bdates[index][1], 
+		new_old_header, seq_diff = download_compare(file, bdates[index][0], bdates[index][1],
 			download_folder=download_folder, driver=driver)
 		all_new_old_header += new_old_header
 		all_seq_diff.update(seq_diff)
-
+		print('Updated {} of {} chunks '.format(str(index+1), str(len(bfiles))))
 	driver.quit()
 
-	modify_fasta(alignment, all_new_old_header, all_seq_diff) #modify alignment
+	modify_fasta(args.alignment, all_new_old_header, all_seq_diff) #modify alignment
 
 	#debug section
 	log+= 'Header changes \n'
