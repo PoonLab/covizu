@@ -1,6 +1,6 @@
 var margin = {top: 10, right: 20, bottom: 10, left: 0},
   width = 200 - margin.left - margin.right,
-  height = 1000 - margin.top - margin.bottom;
+  height = 1200 - margin.top - margin.bottom;
 
 // set up plotting scales
 var xValue = function(d) { return d.x; },
@@ -134,7 +134,9 @@ function map_clusters_to_tips(df, clusters) {
     // augment data frame with cluster data
     tips[root_idx].cluster_idx = cidx;
     tips[root_idx].region = cluster.region;
+    tips[root_idx].allregions = cluster.allregions;
     tips[root_idx].count = coldates.length;
+    tips[root_idx].varcount = labels.length;
     
     var origin = new Date(cluster['nodes'][root][0]['coldate']),
       first_date = new Date(coldates[0]),
@@ -199,6 +201,14 @@ function draw_clusters(tips) {
       vis.selectAll("rect").attr("stroke", null);
       d3.select(this).attr("stroke", "grey")
         .attr("stroke-width", "2");
+      $("#text-node").text(null);
+      
+      const sum = d.allregions.reduce((prev, curr) => (prev[curr] = ++prev[curr] || 1, prev), {});
+      
+      var allregionsstr = "";
+      Object.keys(sum).sort().forEach(function(key) {allregionsstr += `${key}: ${sum[key]}\n`});
+      
+      $("#text-node").text(`Number of cases: ${d.count}\nNumber of variants: ${d.varcount}\n\nRegion:\n${allregionsstr}`);
       beadplot(d.cluster_idx);
     });
 }

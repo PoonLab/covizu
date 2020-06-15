@@ -3,6 +3,7 @@ import re
 import argparse
 
 
+
 def filter_gisaid(fasta_file, outfile, max_prop_n=0.05, minlen=29000):
     """
     Filter FASTA file for partial and non-human SARS-COV-2 genome sequences.
@@ -16,9 +17,11 @@ def filter_gisaid(fasta_file, outfile, max_prop_n=0.05, minlen=29000):
     """
     # lower-case label in place of country identifies non-human samples
     pat = re.compile('^[^/]+/[a-z]')
+    pat2 = re.compile("^[HhCcOoVv]+-19/[A-Z][^/]+/[^/]+/[0-9-]+\|[^|]+\|[0-9]{4}-[0-9]+-[0-9]+")
+
     accessions = {}
     discards = {'nonhuman': [], 'ambiguous': [], 'short': [],
-                'duplicates': []}
+                'duplicates': [], 'mangled header': []}
 
     for h, s in iter_fasta(fasta_file):
         if pat.findall(h):
@@ -29,6 +32,9 @@ def filter_gisaid(fasta_file, outfile, max_prop_n=0.05, minlen=29000):
             continue
         if len(s.replace('-', '')) < minlen:
             discards['short'].append(h)
+            continue
+        if pat2.search(h) is None:
+            discards['mangled header'].append(h)
             continue
 
         desc, accn, coldate = h.split('|')
@@ -91,4 +97,11 @@ if __name__ == '__main__':
     ))
     if args.verbose:
         for h in discards['duplicates']:
+            print('  {}'.format(h))
+
+    print("Discarded {} sequences with mangled headers".format(
+        len(discards['mangled header'])
+    ))
+    if args.verbose:
+        for h in discards['mangled header']:
             print('  {}'.format(h))
