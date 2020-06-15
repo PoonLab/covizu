@@ -54,6 +54,41 @@ function index_accessions(clusters) {
 	return(index);
 }
 
-$('#search-button').on('click', function () {
+function as_label(search_data) {
+	const [, accn] = search_data;
+	return accn;
+}
+
+/**
+ * Provides a source function suitable for jQuery UI's autocomplete
+ *
+ * @param {object} accn_to_cid: Accession numbers - cluster ids mapping
+ * @returns {function}
+ */
+function get_autocomplete_source_fn(accn_to_cid) {
+	const prefix = /^(E|I|EP|IS|EPI_?|ISL_?)$/i;
+	const MIN_RESULTS = 10;
+	const normalize = (str) => str.replace(/[^a-z0-9]/gi, '').toLowerCase();
+	const data = Object.keys(accn_to_cid).map(accn => [
+		normalize(accn), accn
+	]);
+
+	return function({ term }, response) {
+		if (!/\d/.test(term)) {
+			if (prefix.test(term)) {
+				response(data.slice(0, MIN_RESULTS).map(as_label));
+			} else {
+				response([]);
+			}
+		} else {
+			const result = data.filter(array => array[0].indexOf(normalize(term)) > -1);
+			response(result.slice(0, MIN_RESULTS).map(as_label));
+		}
+	}
+}
+
+function search() {
 	select_bead_by_accession($('#search-input').val());
-});
+}
+
+$('#search-button').on('click', search);

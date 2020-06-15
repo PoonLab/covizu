@@ -3,6 +3,7 @@
 <head>
     <title>CoVizu</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
 </head>
 <body>
     <a href="https://github.com/PoonLab/covizu" class="github-corner" aria-label="View source on GitHub">
@@ -42,6 +43,7 @@
         </table>
     </div>
     <script src="js/jquery.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
     <script src="js/d3.js"></script>
     <script src="js/beadplot.js"></script>
     <script src="js/phylo.js"></script>
@@ -105,6 +107,14 @@
            */
 
           accn_to_cid = index_accessions(clusters);
+
+          $('#search-input').autocomplete({
+            source: get_autocomplete_source_fn(accn_to_cid),
+            select: function( event, ui ) {
+               const accn = ui.item.value;
+               search(accn);
+            }
+          });
         });
     </script>
 </body>
