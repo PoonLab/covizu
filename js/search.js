@@ -54,6 +54,6 @@ function index_accessions(clusters) {
 	return(index);
 }
 
-
-
-//$('#search-button').attr("onClick", 'graphsearch(index_accession(clusters));');
+$('#search-button').on('click', function () {
+	select_bead_by_accession($('#search-input').val());
+});
