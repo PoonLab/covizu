@@ -55,14 +55,3 @@ div .breaker {
   width: 90%;
   margin: 1em auto;
 }
-
-div.tooltip{
-  position: absolute;
-  text-align: left;
-  padding: 12px;
-  font: 12px sans-serif;
-  background: lightgrey;
-  border: 2px solid darkgrey;
-  border-radius: 8px;
-  pointer-events: none;
-}

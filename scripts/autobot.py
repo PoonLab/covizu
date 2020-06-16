@@ -168,7 +168,7 @@ def update_local(srcfile, destfile):
 	output, error = process.communicate()
 	print('Updater output')
 	print('==============')
-	print(output + '\n')
+	print(output + b'\n')
 
 	# write latest update string, with number of seqs
 	numseq = subprocess.check_output(['grep', '-c', '>', destfile.name])
@@ -199,7 +199,7 @@ def parse_args():
 		help="Destination file to align and append downloaded sequences."
 	)
 	parser.add_argument(
-		'-d', '-dir', type=str, default=tempfile.TemporaryDirectory(),
+		'-d', '-dir', type=str, default=tempfile.TemporaryDirectory().name,
 		help="Temporary directory to download files."
 	)
 	parser.add_argument(
@@ -211,10 +211,9 @@ def parse_args():
 
 if __name__ == '__main__':
 	args = parse_args()
-	tempfolder = args.d.name
-	driver = get_driver(download_folder=tempfolder, executable_path=args.binpath)
+	driver = get_driver(download_folder=args.d, executable_path=args.binpath)
 	driver = login(driver=driver)
 	srcfile = retrieve_genomes(driver=driver, start=args.start, end=args.end,
-							   download_folder=tempfolder)
+							   download_folder=args.d)
 	update_local(srcfile=srcfile, destfile=args.destfile)
 	driver.quit()
