@@ -66,7 +66,8 @@ function as_label(search_data) {
  * @returns {function}
  */
 function get_autocomplete_source_fn(accn_to_cid) {
-	const prefix = /^(E|I|EP|IS|EPI_?|ISL_?)$/i;
+	// This is a hack to match anything that could be an acc number prefix
+	const prefix = /^(E|I|EP|IS|EPI_I|EPI_IS|EPI_ISL_?|EPI_?|ISL_?)$/i;
 	const MIN_RESULTS = 10;
 	const normalize = (str) => str.replace(/[^a-z0-9]/gi, '').toLowerCase();
 	const data = Object.keys(accn_to_cid).map(accn => [
