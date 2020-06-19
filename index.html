@@ -61,7 +61,7 @@
         list-style-type: none;
         margin: 0;
         padding: 0;
-        width: 25%;
+        width: 250px;
         top: 80px;
         background-color: white;
         position: fixed;
@@ -69,7 +69,7 @@
         overflow: auto;
         right :0;
     }
-  .bar {}
+    .bar {}
         .bar form {
             height: 42px;
         }
@@ -84,26 +84,14 @@
         .bar input:focus {
             width: 300px;
         }
-   .button1 {
-            width: 12px;height: 12px;
-            border-radius: 100%;
-            border:2px solid black;
-            position: relative;
-            /* margin:30px auto;*/
-            box-sizing: content-box;
-        }
-    .button1:after{
-            content: "";
-            -webkit-transform: rotate(45deg);
-            -moz-transform: rotate(45deg);
-            transform: rotate(45deg);
-            width:8px;
-            height: 2px;
-            position: absolute;
-            top:13px;
-            left:11px;
-            background-color: currentcolor;
-        }
+    .search_btn {  
+        width: 21px;  
+        height: 21px;  
+        background: url(search.png) left center no-repeat;  
+        float: right;  
+        display: inline; 
+        margin-left: 5px;
+    }
     span{float: left}
     </style>
 <body>
@@ -115,11 +103,11 @@
         </svg>
     </a>
 
-    <div class="search-bar">
+    <div class="search bar">
         <searchp>
             <form>
-                <span><input type="search" id="search-input" placeholder="Enter an accession number"></span>
-                <span><div class="button1"></div></span>
+                <span><input type="text" placeholder="Enter an accession number"></span>
+                <span><div class="search_btn"></div></span>
             </form>
         </searchp>
     </div>
@@ -152,8 +140,9 @@
                         <dl>
                             <a>cluster statistics here</a>
                         </dl>
+                        <div class="breaker" id="text-node"></div>
                     </rightbar>
-                    <div class="breaker" id="text-node"></div>
+                    
                 </td>
             </tr>
         </table>
