@@ -5,6 +5,7 @@ from datetime import date, timedelta
 
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
+from db_utils import *
 
 import subprocess
 import argparse
@@ -82,7 +83,6 @@ def retrieve_genomes(driver, start, end, download_folder):
 	:param end:  date in ISO format (yyyy-mm-dd)
 	:return:  path to file download
 	"""
-
 	# find prefix variable
 	element = driver.find_element_by_xpath("//div[@class='buttons container-slot']")
 	htmlid_as_list = element.get_attribute('id').split('_')
@@ -149,8 +149,30 @@ def retrieve_genomes(driver, start, end, download_folder):
 
 	return os.path.join(download_folder, downloaded_file)
 
+def update_local(srcfile, ref, db='data/gsaid.db'):
+	""" 
+	Use functions in db_utils.py to insert sequences into sqlite database
+	:params:
+		srcfile: path to FASTA file with downloaded genomes
+	"""
+        # fix missing line breaks in-place
+	retcode = subprocess.check_call(['sed', '-i', 's/([ACGT?])>hCo[Vv]/\1\\n>hCoV/g', srcfile])
+	#open connection to db and insert sequences
+	cur, conn=open_connection(db)
+	print('Writing to database')
+	iterate_fasta(cur, srcfile, ref)
 
-def update_local(srcfile, destfile):
+	# write latest update string, with number of seqs
+	numseqs = cur.execute('SELECT * FROM SEQUENCES')
+	with open('data/dbstats.json', 'w') as jsonfile:
+		data = {
+    		'lastupdate': date.today().isoformat(),
+    		'noseqs': int(numseq.rowcount().strip())
+		}
+		json.dump(data, jsonfile, indent=2)
+	conn.commit()
+
+'''def update_local(srcfile, destfile):
 	"""
 	Call update.py for pairwise alignment and appending of new sequences to local file.
 	:param srcfile:  path to FASTA file with downloaded genomes
@@ -166,19 +188,7 @@ def update_local(srcfile, destfile):
 		stdout=subprocess.PIPE
 	)
 	output, error = process.communicate()
-	print('Updater output')
-	print('==============')
-	print(output + b'\n')
-
-	# write latest update string, with number of seqs
-	numseq = subprocess.check_output(['grep', '-c', '>', destfile.name])
-	with open('data/dbstats.json', 'w') as jsonfile:
-		data = {
-    		'lastupdate': date.today().isoformat(),
-    		'noseqs': int(numseq.strip())
-		}
-		json.dump(data, jsonfile, indent=2)
-
+'''
 
 def parse_args():
 	""" Command line interface """
@@ -206,7 +216,13 @@ def parse_args():
 		'-b', '--binpath', type=str, default='/usr/local/bin/geckodriver',
 		help='Path to geckodriver binary executable'
 	)
+	parser.add_argument(
+		'-r', '--ref', type= str, default='data/NC_045512.fa',
+		help='Path to reference fasta')
+	parser.add_argument('--db', default = 'data/gsaid.db',
+		help='Name of database.')
 	return parser.parse_args()
+
 
 
 if __name__ == '__main__':
@@ -215,5 +231,5 @@ if __name__ == '__main__':
 	driver = login(driver=driver)
 	srcfile = retrieve_genomes(driver=driver, start=args.start, end=args.end,
 							   download_folder=args.d)
-	update_local(srcfile=srcfile, destfile=args.destfile)
+	update_local(srcfile=srcfile, ref= args.ref, db=args.db)
 	driver.quit()

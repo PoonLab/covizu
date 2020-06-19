@@ -27,7 +27,7 @@ def open_connection(database):
 	cur.execute(ptinfo_table)
 	return cur, conn
 
-def insert_seq(cursor, seq, header, ref):
+def insert_seq(cursor, seq, header, refseq):
 	""" Wrapper function for aligning & inserting into SEQUENCES table
 		:params:
 			:cursor: sqlite database handler
@@ -37,9 +37,8 @@ def insert_seq(cursor, seq, header, ref):
 		:out:
 			:debug: report
 	"""
-
 	aligner = gotoh2.Aligner()
-	vars= [header.split('|')[1], header, seq, gotoh2.procrust_align(ref, seq, aligner)[0]]
+	vars= [header.split('|')[1], header, seq, gotoh2.procrust_align(refseq, seq, aligner)[0]]
 
 	result = cursor.execute("REPLACE INTO SEQUENCES('accession', 'header', 'unaligned', 'aligned') VALUES(?, ?, ?, ?)", vars)
 
@@ -61,7 +60,7 @@ def insert_sample_sequencing(cursor, tsvFile):
 			sequencing_vars = [row[1], row[8], row[9], row[6]]
 			result2 = cursor.execute("REPLACE INTO SEQUENCING('accession', 'platform', 'assembly_method', 'sample_type') VALUES(?, ?, ?, ?)", sequencing_vars)
 
-def insert_acknowledgement(cursor,tsvFile)
+def insert_acknowledgement(cursor,tsvFile):
 	""" Wrapper function for processing tsvFile and inserting into PTINFO table
 		#FROM Patient status metadata
 		:params:
@@ -103,9 +102,11 @@ def iterate_fasta(cursor, fasta, ref):
 			:fasta: file containing sequences
 			:ref: file containing reference sequence, default-> NC_04552.fa
 	"""
-	handle = gotoh2.iter_fasta(fasta)
+	handle = gotoh2.iter_fasta(open(fasta))
+	_, refseq = gotoh2.convert_fasta(open(ref))[0]
 	for h, s in handle:
-		insert_seq(cursor, s, h, ref)
+		insert_seq(cursor, s, h, refseq)
+
 
 def parse_args():
 	""" Command-line interface """
@@ -118,12 +119,12 @@ def parse_args():
 	parser.add_argument('--ref', default=open('data/NC_045512.fa'),
 			type=argparse.FileType('r'),
 			help='Path to reference sequence.')
-	parser.add_argument('--db', default = 'gsaid.db',
+	parser.add_argument('--db', default = 'data/gsaid.db',
 			help='Name of database.')
 	parser.add_argument('--sequencingmeta', '--sm',
 			help='tsv file from the sequencing meta table option on GSAID')
 	parser.add_argument('--patientmeta', '--ptm',
-			help='tsv file from the patient meta data download option on GSAID.'
+			help='tsv file from the patient meta data download option on GSAID.')
 	parser.add_argument('--acknowledgementmeta', '--am',
 			help='XLS file containing acknowledgement data.')
 	return parser.parse_args()
@@ -132,17 +133,17 @@ if __name__ == '__main__':
 	args= parse_args()
 	cursor, conn = open_connection(args.db)
 
-	if args.srcfile and ref is not none:
+	if args.srcfile is not None:
 		_, refseq = gotoh2.convert_fasta(args.ref)[0]
 		iterate_fasta(cursor, args.srcfile, refseq)
 
-	if args.sequencingmeta is not none:
+	if args.sequencingmeta is not None:
 		insert_sample_sequencing(cursor, args.sequencingmeta)
 
-	if args.patientmeta is not none:
+	if args.patientmeta is not None:
 		insert_ptinfo(cursor, args.patientmeta)
 
-	if args.acknowledgmentmeta is not none:
+	if args.acknowledgementmeta is not None:
 		insert_acknowledgement(cursor, args.acknowledgementmeta)
 
 
