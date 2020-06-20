@@ -47,7 +47,7 @@ def filter_fasta(fasta_file, json_file, cutoff=10):
     return result
 
 
-def fasttree(fasta):
+def fasttree(fasta, seed=1):
     """
     Wrapper for FastTree2, passing FASTA as stdin and capturing the
     resulting Newick tree string as stdout.
@@ -58,7 +58,8 @@ def fasttree(fasta):
     for h, s in fasta.items():
         accn = h.split('|')[1]
         in_str += '>{}\n{}\n'.format(accn, s)
-    p = Popen(['fasttree2', '-nt', '-quote'], stdin=PIPE, stdout=PIPE)
+    p = Popen(['fasttree2', '-nt', '-quote', '-seed', str(seed)],
+              stdin=PIPE, stdout=PIPE)
     # TODO: exception handling with stderr?
     stdout, stderr = p.communicate(input=in_str.encode('utf-8'))
     return stdout.decode('utf-8')
@@ -132,7 +133,7 @@ def parse_nexus(nexus_file, fasta, date_tol):
             for m in pat.finditer(line):
                 node_name, branch_length, date_est = m.groups()
                 coldate = coldates.get(node_name, None)
-                if coldate and (float(date_est) - coldate) > date_tol:
+                if coldate and abs(float(date_est) - coldate) > date_tol:
                     sys.stdout.write('removing {}:  {:0.3f} < {}\n'.format(
                         node_name, coldate, date_est
                     ))

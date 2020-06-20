@@ -3,7 +3,10 @@ var selected = [];
 
 function select_beads_by_substring(substr) {
 	selected = [];
-	d3.selectAll('circle')
+	// this only works for the currently displayed SVG
+	d3.selectAll("#svg-cluster > svg > g > circle").filter(function(d) {
+		return(d.labels.some(x => x.includes(substr)));
+	});
 }
 
 /**
@@ -89,7 +92,16 @@ function get_autocomplete_source_fn(accn_to_cid) {
 }
 
 function search() {
-	select_bead_by_accession($('#search-input').val());
+	var query = $('#search-input').val();
+	const accn_pat = /^EPI_ISL_[0-9]+$/i;  // case-insensitive
+	if (accn_pat.test(query)) {
+		// user is querying accession number
+		select_bead_by_accession(query);
+	}
+	else {
+		// substring search
+		select_beads_by_substring(query);
+	}
 }
 
 $('#search-button').on('click', search);

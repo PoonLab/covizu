@@ -151,7 +151,7 @@ function parse_clusters(clusters) {
         
         // warn developers if no region for country
         if (regions.includes(undefined)) {
-          console.log("Developer msg, need to update countries.json:")
+          console.log("Developer msg, need to update countries.json:");
           for (const j in regions.filter(x => x===undefined)) {
             console.log(samples[j].country);
           }
