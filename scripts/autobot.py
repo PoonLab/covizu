@@ -150,7 +150,7 @@ def retrieve_genomes(driver, start, end, download_folder):
 	return os.path.join(download_folder, downloaded_file)
 
 def update_local(srcfile, ref, db='data/gsaid.db'):
-	""" 
+	"""
 	Use functions in db_utils.py to insert sequences into sqlite database
 	:params:
 		srcfile: path to FASTA file with downloaded genomes
@@ -158,37 +158,18 @@ def update_local(srcfile, ref, db='data/gsaid.db'):
         # fix missing line breaks in-place
 	retcode = subprocess.check_call(['sed', '-i', 's/([ACGT?])>hCo[Vv]/\1\\n>hCoV/g', srcfile])
 	#open connection to db and insert sequences
-	cur, conn=open_connection(db)
 	print('Writing to database')
-	iterate_fasta(cur, srcfile, ref)
+	iterate_fasta(srcfile, ref)
 
 	# write latest update string, with number of seqs
+	cur, conn = open_connection(db)
 	numseqs = cur.execute('SELECT * FROM SEQUENCES')
 	with open('data/dbstats.json', 'w') as jsonfile:
 		data = {
     		'lastupdate': date.today().isoformat(),
-    		'noseqs': int(numseq.rowcount().strip())
+    		'noseqs': len(numseqs.fetchall())
 		}
 		json.dump(data, jsonfile, indent=2)
-	conn.commit()
-
-'''def update_local(srcfile, destfile):
-	"""
-	Call update.py for pairwise alignment and appending of new sequences to local file.
-	:param srcfile:  path to FASTA file with downloaded genomes
-	:param destfile:  path to local FASTA file of aligned genomes
-	:return:
-	"""
-	# fix missing line breaks in-place
-	retcode = subprocess.check_call(['sed', '-i', 's/([ACGT?])>hCo[Vv]/\1\\n>hCoV/g', srcfile])
-
-	# call updater script
-	process = subprocess.Popen(
-		[sys.executable, 'scripts/update.py', srcfile, destfile],
-		stdout=subprocess.PIPE
-	)
-	output, error = process.communicate()
-'''
 
 def parse_args():
 	""" Command line interface """
