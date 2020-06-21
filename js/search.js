@@ -1,12 +1,23 @@
 // to store references to SVG objects (nodes)
 var selected = [];
-
+var beads;
 function select_beads_by_substring(substr) {
 	selected = [];
+	d3.selectAll("circle").dispatch('mouseout');
+
+	if (substr === "") {
+		return;
+	}
+
 	// this only works for the currently displayed SVG
-	d3.selectAll("#svg-cluster > svg > g > circle").filter(function(d) {
+	beads = d3.selectAll("#svg-cluster > svg > g > circle").filter(function(d) {
 		return(d.labels.some(x => x.includes(substr)));
 	});
+	selected = beads.nodes();
+	d3.select(selected[0]).node().scrollIntoView();
+	for (const node of selected) {
+		d3.select(node).dispatch('mouseover');
+	}
 }
 
 /**
@@ -105,3 +116,9 @@ function search() {
 }
 
 $('#search-button').on('click', search);
+
+$('#search-input').on('keydown', function(e) {
+	if (e.keyCode == 13) {
+		search();
+	}
+})

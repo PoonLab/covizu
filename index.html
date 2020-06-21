@@ -75,9 +75,9 @@
         }
         .bar input {
             width: 250px;
-            border-radius: 42px;
-            border: 2px solid #324B4E;
-            background: #F9F0DA;
+            border-radius: 1px;
+            border: 1px solid #324B4E;
+            background: #fff;
             transition: .3s linear;
             float: right;
         }
@@ -105,10 +105,12 @@
 
     <div class="search bar">
         <searchp>
-            <form>
-                <span><input type="text" placeholder="Enter an accession number"></span>
-                <span><div class="search_btn"></div></span>
-            </form>
+            <div id="search-bar">
+                <span>
+                    <input type="search" id="search-input"
+                           placeholder="e.g., EPI_ISL_434070 or Canada"></span>
+                <span><button id="search-button">Search</button></span>
+            </div>
         </searchp>
     </div>
 
@@ -166,13 +168,13 @@
         });
 
         var country_pal = {
-            "Africa": "#66D7DF",
-            "Asia": "#EBBE8F",
-            "China": "#E9B4F4",
-            "Europe": "#7BD9AD",
-            "North America": "#AAC8FC",
-            "Oceania": "#FFB1C0",
-            "South America": "#BBCF85"
+            "Africa": "#EEDD88",
+            "Asia": "#BBCC33",
+            "China": "#EE8866",
+            "Europe": "#44BB99",
+            "North America": "#99DDFF",
+            "Oceania": "#FFAABB",
+            "South America": "#77AADD"
         };
 
         // load time-scaled phylogeny (treetime.py) from server

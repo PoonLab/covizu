@@ -103,7 +103,7 @@ function drawtree(timetree) {
 function map_clusters_to_tips(df, clusters) {
   // extract accession numbers from phylogeny data frame
   var tips = df.filter(x => x.children.length===0),
-    tip_labels = tips.map(x => x.thisLabel);
+    tip_labels = tips.map(x => x.thisLabel);  // accessions
   
   if (tips.length !== clusters.length) {
     alert("Error: number of tips does not match number of clusters - did you update both JSON files?")
@@ -211,4 +211,9 @@ function draw_clusters(tips) {
       $("#text-node").text(`Number of cases: ${d.count}\nNumber of variants: ${d.varcount}\n\nRegion:\n${allregionsstr}`);
       beadplot(d.cluster_idx);
     });
+
+  /*
+  vis.selectAll("text")
+      .data(tips);
+  */
 }
