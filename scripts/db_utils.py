@@ -2,27 +2,25 @@ import sqlite3
 import gotoh2
 import argparse
 import threading
+import queue
+import time
 
 #db utils
 
-class myThread(threading.Thread):
+class alignerThread(threading.Thread):
 
-	def __init__(self, header, seq, database, refseq):
+	def __init__(self, in_queue, out_queue):
 		threading.Thread.__init__(self)
-		self.header = header
-		self.seq = seq
-		self.refseq = refseq
-		self.database = database
+		self.in_queue = in_queue
+		self.out_queue = out_queue
 
 	def run(self):
-		#open db to check if sequences already aligned
-		self.cursor, self.conn = open_connection(self.database)
-		self.aligned = find_seq(self.conn, self.seq, self.refseq)
-		#reopen db to insert sequence
-		self.cursor, self.conn = open_connection(self.database)
-		insert_seq(self.cursor, self.seq, self.header, self.alignedseq)
-		self.conn.close()
-
+		header, seq, database, refseq = self.in_queue.get() #unpack data payload
+		cursor, conn = open_connection(database) #open db to check if sequences already aligned
+		alignedseq = find_seq(conn, seq, refseq)
+		self.out_queue.put(header, seq, alignedseq)
+		self.in_queue.task_done()
+		return 0
 
 def open_connection(database):
 	""" open connection to database, initialize tables if they don't exist
@@ -59,7 +57,6 @@ def insert_seq(cursor, seq, header, aligned):
 	vars= [header.split('|')[1], header, seq, aligned]
 
 	result = cursor.execute("REPLACE INTO SEQUENCES('accession', 'header', 'unaligned', 'aligned') VALUES(?, ?, ?, ?)", vars)
-	conn.commit()
 
 
 def find_seq(conn, seq, refseq):
@@ -144,10 +141,20 @@ def iterate_fasta(fasta, ref, database = 'data/gsaid.db'):
 	"""
 	handle = gotoh2.iter_fasta(open(fasta))
 	_, refseq = gotoh2.convert_fasta(open(ref))[0]
-	for h, s in handle:
-		myThread(h, s, database, refseq).start()
-		#insert_seq(cursor, s, h, refseq)
 
+	in_queue= queue.Queue()
+	out_queue= queue.Queue()
+
+	for h, s in handle:
+		in_queue.put((h, s, database, refseq))
+	for seq in range(0,in_queue.qsize()):
+		alignerThread(in_queue, out_queue).start()
+		#insert_seq(cursor, s, h, refseq)
+	in_queue.join()
+	while not out_queue.empty():
+		header, seq, alignedseq = out_queue.get()
+		insert_seq(cursor, seq, header, alignedseq)
+		out_queue.task_done()
 
 def parse_args():
 	""" Command-line interface """
