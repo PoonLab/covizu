@@ -239,9 +239,7 @@ function beadplot(cid) {
       max_y = d3.max(variants, yValue1B);
 
   // Create a div for the tooltip
-  var bTooltip = d3.select("body")
-      .append("div")
-      .attr("class", "tooltip")
+  let bTooltip = d3.select("#tooltipContainer")
       .style("opacity", 0);
 
   // update vertical range for consistent spacing between variants
