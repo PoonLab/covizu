@@ -415,28 +415,31 @@ function draw_region_distribution(my_regions) {
   });
 
   // Set the margins
-  const margin = 20,
-        width = 250 - 2 * margin,
-        height = 150 - 2 * margin;
+  const margin = {top: 15, right: 10, bottom: 75, left: 55},
+      width = 250 - margin.right - margin.left,
+      height = 200 - margin.top - margin.bottom;
 
   // Create the barchart
   const svg = d3.select("#text-node")
       .append("svg")
       .attr("width", 250)
-      .attr("height", 150);
+      .attr("height", 200);
 
   const chart = svg.append("g")
-      .attr("transform", `translate(${margin}, ${margin})`);
+      .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
   // Set the scale of the x-axis
   const xScale = d3.scaleBand()
       .range([0, width])
       .domain(counts.map((r) => r.region))
-      .padding(0.2);
+      .padding(0.1);
 
   chart.append("g")
       .attr("transform", `translate(0, ${height})`)
-      .call(d3.axisBottom(xScale));
+      .call(d3.axisBottom(xScale))
+      .selectAll("text")
+      .style("text-anchor", "end")
+      .attr("transform", "rotate(-45)");
 
   // Set the scale of the y-axis
   const max_count = counts.map(x=>x.count).reduce(
@@ -451,11 +454,14 @@ function draw_region_distribution(my_regions) {
   chart.append("g")
        .call(d3.axisLeft(yScale).ticks(3));
 
-  // Draw bars on the bar chart
+  // Create the chart
   const regionBars = chart.selectAll()
       .data(counts)
       .enter()
-      .append("g")
+      .append("g");
+
+  // Draw bars on the chart
+  regionBars
       .append("rect")
       .attr("x", (r) => xScale(r.region))
       .attr("y", (r) => yScale(r.count))
@@ -464,28 +470,27 @@ function draw_region_distribution(my_regions) {
       .attr("fill", function(d) { return(country_pal[d.region]); });
 
     // Write the case count above each bar
-    /*
     regionBars.append("text")
-        .style("font", "0.8em/1.2 Lato, sans-serif")
+        .style("font", "0.7em/1.2 Lato, sans-serif")
         .attr("x", (r) => xScale(r.region) + xScale.bandwidth() / 2)
         .attr("y", (r) => yScale(r.count) - 5)
         .attr("text-anchor", "middle")
         .text((r) => `${r.count}`);
-    */
 
     // Add axis labels
     svg.append("text")
-        .attr("x", -(height / 2) - margin)
-        .attr("y", margin/ 3)
+        .style("font", "0.8em/1.2 Lato, sans-serif")
         .attr("transform", "rotate(-90)")
+        .attr("x", -(height / 2) - margin.top)
+        .attr("y", 0)
+        .attr("dy", "1em")
         .attr("text-anchor", "middle")
         .text("Number of Cases");
 
     svg.append("text")
-        .attr("x", (width / 2) + margin)
-        .attr("y", height + margin * 1.8)
+        .style("font", "0.8em/1.2 Lato, sans-serif")
         .attr("text-anchor", "middle")
-        .text("Region")
-
-
+        .attr("x", (width / 2) + margin.left)
+        .attr("y", height + 85)
+        .text("Region");
 }
