@@ -1,0 +1,150 @@
+@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+/* https://github.com/tholman/github-corners */
+.github-corner:hover .octo-arm {
+  animation:octocat-wave 560ms ease-in-out
+}
+@keyframes octocat-wave {
+  0%,100%{transform:rotate(0)}
+  20%,60%{transform:rotate(-25deg)}
+  40%,80%{transform:rotate(10deg)}
+}
+@media (max-width:500px) {
+  .github-corner:hover .octo-arm {
+    animation:none
+  }
+  .github-corner .octo-arm {
+    animation:octocat-wave 560ms ease-in-out
+  }
+}
+
+body {
+  width: 97%;
+  margin: 42px auto;
+  font: .9em/1.2 Lato, sans-serif;
+}
+
+h1, h2, h3, h4 {
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+
+svg text {
+  font: 1em/1.2 Lato, sans-serif;
+}
+
+div .breaker {
+  white-space: pre;
+}
+
+.treeaxis line {
+  stroke: lightslategrey;
+}
+.treeaxis path {
+  stroke: lightslategrey;
+}
+.treeaxis text {
+  fill: lightslategrey;
+}
+
+.hover {
+  background-color: rgba(0, 0, 0, .5);
+}
+
+.textbox {
+  width: 90%;
+  margin: 1em auto;
+}
+
+
+
+
+
+
+/*.container {
+  top: 42px;
+}*/
+searchp {
+    position:fixed;
+    left:10px;
+    top:10px;
+    }
+
+details ::-webkit-details-marker {
+    color: gray;
+    display: none;
+}
+details summary::after{
+  content: "";
+   position: absolute;
+
+}
+[open] summary::after{
+   transform:rotate(90deg) ;
+
+}
+[open] summary,
+summary:hover {
+    background-color: orange;
+    box-shadow: inset 1px 0 #ddd, inset -1px 0 #ddd;
+     max-height: 100px;
+}
+.box a{
+   display:block;
+   text-decoration: none;
+    color: currentcolor
+}
+.box {
+      position: absolute;
+    background-color: #fff;
+    min-width: 100px;
+    max-height: 0;
+    overflow: hidden;
+}
+details + dl {
+    max-height: 0;
+    transition: all .25s;
+    margin: 0 0 1rem;
+    overflow: hidden;
+}
+[open] + dl{
+  max-height: 100px;
+}
+
+/* right hand sidebar */
+rightbar {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    width: 250px;
+    top: 80px;
+    background-color: white;
+    position: fixed;
+    height: 100%;
+    overflow: auto;
+    right :0;
+}
+.bar {}
+    .bar form {
+        height: 42px;
+    }
+    .bar input {
+        width: 250px;
+        border-radius: 1px;
+        border: 1px solid #324B4E;
+        background: #fff;
+        transition: .3s linear;
+        float: right;
+    }
+    .bar input:focus {
+        width: 300px;
+    }
+.search_btn {  
+    width: 21px;  
+    height: 21px;  
+    background: url("../search.png") left center no-repeat;  
+    float: right;  
+    display: inline; 
+    margin-left: 5px;
+}
+span{float: left}
