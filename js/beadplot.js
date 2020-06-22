@@ -102,7 +102,7 @@ function table(arr) {
  * @param {Object} clusters:
  */
 function parse_clusters(clusters) {
-  var cluster, variant, coldates, samples, regions, country,
+  var cluster, variant, coldates, samples, regions, country, labels,
       variants,  // horizontal line segment data + labels
       edgelist,  // vertical line segment data
       points,  // the "beads"
@@ -140,6 +140,7 @@ function parse_clusters(clusters) {
         'y2': y
       });
 
+      // parse samples within variant
       var isodates = unique(coldates),
           isodate;
 
@@ -203,8 +204,15 @@ function parse_clusters(clusters) {
       'edgelist': edgelist,
       'points': points
     });
-    cluster['region'] = mode(points.map(x => x.region).flat());
-    cluster['allregions'] = points.map(x => x.region).flat();
+
+    // collect all region Arrays for all samples, all variants
+    regions = points.map(x => x.region).flat();
+    cluster['region'] = mode(regions);
+    cluster['allregions'] = table(regions);
+
+    // concatenate all sample labels within cluster for searching
+    labels = points.map(x => x.labels).flat();
+    cluster['searchtext'] = labels.join();
   }
 
   return(beaddata);

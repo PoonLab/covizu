@@ -135,6 +135,7 @@ function map_clusters_to_tips(df, clusters) {
     tips[root_idx].cluster_idx = cidx;
     tips[root_idx].region = cluster.region;
     tips[root_idx].allregions = cluster.allregions;
+    tips[root_idx].searchtext = cluster.searchtext;
     tips[root_idx].count = coldates.length;
     tips[root_idx].varcount = labels.length;
     
@@ -154,7 +155,7 @@ function map_clusters_to_tips(df, clusters) {
 
 /**
  * Add subtree objects to time-scaled tree.
- * @param {Array} tips
+ * @param {Array} tips, clusters that have been mapped to tips of tree
  */
 function draw_clusters(tips) {
   // draw x-axis
@@ -182,6 +183,7 @@ function draw_clusters(tips) {
     .data(tips)
     .enter()
     .append("rect")
+    .attr("selected", false)
     .attr("x", xMap1)
     .attr("y", yMap)
     .attr("width", xWide)
@@ -198,21 +200,22 @@ function draw_clusters(tips) {
     })
     .on("click", function(d) {
       // reset all rectangles to high transparency
-      vis.selectAll("rect").attr("stroke", null);
+      var rects = vis.selectAll("rect").filter(function(r) { return(!(r.selected)); });
+      rects.attr("stroke", null);
       d3.select(this).attr("stroke", "grey")
         .attr("stroke-width", "2");
       $("#text-node").text(null);
-      
-      const sum = d.allregions.reduce((prev, curr) => (prev[curr] = ++prev[curr] || 1, prev), {});
-      
-      var allregionsstr = "";
-      Object.keys(sum).sort().forEach(function(key) {allregionsstr += `${key}: ${sum[key]}\n`});
-      
-      $("#text-node").text(`Number of cases: ${d.count}\nNumber of variants: ${d.varcount}\n\nRegion:\n${allregionsstr}`);
+
+      draw_region_distribution(d.allregions);
+
+      // FIXME: this is the same div used for making barplot SVG
+      //$("#text-node").text(`Number of cases: ${d.count}\nNumber of variants: ${d.varcount}\n`);
+
       beadplot(d.cluster_idx);
     });
 
   /*
+  // TODO: label tips of time-scaled tree (but with what?)
   vis.selectAll("text")
       .data(tips);
   */

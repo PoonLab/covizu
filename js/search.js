@@ -1,6 +1,13 @@
 // to store references to SVG objects (nodes)
 var selected = [];
-var beads;
+
+/**
+ * Highlight clusters containing samples that match substring,
+ * and highlight samples in currently displayed bead plot.
+ * When user switches bead plots, update highlighted samples.
+ *
+ * @param substr
+ */
 function select_beads_by_substring(substr) {
 	selected = [];
 	d3.selectAll("circle").dispatch('mouseout');
@@ -9,16 +16,28 @@ function select_beads_by_substring(substr) {
 		return;
 	}
 
-	// this only works for the currently displayed SVG
-	beads = d3.selectAll("#svg-cluster > svg > g > circle").filter(function(d) {
+	var rects = d3.selectAll("#svg-timetree > svg > g > rect").filter(function(d) {
+		return(d.searchtext.match(substr) !== null);
+	});
+
+	// FIXME: other matching clusters not getting highlighted, due to click below?
+	for (const node of rects.nodes()) {
+		d3.select(node).attr("stroke-width", "2").attr("selected", true);
+	}
+
+	// jump to the first hit
+	d3.select(rects.nodes()[0]).dispatch('click');
+
+	var beads = d3.selectAll("#svg-cluster > svg > g > circle").filter(function(d) {
 		return(d.labels.some(x => x.includes(substr)));
 	});
 	selected = beads.nodes();
-	d3.select(selected[0]).node().scrollIntoView();
-	for (const node of selected) {
+	beads.nodes()[0].scrollIntoView();
+	for (const node of beads.nodes()) {
 		d3.select(node).dispatch('mouseover');
 	}
 }
+
 
 /**
  * Highlight and jump to node in beadplot by sample accession number.
