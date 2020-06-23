@@ -111,6 +111,7 @@ def write_variants(G, csv_file, fasta_in, fasta_out, callback=None):
     clusters = {}
     for cluster in components:
         subG = G.subgraph(cluster)
+        # omit records with ambiguous collection dates
         intermed = [
             (ndata['coldate'], ndata['country'], node) for node, ndata
             in subG.nodes(data=True) if ndata['coldate'] is not None

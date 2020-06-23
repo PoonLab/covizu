@@ -1,6 +1,6 @@
 var margin = {top: 10, right: 20, bottom: 10, left: 0},
   width = 200 - margin.left - margin.right,
-  height = 1000 - margin.top - margin.bottom;
+  height = 1200 - margin.top - margin.bottom;
 
 // set up plotting scales
 var xValue = function(d) { return d.x; },
@@ -20,6 +20,12 @@ var vis = d3.select("div#svg-timetree")
   .append("svg")
   .attr("width", width + margin.left + margin.right)
   .attr("height", height + margin.top + margin.bottom)
+  .append("g");
+
+var aaa = d3.select("div#svg-timetreeaxis")
+  .append("svg")
+  .attr("width", width + margin.left + margin.right)
+  .attr("height", 25)
   .append("g");
 
 
@@ -103,7 +109,7 @@ function drawtree(timetree) {
 function map_clusters_to_tips(df, clusters) {
   // extract accession numbers from phylogeny data frame
   var tips = df.filter(x => x.children.length===0),
-    tip_labels = tips.map(x => x.thisLabel);
+    tip_labels = tips.map(x => x.thisLabel);  // accessions
   
   if (tips.length !== clusters.length) {
     alert("Error: number of tips does not match number of clusters - did you update both JSON files?")
@@ -134,7 +140,9 @@ function map_clusters_to_tips(df, clusters) {
     // augment data frame with cluster data
     tips[root_idx].cluster_idx = cidx;
     tips[root_idx].region = cluster.region;
+    tips[root_idx].allregions = cluster.allregions;
     tips[root_idx].count = coldates.length;
+    tips[root_idx].varcount = labels.length;
     
     var origin = new Date(cluster['nodes'][root][0]['coldate']),
       first_date = new Date(coldates[0]),
@@ -169,7 +177,7 @@ function draw_clusters(tips) {
     return ((coldate - origin) / 3.154e10);
   };
   
-  vis.append("g")
+  aaa.append("g")
     .attr("class", "treeaxis")
     .attr("transform", "translate(0,20)")
     .call(d3.axisTop(xScale)
@@ -199,6 +207,19 @@ function draw_clusters(tips) {
       vis.selectAll("rect").attr("stroke", null);
       d3.select(this).attr("stroke", "grey")
         .attr("stroke-width", "2");
+      $("#text-node").text(null);
+      
+      const sum = d.allregions.reduce((prev, curr) => (prev[curr] = ++prev[curr] || 1, prev), {});
+      
+      var allregionsstr = "";
+      Object.keys(sum).sort().forEach(function(key) {allregionsstr += `${key}: ${sum[key]}\n`});
+      
+      $("#text-node").text(`Number of cases: ${d.count}\nNumber of variants: ${d.varcount}\n\nRegion:\n${allregionsstr}`);
       beadplot(d.cluster_idx);
     });
+
+  /*
+  vis.selectAll("text")
+      .data(tips);
+  */
 }

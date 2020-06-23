@@ -21,11 +21,16 @@ var yValueB = function(d) { return d.y; },
   yMap2B = function(d) { return yScaleB(d.y2); },
   yMapB = function(d) { return yScaleB(yValueB(d)); };
 
-
 var visB = d3.select("div#svg-cluster")
   .append("svg")
   .attr("width", widthB + marginB.left + marginB.right)
   .attr("height", heightB + marginB.top + marginB.bottom)
+  .append("g");
+
+var bbb = d3.select("div#svg-clusteraxis")
+  .append("svg")
+  .attr("width", widthB + marginB.left + marginB.right)
+  .attr("height", 25)
   .append("g");
 
 
@@ -148,6 +153,15 @@ function parse_clusters(clusters) {
         samples = variant.filter(x => x.coldate === isodate);
         country = samples.map(x => x.country);
         regions = country.map(x => countries[x]);
+        
+        // warn developers if no region for country
+        if (regions.includes(undefined)) {
+          console.log("Developer msg, need to update countries.json:");
+          for (const j in regions.filter(x => x===undefined)) {
+            console.log(samples[j].country);
+          }
+        }
+        
         points.push({
           'x': new Date(isodate),
           'y': y,
@@ -195,6 +209,7 @@ function parse_clusters(clusters) {
       'points': points
     });
     cluster['region'] = mode(points.map(x => x.region).flat());
+    cluster['allregions'] = points.map(x => x.region).flat();
   }
 
   return(beaddata);
@@ -220,15 +235,22 @@ function beadplot(cid) {
       min_y = d3.min(variants, yValue1B),
       max_y = d3.max(variants, yValue1B);
 
+  // Create a div for the tooltip
+  var bTooltip = d3.select("body")
+      .append("div")
+      .attr("class", "tooltip")
+      .style("opacity", 0);
+
   // update vertical range for consistent spacing between variants
   heightB = max_y * 10;
   $("#svg-cluster > svg").attr("height", heightB + marginB.top + marginB.bottom);
   yScaleB = d3.scaleLinear().range([40, heightB]);
   xScaleB.domain([mindate - 0.5*spandate, maxdate]);
   yScaleB.domain([min_y, max_y]);
-  
+
   // clear SVG
   visB.selectAll('*').remove();
+  bbb.selectAll('*').remove();
 
   // draw horizontal line segments that represent variants in cluster
   visB.selectAll("lines")
@@ -309,33 +331,164 @@ function beadplot(cid) {
       .on("mouseover", function(d) {
         d3.select(this).attr("stroke-width", 2)
             .attr("r", 4*Math.sqrt(d.count)+3);
+        bTooltip.transition()       // Show tooltip
+            .duration(200)
+            .style("opacity", 0.9);
+
+        // Display region distribution in tooltip
+        let my_regions = table(d.region),
+            tooltipText = `<b>Number of cases</b><br>`;
+
+        for (let [r_key, r_value] of Object.entries(my_regions)) {
+          tooltipText += `${r_key}: ${r_value}<br>`
+        }
+        // Display total number of cases if variants are from multiple countries
+        if(Object.keys(my_regions).length > 1) {
+          tooltipText += `Total: ${d.count}<br>`
+        }
+        // Display the sample date
+        let formatDate = d3.timeFormat("%Y-%m-%d");
+        tooltipText += `<br><b>Sample Date:</b> ${formatDate(new Date(d.x))}<br>`
+        bTooltip.html(tooltipText)
+            .style("left", (d3.event.pageX + 10) + "px")    // Tooltip appears 10 pixels left of the cursor
+            .style("top", (d3.event.pageY + "px"));
       })
       .on("mouseout", function(d) {
-        d3.select(this).attr("stroke-width", 1)
-            .attr("r", 4*Math.sqrt(d.count));
+        if (!selected.includes(this)) {
+          d3.select(this).attr("stroke-width", 1)
+              .attr("r", 4*Math.sqrt(d.count));
+          bTooltip.transition()     // Hide tooltip
+              .duration(500)
+              .style("opacity", 0);
+        }
       })
       .on("click", function(d) {
         // TODO: display first 3, collapsed text
         console.log(d.labels);
 
         // TODO: incorporate the following into tool-tip
-        var my_countries = table(d.country),
-            mystr = "";
-        for (let [key, value] of Object.entries(my_countries)) {
-          mystr += `${key}: ${value}\n`;
-        }
-        $("#text-node").text(mystr);
+        var my_countries = table(d.country)
+        var mystr = gentable(my_countries);
+	console.log(mystr)
+        $("#text-node").html(mystr);
+	console.log(mystr)
 
-        // TODO: render as a barchart?
-        console.log(table(d.region));
+        draw_region_distribution(table(d.region));
       });
 
   // draw x-axis
-  visB.append("g")
+  bbb.append("g")
       .attr("transform", "translate(0,20)")
       .call(
         d3.axisTop(xScaleB)
           .ticks(5)
           .tickFormat(d3.timeFormat("%Y-%m-%d"))
       );
+
+}
+/**
+ * Function to generate table from my_countries object on bead click
+ * @param {json object} my_countries: json object containing key (countries) value (cases count) pairs
+ */
+function gentable(my_countries){
+	tablehtml = '<table><tr><th id="Countryheader">Country</th><th id="ccheader">Case Count</th></tr>';
+	for (let [key, value] of Object.entries(my_countries)) {
+		tablehtml += '<tr><td>' + `${key}` + '</td><td>' + `${value}` + '</td></tr>';
+		console.log(key,value)
+	}
+	return tablehtml+= '</table>';
+}
+
+
+/**
+ * Draws a bar chart of the distribution of cases across regions
+ * @param {{}} my_regions: associative list of region and case count pairs
+ */
+function draw_region_distribution(my_regions) {
+
+    // Include all regions
+    const regions = ["Africa", "Asia", "China", "Europe", "North America", "Oceania", "South America"];
+    regions.forEach(function(reg) {
+        if (!my_regions.hasOwnProperty(reg)) {my_regions[reg] = 0;}
+    });
+
+    // Store {region, count} pairs in a list, sorted in decreasing order
+    const regKeys = Object.keys(my_regions),
+        regionOrder = regKeys.sort(function(a, b) {return my_regions[b] - my_regions[a]}),
+        sortedRegions = [];
+    regionOrder.forEach(function(reg, idx) {
+      sortedRegions.push({"region":regionOrder[idx], "count": my_regions[reg]})
+    });
+
+    // Set the margins
+    const margin = 60,
+        width = 600 - 2 * margin,
+        height = 400 - 2 * margin;
+
+    // Create the barchart
+    const svg = d3.select("#text-node")
+        .append("svg")
+        .attr("width", 600)
+        .attr("height", 400);
+    const chart = svg.append("g")
+        .attr("transform", `translate(${margin}, ${margin})`);
+
+    // Set the scale of the x-axis
+    const xScale = d3.scaleBand()
+        .range([0, width])
+        .domain(sortedRegions.map((r) => r.region))
+        .padding(0.2);
+    chart.append("g")
+        .attr("transform", `translate(0, ${height})`)
+        .call(d3.axisBottom(xScale));
+
+    // Set the scale of the y-axis
+    const yScale = d3.scaleLinear()
+        .range([height, 0])
+        .domain([0, sortedRegions[0].count])
+        .nice()
+    chart.append("g")
+        .call(d3.axisLeft(yScale).ticks((sortedRegions[0].count < 10) ? sortedRegions[0].count : 10));
+
+    const regionBars = chart.selectAll()
+        .data(sortedRegions)
+        .enter()
+        .append("g")
+
+    // Draw bars on the bar chart
+    regionBars
+        .append("rect")
+        .attr("x", (r) => xScale(r.region))
+        .attr("y", (r) => yScale(r.count))
+        .attr("height", (r) => height - yScale(r.count))
+        .attr("width", xScale.bandwidth())
+        .attr("fill", "darkgray");
+
+    // Write the case count above each bar
+    regionBars.append("text")
+        .style("font", "0.8em/1.2 Lato, sans-serif")
+        .attr("x", (r) => xScale(r.region) + xScale.bandwidth() / 2)
+        .attr("y", (r) => yScale(r.count) - 10)
+        .attr("text-anchor", "middle")
+        .text((r) => `${r.count}`);
+
+    // Add axis labels
+    svg.append("text")
+        .attr("x", width / 2 + margin)
+        .attr("y", 40)
+        .attr("text-anchor", "middle")
+        .text("Cases by Region");
+
+    svg.append("text")
+        .attr("x", -(height / 2) - margin)
+        .attr("y", margin/ 3)
+        .attr("transform", "rotate(-90)")
+        .attr("text-anchor", "middle")
+        .text("Number of Cases");
+
+    svg.append("text")
+        .attr("x", (width / 2) + margin)
+        .attr("y", height + margin * 1.8)
+        .attr("text-anchor", "middle")
+        .text("Region")
 }
