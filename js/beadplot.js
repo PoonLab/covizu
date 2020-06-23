@@ -2,7 +2,7 @@
  *  Configure SVG to display beadplots
  */
 var marginB = {top: 50, right: 10, bottom: 50, left: 10},
-    widthB = 600 - marginB.left - marginB.right,
+    widthB = 550 - marginB.left - marginB.right,
     heightB = 1000 - marginB.top - marginB.bottom;
 
 // set up plotting scales
@@ -129,13 +129,16 @@ function parse_clusters(clusters) {
       coldates = variant.map(x => x.coldate);
       coldates.sort();
 
+      country = variant.map(x => x.country);
+
       variants.push({
         'accession': accn,
         'label': variant[0].label1.replace(pat, "$1"),
         'x1': new Date(coldates[0]),  // min date
         'x2': new Date(coldates[coldates.length-1]),  // max date
         'count': coldates.length,
-        'country': table(variant.map(x => x.country)),
+        'country': country,
+        'region': country.map(x => countries[x]),
         'y1': y,  // horizontal line segment
         'y2': y
       });
@@ -213,6 +216,7 @@ function parse_clusters(clusters) {
     // concatenate all sample labels within cluster for searching
     labels = points.map(x => x.labels).flat();
     cluster['searchtext'] = labels.join();
+    cluster['label1'] = labels[0];
   }
 
   return(beaddata);
@@ -270,11 +274,15 @@ function beadplot(cid) {
         d3.select(this).attr("stroke-width", 3);
       })
       .on("click", function(d) {
+        $("#text-node").html(gentable(table(d.country)));
+        draw_region_distribution(table(d.region));
+        /*
         var mystr = "";
         for (let [key, value] of Object.entries(d.country)) {
           mystr += `${key}: ${value}\n`;
         }
         $("#text-node").text(mystr);
+         */
       });
 
   // label variants with earliest sample name
@@ -364,14 +372,14 @@ function beadplot(cid) {
       })
       .on("click", function(d) {
         // TODO: display first 3, collapsed text
-        console.log(d.labels);
+        //console.log(d.labels);
 
         // TODO: incorporate the following into tool-tip
-        var my_countries = table(d.country)
+        var my_countries = table(d.country);
         var mystr = gentable(my_countries);
-	console.log(mystr)
+	//console.log(mystr)
         $("#text-node").html(mystr);
-	console.log(mystr)
+	//console.log(mystr)
 
         draw_region_distribution(table(d.region));
       });
