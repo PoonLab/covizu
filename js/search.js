@@ -13,6 +13,7 @@ function select_beads_by_substring(substr) {
 	d3.selectAll("circle").dispatch('mouseout');
 
 	if (substr === "") {
+		// user submitted empty string
 		return;
 	}
 
