@@ -1,5 +1,5 @@
 var margin = {top: 10, right: 20, bottom: 10, left: 0},
-  width = 200 - margin.left - margin.right,
+  width = 250 - margin.left - margin.right,
   height = 1200 - margin.top - margin.bottom;
 
 // set up plotting scales
@@ -72,7 +72,7 @@ function drawtree(timetree) {
   
   // adjust d3 scales to data frame
   xScale.domain([
-    d3.min(df, xValue)-0.05, d3.max(df, xValue)+0.05
+    d3.min(df, xValue)-0.05, d3.max(df, xValue)+0.2
   ]);
   yScale.domain([
     d3.min(df, yValue)-1, d3.max(df, yValue)+1
@@ -136,6 +136,7 @@ function map_clusters_to_tips(df, clusters) {
     tips[root_idx].region = cluster.region;
     tips[root_idx].allregions = cluster.allregions;
     tips[root_idx].searchtext = cluster.searchtext;
+    tips[root_idx].label1 = cluster.label1;
     tips[root_idx].count = coldates.length;
     tips[root_idx].varcount = labels.length;
     
@@ -158,6 +159,8 @@ function map_clusters_to_tips(df, clusters) {
  * @param {Array} tips, clusters that have been mapped to tips of tree
  */
 function draw_clusters(tips) {
+  //console.log(tips);
+
   // draw x-axis
   var xaxis_to_date = function(x) {
     var origin = tips[0],
@@ -178,7 +181,22 @@ function draw_clusters(tips) {
     .call(d3.axisTop(xScale)
       .ticks(3)
       .tickFormat(d => xaxis_to_date(d)));
-  
+
+  // TODO: label tips of time-scaled tree (but with what?)
+  vis.selectAll("text")
+      .data(tips)
+      .enter().append("text")
+      .style("font-size", "10px")
+      .attr("text-anchor", "start")
+      .attr("alignment-baseline", "middle")
+      .attr("x", function(d) {
+        return(xScale(d.x));
+      })
+      .attr("y", function(d) {
+        return(yScale(d.y-0.15));
+      })
+      .text(function(d) { return(d.label1); });
+
   vis.selectAll("rect")
     .data(tips)
     .enter()
@@ -213,10 +231,4 @@ function draw_clusters(tips) {
 
       beadplot(d.cluster_idx);
     });
-
-  /*
-  // TODO: label tips of time-scaled tree (but with what?)
-  vis.selectAll("text")
-      .data(tips);
-  */
 }
