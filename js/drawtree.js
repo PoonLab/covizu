@@ -25,8 +25,9 @@ var vis = d3.select("div#svg-timetree")
 var axis = d3.select("div#svg-timetreeaxis")
   .append("svg")
   .attr("width", width + margin.left + margin.right)
-  .attr("height", height + margin.top + margin.bottom)
+  .attr("height", 25)
   .append("g");
+
 
 /**
  * Rectangular layout of tree, update nodes in place with x,y coordinates
