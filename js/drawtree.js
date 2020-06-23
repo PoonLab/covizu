@@ -1,5 +1,5 @@
 var margin = {top: 10, right: 20, bottom: 10, left: 0},
-  width = 200 - margin.left - margin.right,
+  width = 250 - margin.left - margin.right,
   height = 1200 - margin.top - margin.bottom;
 
 // set up plotting scales
@@ -72,7 +72,7 @@ function drawtree(timetree) {
   
   // adjust d3 scales to data frame
   xScale.domain([
-    d3.min(df, xValue)-0.05, d3.max(df, xValue)+0.05
+    d3.min(df, xValue)-0.05, d3.max(df, xValue)+0.2
   ]);
   yScale.domain([
     d3.min(df, yValue)-1, d3.max(df, yValue)+1
@@ -103,7 +103,7 @@ function drawtree(timetree) {
 function map_clusters_to_tips(df, clusters) {
   // extract accession numbers from phylogeny data frame
   var tips = df.filter(x => x.children.length===0),
-    tip_labels = tips.map(x => x.thisLabel);
+    tip_labels = tips.map(x => x.thisLabel);  // accessions
   
   if (tips.length !== clusters.length) {
     alert("Error: number of tips does not match number of clusters - did you update both JSON files?")
@@ -135,6 +135,8 @@ function map_clusters_to_tips(df, clusters) {
     tips[root_idx].cluster_idx = cidx;
     tips[root_idx].region = cluster.region;
     tips[root_idx].allregions = cluster.allregions;
+    tips[root_idx].searchtext = cluster.searchtext;
+    tips[root_idx].label1 = cluster.label1;
     tips[root_idx].count = coldates.length;
     tips[root_idx].varcount = labels.length;
     
@@ -154,9 +156,11 @@ function map_clusters_to_tips(df, clusters) {
 
 /**
  * Add subtree objects to time-scaled tree.
- * @param {Array} tips
+ * @param {Array} tips, clusters that have been mapped to tips of tree
  */
 function draw_clusters(tips) {
+  //console.log(tips);
+
   // draw x-axis
   var xaxis_to_date = function(x) {
     var origin = tips[0],
@@ -177,11 +181,27 @@ function draw_clusters(tips) {
     .call(d3.axisTop(xScale)
       .ticks(3)
       .tickFormat(d => xaxis_to_date(d)));
-  
+
+  // TODO: label tips of time-scaled tree (but with what?)
+  vis.selectAll("text")
+      .data(tips)
+      .enter().append("text")
+      .style("font-size", "10px")
+      .attr("text-anchor", "start")
+      .attr("alignment-baseline", "middle")
+      .attr("x", function(d) {
+        return(xScale(d.x));
+      })
+      .attr("y", function(d) {
+        return(yScale(d.y-0.15));
+      })
+      .text(function(d) { return(d.label1); });
+
   vis.selectAll("rect")
     .data(tips)
     .enter()
     .append("rect")
+    .attr("selected", false)
     .attr("x", xMap1)
     .attr("y", yMap)
     .attr("width", xWide)
@@ -198,17 +218,17 @@ function draw_clusters(tips) {
     })
     .on("click", function(d) {
       // reset all rectangles to high transparency
-      vis.selectAll("rect").attr("stroke", null);
+      var rects = vis.selectAll("rect").filter(function(r) { return(!(r.selected)); });
+      rects.attr("stroke", null);
       d3.select(this).attr("stroke", "grey")
         .attr("stroke-width", "2");
       $("#text-node").text(null);
-      
-      const sum = d.allregions.reduce((prev, curr) => (prev[curr] = ++prev[curr] || 1, prev), {});
-      
-      var allregionsstr = "";
-      Object.keys(sum).sort().forEach(function(key) {allregionsstr += `${key}: ${sum[key]}\n`});
-      
-      $("#text-node").text(`Number of cases: ${d.count}\nNumber of variants: ${d.varcount}\n\nRegion:\n${allregionsstr}`);
+
+      draw_region_distribution(d.allregions);
+
+      // FIXME: this is the same div used for making barplot SVG
+      //$("#text-node").text(`Number of cases: ${d.count}\nNumber of variants: ${d.varcount}\n`);
+
       beadplot(d.cluster_idx);
     });
 }

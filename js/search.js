@@ -1,10 +1,44 @@
 // to store references to SVG objects (nodes)
 var selected = [];
 
+/**
+ * Highlight clusters containing samples that match substring,
+ * and highlight samples in currently displayed bead plot.
+ * When user switches bead plots, update highlighted samples.
+ *
+ * @param substr
+ */
 function select_beads_by_substring(substr) {
 	selected = [];
-	d3.selectAll('circle')
+	d3.selectAll("circle").dispatch('mouseout');
+
+	if (substr === "") {
+		// user submitted empty string
+		return;
+	}
+
+	var rects = d3.selectAll("#svg-timetree > svg > g > rect").filter(function(d) {
+		return(d.searchtext.match(substr) !== null);
+	});
+
+	// FIXME: other matching clusters not getting highlighted, due to click below?
+	for (const node of rects.nodes()) {
+		d3.select(node).attr("stroke-width", "2").attr("selected", true);
+	}
+
+	// jump to the first hit
+	d3.select(rects.nodes()[0]).dispatch('click');
+
+	var beads = d3.selectAll("#svg-cluster > svg > g > circle").filter(function(d) {
+		return(d.labels.some(x => x.includes(substr)));
+	});
+	selected = beads.nodes();
+	beads.nodes()[0].scrollIntoView();
+	for (const node of beads.nodes()) {
+		d3.select(node).dispatch('mouseover');
+	}
 }
+
 
 /**
  * Highlight and jump to node in beadplot by sample accession number.
@@ -54,6 +88,58 @@ function index_accessions(clusters) {
 	return(index);
 }
 
+function as_label(search_data) {
+	const [, accn] = search_data;
+	return accn;
+}
 
+/**
+ * Provides a source function suitable for jQuery UI's autocomplete
+ *
+ * @param {object} accn_to_cid: Accession numbers - cluster ids mapping
+ * @returns {function}
+ */
+function get_autocomplete_source_fn(accn_to_cid) {
+	// This is a hack to match anything that could be an acc number prefix
+	const prefix = /^(E|I|EP|IS|EPI_I|EPI_IS|EPI_ISL_?|EPI_?|ISL_?)$/i;
+	const MIN_RESULTS = 10;
+	const normalize = (str) => str.replace(/[^a-z0-9]/gi, '').toLowerCase();
+	const data = Object.keys(accn_to_cid).map(accn => [
+		normalize(accn), accn
+	]);
 
-//$('#search-button').attr("onClick", 'graphsearch(index_accession(clusters));');
+	return function({ term }, response) {
+		if (!/\d/.test(term)) {
+			if (prefix.test(term)) {
+				response(data.slice(0, MIN_RESULTS).map(as_label));
+			} else {
+				response([]);
+			}
+		} else {
+			const result = data.filter(array => array[0].indexOf(normalize(term)) > -1);
+			response(result.slice(0, MIN_RESULTS).map(as_label));
+		}
+	}
+}
+
+function search() {
+	var query = $('#search-input').val();
+	const accn_pat = /^EPI_ISL_[0-9]+$/i;  // case-insensitive
+	if (accn_pat.test(query)) {
+		// user is querying accession number
+		select_bead_by_accession(query);
+	}
+	else {
+		// substring search
+		select_beads_by_substring(query);
+	}
+}
+
+$('#search-button').on('click', search);
+
+$('#search-input').on('keydown', function(e) {
+	if (e.keyCode == 13) {
+		// type <enter> to run search
+		search();
+	}
+})
