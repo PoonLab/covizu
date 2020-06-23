@@ -128,16 +128,18 @@
                     <rightbar>
                         <h1>CoVizu</h1>
                         <h3>Near real-time visualization of SARS-CoV-2 genomic variation</h3>
-                        <p>TEST SERVER</p>
-                        <p>Last update: 2020-06-16</p>
-                        <details>
+                        <p>
+                          <div id="div-last-update"></div>
+                          <div id="div-number-genomes"></div>
+                        </p>
+<!--                        <details>
                             <summary>Help</summary>
                         </details>
                         <dl>
                             <a>help info here</a>
-                        </dl>
+                        </dl>-->
                         <details>
-                             <summary>cluster statistics</summary>
+                             <summary>Cluster statistics</summary>
                         </details>
                         <dl>
                             <a>cluster statistics here</a>
@@ -148,6 +150,8 @@
                 </td>
             </tr>
         </table>
+    </div>
+    <div class="tooltip" id="tooltipContainer">
     </div>
     <script src="js/jquery.js"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>

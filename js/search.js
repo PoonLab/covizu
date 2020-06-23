@@ -13,6 +13,7 @@ function select_beads_by_substring(substr) {
 	d3.selectAll("circle").dispatch('mouseout');
 
 	if (substr === "") {
+		// user submitted empty string
 		return;
 	}
 
@@ -138,6 +139,7 @@ $('#search-button').on('click', search);
 
 $('#search-input').on('keydown', function(e) {
 	if (e.keyCode == 13) {
+		// type <enter> to run search
 		search();
 	}
 })
