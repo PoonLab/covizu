@@ -139,6 +139,7 @@ $('#search-button').on('click', search);
 
 $('#search-input').on('keydown', function(e) {
 	if (e.keyCode == 13) {
+		// type <enter> to run search
 		search();
 	}
 })
