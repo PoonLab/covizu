@@ -18,7 +18,7 @@ class alignerThread(threading.Thread):
 		header, seq, database, refseq = self.in_queue.get() #unpack data payload
 		cursor, conn = open_connection(database) #open db to check if sequences already aligned
 		alignedseq = find_seq(conn, seq, refseq)
-		self.out_queue.put(header, seq, alignedseq)
+		self.out_queue.put((header, seq, alignedseq))
 		self.in_queue.task_done()
 		return 0
 
@@ -55,9 +55,9 @@ def insert_seq(cursor, seq, header, aligned):
 			:header: fasta header
 	"""
 	vars= [header.split('|')[1], header, seq, aligned]
-
+	print(vars[1])
 	result = cursor.execute("REPLACE INTO SEQUENCES('accession', 'header', 'unaligned', 'aligned') VALUES(?, ?, ?, ?)", vars)
-
+	return 0
 
 def find_seq(conn, seq, refseq):
 	""" Function that either returns aligned seq from database or performs procrust align itself
@@ -75,7 +75,6 @@ def find_seq(conn, seq, refseq):
 	else:
 		aligner = gotoh2.Aligner()
 		aligned = gotoh2.procrust_align(refseq, seq, aligner)[0]
-
 	return aligned
 
 def insert_sample_sequencing(cursor, tsvFile):
@@ -149,12 +148,16 @@ def iterate_fasta(fasta, ref, database = 'data/gsaid.db'):
 		in_queue.put((h, s, database, refseq))
 	for seq in range(0,in_queue.qsize()):
 		alignerThread(in_queue, out_queue).start()
-		#insert_seq(cursor, s, h, refseq)
+		print(threading.active_count())
 	in_queue.join()
+	cursor, conn = open_connection(database)
 	while not out_queue.empty():
 		header, seq, alignedseq = out_queue.get()
 		insert_seq(cursor, seq, header, alignedseq)
+		conn.commit()
 		out_queue.task_done()
+	conn.close()
+	out_queue.join()
 
 def parse_args():
 	""" Command-line interface """
@@ -180,7 +183,7 @@ if __name__ == '__main__':
 	args= parse_args()
 
 	if args.srcfile is not None:
-		iterate_fasta(cursor, args.srcfile, args.ref)
+		iterate_fasta(args.srcfile, args.ref)
 
 	if args.sequencingmeta is not None:
 		insert_sample_sequencing(cursor, args.sequencingmeta)

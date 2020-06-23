@@ -170,6 +170,7 @@ def update_local(srcfile, ref, db='data/gsaid.db'):
     		'noseqs': len(numseqs.fetchall())
 		}
 		json.dump(data, jsonfile, indent=2)
+	conn.close()
 
 def parse_args():
 	""" Command line interface """
