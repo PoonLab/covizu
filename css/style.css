@@ -56,13 +56,95 @@ div .breaker {
   margin: 1em auto;
 }
 
-div.tooltip{
-  position: absolute;
-  text-align: left;
-  padding: 12px;
-  font: 12px sans-serif;
-  background: lightgrey;
-  border: 2px solid darkgrey;
-  border-radius: 8px;
-  pointer-events: none;
+
+
+
+
+
+/*.container {
+  top: 42px;
+}*/
+searchp {
+    position:fixed;
+    left:10px;
+    top:10px;
+    }
+
+details ::-webkit-details-marker {
+    color: gray;
+    display: none;
 }
+details summary::after{
+  content: "";
+   position: absolute;
+
+}
+[open] summary::after{
+   transform:rotate(90deg) ;
+
+}
+[open] summary,
+summary:hover {
+    background-color: orange;
+    box-shadow: inset 1px 0 #ddd, inset -1px 0 #ddd;
+     max-height: 100px;
+}
+.box a{
+   display:block;
+   text-decoration: none;
+    color: currentcolor
+}
+.box {
+      position: absolute;
+    background-color: #fff;
+    min-width: 100px;
+    max-height: 0;
+    overflow: hidden;
+}
+details + dl {
+    max-height: 0;
+    transition: all .25s;
+    margin: 0 0 1rem;
+    overflow: hidden;
+}
+[open] + dl{
+  max-height: 100px;
+}
+
+/* right hand sidebar */
+rightbar {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    width: 250px;
+    top: 80px;
+    background-color: white;
+    position: fixed;
+    height: 100%;
+    overflow: auto;
+    right :0;
+}
+.bar {}
+    .bar form {
+        height: 42px;
+    }
+    .bar input {
+        width: 250px;
+        border-radius: 1px;
+        border: 1px solid #324B4E;
+        background: #fff;
+        transition: .3s linear;
+        float: right;
+    }
+    .bar input:focus {
+        width: 300px;
+    }
+.search_btn {  
+    width: 21px;  
+    height: 21px;  
+    background: url("../search.png") left center no-repeat;  
+    float: right;  
+    display: inline; 
+    margin-left: 5px;
+}
+span{float: left}
