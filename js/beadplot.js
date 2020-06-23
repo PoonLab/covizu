@@ -28,6 +28,12 @@ var visB = d3.select("div#svg-cluster")
   .attr("height", heightB + marginB.top + marginB.bottom)
   .append("g");
 
+var visBaxis = d3.select("div#svg-clusteraxis")
+  .append("svg")
+  .attr("width", widthB + marginB.left + marginB.right)
+  .attr("height", 25)
+  .append("g");
+
 
 // regular expression to remove redundant sequence name components
 const pat = /^hCoV-19\/(.+\/.+)\/20[0-9]{2}$/gi;
@@ -255,7 +261,8 @@ function beadplot(cid) {
 
   // clear SVG
   visB.selectAll('*').remove();
-
+  visBaxis.selectAll('*').remove();
+	
   // draw horizontal line segments that represent variants in cluster
   visB.selectAll("lines")
       .data(variants)
@@ -385,7 +392,7 @@ function beadplot(cid) {
       });
 
   // draw x-axis
-  visB.append("g")
+  visBaxis.append("g")
       .attr("transform", "translate(0,20)")
       .call(
         d3.axisTop(xScaleB)
