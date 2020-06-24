@@ -67,7 +67,9 @@ div.tooltip{
   pointer-events: none;
 }
 
-
+.SelectedBead{
+  stroke-width: 2;
+}
 
 
 /*.container {

@@ -380,15 +380,36 @@ function beadplot(cid) {
       .on("click", function(d) {
         // TODO: display first 3, collapsed text
         //console.log(d.labels);
-
+        var cur_obj = d3.select(this);
+        if (cur_obj.classed("SelectedBead")) {
+          cur_obj.classed("SelectedBead", false);
+        } else {
+          cur_obj.classed("SelectedBead", true);
+        }
+        
+        var sum_regions = [];
+        var sum_countries = [];
+        
+        d3.selectAll("circle.SelectedBead").each(function(r) { 
+          sum_regions.push(r.region);
+          sum_countries.push(r.country);
+        });
+        
+        d3.selectAll("circle:not(.SelectedBead)").style("opacity", 0.3);
+        d3.selectAll("circle.SelectedBead").style("opacity", 1);
+        
         // TODO: incorporate the following into tool-tip
-        var my_countries = table(d.country);
+        //var my_countries = table(d.country);
+        //var mystr = gentable(my_countries);
+        var my_countries = table(sum_countries.flat());
         var mystr = gentable(my_countries);
+        
 	//console.log(mystr)
         $("#text-node").html(mystr);
 	//console.log(mystr)
 
-        draw_region_distribution(table(d.region));
+        //draw_region_distribution(table(d.region));
+        draw_region_distribution(table(sum_regions.flat()));
       });
 
   // draw x-axis
