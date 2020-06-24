@@ -22,6 +22,12 @@ var vis = d3.select("div#svg-timetree")
   .attr("height", height + margin.top + margin.bottom)
   .append("g");
 
+var axis = d3.select("div#svg-timetreeaxis")
+  .append("svg")
+  .attr("width", width + margin.left + margin.right)
+  .attr("height", 25)
+  .append("g");
+
 
 /**
  * Rectangular layout of tree, update nodes in place with x,y coordinates
@@ -175,7 +181,7 @@ function draw_clusters(tips) {
     return ((coldate - origin) / 3.154e10);
   };
   
-  vis.append("g")
+  axis.append("g")
     .attr("class", "treeaxis")
     .attr("transform", "translate(0,20)")
     .call(d3.axisTop(xScale)
