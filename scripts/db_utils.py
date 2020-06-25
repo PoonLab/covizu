@@ -22,6 +22,19 @@ class alignerThread(threading.Thread):
 		self.in_queue.task_done()
 		return 0
 
+def export_fasta(cursor, outfile='data/gisaid-aligned.fa'):
+	""" Function that writes fasta to outfile
+	:params:
+		:cursor: sqlite3 object
+		:outfile: (str) output file
+	"""
+	data = cursor.execute('SELECT `header`, `aligned` FROM SEQUENCES;').fetchall();
+	out = open(outfile,'w+')
+	for h,s in data:
+		out.write('>{}\n{}\n'.format(h,s))
+	out.close()
+
+
 def open_connection(database):
 	""" open connection to database, initialize tables if they don't exist
 		:params:
@@ -33,7 +46,7 @@ def open_connection(database):
 	cur = conn.cursor()
 
 	#create tables if they don't exist
-	seqs_table = 'CREATE TABLE IF NOT EXISTS SEQUENCES (accession VARCHAR(255) PRIMARY KEY, header VARCHAR(255), unaligned BLOB, aligned BLOB);' #sequences
+	seqs_table = 'CREATE TABLE IF NOT EXISTS SEQUENCES (accession VARCHAR(255) PRIMARY KEY, header VARCHAR(255), unaligned_hash VARCHAR(100), aligned BLOB);' #sequences
 	cur.execute(seqs_table)
 	sample_table= "CREATE TABLE IF NOT EXISTS SAMPLE (accession VARCHAR(255) PRIMARY KEY, virus_name VARCHAR(255), collection_date VARCHAR(10), location VARCHAR(30));"
 	cur.execute(sample_table)
@@ -54,9 +67,9 @@ def insert_seq(cursor, seq, header, aligned):
 			:seq: raw sequence
 			:header: fasta header
 	"""
-	vars= [header.split('|')[1], header, seq, aligned]
+	vars= [header.split('|')[1], header, hash(seq.strip('N')), aligned]
 	print(vars[1])
-	result = cursor.execute("REPLACE INTO SEQUENCES('accession', 'header', 'unaligned', 'aligned') VALUES(?, ?, ?, ?)", vars)
+	result = cursor.execute("REPLACE INTO SEQUENCES('accession', 'header', 'unaligned_hash', 'aligned') VALUES(?, ?, ?, ?)", vars)
 	return 0
 
 def find_seq(conn, seq, refseq):
@@ -66,15 +79,18 @@ def find_seq(conn, seq, refseq):
 			:seq: raw sequence
 			:ref: NC_045512 sequence
 	"""
-	rawhash = hash(seq) #hash the raw sequence to find the hashkey in aligned table
+	rawhash = hash(seq.strip('N')) #hash the raw sequence to find the hashkey in aligned table
 	result = conn.cursor().execute('SELECT aligned_seq FROM HASHEDSEQS WHERE `hash_key` = ?', [rawhash]).fetchall()
-	conn.close() #either way close the connection after running first query
 
 	if len(result) == 1:
 		aligned =  result[0][0]
 	else:
 		aligner = gotoh2.Aligner()
 		aligned = gotoh2.procrust_align(refseq, seq, aligner)[0]
+		vars = [hash(seq), aligned]
+		conn.cursor().execute('REPLACE INTO HASHEDSEQS(`hash_key`, `aligned_seq`) VALUES(?,?);', vars)
+		conn.commit()
+
 	return aligned
 
 def insert_sample_sequencing(cursor, tsvFile):
@@ -130,6 +146,13 @@ def insert_ptinfo(cursor, tsvFile):
 			vars = [row[1], row[5], row[6], row[7]]
 			result = cursor.execute("REPLACE INTO PTINFO('accession', 'gender', 'age', 'ptstatus') VALUES(?, ?, ?, ?)", vars)
 			conn.commit()
+def pull_field(cursor, field):
+	"""Wrapper function to return dictionary key-val pair being accession-field"""
+	field = ["`" + field + "`"]
+	result = cursor.execute("SELECT `accession`, ? FROM SEQUENCES;", field)
+	field_dict= dict(result.fetchall())
+	return field_dict
+
 
 def iterate_fasta(fasta, ref, database = 'data/gsaid.db'):
 	""" Function to iterate through fasta file
@@ -148,7 +171,6 @@ def iterate_fasta(fasta, ref, database = 'data/gsaid.db'):
 		in_queue.put((h, s, database, refseq))
 	for seq in range(0,in_queue.qsize()):
 		alignerThread(in_queue, out_queue).start()
-		print(threading.active_count())
 	in_queue.join()
 	cursor, conn = open_connection(database)
 	while not out_queue.empty():
@@ -177,6 +199,8 @@ def parse_args():
 			help='tsv file from the patient meta data download option on GSAID.')
 	parser.add_argument('--acknowledgementmeta', '--am',
 			help='XLS file containing acknowledgement data.')
+	parser.add_argument('--outfasta', '-o',
+			help='Path to write outputfile for alignment')
 	return parser.parse_args()
 
 if __name__ == '__main__':
@@ -193,8 +217,10 @@ if __name__ == '__main__':
 
 	if args.acknowledgementmeta is not None:
 		insert_acknowledgement(cursor, args.acknowledgementmeta)
-
-
+	if args.outfasta is not None:
+		conn,cursor = open_connection(args.db)
+		export_fasta(cursor, args.outfasta)
+		conn.close()
 
 
 

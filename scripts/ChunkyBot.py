@@ -15,103 +15,30 @@ import getpass
 
 from gotoh2 import *
 from autobot import get_driver, login, retrieve_genomes
-
+from db_utils import pull_field, open_connection, insert_seq, find_seq
 
 todaystr = datetime.strftime(datetime.now(), '%Y-%m-%d')
-cwd = os.getcwd()
 
-def compare_dicts(old_fasta, new_fasta):
-	""" Function to compare contents of two fasta files
+def compare_fields(hash_dictionary, header_dictionary, new_fasta):
+	""" Function to compare downloaded fasta to sequences present in database
 	:params:
-		:old_fasta: fasta file containing sequences already downloaded
 		:new_fasta: fasta file containing sequences downloaded from GISAID database
 	:output:
-		:new_old_header: list containing new header and existing header in local files
-		:seq_diff: dictionary containing header:sequence pairs that need to be replaced
+		:modified seqs: list containing tuple [header, sequence]
 	"""
-	new_old_header = []
-	seq_diff = {}
+	new_fasta = convert_fasta(open(new_fasta))
+	modified_seqs = []
 
-	old_dict = dict(convert_fasta(open(old_fasta)))
-	new_dict = dict(convert_fasta(open(new_fasta)))
-
-	#create dictionaries with key:val pair being ascension no : header
-	old_header_dict = {}
-	for header in old_dict.keys():
-		old_header_dict[header.split('|')[1]] = header
-	new_headers_dict = {}
-	for header in new_dict.keys():
-		new_headers_dict[header.split('|')[1]] = header
-
-	#compare header dicts
-	for a, h in old_header_dict.items():
+	for h,s in new_fasta:
+		accession = h.split('|')[1]
+		hashed_seq = hash(s.strip('N'))
 		try:
-			newheader = new_headers_dict[a]
-			if newheader != h:
-				new_old_header.append((newheader, h))
-		except:
-			pass
-	#compare sequences
-	for h, s in old_dict.items():
-		try:
-			newseq = new_dict[h]
-			if newseq != s:
-				seq_diff[h] = newval
-		except:
-			pass
-	return new_old_header, seq_diff
+			if hash_dictionary[accession] != hashed_seq or header_dictionary[accession] != h:
+				modified_seqs.append([h,s])
+		except KeyError:
+			modified_seqs.append([h,s])
 
-def download_compare(baselinefile, startdate, endate, download_folder, driver):
-	""" Wrapper function for download & compare function
-	:params:
-		:baselinefile: string, path to baseline file
-		:startdate: string, iso date (yyyy-mm-dd) for start of chunk
-		:enddate: string, iso date (yyyy-mm-dd) for end of chunk
-		\\optional\
-		:download_folder: tempfolder where seqs are to be downloaded to
-		:driver: webdriver
-
-	:output:
-		:miss_diff: dictionary containing key
-		:new_old_header: list containing tuples of headers that need to be modified
-
-	"""
-	srcfile = retrieve_genomes(driver=driver, start=startdate, end=endate,
-                                                           download_folder=download_folder)
-
-	new_old_header, seq_diff= compare_dicts(baselinefile,srcfile) #compare & report needed changes
-	shutil.move(srcfile, baselinefile) #take new latest download as new baseline
-
-	return new_old_header, seq_diff
-
-def modify_fasta(alignment, new_old_header, seq_diff):
-	"""Function that replaces headers and sequences
-	:params:
-		:fasta: str, path to fasta file to be modified
-		:new_old_header: list containing tuples of headers that need to be modified
-		:seq_diff: dictionary containing sequences that need to be changed
-	:output:
-		#TODO: maybe log this ?
-		N/A
-	"""
-	with open('data/gisaid-aligned.fa', 'r') as alignment:
-		seqs = dict(convert_fasta(alignment))
-	alignment.close()
-	for new, old in new_old_header:
-		try:
-			seqs[new]= seqs.pop(old)
-		except:
-			pass
-	for h in seq_diff.keys():
-		try:
-			seqs[h] = seq_diff.keys()
-
-		except:
-			pass
-	with open('data/gisaid-aligned.fa', 'w') as alignout:
-        	for h, s in seqs.items():
-	                alignout.write('>{}\n{}\n'.format(h, s))
-	alignout.close()
+	return modified_seqs
 
 def parse_args():
 	""" Command line interface """
@@ -134,6 +61,14 @@ def parse_args():
 		'-a', '--alignment', type=str, default='data/gisaid-aligned.fa',
 		help='Path to alignment in Fasta'
 	)
+	parser.add_argument(
+		'-db', '--database', type=str, default = 'data/gsaid.db',
+		help='Path to sqlite3 database containing sequences'
+	)
+	parser.add_argument(
+		'-r', '--ref', type=str, default = 'data/NC_045512.fa',
+		help='Path to ref seq'
+	)
 	return parser.parse_args()
 
 
@@ -145,12 +80,10 @@ if __name__ == '__main__':
 	driver = login(driver=driver)
 	log = 'Changed headers \n' #debug tool
 
+	_, refseq = convert_fasta(open(args.ref))[0]
 
 	#load in existing file names with their pre-defined date ranges
-	bfiles = ['data/baseline/'+ s for s in os.listdir(args.baselinedir)]
 	bdates= [['2019-01-01','2020-04-16'],['2020-04-17','2020-05-08'],['2020-05-08','2020-05-15']]
-	all_new_old_header = []
-	all_seq_diff = {}
 
 	#find the date ranges for all non-predefined chunks
 	startdate = datetime(2020, 5, 16)
@@ -164,31 +97,34 @@ if __name__ == '__main__':
 		startdaystr = str(startdate.day) if startdate.day > 9 else '0' + str(startdate.day)
 		endmonthstr = str(enddate.month) if enddate.month > 9 else '0'+ str(enddate.month)
 		enddaystr = str(enddate.day) if enddate.day > 9 else '0' + str(enddate.day)
-		blockname = 'data/baseline/GISAID-{}{}_{}{}.fasta'.format(startmonthstr,startdaystr,endmonthstr,enddaystr)
-		if blockname not in bfiles:
-			bfiles.append(blockname)
 		bdates.append([ datetime.strftime(startdate, '%Y-%m-%d'),
 				datetime.strftime(enddate, '%Y-%m-%d')]
 			     )
 		startdate = enddate +timedelta(1)
 
 	#start downloading & comparing
-	bfiles.sort()
-	for index, file in enumerate(bfiles[:-1]):
-		new_old_header, seq_diff = download_compare(file, bdates[index][0], bdates[index][1],
-			download_folder=download_folder, driver=driver)
-		all_new_old_header += new_old_header
-		all_seq_diff.update(seq_diff)
-		print('Updated {} of {} chunks '.format(str(index+1), str(len(bfiles))))
-	driver.quit()
 
-	modify_fasta(args.alignment, all_new_old_header, all_seq_diff) #modify alignment
+	cursor, conn = open_connection(args.database)
+
+	hash_dictionary = pull_field(cursor, 'unaligned_hash')
+	header_dictionary= pull_field(cursor, 'header')
+	modified_seqs= []
+
+	for start, end in bdates:
+		srcfile = retrieve_genomes(driver=driver, start=start, end=end, download_folder=download_folder)
+		modified_seqs+= compare_fields(hash_dictionary, header_dictionary, srcfile)
+
+	driver.quit()
+	print(len(modified_seqs))
+	print(modified_seqs)
+
+	for h,s in modified_seqs:
+		aligned = find_seq(conn, s, refseq)
+		insert_seq(cursor, s, h, aligned)
+
+	conn.commit()
+	conn.close()
+
 
 	#debug section
-	log+= 'Header changes \n'
-	for header in all_new_old_header:
-		log += header + '\n'
-	log+= 'Seq changes\n'
-	for keys in all_seq_diff.keys():
-		log += keys + '\n'
-	print(log)
+	#:TODO
