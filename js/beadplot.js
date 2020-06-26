@@ -456,7 +456,7 @@ function draw_region_distribution(my_regions) {
       height = 200 - margin.top - margin.bottom;
 
   // Create the barchart
-  const svg = d3.select("#text-node")
+  const svg = d3.select("#barplot")
       .append("svg")
       .attr("width", 250)
       .attr("height", 200);
