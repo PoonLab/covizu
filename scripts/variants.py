@@ -27,6 +27,13 @@ def parse_label(label):
         raise
 
 
+def check_cliques(node, cliques):
+    for idx, clique in enumerate(cliques):
+        if node in clique:
+            return idx
+    return None
+
+
 def clustering(tn93_file, callback=None):
     """
     Use TN93 distances:
@@ -39,54 +46,71 @@ def clustering(tn93_file, callback=None):
     @param callback: optional, function to pass messages to stdout
     @return networkx Graph object
     """
-    if callback:
-        callback("Filter sequences that are too distant")
-    min_dists = {}
+
     handle = open(tn93_file)
     _ = next(handle)
-    for line in handle:
-        id1, id2, dist = line.strip().split(',')
-        dist = float(dist)
-        for node in [id1, id2]:
-            if node not in min_dists:
-                min_dists.update({node: 10.0})
-            if dist < min_dists[node]:
-                min_dists[node] = dist
-
-    intermed = [(dist, node) for node, dist in min_dists.items()]
-    intermed.sort(reverse=True)
-    discard = {}
-    for dist, node in intermed:
-        if dist < MIN_DIST_CUTOFF:
-            # since the list is sorted, we can stop search
-            break
-        discard.update({node: dist})
-
-    if discard and callback:
-        callback("flagged {} sequences for discarding".format(len(discard)))
-        for node, dist in discard.items():
-            callback('{} ({})'.format(node, dist))
 
     if callback:
         callback("building graph from nodes to find clusters")
-    handle.seek(0)  # reset TN93 file
-    _ = next(handle)
-    G = nx.Graph()
+
+    # filter edges that are below threshold distance
+    stars = {}
+    nodes = set()
     for line in handle:
         id1, id2, dist = line.strip().split(',')
         dist = float(dist)
-        if id1 in discard or id2 in discard:
-            continue
         for node in [id1, id2]:
-            if node not in G:
-                country, coldate = parse_label(node)
-                G.add_node(node, country=country, coldate=coldate)
+            if node not in nodes:
+                nodes.update({nodes})
 
         if dist < 1e-09:
-            # some very small distances reported - mixtures?
-            G.add_edge(id1, id2)
+            if id1 not in stars:
+                stars.update({id1: set()})
+            stars[id1].update({id2})
 
-    return G
+            if id2 not in stars:
+                stars.update({id2: set()})
+            stars[id2].update({id1})
+
+    handle.close()
+
+    # assemble cliques from stars
+    cliques = []
+    for ego, alters in stars.items():
+        clique = alters.union({ego})
+        for alter in alters:
+            # alters of alter must be entirely contained within clique, minus self
+            if clique.difference(stars[alter]) != {alter}:
+                clique.remove(alter)
+        cliques.append(clique)
+
+    # generate unique set of cliques (frozensets are hashable)
+    uniques = list(set([frozenset(c) for c in cliques]))
+
+    # generate the intersection graph
+    ig = nx.Graph()
+    for i in range(len(uniques)):
+        cliq1 = uniques[i]
+        # node is weighted by number of sequences
+        ig.add_node(i, weight=len(cliq1))
+        for j in range(i, len(uniques)):
+            cliq2 = uniques[j]
+            if len(cliq1.intersection(cliq2)) == 0:
+                ig.add_edge(i, j)
+
+    # find maximal clique in intersection graph with highest total weight
+    max_weight = 0
+    max_igc = None
+    for igc in nx.find_cliques(ig):
+        sg = ig.subgraph(igc)
+        weights = nx.get_node_attributes(sg, 'weight').values()
+        total_weight = sum(list(weights))
+        if total_weight > max_weight:
+            max_weight = total_weight
+            max_igc = igc
+
+
+
 
 
 def write_variants(G, csv_file, fasta_in, fasta_out, callback=None):
