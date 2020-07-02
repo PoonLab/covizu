@@ -61,20 +61,19 @@ def clustering(tn93_file, callback=None):
         dist = float(dist)
         for node in [id1, id2]:
             if node not in nodes:
-                nodes.update({nodes})
+                nodes.update({node})
 
         if dist < 1e-09:
             if id1 not in stars:
                 stars.update({id1: set()})
             stars[id1].update({id2})
-
             if id2 not in stars:
                 stars.update({id2: set()})
             stars[id2].update({id1})
 
     handle.close()
 
-    # assemble cliques from stars
+    # assemble cliques from stars - takes a few minutes
     cliques = []
     for ego, alters in stars.items():
         clique = alters.union({ego})
@@ -99,17 +98,19 @@ def clustering(tn93_file, callback=None):
                 ig.add_edge(i, j)
 
     # find maximal clique in intersection graph with highest total weight
+    # FIXME: this is the most demanding step - need to explore parallel options
     max_weight = 0
-    max_igc = None
+    max_sg = None
     for igc in nx.find_cliques(ig):
         sg = ig.subgraph(igc)
         weights = nx.get_node_attributes(sg, 'weight').values()
         total_weight = sum(list(weights))
         if total_weight > max_weight:
             max_weight = total_weight
-            max_igc = igc
+            max_sg = sg
+            print(max_weight)
 
-
+    return max_sg
 
 
 
