@@ -38,14 +38,20 @@ def import_graph(tn93_file, mindist=1e-09, callback=None):
     @return networkx Graph object
     """
     if callback:
-        callback("importing TN93 distances into graph")
+        callback("importing TN93 distances")
     graph = nx.Graph()
     with open(tn93_file) as handle:
         _ = next(handle)  # skip header line
         for line in handle:
             id1, id2, dist = line.strip().split(',')
+            for node in [id1, id2]:
+                if node not in graph:
+                    graph.add_node(node)
+
             if float(dist) < mindist:
                 graph.add_edge(id1, id2)
+    if callback:
+        callback("built graph with {} nodes".format(len(graph)))
     return graph
 
 
