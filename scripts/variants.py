@@ -198,11 +198,19 @@ def write_variants(components, csv_file, fasta_in, fasta_out, callback=None):
     # write reduced FASTA file
     outfile = open(fasta_out, 'w')
     for h, s in iter_fasta(open(fasta_in)):
-        h = h.strip()
-        if h in variants or h not in clustered:
-            # TN93 output settings exclude unique sequences
-            outfile.write(">{}\n{}\n".format(h, s.replace('?', 'N')))
+        label = h.strip()
+        seq = s.replace('?', 'N')
+        if label not in clustered:
+            # TN93 output settings exclude unique or distant sequences
+            country, coldate = parse_label(label)
+            if coldate is not None:
+                writer.writerow([label, label, coldate, country])
+                outfile.write(">{}\n{}\n".format(label, seq))
+            continue
 
+        if label in variants:
+            outfile.write(">{}\n{}\n".format(label, seq))
+    
     return variants
 
 
