@@ -165,7 +165,8 @@ def update_local(srcfile, ref, db='data/gsaid.db'):
     retcode = subprocess.check_call(['sed', '-i', 's/([ACGT?])>hCo[Vv]/\1\\n>hCoV/g', srcfile])
     #open connection to db and insert sequences
     print('Writing to database')
-    iterate_fasta(srcfile, ref)
+
+    iterate_handle(gotoh2.convert_fasta(open(srcfile, 'r')), ref, db)
 
     # write latest update string, with number of seqs
     cur, conn = open_connection(db)
@@ -219,5 +220,5 @@ if __name__ == '__main__':
     driver = login(driver=driver)
     srcfile = retrieve_genomes(driver=driver, start=args.start, end=args.end,
                                download_folder=args.d)
-    update_local(srcfile=srcfile, ref= args.ref, db=args.db)
     driver.quit()
+    update_local(srcfile=srcfile, ref= args.ref, db=args.db)
