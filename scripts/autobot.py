@@ -139,7 +139,13 @@ def retrieve_genomes(driver, start, end, download_folder):
         break
 
     print('Downloading complete')
-    downloaded_file = os.listdir(download_folder)[0]
+
+    #Get newest file in directory
+    downloaded_dir= os.listdir(download_folder)
+    abs_dir= []
+    for path in downloaded_dir:
+        abs_dir.append(os.path.join(download_folder, path))
+    downloaded_file = max(abs_dir, key=os.path.getctime)
 
     # reset browser
     time.sleep(30)
@@ -147,7 +153,7 @@ def retrieve_genomes(driver, start, end, download_folder):
     element = driver.find_element_by_xpath("//button[@class='sys-event-hook sys-form-button']")
     element.click()
 
-    return os.path.join(download_folder, downloaded_file)
+    return downloaded_file
 
 def update_local(srcfile, ref, db='data/gsaid.db'):
     """
@@ -155,11 +161,12 @@ def update_local(srcfile, ref, db='data/gsaid.db'):
     :params:
         srcfile: path to FASTA file with downloaded genomes
     """
-        # fix missing line breaks in-place
+    # fix missing line breaks in-place
     retcode = subprocess.check_call(['sed', '-i', 's/([ACGT?])>hCo[Vv]/\1\\n>hCoV/g', srcfile])
     #open connection to db and insert sequences
     print('Writing to database')
-    iterate_fasta(srcfile, ref)
+
+    iterate_handle(gotoh2.convert_fasta(open(srcfile, 'r')), ref, db)
 
     # write latest update string, with number of seqs
     cur, conn = open_connection(db)
@@ -213,5 +220,5 @@ if __name__ == '__main__':
     driver = login(driver=driver)
     srcfile = retrieve_genomes(driver=driver, start=args.start, end=args.end,
                                download_folder=args.d)
-    update_local(srcfile=srcfile, ref= args.ref, db=args.db)
     driver.quit()
+    update_local(srcfile=srcfile, ref= args.ref, db=args.db)

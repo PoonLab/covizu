@@ -15,7 +15,7 @@ import getpass
 
 from gotoh2 import *
 from autobot import get_driver, login, retrieve_genomes
-from db_utils import pull_field, open_connection, insert_seq, find_seq
+from db_utils import pull_field, open_connection, insert_seq, find_seq, iterate_handle
 
 todaystr = datetime.strftime(datetime.now(), '%Y-%m-%d')
 
@@ -27,16 +27,15 @@ def compare_fields(hash_dictionary, header_dictionary, new_fasta):
         :modified seqs: list containing tuple [header, sequence]
     """
     new_fasta = convert_fasta(open(new_fasta))
-    modified_seqs = []
-
+    modified_seqs = {}
     for h,s in new_fasta:
         accession = h.split('|')[1]
         hashed_seq = hash(s.strip('N'))
         try:
             if hash_dictionary[accession] != hashed_seq or header_dictionary[accession] != h:
-                modified_seqs.append([h,s])
+                modified_seqs[h] = s
         except KeyError:
-            modified_seqs.append([h,s])
+            modified_seqs[h] = s
 
     return modified_seqs
 
@@ -83,7 +82,7 @@ if __name__ == '__main__':
     _, refseq = convert_fasta(open(args.ref))[0]
 
     #load in existing file names with their pre-defined date ranges
-    bdates= [['2019-01-01','2020-04-16'],['2020-04-17','2020-05-08'],['2020-05-08','2020-05-15']]
+    bdates= [['2019-01-01','2020-04-16'],['2020-04-17','2020-05-08'],['2020-05-09','2020-05-15']]
 
     #find the date ranges for all non-predefined chunks
     startdate = datetime(2020, 5, 16)
@@ -104,27 +103,30 @@ if __name__ == '__main__':
 
     #start downloading & comparing
 
+    #initialize dictionaries to compare with
     cursor, conn = open_connection(args.database)
-
     hash_dictionary = pull_field(cursor, 'unaligned_hash')
     header_dictionary= pull_field(cursor, 'header')
-    modified_seqs= []
+    conn.close()
+    modified_seqs= {}
 
+    #download all chunks, and compare sequences within
     for start, end in bdates:
         srcfile = retrieve_genomes(driver=driver, start=start, end=end, download_folder=download_folder)
-        modified_seqs+= compare_fields(hash_dictionary, header_dictionary, srcfile)
+        # fix missing line breaks in-place
+        retcode = subprocess.check_call(['sed', '-i', 's/([ACGT?])>hCo[Vv]/\1\\n>hCoV/g', srcfile])
+        print(srcfile)
+        #update modified_seqs dictionary
+        modified_seqs.update(compare_fields(hash_dictionary, header_dictionary, srcfile))
+
+    """
+    #:DEBUG:
+    debugout= open('missing.fa', 'w')
+    for h,s in modified_seqs.items():
+        debugout.write('>{}\n{}\n'.format(h,s))
+    debugout.close()
+    """
 
     driver.quit()
-    print(len(modified_seqs))
-    print(modified_seqs)
-
-    for h,s in modified_seqs:
-        aligned = find_seq(conn, s, refseq)
-        insert_seq(cursor, s, h, aligned)
-
-    conn.commit()
-    conn.close()
-
-
-    #debug section
-    #:TODO
+    #call the updater, passing modified sequences as a list
+    iterate_handle(modified_seqs.items(), args.ref, database = args.database)

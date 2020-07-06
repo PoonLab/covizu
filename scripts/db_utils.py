@@ -18,7 +18,11 @@ class AlignerThread(threading.Thread):
         # open db to check if sequences already aligned
         cursor, conn = open_connection(database)
         alignedseq = find_seq(conn, seq, refseq)
+        if alignedseq == 0:
+            self.in_queue.task_done()
+            return 1
         self.out_queue.put((header, seq, alignedseq))
+        conn.close()
         self.in_queue.task_done()
         return 0
 
@@ -83,7 +87,6 @@ def insert_seq(cursor, seq, header, aligned):
             :header: fasta header
     """
     vars= [header.split('|')[1], header, hash(seq.strip('N')), aligned]
-    print(vars[1])
     result = cursor.execute("REPLACE INTO SEQUENCES('accession', 'header', 'unaligned_hash', 'aligned') VALUES(?, ?, ?, ?)", vars)
     return 0
 
@@ -96,17 +99,19 @@ def find_seq(conn, seq, refseq):
         :seq: raw sequence
         :ref: NC_045512 sequence
     """
+    if len(seq) < 5000:
+        return 0
+
     # hash the raw sequence to find the hashkey in aligned table
     rawhash = hash(seq.strip('N'))
     result = conn.cursor().execute('SELECT aligned_seq FROM HASHEDSEQS WHERE `hash_key` = ?',
                                    [rawhash]).fetchall()
-
     if len(result) == 1:
         aligned = result[0][0]
     else:
         aligner = gotoh2.Aligner()
         aligned = gotoh2.procrust_align(refseq, seq, aligner)[0]
-        vars = [hash(seq), aligned]
+        vars = [hash(seq.strip('N')), aligned]
         conn.cursor().execute('REPLACE INTO HASHEDSEQS(`hash_key`, '
                               '`aligned_seq`) VALUES(?,?);', vars)
         conn.commit()
@@ -190,7 +195,7 @@ def pull_field(cursor, field):
     return field_dict
 
 
-def iterate_fasta(fasta, ref, database = 'data/gsaid.db'):
+def iterate_fasta_threaded(fasta, ref, database = 'data/gsaid.db'):
     """
     Function to iterate through fasta file
     :param cursor: sqlite database handler
@@ -198,6 +203,82 @@ def iterate_fasta(fasta, ref, database = 'data/gsaid.db'):
     :param ref: file containing reference sequence, default-> NC_04552.fa
     """
     handle = gotoh2.iter_fasta(open(fasta))
+    _, refseq = gotoh2.convert_fasta(open(ref))[0]
+
+    in_queue = queue.Queue()
+    out_queue = queue.Queue()
+
+    # stream records into queue
+    for h, s in handle:
+        in_queue.put((h, s, database, refseq))
+
+    # pairwise align sequences in queue
+    for seq in range(0,in_queue.qsize()):
+        AlignerThread(in_queue, out_queue).start()
+
+    # block until queue is processed
+    in_queue.join()
+
+    # update database with aligned sequences
+    cursor, conn = open_connection(database)
+    while not out_queue.empty():
+        header, seq, alignedseq = out_queue.get()
+        insert_seq(cursor, seq, header, alignedseq)
+        conn.commit()
+        out_queue.task_done()
+    conn.close()
+    out_queue.join()
+
+def iterate_fasta(fasta, ref, database = 'data/gsaid.db'):
+    """
+    Function to iterate through fasta file *non threaded*
+    :param cursor: sqlite database handler
+    :param fasta: file containing sequences
+    :param ref: file containing reference sequence, default-> NC_04552.fa
+    """
+    handle = gotoh2.iter_fasta(open(fasta))
+    _, refseq = gotoh2.convert_fasta(open(ref))[0]
+    cursor, conn = open_connection(database)
+
+
+    # stream records into queue
+    for header, seq in handle:
+        alignedseq = find_seq(conn, seq, refseq)
+        insert_seq(cursor, seq, header, alignedseq)
+        conn.commit()
+    conn.close()
+
+
+def iterate_handle(handle, ref, database = 'data/gsaid.db'):
+    """
+    Function to iterate through list [(header,seq)....] passed by ChunkyBot ##NON THREADED##
+    :param cursor: sqlite database handler
+    :param handle: list containing tuples (header, raw seq)
+    :param ref: file containing reference sequence, default-> NC_04552.fa
+    """
+
+    _, refseq = gotoh2.convert_fasta(open(ref))[0]
+    cursor, conn = open_connection(database)
+
+    #align and insert into database
+    for header, seq in handle:
+        alignedseq = find_seq(conn, seq, refseq)
+        #if alignedseq returns 0; raw seq length <5,000
+        if alignedseq == 0:
+            print('Sequence {} with a length of {} cannot be aligned.'.format(header, len(seq)))
+        else:
+            print('Aligning {}.'.format(header))
+            insert_seq(cursor, seq, header, alignedseq)
+            conn.commit()
+
+def iterate_handle_threaded(handle, ref, database = 'data/gsaid.db'):
+    """
+    Function to iterate through handle passed by Chunky bot
+    :param cursor: sqlite database handler
+    :param handle: list containing tuples (header, raw seq)
+    :param ref: file containing reference sequence, default-> NC_04552.fa
+    """
+
     _, refseq = gotoh2.convert_fasta(open(ref))[0]
 
     in_queue = queue.Queue()
