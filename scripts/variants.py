@@ -6,8 +6,6 @@ import argparse
 from gotoh2 import iter_fasta
 import csv
 
-MIN_DIST_CUTOFF = 0.0005  # ~15 nt differences from any other genome
-
 
 def parse_label(label):
     """
@@ -40,7 +38,7 @@ def import_graph(tn93_file, mindist=1e-09, callback=None):
     @return networkx Graph object
     """
     if callback:
-        callback("building graph from nodes to find clusters")
+        callback("importing TN93 distances into graph")
     graph = nx.Graph()
     with open(tn93_file) as handle:
         _ = next(handle)  # skip header line
@@ -103,7 +101,8 @@ def clique_clustering(graph):
     return result
 
 
-def modularity_clustering(graph, size_cutoff=10, deg_cutoff=0.5, callback=None):
+def modularity_clustering(graph, size_cutoff=10, deg_cutoff=0.5, 
+                          callback=None):
     """
     Use the Clauset-Newman-Moore greedy modularity maximization
     algorithm to partition the TN93 pairwise graph into communities.
@@ -126,7 +125,7 @@ def modularity_clustering(graph, size_cutoff=10, deg_cutoff=0.5, callback=None):
             # retrieve list of degree sizes
             deg = [d for _, d in sg.degree()]
             mean_deg = sum(deg) / float(len(deg))
-            if mean_deg < deg_cutoff:
+            if mean_deg / len(deg) < deg_cutoff:
                 communities = list(greedy_modularity_communities(sg))
                 if callback:
                     callback(
@@ -153,9 +152,6 @@ def write_variants(components, csv_file, fasta_in, fasta_out, callback=None):
     :param callback:  optional, for passing messages to stdout
     :return: dict, {label: collection date}
     """
-    if callback:
-        callback("graph comprises {} sequences and {} components".format(
-            len(G), len(components)))
 
     # generate cluster information
     writer = csv.writer(open(csv_file, 'w'))
@@ -222,7 +218,7 @@ if __name__ == "__main__":
 
     args = parse_args()
     graph = import_graph(args.tn93, callback=callback)
-    components = modularity_clustering(graph)
+    components = modularity_clustering(graph, callback=callback)
     write_variants(components, csv_file=args.csv_out,
                    fasta_in=args.fasta_in, fasta_out=args.fasta_out,
                    callback=callback)
