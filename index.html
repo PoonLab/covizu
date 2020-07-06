@@ -14,7 +14,7 @@
         </svg>
     </a>
 
-    <div class="search bar">
+    <div style="position:fixed;z-index:10" class="search bar">
         <searchp>
             <div id="search-bar">
                 <span>
@@ -25,17 +25,27 @@
         </searchp>
     </div>
 
+    <div style="width:814px;
+                height:80px;
+                position:fixed;
+                z-index:5;
+                background-color:rgba(255,255,255,0.9);
+                opacity:0.9;
+                filter:alpha(opacity=90);
+                top:0px;
+                left:0px"></div>
+
     <div class="container">
         <table>
             <tr>
-                <td><div style="position: fixed; top: 40px">Time-scaled tree</div></td>
-                <td style="position: fixed; top: 40px"><div>Beadplot</div></td>
+                <td><div style="position: fixed; top: 40px; z-index:11">Time-scaled tree</div></td>
+                <td style="position: fixed; top: 40px; z-index:12"><div>Beadplot</div></td>
             </tr>
             <tr></tr>
-            <tr style="vertical-align: top">
-                <td><div id="svg-timetreeaxis" style="position: fixed; top: 58px"></div>
+            <tr style="vertical-align: top; z-index: 1">
+                <td><div id="svg-timetreeaxis" style="position: fixed; top: 58px;z-index: 13"></div>
                     <div id="svg-timetree"></div></td>
-                <td><div id="svg-clusteraxis" style="position: fixed; top: 58px"></div>
+                <td><div id="svg-clusteraxis" style="position: fixed; top: 58px; z-index: 14"></div>
                     <div id="svg-cluster"></div></td>
                 <td>
                     <rightbar>
