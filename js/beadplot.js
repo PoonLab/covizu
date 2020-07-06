@@ -363,7 +363,7 @@ function beadplot(cid) {
         }
         // Display the sample date
         let formatDate = d3.timeFormat("%Y-%m-%d");
-        tooltipText += `<br><b>Sample Date:</b> ${formatDate(new Date(d.x))}<br>`
+        tooltipText += `<br><b>Sample Date:</b> ${formatDate(new Date(d.x))}<br>`;
         bTooltip.html(tooltipText)
             .style("left", (d3.event.pageX + 10) + "px")    // Tooltip appears 10 pixels left of the cursor
             .style("top", (d3.event.pageY + "px"));
@@ -381,34 +381,28 @@ function beadplot(cid) {
         // TODO: display first 3, collapsed text
         //console.log(d.labels);
         var cur_obj = d3.select(this);
+
         if (cur_obj.classed("SelectedBead")) {
           cur_obj.classed("SelectedBead", false);
         } else {
           cur_obj.classed("SelectedBead", true);
         }
-        
+
         var sum_regions = [];
         var sum_countries = [];
-        
-        d3.selectAll("circle.SelectedBead").each(function(r) { 
+
+        d3.selectAll("circle.SelectedBead").each(function(r) {
           sum_regions.push(r.region);
           sum_countries.push(r.country);
         });
-        
+
         d3.selectAll("circle:not(.SelectedBead)").style("opacity", 0.3);
         d3.selectAll("circle.SelectedBead").style("opacity", 1);
-        
-        // TODO: incorporate the following into tool-tip
-        //var my_countries = table(d.country);
-        //var mystr = gentable(my_countries);
+
         var my_countries = table(sum_countries.flat());
         var mystr = gentable(my_countries);
-        
-	//console.log(mystr)
         $("#text-node").html(mystr);
-	//console.log(mystr)
 
-        //draw_region_distribution(table(d.region));
         draw_region_distribution(table(sum_regions.flat()));
       });
 
@@ -457,6 +451,7 @@ function draw_region_distribution(my_regions) {
 
   // Create the barchart
   const svg = d3.select("#barplot")
+      .html("")
       .append("svg")
       .attr("width", 250)
       .attr("height", 200);
