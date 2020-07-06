@@ -41,14 +41,14 @@ def import_graph(tn93_file, mindist=1e-09, callback=None):
     """
     if callback:
         callback("building graph from nodes to find clusters")
-    G = nx.Graph()
+    graph = nx.Graph()
     with open(tn93_file) as handle:
         _ = next(handle)  # skip header line
         for line in handle:
             id1, id2, dist = line.strip().split(',')
             if float(dist) < mindist:
-                G.add_edge(id1, id2)
-    return G
+                graph.add_edge(id1, id2)
+    return graph
 
 
 def clique_clustering(graph):
@@ -221,8 +221,8 @@ if __name__ == "__main__":
         sys.stdout.flush()
 
     args = parse_args()
-    G = import_graph(args.tn93, callback=callback)
-    components = modularity_clustering(G)
+    graph = import_graph(args.tn93, callback=callback)
+    components = modularity_clustering(graph)
     write_variants(components, csv_file=args.csv_out,
                    fasta_in=args.fasta_in, fasta_out=args.fasta_out,
                    callback=callback)
