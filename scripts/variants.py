@@ -44,10 +44,7 @@ def import_graph(tn93_file, mindist=1e-09, callback=None):
         _ = next(handle)  # skip header line
         for line in handle:
             id1, id2, dist = line.strip().split(',')
-            for node in [id1, id2]:
-                if node not in graph:
-                    graph.add_node(node)
-
+            # note this excludes singletons
             if float(dist) < mindist:
                 graph.add_edge(id1, id2)
     if callback:
@@ -124,8 +121,13 @@ def modularity_clustering(graph, size_cutoff=10, deg_cutoff=0.5,
     :param callback:  optional, write verbose messages
     :return: list, lists of node labels
     """
+    if callback:
+        callback("Modularity clustering...")
+
     result = []
+    count = 0
     for component in nx.connected_components(graph):
+        count += 1
         if len(component) > size_cutoff:
             sg = graph.subgraph(component)
             # retrieve list of degree sizes
@@ -135,7 +137,7 @@ def modularity_clustering(graph, size_cutoff=10, deg_cutoff=0.5,
                 communities = list(greedy_modularity_communities(sg))
                 if callback:
                     callback(
-                        'Partitioning component of size {} into {}'
+                        'Partitioning component of size {} into {} '
                         'communities'.format(len(component), len(communities))
                     )
                 result.extend(communities)
@@ -145,6 +147,10 @@ def modularity_clustering(graph, size_cutoff=10, deg_cutoff=0.5,
         else:
             result.append(component)
 
+    if callback:
+        callback("Partitioned graph from {} to {} components".format(
+            count, len(result))
+        )
     return result
 
 
@@ -163,7 +169,8 @@ def write_variants(components, csv_file, fasta_in, fasta_out, callback=None):
     writer = csv.writer(open(csv_file, 'w'))
     writer.writerow(['cluster', 'label', 'coldate', 'country'])
 
-    variants = {}
+    variants = set()
+    clustered = set()
     for component in components:
         # omit records with ambiguous collection dates
         intermed = []
@@ -181,19 +188,20 @@ def write_variants(components, csv_file, fasta_in, fasta_out, callback=None):
 
         # label cluster by earliest case
         _, _, label0 = intermed[0]
-        variants.update({label0: len(component)})
+        variants.update({label0})
 
         # write cluster contents to info file
         for coldate, country, label in intermed:
+            clustered.update({label})
             writer.writerow([label0, label, coldate, country])
 
     # write reduced FASTA file
     outfile = open(fasta_out, 'w')
     for h, s in iter_fasta(open(fasta_in)):
         h = h.strip()
-        if h not in variants:
-            continue
-        outfile.write(">{}\n{}\n".format(h, s.replace('?', 'N')))
+        if h in variants or h not in clustered:
+            # TN93 output settings exclude unique sequences
+            outfile.write(">{}\n{}\n".format(h, s.replace('?', 'N')))
 
     return variants
 
