@@ -5,6 +5,7 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
 </head>
+
 <body>
     <a href="https://github.com/PoonLab/covizu" class="github-corner" aria-label="View source on GitHub">
         <svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: fixed; top: 0; border: 0; right: 0;" aria-hidden="true">
@@ -55,19 +56,17 @@
                           <div id="div-last-update"></div>
                           <div id="div-number-genomes"></div>
                         </p>
-<!--                        <details>
-                            <summary>Help</summary>
-                        </details>
-                        <dl>
-                            <a>help info here</a>
-                        </dl>-->
-                        <details>
-                             <summary>Cluster statistics</summary>
-                        </details>
-                        <dl>
-                            <a>cluster statistics here</a>
-                        </dl>
                         <div class="breaker" id="text-node"></div>
+                        <div class="breaker" id="barplot"></div>
+                        <details>
+                            <summary>Country distribution</summary>
+                            <div id="country-table"></div>
+                        </details>
+                        <details>
+                            <summary>Sequence details</summary>
+                            <div id="seq-table"></div>
+                        </details>
+
                     </rightbar>
                     
                 </td>

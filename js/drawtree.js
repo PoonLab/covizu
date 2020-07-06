@@ -228,12 +228,12 @@ function draw_clusters(tips) {
       rects.attr("stroke", null);
       d3.select(this).attr("stroke", "grey")
         .attr("stroke-width", "2");
-      $("#text-node").text(null);
+      $("#barplot").text(null);
 
       draw_region_distribution(d.allregions);
 
       // FIXME: this is the same div used for making barplot SVG
-      //$("#text-node").text(`Number of cases: ${d.count}\nNumber of variants: ${d.varcount}\n`);
+      $("#text-node").text(`Number of cases: ${d.count}\nNumber of variants: ${d.varcount}\n`);
 
       beadplot(d.cluster_idx);
     });
