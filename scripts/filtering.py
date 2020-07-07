@@ -1,9 +1,24 @@
-from gotoh2 import iter_fasta
 import re
 import argparse
+import sqlite3
 
 
-def filter_gisaid(fasta_file, outfile, trim_left=0, trim_right=0,
+def get_aligned(database):
+    """
+    Connect to sqlite3 database and stream header, aligned genome tuples.
+    TODO: allow user to limit query to range of sample collection dates?
+
+    :param database:  str, path to sqlite3 database
+    :yield:  header, sequence
+    """
+    conn = sqlite3.connect(database, check_same_thread=False)
+    cur = conn.cursor()
+    data = cur.execute('SELECT `header`, `aligned` FROM SEQUENCES;').fetchall()
+    for h, s in data:
+        yield h, s
+
+
+def filter_gisaid(database, outfile, trim_left=0, trim_right=0,
                   max_prop_n=0.05, minlen=29000):
     """
     Filter FASTA file for partial and non-human SARS-COV-2 genome sequences.
@@ -28,7 +43,7 @@ def filter_gisaid(fasta_file, outfile, trim_left=0, trim_right=0,
     discards = {'nonhuman': [], 'ambiguous': [], 'short': [],
                 'duplicates': [], 'mangled header': []}
 
-    for h, s in iter_fasta(fasta_file):
+    for h, s in get_aligned(database):
         if pat.findall(h):
             discards['nonhuman'].append(h)
             continue
@@ -68,32 +83,39 @@ def filter_gisaid(fasta_file, outfile, trim_left=0, trim_right=0,
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Filter GISAID FASTA file for incomplete and non-human genome sequences."
+        description="Filter aligned sequences for problematic entries."
     )
-    parser.add_argument('-i', '--infile', type=argparse.FileType('r'),
-                        default=open('data/gisaid-aligned.fa'),
-                        help='input, path to FASTA file with aligned GISAID genomes')
+
+    parser.add_argument('-i', '--database', type=str, default='data/gsaid.db',
+                        help='input, path to sqlite3 database.')
+
     parser.add_argument('-o', '--outfile', type=argparse.FileType('w'),
                         default=open('data/gisaid-filtered.fa', 'w'),
                         help='output, path to write filtered FASTA file')
+
     parser.add_argument('-p', '--maxpropN', type=float, default=0.05,
                         help='option, maximum tolerance for proportion of Ns '
                              '(ambiguous base calls) - defaults to 0.05 (5%)')
+
     parser.add_argument('-L', '--minlen', type=int, default=29000,
                         help='option, minimum genome sequence length, default 29000')
+
     parser.add_argument('--trim_left', type=int, default=53,
                         help='option, remove N bases from the left')
+
     parser.add_argument('--trim_right', type=int, default=93,
                         help='option, remove N bases from the right')
+
     parser.add_argument('--verbose', action='store_true',
                         help='option, print discarded genome headers')
+
     return parser.parse_args()
 
 
 if __name__ == '__main__':
     args = parse_args()
     discards = filter_gisaid(
-        args.infile, args.outfile, trim_left=args.trim_left,
+        database=args.database, outfile=args.outfile, trim_left=args.trim_left,
         trim_right=args.trim_right, max_prop_n=args.maxpropN, minlen=args.minlen
     )
 
