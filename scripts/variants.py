@@ -29,7 +29,7 @@ def parse_label(label):
 def import_graph(tn93_file, mindist=1e-09, callback=None):
     """
     Use TN93 distances:
-      tn93 -o data/gisaid.tn93.csv data/gisaid-filtered.fa
+      tn93 -t 0.0001 -o data/gisaid.tn93.csv data/gisaid-filtered.fa
     to generate a graph where an edge connects sequences with a
     distance of effectively zero ("identical").
 
@@ -137,7 +137,7 @@ def modularity_clustering(graph, size_cutoff=10, deg_cutoff=0.5,
                 communities = list(greedy_modularity_communities(sg))
                 if callback:
                     callback(
-                        'Partitioning component of size {} into {} '
+                        '  partitioning component of size {} into {} '
                         'communities'.format(len(component), len(communities))
                     )
                 result.extend(communities)
@@ -210,7 +210,7 @@ def write_variants(components, csv_file, fasta_in, fasta_out, callback=None):
 
         if label in variants:
             outfile.write(">{}\n{}\n".format(label, seq))
-    
+
     return variants
 
 

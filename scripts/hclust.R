@@ -43,20 +43,22 @@ dates <- as.Date(sapply(headers, function(x) {
   }))
 
 # identify the earliest sample (Wuhan, IPBCAMS-WH-01)
-root <- which.min(dates)
+#root <- which.min(dates)
+root <- which(grepl("EPI_ISL_402132", accns))
 
-# compute mean pairwise distance between members of each cluster
-# compute mean distance between members and the root
+
 tab <- table(clusters)
 mean.pdist <- c()
 mean.rdist <- c()
 for (k in 1:length(tab)) {
   clust <- as.integer(which(clusters == k))
-  
+
+  # compute mean pairwise distance between members of each cluster  
   pdists <- as.matrix(tn93[clust, clust])
-  mdist <- mean(pdists)
+  mdist <- mean(pdists[upper.tri(pdists)])
   mean.pdist <- c(mean.pdist, mdist)
-  
+
+  # compute mean distance between members and the root  
   rdists <- as.matrix(tn93[root, clust])
   mrdist <- mean(rdists)
   mean.rdist <- c(mean.rdist, mrdist)
@@ -150,7 +152,9 @@ for (i in 1:max(clusters)) {
     })
     edges <- cbind(edges, round(dists*29903, 2))
 
-    result[[length(result)+1]] <- list(pdist=pdist, rdist=rdist,nodes=nodes, edges=edges)
+    result[[length(result)+1]] <- list(
+      pdist=pdist, rdist=rdist, nodes=nodes, edges=edges
+      )
   }
 }#)
 cat ('\nwriting JSON file\n')
