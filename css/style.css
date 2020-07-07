@@ -169,16 +169,16 @@ span {
 #svg-timetreeaxis {
     position: fixed;
     top: 58px;
-    background-color: #fffa;
+    /* background-color: #fffa; */
 }
 
 #svg-clusteraxis {
     position: fixed;
     top: 58px;
-    background-color: #fffa;
+    /* background-color: #fffa; */
 }
 .toplabel {
     position: fixed;
     top: 40px;
-    background-color: #fffa;
+    /* background-color: #fffa; */
 }
