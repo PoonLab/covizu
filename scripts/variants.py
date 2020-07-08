@@ -1,11 +1,10 @@
 import networkx as nx
+from networkx.algorithms.community import greedy_modularity_communities
 from datetime import date
 import sys
 import argparse
 from gotoh2 import iter_fasta
 import csv
-
-MIN_DIST_CUTOFF = 0.0005  # ~15 nt differences from any other genome
 
 
 def parse_label(label):
@@ -27,116 +26,192 @@ def parse_label(label):
         raise
 
 
-def clustering(tn93_file, callback=None):
+def import_graph(tn93_file, mindist=1e-09, callback=None):
     """
     Use TN93 distances:
-     tn93 -o data/gisaid.tn93.csv data/gisaid-filtered.fa
-
-    to cluster genome sequences into unique variants.  Simultaneously,
-    exclude sequences that are too distant from any other sequence.
+      tn93 -t 0.0001 -o data/gisaid.tn93.csv data/gisaid-filtered.fa
+    to generate a graph where an edge connects sequences with a
+    distance of effectively zero ("identical").
 
     @param tn93_file: input, path to CSV file with TN93 distances
     @param callback: optional, function to pass messages to stdout
     @return networkx Graph object
     """
     if callback:
-        callback("Filter sequences that are too distant")
-    min_dists = {}
-    handle = open(tn93_file)
-    _ = next(handle)
-    for line in handle:
-        id1, id2, dist = line.strip().split(',')
-        dist = float(dist)
-        for node in [id1, id2]:
-            if node not in min_dists:
-                min_dists.update({node: 10.0})
-            if dist < min_dists[node]:
-                min_dists[node] = dist
+        callback("importing TN93 distances")
+    graph = nx.Graph()
+    with open(tn93_file) as handle:
+        _ = next(handle)  # skip header line
+        for line in handle:
+            id1, id2, dist = line.strip().split(',')
+            # note this excludes singletons
+            if float(dist) < mindist:
+                graph.add_edge(id1, id2)
+    if callback:
+        callback("built graph with {} nodes".format(len(graph)))
+    return graph
 
-    intermed = [(dist, node) for node, dist in min_dists.items()]
-    intermed.sort(reverse=True)
-    discard = {}
-    for dist, node in intermed:
-        if dist < MIN_DIST_CUTOFF:
-            # since the list is sorted, we can stop search
-            break
-        discard.update({node: dist})
 
-    if discard and callback:
-        callback("flagged {} sequences for discarding".format(len(discard)))
-        for node, dist in discard.items():
-            callback('{} ({})'.format(node, dist))
+def clique_clustering(graph):
+    """
+    Use maximal cliques to define variants, where a
+    maximal clique is the largest subgraph containing a given node
+    such that every pair of nodes is connected by an edge.
+    WARNING: this is a very time-consuming process, not recommended
+    for large graphs!
+
+    :param graph: networkx.Graph object from import_graph()
+    :return:  list of connected components as lists of node labels
+    """
+    result = []
+    for component in nx.connected_components(graph):
+        sg = graph.subgraph(component)
+        cliques = nx.find_cliques(sg)
+
+        # generate unique set of cliques (frozensets are hashable)
+        uniques = list(set([frozenset(c) for c in cliques]))
+
+        # generate clique graph where edges indicate non-overlapping cliques
+        cgraph = nx.Graph()
+        for i in range(len(uniques)):
+            cliq1 = uniques[i]
+            # node is weighted by number of sequences in clique
+            cgraph.add_node(i, weight=len(cliq1))
+            for j in range(i, len(uniques)):
+                cliq2 = uniques[j]
+                if len(cliq1.intersection(cliq2)) == 0:
+                    if j not in cgraph:
+                        cgraph.add_node(j, weight=len(cliq2))
+                    cgraph.add_edge(i, j)
+
+        # find maximal clique in clique graph with highest total weight
+        max_weight = 0
+        max_csg = None
+        for cclique in nx.find_cliques(cgraph):
+            # FIXME: some iterations may be redundant
+            csg = cgraph.subgraph(cclique)
+            weights = nx.get_node_attributes(csg, 'weight').values()
+            total_weight = sum(list(weights))
+            if total_weight > max_weight:
+                max_weight = total_weight
+                max_csg = csg
+
+        # generate partition of node labels
+        for clique in max_csg.nodes():
+            clique_set = [uniques[i] for i in clique]
+            result.extend(clique_set)
+
+    return result
+
+
+def modularity_clustering(graph, size_cutoff=10, deg_cutoff=0.5, 
+                          callback=None):
+    """
+    Use the Clauset-Newman-Moore greedy modularity maximization
+    algorithm to partition the TN93 pairwise graph into communities.
+    Modularity quantifies the density of edges at the periphery of
+    a community relative to the density within it.
+    TODO: try other methods like Louvain algorithm
+
+    :param graph:  networkx.Graph object from import_graph()
+    :param size_cutoff:  int, minimum component size to consider
+                         applying modularity community detection
+    :param deg_cutoff:  float, maximum edge density at which use
+                        community detection.
+    :param callback:  optional, write verbose messages
+    :return: list, lists of node labels
+    """
+    if callback:
+        callback("Modularity clustering...")
+
+    result = []
+    count = 0
+    for component in nx.connected_components(graph):
+        count += 1
+        if len(component) > size_cutoff:
+            sg = graph.subgraph(component)
+            # retrieve list of degree sizes
+            deg = [d for _, d in sg.degree()]
+            mean_deg = sum(deg) / float(len(deg))
+            if mean_deg / len(deg) < deg_cutoff:
+                communities = list(greedy_modularity_communities(sg))
+                if callback:
+                    callback(
+                        '  partitioning component of size {} into {} '
+                        'communities'.format(len(component), len(communities))
+                    )
+                result.extend(communities)
+            else:
+                # component has sufficient edge density
+                result.append(component)
+        else:
+            result.append(component)
 
     if callback:
-        callback("building graph from nodes to find clusters")
-    handle.seek(0)  # reset TN93 file
-    _ = next(handle)
-    G = nx.Graph()
-    for line in handle:
-        id1, id2, dist = line.strip().split(',')
-        dist = float(dist)
-        if id1 in discard or id2 in discard:
-            continue
-        for node in [id1, id2]:
-            if node not in G:
-                country, coldate = parse_label(node)
-                G.add_node(node, country=country, coldate=coldate)
-
-        if dist < 1e-09:
-            # some very small distances reported - mixtures?
-            G.add_edge(id1, id2)
-
-    return G
+        callback("Partitioned graph from {} to {} components".format(
+            count, len(result))
+        )
+    return result
 
 
-def write_variants(G, csv_file, fasta_in, fasta_out, callback=None):
+def write_variants(components, csv_file, fasta_in, fasta_out, callback=None):
     """
     Write CSV file describing the content of each genome variant cluster.
-    :param G:  networkx.graph object from clustering()
-    :param csv_file:  path to write variants in CSV format
-    :param fasta_in:  path to FASTA file of aligned genomes
-    :param fasta_out:  path to write FASTA file of unique genome variants
+    :param components:  list, lists of node labels
+    :param csv_file:  str, path to write variants in CSV format
+    :param fasta_in:  str, path to FASTA file of aligned genomes
+    :param fasta_out:  str, path to write FASTA file of unique genome variants
     :param callback:  optional, for passing messages to stdout
     :return: dict, {label: collection date}
     """
-    components = list(nx.connected_components(G))
-    if callback:
-        callback("graph comprises {} sequences and "
-          "{} components".format(len(G), len(components)))
 
     # generate cluster information
     writer = csv.writer(open(csv_file, 'w'))
     writer.writerow(['cluster', 'label', 'coldate', 'country'])
 
-    clusters = {}
-    for cluster in components:
-        subG = G.subgraph(cluster)
+    variants = set()
+    clustered = set()
+    for component in components:
         # omit records with ambiguous collection dates
-        intermed = [
-            (ndata['coldate'], ndata['country'], node) for node, ndata
-            in subG.nodes(data=True) if ndata['coldate'] is not None
-        ]
-        intermed.sort()  # increasing order of collection dates
+        intermed = []
+        for label in component:
+            country, coldate = parse_label(label)
+            if coldate is None:
+                continue
+            intermed.append([coldate, country, label])
+
         if len(intermed) == 0:
-            # exclude clusters with all missing dates
+            # exclude components with all missing dates
             continue
+
+        intermed.sort()  # increasing order of collection dates
 
         # label cluster by earliest case
-        _, _, label = intermed[0]
-        clusters.update({label: len(cluster)})
+        _, _, label0 = intermed[0]
+        variants.update({label0})
 
         # write cluster contents to info file
-        for coldate, country, node in intermed:
-            writer.writerow([label, node, coldate, country])
+        for coldate, country, label in intermed:
+            clustered.update({label})
+            writer.writerow([label0, label, coldate, country])
 
+    # write reduced FASTA file
     outfile = open(fasta_out, 'w')
     for h, s in iter_fasta(open(fasta_in)):
-        h = h.strip()
-        if h not in clusters:
+        label = h.strip()
+        seq = s.replace('?', 'N')
+        if label not in clustered:
+            # TN93 output settings exclude unique or distant sequences
+            country, coldate = parse_label(label)
+            if coldate is not None:
+                writer.writerow([label, label, coldate, country])
+                outfile.write(">{}\n{}\n".format(label, seq))
             continue
-        outfile.write(">{}\n{}\n".format(h, s.replace('?', 'N')))
 
-    return clusters
+        if label in variants:
+            outfile.write(">{}\n{}\n".format(label, seq))
+
+    return variants
 
 
 def parse_args():
@@ -164,7 +239,8 @@ if __name__ == "__main__":
         sys.stdout.flush()
 
     args = parse_args()
-    G = clustering(args.tn93, callback=callback)
-    write_variants(G, csv_file=args.csv_out,
-               fasta_in=args.fasta_in, fasta_out=args.fasta_out,
-               callback=callback)
+    graph = import_graph(args.tn93, callback=callback)
+    components = modularity_clustering(graph, callback=callback)
+    write_variants(components, csv_file=args.csv_out,
+                   fasta_in=args.fasta_in, fasta_out=args.fasta_out,
+                   callback=callback)

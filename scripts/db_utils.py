@@ -229,6 +229,7 @@ def iterate_fasta_threaded(fasta, ref, database = 'data/gsaid.db'):
     conn.close()
     out_queue.join()
 
+
 def iterate_fasta(fasta, ref, database = 'data/gsaid.db'):
     """
     Function to iterate through fasta file *non threaded*
@@ -239,7 +240,6 @@ def iterate_fasta(fasta, ref, database = 'data/gsaid.db'):
     handle = gotoh2.convert_fasta(open(fasta))
     _, refseq = gotoh2.convert_fasta(open(ref))[0]
     cursor, conn = open_connection(database)
-
 
     # stream records into queue
     for header, seq in handle:
