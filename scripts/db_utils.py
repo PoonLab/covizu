@@ -236,7 +236,7 @@ def iterate_fasta(fasta, ref, database = 'data/gsaid.db'):
     :param fasta: file containing sequences
     :param ref: file containing reference sequence, default-> NC_04552.fa
     """
-    handle = gotoh2.iter_fasta(open(fasta))
+    handle = gotoh2.convert_fasta(open(fasta))
     _, refseq = gotoh2.convert_fasta(open(ref))[0]
     cursor, conn = open_connection(database)
 
@@ -305,6 +305,48 @@ def iterate_handle_threaded(handle, ref, database = 'data/gsaid.db'):
     conn.close()
     out_queue.join()
 
+def migrate_entries(old_db, new_db):
+    """
+    Function to migrate missing seqs from old_db to new_db
+    :params:
+        :old_db: sqlite3 target db
+        :new_db: sqlite3 db with missing seqs
+    """
+    oldconnect = sqlite3.connect(old_db)
+    chunkyconnect = sqlite3.connect(new_db)
+    oldcursor = oldconnect.cursor()
+    chunkcursor = chunkyconnect.cursor()
+    #get existing accessions in target db, create list to derive missing accesions
+    existing_accessions = list(oldcursor.execute('SELECT accession from SEQUENCES;').fetchall())
+    EA_list = []
+    for accession in existing_accessions:
+        EA_list.append(accession[0])
+
+    #get all sequences from the source db and insert them into target
+    All_chunk_seqs = list(chunkcursor.execute('SELECT * FROM SEQUENCES;').fetchall())
+    count = 0
+    for accession, header, unaligned_hash, aligned in All_chunk_seqs:
+        if accession not in EA_list:
+            count+=1
+            oldcursor.execute('INSERT INTO SEQUENCES (accession, header, unaligned_hash, aligned) VALUES (?,?,?,?);', [accession, header, unaligned_hash, aligned])
+            oldconnect.commit()
+
+    print('Updated {}, inserted {} seqs.'.format(old_db, str(count)))
+
+    #get all existing hashes from target db, create list to derive missing accesions
+    existing_hashes = list(oldcursor.execute('SELECT hash_key FROM HASHEDSEQS').fetchall())
+    EH_list = []
+    for hash_key in existing_hashes:
+        EH_list.append(hash_key[0])
+
+    hash_count = 0
+    All_chunk_hashes = list(chunkcursor.execute('SELECT * FROM HASHEDSEQS;').fetchall())
+    for hash_key, aligned_seq in All_chunk_hashes:
+        if hash_key not in EH_list:
+            hash_count+=1
+            oldcursor.execute('INSERT INTO HASHEDSEQS (hash_key, aligned_seq) VALUES (?,?)', [hash_key, aligned_seq])
+            oldconnect.commit()
+    print('Updated {}, inserted {} hashes.'.format(old_db, str(hash_count)))
 
 def parse_args():
     """ Command-line interface """
@@ -326,6 +368,9 @@ def parse_args():
                         help='XLS file containing acknowledgement data.')
     parser.add_argument('--outfasta', '-o',
                         help='Path to write outputfile for alignment')
+    parser.add_argument('--targetdb',
+                        help='Name of target database')
+
     return parser.parse_args()
 
 
@@ -348,5 +393,9 @@ if __name__ == '__main__':
     if args.outfasta is not None:
         export_fasta(cursor, args.outfasta)
         conn.close()
+
+    if args.targetdb is not None:
+        conn.close()
+        migrate_entries(args.db, args.targetdb)
 
 

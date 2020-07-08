@@ -33,7 +33,8 @@ def compare_fields(hash_dictionary, header_dictionary, new_fasta):
         hashed_seq = hash(s.strip('N'))
         try:
             if hash_dictionary[accession] != hashed_seq or header_dictionary[accession] != h:
-                modified_seqs[h] = s
+                #modified_seqs[h] = s
+                pass
         except KeyError:
             modified_seqs[h] = s
 
@@ -113,19 +114,15 @@ if __name__ == '__main__':
     #download all chunks, and compare sequences within
     for start, end in bdates:
         srcfile = retrieve_genomes(driver=driver, start=start, end=end, download_folder=download_folder)
-        # fix missing line breaks in-place
-        retcode = subprocess.check_call(['sed', '-i', 's/([ACGT?])>hCo[Vv]/\1\\n>hCoV/g', srcfile])
         print(srcfile)
         #update modified_seqs dictionary
         modified_seqs.update(compare_fields(hash_dictionary, header_dictionary, srcfile))
 
-    """
     #:DEBUG:
     debugout= open('missing.fa', 'w')
     for h,s in modified_seqs.items():
         debugout.write('>{}\n{}\n'.format(h,s))
     debugout.close()
-    """
 
     driver.quit()
     #call the updater, passing modified sequences as a list
