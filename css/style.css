@@ -177,3 +177,13 @@ span {
     top: 40px;
     /* background-color: #fffa; */
 }
+
+
+th, td {
+    text-align: left;
+    padding: 0 1em 0.5ex 0;
+}
+
+thead tr th {
+    border-bottom: 1px solid black;
+}

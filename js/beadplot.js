@@ -281,7 +281,7 @@ function beadplot(cid) {
         d3.select(this).attr("stroke-width", 3);
       })
       .on("click", function(d) {
-        $("#text-node").html(gentable(table(d.country)));
+        gentable(d);
         draw_region_distribution(table(d.region));
         /*
         var mystr = "";
@@ -399,10 +399,7 @@ function beadplot(cid) {
         //d3.selectAll("circle:not(.SelectedBead)").style("opacity", 0.3);
         //d3.selectAll("circle.SelectedBead").style("opacity", 1);
 
-        var my_countries = table(d.country);
-        var mystr = gentable(my_countries);
-        $("#text-node").html(mystr);
-
+        gentable(d);
         draw_region_distribution(table(d.region));
       });
 
@@ -418,15 +415,47 @@ function beadplot(cid) {
 }
 /**
  * Function to generate table from my_countries object on bead click
- * @param {json object} my_countries: json object containing key (countries) value (cases count) pairs
+ * @param {Object} obj:  JS Object with country attribute
  */
-function gentable(my_countries){
-	tablehtml = '<table><tr><th id="Countryheader">Country</th><th id="ccheader">Case Count</th></tr>';
+function gentable(obj) {
+  var my_countries = Object.entries(table(obj.country)),
+      row, region;
+
+  // annotate with region (continent)
+  for (const i in my_countries) {
+    row = my_countries[i];
+    region = countries[row[0]];
+    my_countries[i] = [region].concat(row);
+  }
+
+  // https://stackoverflow.com/questions/32871044/how-to-update-d3-table
+  var rows = country_tbody.selectAll("tr")
+      .data(my_countries);
+
+  rows.enter()
+      .append("tr")
+      .selectAll("td")
+      .data(function(d) { return d; })
+      .enter()
+      .append("td")
+      .text(function(d) { return d; });
+
+  rows.exit().remove();
+
+  var cells = rows.selectAll("td")
+      .data(function(d) { return d; })
+      .text(function(d) { return d; });
+
+  cells.exit().remove();
+    /*
+    tablehtml = '<table><tr><th id="Countryheader">Country</th><th id="ccheader">Case Count</th></tr>';
+
 	for (let [key, value] of Object.entries(my_countries)) {
 		tablehtml += '<tr><td>' + `${key}` + '</td><td>' + `${value}` + '</td></tr>';
 		console.log(key,value)
 	}
 	return tablehtml+= '</table>';
+     */
 }
 
 

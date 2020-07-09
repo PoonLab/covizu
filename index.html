@@ -149,6 +149,17 @@
             }
           });
         });
+
+        // populate countries table
+        var country_table = d3.select("#country-table").append('table');
+        country_table.append("thead").append("tr")
+            .selectAll("th")
+            .data(["Region", "Country", "Count"])
+            .enter()
+            .append("th")
+            .text(function(d) { return d; });
+        // to be populated in beadplot.js
+        var country_tbody = country_table.append("tbody");
     </script>
 </body>
 </html>
