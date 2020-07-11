@@ -163,7 +163,7 @@ function parse_clusters(clusters) {
         if (regions.includes(undefined)) {
           console.log("Developer msg, need to update countries.json:");
           for (const j in regions.filter(x => x===undefined)) {
-            console.log(samples[j].country);
+            console.log(`"${samples[j].country}"`);
           }
         }
         
@@ -223,6 +223,9 @@ function parse_clusters(clusters) {
     labels = points.map(x => x.labels).flat();
     cluster['searchtext'] = labels.join();
     cluster['label1'] = labels[0];
+
+    // collect all countries
+    cluster['country'] = variants.map(x => x.country).flat();
   }
 
   return(beaddata);

@@ -193,7 +193,7 @@ def write_variants(components, csv_file, fasta_in, fasta_out, callback=None):
         # write cluster contents to info file
         for coldate, country, label in intermed:
             clustered.update({label})
-            writer.writerow([label0, label, coldate, country])
+            writer.writerow([label0.strip(), label.strip(), coldate, country])
 
     # write reduced FASTA file
     outfile = open(fasta_out, 'w')
