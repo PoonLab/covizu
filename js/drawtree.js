@@ -110,10 +110,7 @@ function map_clusters_to_tips(df, clusters) {
   // extract accession numbers from phylogeny data frame
   var tips = df.filter(x => x.children.length===0),
     tip_labels = tips.map(x => x.thisLabel);  // accessions
-  
-  if (tips.length !== clusters.length) {
-    alert("Error: number of tips does not match number of clusters - did you update both JSON files?")
-  }
+
   for (const cidx in clusters) {
     var cluster = clusters[cidx];
     if (cluster["nodes"].length === 1) {
@@ -122,10 +119,16 @@ function map_clusters_to_tips(df, clusters) {
     
     // find variant in cluster that matches a tip label
     var labels = Object.keys(cluster['nodes']),
-      root = tip_labels.filter(value => -1 !== labels.indexOf(value))[0],
-      root_idx = tip_labels.indexOf(root),  // row index in data frame
-      root_xcoord = tips[root_idx].x,
-      dt;
+        root = tip_labels.filter(value => -1 !== labels.indexOf(value))[0];
+
+    if (root === undefined) {
+      console.log("Failed to match cluster of index ", cidx, " to a tip in the tree");
+      continue;
+    }
+
+    var root_idx = tip_labels.indexOf(root),  // row index in data frame
+        root_xcoord = tips[root_idx].x,
+        dt;
     
     // find most recent sample collection date
     var coldates = Array(),
@@ -141,6 +144,7 @@ function map_clusters_to_tips(df, clusters) {
     tips[root_idx].cluster_idx = cidx;
     tips[root_idx].region = cluster.region;
     tips[root_idx].allregions = cluster.allregions;
+    tips[root_idx].country = cluster.country;
     tips[root_idx].searchtext = cluster.searchtext;
     tips[root_idx].label1 = cluster.label1;
     tips[root_idx].count = coldates.length;
@@ -230,6 +234,7 @@ function draw_clusters(tips) {
         .attr("stroke-width", "2");
       $("#barplot").text(null);
 
+      gentable(d);
       draw_region_distribution(d.allregions);
 
       // FIXME: this is the same div used for making barplot SVG
