@@ -44,10 +44,14 @@ def filter_gisaid(database, outfile, trim_left=0, trim_right=0,
                 'duplicates': [], 'mangled header': []}
 
     for h, s in get_aligned(database):
+        if not type(h)==str or not type(s)==str:
+            print("Error: entry {} not string type: sequence {}".format(h, s))
+            continue
+
         if pat.findall(h):
             discards['nonhuman'].append(h)
             continue
-
+        
         if len(s) < minlen:
             discards['short'].append(h)
             continue
