@@ -3,7 +3,9 @@
 <head>
     <title>CoVizu</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
 </head>
+
 <body>
     <a href="https://github.com/PoonLab/covizu" class="github-corner" aria-label="View source on GitHub">
         <svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true">
@@ -13,35 +15,68 @@
         </svg>
     </a>
 
+    <div style="position:fixed;z-index:10" class="search bar">
+        <searchp>
+            <div id="search-bar">
+                <span>
+                    <input type="search" id="search-input"
+                           placeholder="e.g., EPI_ISL_434070 or Canada"></span>
+                <span><div class="search_btn"></div></span>
+            </div>
+        </searchp>
+    </div>
+
+    <div style="width: 814px;
+                height: 80px;
+                position:fixed;
+                z-index:5;
+                background-color:rgba(255,255,255,0.9);
+                opacity:0.9;
+                filter:alpha(opacity=90);
+                top:0px;
+                left:0px"></div>
+
     <div class="container">
         <table>
             <tr>
-                <td colspan="3"><div id="search-bar">
-                    <input type="search" id="search-input">
-                    <button id="search-button">Search</button>
-                </div></td>
+                <td><div style="position: fixed; top: 40px; z-index:11">Time-scaled tree</div></td>
+                <td style="position: fixed; top: 40px; z-index:12"><div>Beadplot</div></td>
             </tr>
-            <tr>
-                <td>Time-scaled tree</td>
-                <td>Beadplot</td>
-                <td></td>
-            </tr>
-            <tr style="vertical-align: top">
-                <td><div id="svg-timetree"></div></td>
-                <td><div id="svg-cluster"></div></td>
+            <tr></tr>
+            <tr style="vertical-align: top; z-index: 1">
+                <td><div id="svg-timetreeaxis" style="position: fixed; top: 58px; z-index: 13"></div>
+                    <div id="svg-timetree"></div></td>
+                <td><div id="svg-clusteraxis" style="position: fixed; top: 58px; z-index: 14"></div>
+                    <div id="svg-cluster"></div></td>
                 <td>
-                    <h1>CoVizu</h1>
-                    <h3>Near real-time visualization of SARS-CoV-2 genomic variation</h3>
-                    <p>TEST SERVER</p>
-                    <p><div id="div-last-update"></div><div id="div-number-genomes"></div></p>
+                    <rightbar>
+                        <h1>CoVizu</h1>
+                        <h3>Near real-time visualization of SARS-CoV-2 genomic variation</h3>
+                        <p>
+                          <div id="div-last-update"></div>
+                          <div id="div-number-genomes"></div>
+                        </p>
+                        <div class="breaker" id="text-node"></div>
+                        <div class="breaker" id="barplot"></div>
+                        <details>
+                            <summary>Country distribution</summary>
+                            <div id="country-table"></div>
+                        </details>
+                        <details>
+                            <summary>Sequence details</summary>
+                            <div id="seq-table"></div>
+                        </details>
 
-                    <h4>Variant/node info:</h4>
-                    <div class="breaker" id="text-node"></div>
+                    </rightbar>
+                    
                 </td>
             </tr>
         </table>
     </div>
+    <div class="tooltip" id="tooltipContainer">
+    </div>
     <script src="js/jquery.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
     <script src="js/d3.js"></script>
     <script src="js/beadplot.js"></script>
     <script src="js/phylo.js"></script>
@@ -59,13 +94,13 @@
         });
 
         var country_pal = {
-            "Africa": "#66D7DF",
-            "Asia": "#EBBE8F",
-            "China": "#E9B4F4",
-            "Europe": "#7BD9AD",
-            "North America": "#AAC8FC",
-            "Oceania": "#FFB1C0",
-            "South America": "#BBCF85"
+            "Africa": "#EEDD88",
+            "Asia": "#BBCC33",
+            "China": "#EE8866",
+            "Europe": "#44BB99",
+            "North America": "#99DDFF",
+            "Oceania": "#FFAABB",
+            "South America": "#77AADD"
         };
 
         // load time-scaled phylogeny (treetime.py) from server
@@ -105,7 +140,26 @@
            */
 
           accn_to_cid = index_accessions(clusters);
+
+          $('#search-input').autocomplete({
+            source: get_autocomplete_source_fn(accn_to_cid),
+            select: function( event, ui ) {
+               const accn = ui.item.value;
+               search(accn);
+            }
+          });
         });
+
+        // populate countries table
+        var country_table = d3.select("#country-table").append('table');
+        country_table.append("thead").append("tr")
+            .selectAll("th")
+            .data(["Region", "Country", "Count"])
+            .enter()
+            .append("th")
+            .text(function(d) { return d; });
+        // to be populated in beadplot.js
+        var country_tbody = country_table.append("tbody");
     </script>
 </body>
 </html>

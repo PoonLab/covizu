@@ -5,6 +5,7 @@ require(Rtsne)
 # open TN93 distance matrix
 cat("loading TN93 distance matrix\n")
 tn93 <- read.csv('data/variants.tn93.txt', skip=1, header=F)
+tn93 <- as.matrix(tn93)
 stopifnot(nrow(tn93) == ncol(tn93))
 
 
@@ -42,24 +43,52 @@ dates <- as.Date(sapply(headers, function(x) {
   }))
 
 # identify the earliest sample (Wuhan, IPBCAMS-WH-01)
-root <- which.min(dates)
+#root <- which.min(dates)
+root <- which(grepl("EPI_ISL_402132", accns))
 
+
+tab <- table(clusters)
+mean.pdist <- c()
+mean.rdist <- c()
+for (k in 1:length(tab)) {
+  clust <- as.integer(which(clusters == k))
+
+  # compute mean pairwise distance between members of each cluster  
+  pdists <- as.matrix(tn93[clust, clust])
+  mdist <- mean(pdists[upper.tri(pdists)])
+  mean.pdist <- c(mean.pdist, mdist)
+
+  # compute mean distance between members and the root  
+  rdists <- as.matrix(tn93[root, clust])
+  mrdist <- mean(rdists)
+  mean.rdist <- c(mean.rdist, mrdist)
+}
 
 # open CSV with SARS-COV-2 genome variant information
 variants <- read.csv('data/variants.csv')
 stopifnot(all(is.element(variants$cluster, headers)))
 
-traverse <- function(node, parent, edgelist, edges=c()) {
+#' @param node: str, label of current node variant
+#' @param parent: str, label of current node's parental variant
+#' @param el: str, edge list from minimum spanning tree
+#' @return linearized vector of parent->child pairs
+traverse <- function(node, parent, el, edges=c()) {
   if (!is.na(parent)) {
     edges <- c(edges, parent, node)  
   }
-  # get local edges
+  # get adjacent to current node
   temp <- el[apply(el, 1, function(e) is.element(node, e)), ]
   temp <- unique(as.vector(temp))
   children <- temp[!is.element(temp, c(node, parent))]
+
+  # TODO: sort children vector by genetic distance
+  row <- tn93[which(headers==node), ]
+  adj.dists <- row[match(children, headers)]
+  adj.dates <- as.Date(gsub(".+\\|([0-9]+-[0-9]+-[0-9]+)$", "\\1", children))
   
+  children <- children[order(adj.dists, adj.dates)]  # increasing
   for (child in children) {
-    edges <- traverse(child, node, edgelist, edges)
+    edges <- traverse(child, node, el, edges)
   }
   return(edges)
 }
@@ -72,6 +101,12 @@ for (i in 1:max(clusters)) {
   
   # extract cluster indices to map to headers vector
   idx <- as.integer(which(clusters==i))
+
+  # cluster mean pairwise distance
+  pdist <- mean.pdist[[i]]
+  
+  # cluster mean root distance
+  rdist <- mean.rdist[[i]]
   
   if (length(idx)==1) {
     list(nodes=headers[idx], edges=NA)
@@ -92,7 +127,7 @@ for (i in 1:max(clusters)) {
     
     # traverse MST and export node and edge lists
     el <- get.edgelist(g.mst)
-    edges <- traverse(subroot, NA, edgelist)
+    edges <- traverse(subroot, NA, el)
 
     # store variant data
     nodes <- list()
@@ -117,7 +152,9 @@ for (i in 1:max(clusters)) {
     })
     edges <- cbind(edges, round(dists*29903, 2))
 
-    result[[length(result)+1]] <- list(nodes=nodes, edges=edges)
+    result[[length(result)+1]] <- list(
+      pdist=pdist, rdist=rdist, nodes=nodes, edges=edges
+      )
   }
 }#)
 cat ('\nwriting JSON file\n')
