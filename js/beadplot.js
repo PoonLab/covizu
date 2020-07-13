@@ -137,6 +137,10 @@ function parse_clusters(clusters) {
 
       country = variant.map(x => x.country);
 
+      // parse samples within variant
+      var isodates = unique(coldates),
+          isodate;
+
       variants.push({
         'accession': accn,
         'label': variant[0].label1.replace(pat, "$1"),
@@ -146,12 +150,9 @@ function parse_clusters(clusters) {
         'country': country,
         'region': country.map(x => countries[x]),
         'y1': y,  // horizontal line segment
-        'y2': y
+        'y2': y,
+        'numBeads': isodates.length
       });
-
-      // parse samples within variant
-      var isodates = unique(coldates),
-          isodate;
 
       for (var i=0; i<isodates.length; i++) {
         isodate = isodates[i];
@@ -277,11 +278,33 @@ function beadplot(cid) {
       .attr("y2", yMap2B)
       .attr("stroke-width", 3)
       .attr("stroke", "#777")
-      .on("mouseover", function() {
-        d3.select(this).attr("stroke-width", 5);
+      .on("mouseover", function(d) {
+        d3.select(this)
+            .attr("stroke-width", 5);
+
+        bTooltip.transition()       // Show tooltip
+            .duration(50)
+            .style("opacity", 0.9);
+
+        let tooltipText = region_to_string(d);
+
+        tooltipText += `<br><b>Unique collection dates:</b> ${d.numBeads}<br>`;
+
+        let formatDate = d3.timeFormat("%Y-%m-%d");
+        tooltipText += `<br><b>Collection dates:</b><br>${formatDate(new Date(d.x1))} / ${formatDate(new Date(d.x2))}<br>`;
+
+        // Tooltip appears 10 pixels left of the cursor
+        bTooltip.html(tooltipText)
+            .style("left", (d3.event.pageX + 10) + "px")
+            .style("top", (d3.event.pageY + "px"));
+
       })
       .on("mouseout", function() {
-        d3.select(this).attr("stroke-width", 3);
+        d3.select(this)
+            .attr("stroke-width", 3);
+        bTooltip.transition()     // Hide tooltip
+            .duration(50)
+            .style("opacity", 0);
       })
       .on("click", function(d) {
         gentable(d);
@@ -349,26 +372,18 @@ function beadplot(cid) {
       .on("mouseover", function(d) {
         d3.select(this).attr("stroke-width", 2)
             .attr("r", 4*Math.sqrt(d.count)+3);
+
         bTooltip.transition()       // Show tooltip
-            .duration(200)
+            .duration(50)
             .style("opacity", 0.9);
 
-        // Display region distribution in tooltip
-        let my_regions = table(d.region),
-            tooltipText = `<b>Number of cases</b><br>`;
+        let tooltipText = region_to_string(d),
+            formatDate = d3.timeFormat("%Y-%m-%d");
+        tooltipText += `<br><b>Collection date:</b> ${formatDate(new Date(d.x))}<br>`;
 
-        for (let [r_key, r_value] of Object.entries(my_regions)) {
-          tooltipText += `${r_key}: ${r_value}<br>`
-        }
-        // Display total number of cases if variants are from multiple countries
-        if(Object.keys(my_regions).length > 1) {
-          tooltipText += `Total: ${d.count}<br>`
-        }
-        // Display the sample date
-        let formatDate = d3.timeFormat("%Y-%m-%d");
-        tooltipText += `<br><b>Sample Date:</b> ${formatDate(new Date(d.x))}<br>`;
+        // Tooltip appears 10 pixels left of the cursor
         bTooltip.html(tooltipText)
-            .style("left", (d3.event.pageX + 10) + "px")    // Tooltip appears 10 pixels left of the cursor
+            .style("left", (d3.event.pageX + 10) + "px")
             .style("top", (d3.event.pageY + "px"));
       })
       .on("mouseout", function(d) {
@@ -376,7 +391,7 @@ function beadplot(cid) {
           d3.select(this).attr("stroke-width", 1)
               .attr("r", 4*Math.sqrt(d.count));
           bTooltip.transition()     // Hide tooltip
-              .duration(500)
+              .duration(50)
               .style("opacity", 0);
         }
       })
@@ -416,6 +431,30 @@ function beadplot(cid) {
       );
 
 }
+
+/**
+ * Writes information about the region distribution to a string
+ * @param {Object} obj: JS Object with region and count attributes
+ * @returns {string} regStr: a string representation of the region distribution
+ */
+function region_to_string(obj) {
+  // Display region distribution in tooltip
+  let my_regions = table(obj.region),
+      regStr = `<b>Number of cases</b><br>`;
+
+  for (let [r_key, r_value] of Object.entries(my_regions)) {
+    regStr += `${r_key}: ${r_value}<br>`
+  }
+
+  // Display total number of cases if variants are from multiple countries
+  if(Object.keys(my_regions).length > 1) {
+    regStr += `Total: ${obj.count}<br>`
+  }
+
+  return regStr;
+}
+
+
 /**
  * Function to generate table from my_countries object on bead click
  * @param {Object} obj:  JS Object with country attribute
