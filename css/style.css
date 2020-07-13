@@ -184,6 +184,11 @@ th, td {
     padding: 0 1em 0.5ex 0;
 }
 
+/* Add zebra stripping for rows */
+tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
 thead tr th {
     border-bottom: 1px solid black;
 }
