@@ -228,7 +228,27 @@ function parse_clusters(clusters) {
   return(beaddata);
 }
 
+function create_selection(selected_obj) {
+  d3.select("div#svg-cluster").selectAll("line").attr("stroke-opacity", 0.3);
+  selected_obj.classed("SelectedBead", true);
+  d3.selectAll("circle.SelectedBead").each(function(r) {
+    visB.append("circle")
+    .classed("selectionH", true)
+    .attr("cx", xScaleB(xValueB(r)))
+    .attr("cy", yScaleB(yValueB(r)))
+    .attr("r", 4*Math.sqrt(r.count)+4)
+    .attr("fill", "none")
+    .attr("stroke", "grey")
+    .attr("fill-opacity", 1)
+    .attr("stroke-width", 5);
 
+  });
+}
+
+function clear_selection() {
+  d3.selectAll("circle").classed("SelectedBead", false);
+  d3.selectAll("circle.selectionH").remove();
+}
 /**
  * Draw the beadplot for a specific cluster (identified through its
  * integer index <cid>) in the SVG.
@@ -342,7 +362,10 @@ function beadplot(cid) {
       .attr("fill", function(d) {
         return(country_pal[d.region1]);
       })
-      .attr("stroke", "black")
+      .attr("stroke", function(d) {
+        return(country_pal[d.region1]);
+      })
+      .attr("fill-opacity", 0.3)
       .on("mouseover", function(d) {
         d3.select(this).attr("stroke-width", 2)
             .attr("r", 4*Math.sqrt(d.count)+3);
@@ -378,32 +401,36 @@ function beadplot(cid) {
         }
       })
       .on("click", function(d) {
-        // TODO: display first 3, collapsed text
-        //console.log(d.labels);
+        
+        clear_selection();
+        
         var cur_obj = d3.select(this);
+        create_selection(cur_obj);
+      
 
-        if (cur_obj.classed("SelectedBead")) {
-          cur_obj.classed("SelectedBead", false);
-        } else {
-          cur_obj.classed("SelectedBead", true);
-        }
 
-        var sum_regions = [];
-        var sum_countries = [];
+        //if (cur_obj.classed("SelectedBead")) {
+        //  cur_obj.classed("SelectedBead", false);
+        //} else {
+        //  cur_obj.classed("SelectedBead", true);
+        //}
 
-        d3.selectAll("circle.SelectedBead").each(function(r) {
-          sum_regions.push(r.region);
-          sum_countries.push(r.country);
-        });
+        //var sum_regions = [];
+        //var sum_countries = [];
 
-        d3.selectAll("circle:not(.SelectedBead)").style("opacity", 0.3);
-        d3.selectAll("circle.SelectedBead").style("opacity", 1);
+        //d3.selectAll("circle.SelectedBead").each(function(r) {
+        //  sum_regions.push(r.region);
+        //  sum_countries.push(r.country);
+        //});
 
-        var my_countries = table(sum_countries.flat());
-        var mystr = gentable(my_countries);
-        $("#text-node").html(mystr);
+        //d3.selectAll("circle:not(.SelectedBead)").style("opacity", 0.3);
+        //d3.selectAll("circle.SelectedBead").style("opacity", 1);
 
-        draw_region_distribution(table(sum_regions.flat()));
+        //var my_countries = table(sum_countries.flat());
+        //var mystr = gentable(my_countries);
+        //$("#text-node").html(mystr);
+
+        //draw_region_distribution(table(sum_regions.flat()));
       });
 
   // draw x-axis

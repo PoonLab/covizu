@@ -35,7 +35,9 @@ function select_beads_by_substring(substr) {
 	selected = beads.nodes();
 	beads.nodes()[0].scrollIntoView();
 	for (const node of beads.nodes()) {
-		d3.select(node).dispatch('mouseover');
+		//d3.select(node).dispatch('mouseover');
+		var selected_obj = d3.select(node);
+		create_selection(selected_obj);
 	}
 }
 

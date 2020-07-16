@@ -67,7 +67,7 @@ div.tooltip{
 }
 
 .SelectedBead{
-  stroke-width: 2;
+  fill-opacity: 1;
 }
 
 
