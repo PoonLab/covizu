@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
 <head>
-    <meta charset="utf-8"/>
+    <meta charset="UTF-8"/>
     <title>CoVizu</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
@@ -50,7 +50,7 @@
                 <td><div id="svg-clusteraxis" style="position: fixed; top: 58px; z-index: 14"></div>
                     <div id="svg-cluster"></div></td>
                 <td>
-                    <rightbar>
+                    <rightbar style='padding-right: 5%; padding-left: 5%'>
                         <h1>CoVizu</h1>
                         <h3>Near real-time visualization of SARS-CoV-2 genomic variation</h3>
                         <p>
@@ -153,14 +153,13 @@
 
         // populate countries table
         var country_table = d3.select("#country-table").append('table');
-        country_table.append("thead").append("tr")
-            .selectAll("th")
-            .data(["Region", "Country", "Count"])
-            .enter()
-            .append("th")
-            .text(function(d) { return d; });
+        var theaders = ["Region", "Country", "Count"]
+        var clicks = {Region: 0, Country: 0, Count: 0};
+  
         // to be populated in beadplot.js
         var country_tbody = country_table.append("tbody");
+
+
     </script>
 </body>
 </html>

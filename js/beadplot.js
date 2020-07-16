@@ -306,7 +306,9 @@ function beadplot(cid) {
             .duration(50)
             .style("opacity", 0);
       })
-      .on("click", function(d) {
+      .on("click", function(d) { 
+        console.log(d)
+        console.log('here')
         gentable(d);
         draw_region_distribution(table(d.region));
         /*
@@ -417,6 +419,9 @@ function beadplot(cid) {
         //d3.selectAll("circle:not(.SelectedBead)").style("opacity", 0.3);
         //d3.selectAll("circle.SelectedBead").style("opacity", 1);
 
+        console.log(d)
+        console.log('there')
+
         gentable(d);
         draw_region_distribution(table(d.region));
       });
@@ -470,34 +475,118 @@ function gentable(obj) {
     my_countries[i] = [region].concat(row);
   }
 
+  country_table.selectAll('thead').remove()
+
   // https://stackoverflow.com/questions/32871044/how-to-update-d3-table
+  //create a row <tr> for each item in my_countries array, set mouse over over color, then create one column <td> for each item in array 
   var rows = country_tbody.selectAll("tr")
-      .data(my_countries);
-
-  rows.enter()
-      .append("tr")
-      .selectAll("td")
-      .data(function(d) { return d; })
-      .enter()
-      .append("td")
-      .text(function(d) { return d; });
-
+    .data(my_countries);
   rows.exit().remove();
+  rows.enter() 
+    .append("tr")
+    .on("mouseover", function(){
+      d3.select(this).style("background-color", "grey");}) //mousover highlight
+    .on("mouseout", function(d){
+      d3.select(this).style("background-color",null);})  //mousout unhighlight
+    .selectAll("td")
+    .data(function(d) { return d; })
+    .enter()
+    .append("td")
+    .text(function(d) { return d; });
+  
+  var rows = country_tbody.selectAll("tr") //reselect all rows
 
   var cells = rows.selectAll("td")
-      .data(function(d) { return d; })
-      .text(function(d) { return d; });
+    .data(function(d) { return d; })
+    cells.text(function(d) { return d; })
 
-  cells.exit().remove();
-    /*
-    tablehtml = '<table><tr><th id="Countryheader">Country</th><th id="ccheader">Case Count</th></tr>';
 
-	for (let [key, value] of Object.entries(my_countries)) {
-		tablehtml += '<tr><td>' + `${key}` + '</td><td>' + `${value}` + '</td></tr>';
-		console.log(key,value)
-	}
-	return tablehtml+= '</table>';
-     */
+ var headers = country_table.append("thead").append("tr")
+    .selectAll("th")
+    .data(theaders)
+    .enter()
+    .append("th")
+    .text(function(d) { return d; })
+    .on('click', function (d) {
+
+      if (d == "Country"){
+        //sort function for Country (alphabetic)
+        clicks.Country++;
+        if (clicks.Country%2==0){
+          rows.sort(function(a,b){ 
+            if (a[1].toUpperCase() < b[1].toUpperCase()) { 
+              return -1; 
+            } else if (a[1].toUpperCase() > b[1].toUpperCase()) { 
+              return 1; 
+            } else {
+              return 0;
+            }
+          });             
+        } else{
+          rows.sort(function(a,b){ 
+            if (a[1].toUpperCase() < b[1].toUpperCase()) { 
+              return 1; 
+            } else if (a[1].toUpperCase() > b[1].toUpperCase()) { 
+              return -1; 
+            } else {
+              return 0;
+            }
+          });              
+        }
+      }
+
+      if (d == "Count"){
+        //sort function for Case count (Numeric)
+        clicks.Country++;
+        if (clicks.Country%2==0){
+          rows.sort(function(a,b) { 
+            if (+a[2] < +b[2]) { 
+              return 1; 
+             } else if (+a[2] > +b[2]) { 
+              return -1; 
+             } else {
+              return 0;
+            }
+          });              
+        } else {
+          rows.sort(function(a,b) { 
+            if (+a[2] < +b[2]) { 
+              return -1; 
+            } else if (+a[2] > +b[2]) { 
+              return 1; 
+            } else {
+              return 0;
+            }
+          });
+        }
+      }
+
+      if (d== "Region"){
+        //sort function for Region (alphabetic)
+        clicks.Region++;
+        if (clicks.Region%2==0){
+          rows.sort(function(a,b){ 
+            if (a[0].toUpperCase() < b[0].toUpperCase()) { 
+              return -1; 
+            } else if (a[0].toUpperCase() > b[0].toUpperCase()) { 
+              return 1; 
+            } else {
+              return 0;
+            }
+          });                    
+        } else {
+          rows.sort(function(a,b){ 
+            if (a[0].toUpperCase() < b[0].toUpperCase()) { 
+              return 1; 
+            } else if (a[0].toUpperCase() > b[0].toUpperCase()) { 
+              return -1; 
+            } else {
+              return 0;
+            }
+          });                    
+        }
+      }
+   });
 }
 
 
