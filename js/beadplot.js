@@ -230,10 +230,10 @@ function parse_clusters(clusters) {
 
 function create_selection(selected_obj) {
   d3.select("div#svg-cluster").selectAll("line").attr("stroke-opacity", 0.3);
-  selected_obj.classed("SelectedBead", true);
+  selected_obj.attr("class","SelectedBead");
   d3.selectAll("circle.SelectedBead").each(function(r) {
     visB.append("circle").lower()
-    .classed("selectionH", true)
+    .attr('class', "selectionH")
     .attr("cx", xScaleB(xValueB(r)))
     .attr("cy", yScaleB(yValueB(r)))
     .attr("r", 4*Math.sqrt(r.count)+4)
@@ -246,7 +246,7 @@ function create_selection(selected_obj) {
 }
 
 function clear_selection() {
-  d3.selectAll("circle").classed("SelectedBead", false);
+  d3.selectAll("circle:not(.selectionH)").attr("class", "not_SelectedBead");
   d3.selectAll("circle.selectionH").remove();
 }
 /**
@@ -359,13 +359,13 @@ function beadplot(cid) {
       .attr("r", function(d) { return (4*Math.sqrt(d.count)); })
       .attr("cx", xMapB)
       .attr("cy", yMapB)
+      .attr("class", "default")
       .attr("fill", function(d) {
         return(country_pal[d.region1]);
       })
       .attr("stroke", function(d) {
         return(country_pal[d.region1]);
       })
-      .attr("fill-opacity", 0.3)
       .on("mouseover", function(d) {
         d3.select(this).attr("stroke-width", 2)
             .attr("r", 4*Math.sqrt(d.count)+3);

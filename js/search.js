@@ -29,11 +29,16 @@ function select_beads_by_substring(substr, accn) {
 	for (const node of rects.nodes()) {
 		d3.select(node).classed("SelectedCluster", true);
 	}
-
+	d3.select("#svg-timetree").selectAll("rect:not(.SelectedCluster)")
+	.attr("fill-opacity", 0.1);
+	d3.select("#svg-timetree").selectAll("lines")
+	.attr("stroke-opacity", 0.3);
+	
 	var beads = d3.selectAll("#svg-cluster > svg > g > circle").filter(function(d) {
 		return(d.labels.some(x => x.includes(substr)));
 	});
 	selected = beads.nodes();
+	d3.selectAll("circle:not(.selectionH)").attr("class", "not_SelectedBead");
 	//beads.nodes()[0].scrollIntoView();
 	for (const node of beads.nodes()) {
 		//d3.select(node).dispatch('mouseover');
