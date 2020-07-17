@@ -8,7 +8,7 @@ var selected = [];
  *
  * @param substr
  */
-function select_beads_by_substring(substr) {
+function select_beads_by_substring(substr, accn) {
 	selected = [];
 	d3.selectAll("circle").dispatch('mouseout');
 
@@ -21,19 +21,20 @@ function select_beads_by_substring(substr) {
 		return(d.searchtext.match(substr) !== null);
 	});
 
-	// FIXME: other matching clusters not getting highlighted, due to click below?
-	for (const node of rects.nodes()) {
-		d3.select(node).attr("stroke-width", "2").attr("selected", true);
-	}
-
 	// jump to the first hit
-	d3.select(rects.nodes()[0]).dispatch('click');
+	//d3.select(rects.nodes()[0]).dispatch('click');
+	
+	// FIXME: other matching clusters not getting highlighted, due to click below?
+	d3.selectAll("rect").classed("SelectedCluster", false);
+	for (const node of rects.nodes()) {
+		d3.select(node).classed("SelectedCluster", true);
+	}
 
 	var beads = d3.selectAll("#svg-cluster > svg > g > circle").filter(function(d) {
 		return(d.labels.some(x => x.includes(substr)));
 	});
 	selected = beads.nodes();
-	beads.nodes()[0].scrollIntoView();
+	//beads.nodes()[0].scrollIntoView();
 	for (const node of beads.nodes()) {
 		//d3.select(node).dispatch('mouseover');
 		var selected_obj = d3.select(node);
@@ -124,7 +125,7 @@ function get_autocomplete_source_fn(accn_to_cid) {
 	}
 }
 
-function search() {
+function search(accn) {
 	var query = $('#search-input').val();
 	const accn_pat = /^EPI_ISL_[0-9]+$/i;  // case-insensitive
 	if (accn_pat.test(query)) {
@@ -133,15 +134,15 @@ function search() {
 	}
 	else {
 		// substring search
-		select_beads_by_substring(query);
+		select_beads_by_substring(query, accn);
 	}
 }
 
-$('#search-button').on('click', search);
+$('#search-button').on('click', search(0));
 
 $('#search-input').on('keydown', function(e) {
 	if (e.keyCode == 13) {
 		// type <enter> to run search
-		search();
+		search(0);
 	}
 })

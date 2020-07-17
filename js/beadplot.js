@@ -232,7 +232,7 @@ function create_selection(selected_obj) {
   d3.select("div#svg-cluster").selectAll("line").attr("stroke-opacity", 0.3);
   selected_obj.classed("SelectedBead", true);
   d3.selectAll("circle.SelectedBead").each(function(r) {
-    visB.append("circle")
+    visB.append("circle").lower()
     .classed("selectionH", true)
     .attr("cx", xScaleB(xValueB(r)))
     .attr("cy", yScaleB(yValueB(r)))
@@ -392,13 +392,11 @@ function beadplot(cid) {
             .style("top", (d3.event.pageY + "px"));
       })
       .on("mouseout", function(d) {
-        if (!selected.includes(this)) {
           d3.select(this).attr("stroke-width", 1)
               .attr("r", 4*Math.sqrt(d.count));
           bTooltip.transition()     // Hide tooltip
               .duration(500)
               .style("opacity", 0);
-        }
       })
       .on("click", function(d) {
         

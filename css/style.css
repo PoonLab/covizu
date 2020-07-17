@@ -70,6 +70,10 @@ div.tooltip{
   fill-opacity: 1;
 }
 
+.SelectedCluster{
+  stroke: grey;
+  stroke-width: 2;
+}
 
 .container {
     padding-top: 30px;

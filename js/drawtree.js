@@ -226,8 +226,7 @@ function draw_clusters(tips) {
       // reset all rectangles to high transparency
       var rects = vis.selectAll("rect").filter(function(r) { return(!(r.selected)); });
       rects.attr("stroke", null);
-      d3.select(this).attr("stroke", "grey")
-        .attr("stroke-width", "2");
+      d3.select(this).classed("SelectedCluster", true);
       $("#barplot").text(null);
 
       draw_region_distribution(d.allregions);
@@ -236,5 +235,6 @@ function draw_clusters(tips) {
       $("#text-node").text(`Number of cases: ${d.count}\nNumber of variants: ${d.varcount}\n`);
 
       beadplot(d.cluster_idx);
+      search(d.cluster_idx);
     });
 }
