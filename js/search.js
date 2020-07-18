@@ -25,14 +25,10 @@ function select_beads_by_substring(substr, accn) {
 	//d3.select(rects.nodes()[0]).dispatch('click');
 	
 	// FIXME: other matching clusters not getting highlighted, due to click below?
-	d3.selectAll("rect").classed("SelectedCluster", false);
+	d3.select("#svg-timetree").selectAll("rect").attr("class","not_SelectedCluster");
 	for (const node of rects.nodes()) {
-		d3.select(node).classed("SelectedCluster", true);
+		d3.select(node).attr("class","SelectedCluster");
 	}
-	d3.select("#svg-timetree").selectAll("rect:not(.SelectedCluster)")
-	.attr("fill-opacity", 0.1);
-	d3.select("#svg-timetree").selectAll("lines")
-	.attr("stroke-opacity", 0.3);
 	
 	var beads = d3.selectAll("#svg-cluster > svg > g > circle").filter(function(d) {
 		return(d.labels.some(x => x.includes(substr)));

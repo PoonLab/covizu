@@ -207,7 +207,7 @@ function draw_clusters(tips) {
     .data(tips)
     .enter()
     .append("rect")
-    .attr("selected", false)
+    //.attr("selected", false)
     .attr("x", xMap1)
     .attr("y", yMap)
     .attr("width", xWide)
@@ -215,7 +215,7 @@ function draw_clusters(tips) {
     .attr("fill", function(d) {
       return(country_pal[d.region]);
     })
-    .attr("fill-opacity", "0.33")
+    .attr("class", "default")
     .on('mouseover', function() {
       d3.select(this).attr("fill-opacity", "0.67");
     })
@@ -223,10 +223,16 @@ function draw_clusters(tips) {
       d3.select(this).attr("fill-opacity", "0.33");
     })
     .on("click", function(d) {
+      
+      beadplot(d.cluster_idx);
+      search(d.cluster_idx);
+      
       // reset all rectangles to high transparency
-      var rects = vis.selectAll("rect").filter(function(r) { return(!(r.selected)); });
-      rects.attr("stroke", null);
-      d3.select(this).classed("SelectedCluster", true);
+      if ($('#search-input').val() === "") {
+        vis.selectAll("rect.clicked").attr('class', "default");
+      }
+
+      d3.select(this).attr("class", "clicked");
       $("#barplot").text(null);
 
       draw_region_distribution(d.allregions);
@@ -234,7 +240,5 @@ function draw_clusters(tips) {
       // FIXME: this is the same div used for making barplot SVG
       $("#text-node").text(`Number of cases: ${d.count}\nNumber of variants: ${d.varcount}\n`);
 
-      beadplot(d.cluster_idx);
-      search(d.cluster_idx);
     });
 }
