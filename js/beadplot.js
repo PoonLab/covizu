@@ -508,11 +508,13 @@ function gentable(obj) {
     .append("th")
     .text(function(d) { return d; })
     .on('click', function (d) {
+      country_table.selectAll('th').attr('class', null)
 
-      if (d == "Country"){
+      if (d.startsWith("Country")){
         //sort function for Country (alphabetic)
         clicks.Country++;
         if (clicks.Country%2==0){
+          this.className = 'aes';
           rows.sort(function(a,b){ 
             if (a[1].toUpperCase() < b[1].toUpperCase()) { 
               return -1; 
@@ -523,6 +525,7 @@ function gentable(obj) {
             }
           });             
         } else{
+          this.className = 'des';
           rows.sort(function(a,b){ 
             if (a[1].toUpperCase() < b[1].toUpperCase()) { 
               return 1; 
@@ -535,10 +538,11 @@ function gentable(obj) {
         }
       }
 
-      if (d == "Count"){
+      if (d.startsWith("Count")){
         //sort function for Case count (Numeric)
-        clicks.Country++;
-        if (clicks.Country%2==0){
+        this.className = 'aes';
+        clicks.Count++;
+        if (clicks.Count%2==0){
           rows.sort(function(a,b) { 
             if (+a[2] < +b[2]) { 
               return 1; 
@@ -549,6 +553,7 @@ function gentable(obj) {
             }
           });              
         } else {
+          this.className = 'des';
           rows.sort(function(a,b) { 
             if (+a[2] < +b[2]) { 
               return -1; 
@@ -561,8 +566,9 @@ function gentable(obj) {
         }
       }
 
-      if (d== "Region"){
+      if (d.startsWith("Region")){
         //sort function for Region (alphabetic)
+        this.className = 'aes';
         clicks.Region++;
         if (clicks.Region%2==0){
           rows.sort(function(a,b){ 
@@ -575,6 +581,7 @@ function gentable(obj) {
             }
           });                    
         } else {
+          this.className = 'des';
           rows.sort(function(a,b){ 
             if (a[0].toUpperCase() < b[0].toUpperCase()) { 
               return 1; 
@@ -589,6 +596,11 @@ function gentable(obj) {
    });
 }
 
+/**
+  * Alphabetic Sorter function for table sort
+  * String comparator looks at length, not alphabetic 
+  :TODO:
+**/
 
 /**
  * Draws a bar chart of the distribution of cases across regions
