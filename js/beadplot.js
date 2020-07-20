@@ -151,7 +151,9 @@ function parse_clusters(clusters) {
         'region': country.map(x => countries[x]),
         'y1': y,  // horizontal line segment
         'y2': y,
-        'numBeads': isodates.length
+        'numBeads': isodates.length,
+        'parent': null,
+        'dist': 0
       });
 
       for (var i=0; i<isodates.length; i++) {
@@ -202,11 +204,18 @@ function parse_clusters(clusters) {
         'dist': dist
       });
 
+      // Assign parent and genomic distance of each variant
+      let childvariants = variants.filter(x => x.y1 === child.y1);
+      for (let v = 0; v < childvariants.length; v++) {
+        childvariants[v].parent = parent.label;
+        childvariants[v].dist = dist;
+      }
+
       // Assign the parent and genomic distance of each point
       let childpoints = points.filter(x => x.y === child.y1);
       for (let c = 0; c < childpoints.length; c++) {
-        childpoints[c].dist = dist;
         childpoints[c].parent = parent.label;
+        childpoints[c].dist = dist;
       }
 
       // update variant time range
@@ -296,9 +305,13 @@ function beadplot(cid) {
             .duration(50)
             .style("opacity", 0.9);
 
-        let tooltipText = region_to_string(d);
-        tooltipText += `<br><b>Unique collection dates:</b> ${d.numBeads}<br>`;
+        let tooltipText = "";
+        if (d.parent || d.dist) {
+          tooltipText += `<b>Parent:</b> ${d.parent}<br><b>Genomic distance:</b> ${d.dist}<br><br>`;
+        }
 
+        tooltipText += region_to_string(d);
+        tooltipText += `<br><b>Unique collection dates:</b> ${d.numBeads}<br>`;
         let formatDate = d3.timeFormat("%Y-%m-%d");
         tooltipText += `<br><b>Collection dates:</b><br>${formatDate(new Date(d.x1))} / ${formatDate(new Date(d.x2))}<br>`;
 
