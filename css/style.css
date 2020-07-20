@@ -196,3 +196,12 @@ tr:nth-child(even) {
 thead tr th {
     border-bottom: 1px solid black;
 }
+
+th.des:after {
+    content: "\21E9";
+  }
+  
+  th.aes:after {
+    content: "\21E7";
+  }
+
