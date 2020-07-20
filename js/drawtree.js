@@ -155,6 +155,8 @@ function map_clusters_to_tips(df, clusters) {
     tips[root_idx].varcount = labels.length;
     tips[root_idx].first_date = first_date;
     tips[root_idx].last_date = last_date;
+    tips[root_idx].pdist = cluster.pdist;
+    tips[root_idx].rdist = cluster.rdist;
 
     tips[root_idx].coldate = origin;
     dt = (first_date - origin) / 3.154e10;  // convert ms to years
@@ -233,7 +235,8 @@ function draw_clusters(tips) {
           .duration(50)
           .style("opacity", 0.9);
 
-      let ctooltipText = region_to_string(d.allregions);
+      let ctooltipText = `<b>Mean pairwise distance:</b> ${d.pdist}<br><b>Mean root distance:</b> ${d.rdist}<br><br>`;
+      ctooltipText += region_to_string(d.allregions);
       ctooltipText += `<br><b>Number of variants:</b> ${d.varcount}<br>`;
       const formatDate = d3.timeFormat("%Y-%m-%d");
       ctooltipText += `<br><b>Collection dates:</b><br>${formatDate(new Date(d.first_date))} / ${formatDate(new Date(d.last_date))}<br>`;
