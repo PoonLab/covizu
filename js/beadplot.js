@@ -176,19 +176,22 @@ function parse_clusters(clusters) {
           'labels': samples.map(x => x.label1.replace(pat, "$1")),
           'region1': mode(regions),
           'region': regions,
-          'country': country
+          'country': country,
+          'parent': null,
+          'dist': 0
         })
       }
       y++;
     }
 
     // map earliest collection date of child node to vertical edges
-    var edge, parent, child;
+    var edge, parent, child, dist;
     edgelist = [];
     for (var e = 0; e < cluster.edges.length; e++) {
       edge = cluster.edges[e];
       parent = variants.filter(x => x.accession === edge[0])[0];
       child = variants.filter(x => x.accession === edge[1])[0];
+      dist = parseFloat(edge[2]);
       edgelist.push({
         'y1': parent.y1,
         'y2': child.y1,
@@ -196,8 +199,15 @@ function parse_clusters(clusters) {
         'x2': child.x1,
         'parent': parent.label,
         'child': child.label,
-        'dist': parseFloat(edge[2])
+        'dist': dist
       });
+
+      // Assign the parent and genomic distance of each point
+      let childpoints = points.filter(x => x.y === child.y1);
+      for (let c = 0; c < childpoints.length; c++) {
+        childpoints[c].dist = dist;
+        childpoints[c].parent = parent.label;
+      }
 
       // update variant time range
       if (parent.x1 > child.x1) {
@@ -287,7 +297,6 @@ function beadplot(cid) {
             .style("opacity", 0.9);
 
         let tooltipText = region_to_string(d);
-
         tooltipText += `<br><b>Unique collection dates:</b> ${d.numBeads}<br>`;
 
         let formatDate = d3.timeFormat("%Y-%m-%d");
@@ -348,11 +357,31 @@ function beadplot(cid) {
           return("#99f7");
         }
       })
-      .on("mouseover", function() {
+      .on("mouseover", function(d) {
         d3.select(this).attr("stroke-width", 3);
+
+        bTooltip.transition()       // Show tooltip
+            .duration(50)
+            .style("opacity", 0.9);
+
+        let tooltipText = `<b>Parent:</b> ${d.parent}<br><b>Child:</b> ${d.child}<br>`;
+        tooltipText += `<b>Genomic distance:</b> ${d.dist}<br><br>`;
+
+        let formatDate = d3.timeFormat("%Y-%m-%d");
+        tooltipText += `<b>Collection date:</b> ${formatDate(new Date(d.x2))}`;
+
+        // Tooltip appears 10 pixels left of the cursor
+        bTooltip.html(tooltipText)
+            .style("left", (d3.event.pageX + 10) + "px")
+            .style("top", (d3.event.pageY + "px"));
+
       })
       .on("mouseout", function() {
         d3.select(this).attr("stroke-width", 1);
+
+        bTooltip.transition()     // Hide tooltip
+            .duration(50)
+            .style("opacity", 0);
       })
       .on("click", function(d) {
         $("#text-node").text(`Parent: ${d.parent}\nChild: ${d.child}\nGenomic distance: ${d.dist}`);
@@ -377,8 +406,13 @@ function beadplot(cid) {
             .duration(50)
             .style("opacity", 0.9);
 
-        let tooltipText = region_to_string(d),
-            formatDate = d3.timeFormat("%Y-%m-%d");
+        let tooltipText = "";
+        if (d.parent || d.dist) {
+          tooltipText += `<b>Parent:</b> ${d.parent}<br><b>Genomic distance:</b> ${d.dist}<br><br>`;
+        }
+
+        tooltipText += region_to_string(d);
+        let formatDate = d3.timeFormat("%Y-%m-%d");
         tooltipText += `<br><b>Collection date:</b> ${formatDate(new Date(d.x))}<br>`;
 
         // Tooltip appears 10 pixels left of the cursor
