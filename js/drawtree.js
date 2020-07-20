@@ -37,7 +37,7 @@ function rectLayout(root) {
   // assign vertical positions to tips by postorder traversal
   var counter = 0;
   for (const node of traverse(root, 'postorder')) {
-    if (node.children.length == 0) {
+    if (node.children.length === 0) {
       // assign position to tip
       node.y = counter;
       counter++;
@@ -139,6 +139,10 @@ function map_clusters_to_tips(df, clusters) {
       coldates = coldates.concat(variant.map(x => x.coldate));
     }
     coldates.sort();  // in place, ascending order
+
+    var origin = new Date(cluster['nodes'][root][0]['coldate']),
+        first_date = new Date(coldates[0]),
+        last_date = new Date(coldates[coldates.length-1]);
     
     // augment data frame with cluster data
     tips[root_idx].cluster_idx = cidx;
@@ -149,11 +153,9 @@ function map_clusters_to_tips(df, clusters) {
     tips[root_idx].label1 = cluster.label1;
     tips[root_idx].count = coldates.length;
     tips[root_idx].varcount = labels.length;
-    
-    var origin = new Date(cluster['nodes'][root][0]['coldate']),
-      first_date = new Date(coldates[0]),
-      last_date = new Date(coldates[coldates.length-1]);
-    
+    tips[root_idx].first_date = first_date;
+    tips[root_idx].last_date = last_date;
+
     tips[root_idx].coldate = origin;
     dt = (first_date - origin) / 3.154e10;  // convert ms to years
     tips[root_idx].x1 = root_xcoord + dt;
@@ -184,6 +186,10 @@ function draw_clusters(tips) {
     var coldate = new Date(isodate);
     return ((coldate - origin) / 3.154e10);
   };
+
+  // Create a div for the tooltip
+  let cTooltip = d3.select("#tooltipContainer")
+      .style("opacity", 0);
   
   axis.append("g")
     .attr("class", "treeaxis")
@@ -220,11 +226,37 @@ function draw_clusters(tips) {
       return(country_pal[d.region]);
     })
     .attr("fill-opacity", "0.33")
-    .on('mouseover', function() {
+    .on('mouseover', function(d) {
       d3.select(this).attr("fill-opacity", "0.67");
+
+      cTooltip.transition()       // Show tooltip
+          .duration(50)
+          .style("opacity", 0.9);
+
+      let ctooltipText = region_to_string(d.allregions);
+      ctooltipText += `<br><b>Number of variants:</b> ${d.varcount}<br>`;
+      const formatDate = d3.timeFormat("%Y-%m-%d");
+      ctooltipText += `<br><b>Collection dates:</b><br>${formatDate(new Date(d.first_date))} / ${formatDate(new Date(d.last_date))}<br>`;
+
+      cTooltip.html(ctooltipText)
+          .style("left", (d3.event.pageX + 10) + "px")    // Tooltip appears 10 pixels left of the cursor
+          .style("top", function(){
+            // Position tooltip based on the y-position of the cluster
+            let tooltipHeight = cTooltip.node().getBoundingClientRect().height;
+            if (d3.event.pageY + tooltipHeight > 1200) {
+              return d3.event.pageY - tooltipHeight + "px";
+            } else {
+              return d3.event.pageY + "px";
+            }
+          });
+
     })
     .on("mouseout", function() {
       d3.select(this).attr("fill-opacity", "0.33");
+
+      cTooltip.transition()     // Hide tooltip
+          .duration(50)
+          .style("opacity", 0);
     })
     .on("click", function(d) {
       // reset all rectangles to high transparency

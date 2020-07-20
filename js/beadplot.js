@@ -310,7 +310,7 @@ function beadplot(cid) {
           tooltipText += `<b>Parent:</b> ${d.parent}<br><b>Genomic distance:</b> ${d.dist}<br><br>`;
         }
 
-        tooltipText += region_to_string(d);
+        tooltipText += region_to_string(table(d.region));
         tooltipText += `<br><b>Unique collection dates:</b> ${d.numBeads}<br>`;
         let formatDate = d3.timeFormat("%Y-%m-%d");
         tooltipText += `<br><b>Collection dates:</b><br>${formatDate(new Date(d.x1))} / ${formatDate(new Date(d.x2))}<br>`;
@@ -424,7 +424,7 @@ function beadplot(cid) {
           tooltipText += `<b>Parent:</b> ${d.parent}<br><b>Genomic distance:</b> ${d.dist}<br><br>`;
         }
 
-        tooltipText += region_to_string(d);
+        tooltipText += region_to_string(table(d.region));
         let formatDate = d3.timeFormat("%Y-%m-%d");
         tooltipText += `<br><b>Collection date:</b> ${formatDate(new Date(d.x))}<br>`;
 
@@ -481,21 +481,22 @@ function beadplot(cid) {
 
 /**
  * Writes information about the region distribution to a string
- * @param {Object} obj: JS Object with region and count attributes
+ * @param {{}} my_regions: associative list of region and case count pairs
  * @returns {string} regStr: a string representation of the region distribution
  */
-function region_to_string(obj) {
+function region_to_string(my_regions) {
   // Display region distribution in tooltip
-  let my_regions = table(obj.region),
-      regStr = `<b>Number of cases</b><br>`;
+  let regStr = `<b>Number of cases</b><br>`,
+      total = 0;
 
   for (let [r_key, r_value] of Object.entries(my_regions)) {
-    regStr += `${r_key}: ${r_value}<br>`
+    regStr += `${r_key}: ${r_value}<br>`;
+    total += r_value;
   }
 
   // Display total number of cases if variants are from multiple countries
   if(Object.keys(my_regions).length > 1) {
-    regStr += `Total: ${obj.count}<br>`
+    regStr += `Total: ${total}<br>`
   }
 
   return regStr;
