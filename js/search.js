@@ -50,6 +50,7 @@ function select_beads_by_substring(substr, accn) {
  */
 function select_bead_by_accession(accn) {
 	// reset all highlights
+	console.log(accn);
 	selected = [];
 	d3.selectAll("circle").dispatch('mouseout');
 
@@ -57,15 +58,18 @@ function select_bead_by_accession(accn) {
 	var cid = accn_to_cid[accn];
 	if (cid !== undefined) {
 		var rect = d3.selectAll("#svg-timetree > svg > g > rect")
-				.filter(function(d) { return(d.cluster_idx === cid); });
-		d3.select(rect.node()).dispatch("click");
-
+				.filter(function(d) { return(d.cluster_idx === cid); })
+				.attr("class", "clicked");
+		beadplot(cid);
+		
+		d3.selectAll("circle:not(.selectionH)").attr("class", "not_SelectedBead");
 		var bead = d3.selectAll("circle").filter(function(d) {
 			return d.accessions.includes(accn);
 		});
-		bead.dispatch('mouseover');
-		bead.node().scrollIntoView();
-		selected.push(bead.node());
+		create_selection(bead);
+		
+		//bead.node().scrollIntoView();
+		//selected.push(bead.node());
 	}
 }
 
