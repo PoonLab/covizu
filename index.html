@@ -16,15 +16,18 @@
         </svg>
     </a>
 
-    <div style="position:fixed;z-index:10" class="search bar">
-        <searchp>
-            <div id="search-bar">
-                <span>
-                    <input type="search" id="search-input"
-                           placeholder="e.g., EPI_ISL_434070 or Canada"></span>
-                <span><div class="search_btn"></div></span>
-            </div>
-        </searchp>
+    <div class="bar">
+        <div id="search-bar">
+            <span>
+                <input type="search" id="search-input"
+                       placeholder="e.g., EPI_ISL_434070 or Canada"></span>
+            <span><div class="search_btn"></div></span>
+        </div>
+
+        <div id="navigation">
+          <span id="search_stats"></span>
+          <button type="button">Next</button>
+        </div>
     </div>
 
     <div style="width: 814px;
@@ -50,7 +53,7 @@
                 <td><div id="svg-clusteraxis" style="position: fixed; top: 58px; z-index: 14"></div>
                     <div id="svg-cluster"></div></td>
                 <td>
-                    <rightbar style='padding-right: 5%; padding-left: 5%'>
+                    <rightbar style='padding-right: 5%; padding-left: 5%; display:none'>
                         <h1>CoVizu</h1>
                         <h3>Near real-time visualization of SARS-CoV-2 genomic variation</h3>
                         <p>
@@ -69,7 +72,7 @@
                         </details>
 
                     </rightbar>
-                    
+
                 </td>
             </tr>
         </table>
@@ -155,7 +158,7 @@
         var country_table = d3.select("#country-table").append('table');
         var theaders = ["Region", "Country", "Count"]
         var clicks = {Region: 0, Country: 0, Count: 0};
-  
+
         // to be populated in beadplot.js
         var country_tbody = country_table.append("tbody");
 

@@ -2,6 +2,33 @@
 var selected = [];
 
 /**
+* Returns a function ready to obtain statistics of a query
+*/
+function prepare_get_search_stats(data) {
+  /**
+  * Get the total number of beads that match a query
+  */
+  return function get_search_stats(query) {
+    return {
+      query,
+      'total_beads': data.map((cluster) =>
+          cluster.points.map((point) =>
+            point.labels
+          )
+          .flat()
+        )
+        .flat()
+        .filter(label => label.includes(query))
+        .length,
+    };
+  }
+}
+
+function update_search_stats(stats) {
+  $('#search_stats').text(`1 of ${stats.total_beads}`);
+}
+
+/**
  * Highlight clusters containing samples that match substring,
  * and highlight samples in currently displayed bead plot.
  * When user switches bead plots, update highlighted samples.
@@ -132,6 +159,11 @@ function search() {
 	else {
 		// substring search
 		select_beads_by_substring(query);
+
+    // FIXME: pass beaddata to search
+    const get_search_stats = prepare_get_search_stats(beaddata);
+    const search_stats = get_search_stats(query);
+    update_search_stats(search_stats);
 	}
 }
 
