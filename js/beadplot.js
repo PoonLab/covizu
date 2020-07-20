@@ -307,8 +307,6 @@ function beadplot(cid) {
             .style("opacity", 0);
       })
       .on("click", function(d) { 
-        console.log(d)
-        console.log('here')
         gentable(d);
         draw_region_distribution(table(d.region));
         /*
@@ -419,9 +417,6 @@ function beadplot(cid) {
         //d3.selectAll("circle:not(.SelectedBead)").style("opacity", 0.3);
         //d3.selectAll("circle.SelectedBead").style("opacity", 1);
 
-        console.log(d)
-        console.log('there')
-
         gentable(d);
         draw_region_distribution(table(d.region));
       });
@@ -510,7 +505,7 @@ function gentable(obj) {
     .on('click', function (d) {
       country_table.selectAll('th').attr('class', null)
 
-      if (d.startsWith("Country")){
+      if (d == "Country"){
         //sort function for Country (alphabetic)
         clicks.Country++;
         if (clicks.Country%2==0){
@@ -538,7 +533,7 @@ function gentable(obj) {
         }
       }
 
-      if (d.startsWith("Count")){
+      if (d == "Count"){
         //sort function for Case count (Numeric)
         this.className = 'aes';
         clicks.Count++;
@@ -566,7 +561,7 @@ function gentable(obj) {
         }
       }
 
-      if (d.startsWith("Region")){
+      if (d == "Region"){
         //sort function for Region (alphabetic)
         this.className = 'aes';
         clicks.Region++;
