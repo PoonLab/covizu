@@ -121,6 +121,7 @@
     "Guam": "Oceania",
     "DK": "Europe",
     "Romania": "Europe",
+    "Romania ": "Europe",
     "Serbia": "Europe",
     "Kazakhstan": "Asia",
     "Lebanon": "Asia",
@@ -136,9 +137,16 @@
     "Yingtan": "China",
     "Fuzhou": "China",
     "Bosnia-and-Herzegovina": "Europe",
+    "Bosnia and Herzegovina": "Europe",
     "Cyprus": "Europe",
     "Harbin": "China",
     "Tunisia": "Africa",
     "ITALY": "Europe",
-    "Argentina": "South America"
+    "Meizhou": "China",
+    "Jamaica": "North America",
+    "Benin": "Africa",
+    "Venezuela": "South America",
+    "Changzhou": "China",
+    "Bucuresti": "Europe",
+    "Mongolia": "Asia"
 }

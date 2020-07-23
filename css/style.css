@@ -69,12 +69,13 @@ div.tooltip{
 .container {
     padding-top: 30px;
 }
-searchp {
-    position:fixed;
-    left:10px;
-    top:10px;
-}
 
+#search-bar {
+    display: inline-block;
+}
+#navigation {
+  display: inline-block;
+}
 /*
 details ::-webkit-details-marker {
     color: gray;
@@ -133,7 +134,10 @@ rightbar {
     right :0;
 }
 
-.bar {}
+.bar {
+  position:fixed;
+  z-index:10;
+}
 .bar form {
     height: 42px;
 }
@@ -177,3 +181,27 @@ span {
     top: 40px;
     /* background-color: #fffa; */
 }
+
+
+th, td {
+    text-align: left;
+    padding: 0 1em 0.5ex 0;
+}
+
+/* Add zebra stripping for rows */
+tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+thead tr th {
+    border-bottom: 1px solid black;
+}
+
+th.des:after {
+    content: "\21E9";
+  }
+  
+  th.aes:after {
+    content: "\21E7";
+  }
+

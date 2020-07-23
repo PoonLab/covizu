@@ -7,7 +7,7 @@ python3 scripts/autobot.py >> debug/Autobot.log
 python3 scripts/filtering.py
 
 # calculate TN93 distances
-tn93 -t 0.0001 -o data/gisaid.tn93.csv data/gisaid-filtered.fa
+tn93 -t 0.00005 -o data/gisaid.tn93.csv data/gisaid-filtered.fa
 
 # cluster genomes into variants -> variants.csv, variants.fa
 python3 scripts/variants.py

@@ -137,6 +137,10 @@ function parse_clusters(clusters) {
 
       country = variant.map(x => x.country);
 
+      // parse samples within variant
+      var isodates = unique(coldates),
+          isodate;
+
       variants.push({
         'accession': accn,
         'label': variant[0].label1.replace(pat, "$1"),
@@ -146,12 +150,11 @@ function parse_clusters(clusters) {
         'country': country,
         'region': country.map(x => countries[x]),
         'y1': y,  // horizontal line segment
-        'y2': y
+        'y2': y,
+        'numBeads': isodates.length,
+        'parent': null,
+        'dist': 0
       });
-
-      // parse samples within variant
-      var isodates = unique(coldates),
-          isodate;
 
       for (var i=0; i<isodates.length; i++) {
         isodate = isodates[i];
@@ -163,7 +166,7 @@ function parse_clusters(clusters) {
         if (regions.includes(undefined)) {
           console.log("Developer msg, need to update countries.json:");
           for (const j in regions.filter(x => x===undefined)) {
-            console.log(samples[j].country);
+            console.log(`"${samples[j].country}"`);
           }
         }
         
@@ -175,19 +178,22 @@ function parse_clusters(clusters) {
           'labels': samples.map(x => x.label1.replace(pat, "$1")),
           'region1': mode(regions),
           'region': regions,
-          'country': country
+          'country': country,
+          'parent': null,
+          'dist': 0
         })
       }
       y++;
     }
 
     // map earliest collection date of child node to vertical edges
-    var edge, parent, child;
+    var edge, parent, child, dist;
     edgelist = [];
     for (var e = 0; e < cluster.edges.length; e++) {
       edge = cluster.edges[e];
       parent = variants.filter(x => x.accession === edge[0])[0];
       child = variants.filter(x => x.accession === edge[1])[0];
+      dist = parseFloat(edge[2]);
       edgelist.push({
         'y1': parent.y1,
         'y2': child.y1,
@@ -195,8 +201,22 @@ function parse_clusters(clusters) {
         'x2': child.x1,
         'parent': parent.label,
         'child': child.label,
-        'dist': parseFloat(edge[2])
+        'dist': dist
       });
+
+      // Assign parent and genomic distance of each variant
+      let childvariants = variants.filter(x => x.y1 === child.y1);
+      for (let v = 0; v < childvariants.length; v++) {
+        childvariants[v].parent = parent.label;
+        childvariants[v].dist = dist;
+      }
+
+      // Assign the parent and genomic distance of each point
+      let childpoints = points.filter(x => x.y === child.y1);
+      for (let c = 0; c < childpoints.length; c++) {
+        childpoints[c].parent = parent.label;
+        childpoints[c].dist = dist;
+      }
 
       // update variant time range
       if (parent.x1 > child.x1) {
@@ -223,6 +243,9 @@ function parse_clusters(clusters) {
     labels = points.map(x => x.labels).flat();
     cluster['searchtext'] = labels.join();
     cluster['label1'] = labels[0];
+
+    // collect all countries
+    cluster['country'] = variants.map(x => x.country).flat();
   }
 
   return(beaddata);
@@ -274,14 +297,39 @@ function beadplot(cid) {
       .attr("y2", yMap2B)
       .attr("stroke-width", 3)
       .attr("stroke", "#777")
-      .on("mouseover", function() {
-        d3.select(this).attr("stroke-width", 5);
+      .on("mouseover", function(d) {
+        d3.select(this)
+            .attr("stroke-width", 5);
+
+        bTooltip.transition()       // Show tooltip
+            .duration(50)
+            .style("opacity", 0.9);
+
+        let tooltipText = "";
+        if (d.parent || d.dist) {
+          tooltipText += `<b>Parent:</b> ${d.parent}<br><b>Genomic distance:</b> ${d.dist}<br><br>`;
+        }
+
+        tooltipText += region_to_string(table(d.region));
+        tooltipText += `<br><b>Unique collection dates:</b> ${d.numBeads}<br>`;
+        let formatDate = d3.timeFormat("%Y-%m-%d");
+        tooltipText += `<br><b>Collection dates:</b><br>${formatDate(new Date(d.x1))} / ${formatDate(new Date(d.x2))}<br>`;
+
+        // Tooltip appears 10 pixels left of the cursor
+        bTooltip.html(tooltipText)
+            .style("left", (d3.event.pageX + 10) + "px")
+            .style("top", (d3.event.pageY + "px"));
+
       })
       .on("mouseout", function() {
-        d3.select(this).attr("stroke-width", 3);
+        d3.select(this)
+            .attr("stroke-width", 3);
+        bTooltip.transition()     // Hide tooltip
+            .duration(50)
+            .style("opacity", 0);
       })
-      .on("click", function(d) {
-        $("#text-node").html(gentable(table(d.country)));
+      .on("click", function(d) { 
+        gentable(d);
         draw_region_distribution(table(d.region));
         /*
         var mystr = "";
@@ -322,11 +370,31 @@ function beadplot(cid) {
           return("#99f7");
         }
       })
-      .on("mouseover", function() {
+      .on("mouseover", function(d) {
         d3.select(this).attr("stroke-width", 3);
+
+        bTooltip.transition()       // Show tooltip
+            .duration(50)
+            .style("opacity", 0.9);
+
+        let tooltipText = `<b>Parent:</b> ${d.parent}<br><b>Child:</b> ${d.child}<br>`;
+        tooltipText += `<b>Genomic distance:</b> ${d.dist}<br><br>`;
+
+        let formatDate = d3.timeFormat("%Y-%m-%d");
+        tooltipText += `<b>Collection date:</b> ${formatDate(new Date(d.x2))}`;
+
+        // Tooltip appears 10 pixels left of the cursor
+        bTooltip.html(tooltipText)
+            .style("left", (d3.event.pageX + 10) + "px")
+            .style("top", (d3.event.pageY + "px"));
+
       })
       .on("mouseout", function() {
         d3.select(this).attr("stroke-width", 1);
+
+        bTooltip.transition()     // Hide tooltip
+            .duration(50)
+            .style("opacity", 0);
       })
       .on("click", function(d) {
         $("#text-node").text(`Parent: ${d.parent}\nChild: ${d.child}\nGenomic distance: ${d.dist}`);
@@ -346,26 +414,23 @@ function beadplot(cid) {
       .on("mouseover", function(d) {
         d3.select(this).attr("stroke-width", 2)
             .attr("r", 4*Math.sqrt(d.count)+3);
+
         bTooltip.transition()       // Show tooltip
-            .duration(200)
+            .duration(50)
             .style("opacity", 0.9);
 
-        // Display region distribution in tooltip
-        let my_regions = table(d.region),
-            tooltipText = `<b>Number of cases</b><br>`;
+        let tooltipText = "";
+        if (d.parent || d.dist) {
+          tooltipText += `<b>Parent:</b> ${d.parent}<br><b>Genomic distance:</b> ${d.dist}<br><br>`;
+        }
 
-        for (let [r_key, r_value] of Object.entries(my_regions)) {
-          tooltipText += `${r_key}: ${r_value}<br>`
-        }
-        // Display total number of cases if variants are from multiple countries
-        if(Object.keys(my_regions).length > 1) {
-          tooltipText += `Total: ${d.count}<br>`
-        }
-        // Display the sample date
+        tooltipText += region_to_string(table(d.region));
         let formatDate = d3.timeFormat("%Y-%m-%d");
-        tooltipText += `<br><b>Sample Date:</b> ${formatDate(new Date(d.x))}<br>`;
+        tooltipText += `<br><b>Collection date:</b> ${formatDate(new Date(d.x))}<br>`;
+
+        // Tooltip appears 10 pixels left of the cursor
         bTooltip.html(tooltipText)
-            .style("left", (d3.event.pageX + 10) + "px")    // Tooltip appears 10 pixels left of the cursor
+            .style("left", (d3.event.pageX + 10) + "px")
             .style("top", (d3.event.pageY + "px"));
       })
       .on("mouseout", function(d) {
@@ -373,7 +438,7 @@ function beadplot(cid) {
           d3.select(this).attr("stroke-width", 1)
               .attr("r", 4*Math.sqrt(d.count));
           bTooltip.transition()     // Hide tooltip
-              .duration(500)
+              .duration(50)
               .style("opacity", 0);
         }
       })
@@ -399,10 +464,7 @@ function beadplot(cid) {
         //d3.selectAll("circle:not(.SelectedBead)").style("opacity", 0.3);
         //d3.selectAll("circle.SelectedBead").style("opacity", 1);
 
-        var my_countries = table(d.country);
-        var mystr = gentable(my_countries);
-        $("#text-node").html(mystr);
-
+        gentable(d);
         draw_region_distribution(table(d.region));
       });
 
@@ -416,19 +478,172 @@ function beadplot(cid) {
       );
 
 }
+
 /**
- * Function to generate table from my_countries object on bead click
- * @param {json object} my_countries: json object containing key (countries) value (cases count) pairs
+ * Writes information about the region distribution to a string
+ * @param {{}} my_regions: associative list of region and case count pairs
+ * @returns {string} regStr: a string representation of the region distribution
  */
-function gentable(my_countries){
-	tablehtml = '<table><tr><th id="Countryheader">Country</th><th id="ccheader">Case Count</th></tr>';
-	for (let [key, value] of Object.entries(my_countries)) {
-		tablehtml += '<tr><td>' + `${key}` + '</td><td>' + `${value}` + '</td></tr>';
-		console.log(key,value)
-	}
-	return tablehtml+= '</table>';
+function region_to_string(my_regions) {
+  // Display region distribution in tooltip
+  let regStr = `<b>Number of cases</b><br>`,
+      total = 0;
+
+  for (let [r_key, r_value] of Object.entries(my_regions)) {
+    regStr += `${r_key}: ${r_value}<br>`;
+    total += r_value;
+  }
+
+  // Display total number of cases if variants are from multiple countries
+  if(Object.keys(my_regions).length > 1) {
+    regStr += `Total: ${total}<br>`
+  }
+
+  return regStr;
 }
 
+
+/**
+ * Function to generate table from my_countries object on bead click
+ * @param {Object} obj:  JS Object with country attribute
+ */
+function gentable(obj) {
+  var my_countries = Object.entries(table(obj.country)),
+      row, region;
+
+  // annotate with region (continent)
+  for (const i in my_countries) {
+    row = my_countries[i];
+    region = countries[row[0]];
+    my_countries[i] = [region].concat(row);
+  }
+
+  country_table.selectAll('thead').remove()
+
+  // https://stackoverflow.com/questions/32871044/how-to-update-d3-table
+  //create a row <tr> for each item in my_countries array, set mouse over over color, then create one column <td> for each item in array 
+  var rows = country_tbody.selectAll("tr")
+    .data(my_countries);
+  rows.exit().remove();
+  rows.enter() 
+    .append("tr")
+    .on("mouseover", function(){
+      d3.select(this).style("background-color", "grey");}) //mousover highlight
+    .on("mouseout", function(d){
+      d3.select(this).style("background-color",null);})  //mousout unhighlight
+    .selectAll("td")
+    .data(function(d) { return d; })
+    .enter()
+    .append("td")
+    .text(function(d) { return d; });
+  
+  var rows = country_tbody.selectAll("tr") //reselect all rows
+
+  var cells = rows.selectAll("td")
+    .data(function(d) { return d; })
+    cells.text(function(d) { return d; })
+
+
+ var headers = country_table.append("thead").append("tr")
+    .selectAll("th")
+    .data(theaders)
+    .enter()
+    .append("th")
+    .text(function(d) { return d; })
+    .on('click', function (d) {
+      country_table.selectAll('th').attr('class', null)
+
+      if (d == "Country"){
+        //sort function for Country (alphabetic)
+        clicks.Country++;
+        if (clicks.Country%2==0){
+          this.className = 'aes';
+          rows.sort(function(a,b){ 
+            if (a[1].toUpperCase() < b[1].toUpperCase()) { 
+              return -1; 
+            } else if (a[1].toUpperCase() > b[1].toUpperCase()) { 
+              return 1; 
+            } else {
+              return 0;
+            }
+          });             
+        } else{
+          this.className = 'des';
+          rows.sort(function(a,b){ 
+            if (a[1].toUpperCase() < b[1].toUpperCase()) { 
+              return 1; 
+            } else if (a[1].toUpperCase() > b[1].toUpperCase()) { 
+              return -1; 
+            } else {
+              return 0;
+            }
+          });              
+        }
+      }
+
+      if (d == "Count"){
+        //sort function for Case count (Numeric)
+        this.className = 'aes';
+        clicks.Count++;
+        if (clicks.Count%2==0){
+          rows.sort(function(a,b) { 
+            if (+a[2] < +b[2]) { 
+              return 1; 
+             } else if (+a[2] > +b[2]) { 
+              return -1; 
+             } else {
+              return 0;
+            }
+          });              
+        } else {
+          this.className = 'des';
+          rows.sort(function(a,b) { 
+            if (+a[2] < +b[2]) { 
+              return -1; 
+            } else if (+a[2] > +b[2]) { 
+              return 1; 
+            } else {
+              return 0;
+            }
+          });
+        }
+      }
+
+      if (d == "Region"){
+        //sort function for Region (alphabetic)
+        this.className = 'aes';
+        clicks.Region++;
+        if (clicks.Region%2==0){
+          rows.sort(function(a,b){ 
+            if (a[0].toUpperCase() < b[0].toUpperCase()) { 
+              return -1; 
+            } else if (a[0].toUpperCase() > b[0].toUpperCase()) { 
+              return 1; 
+            } else {
+              return 0;
+            }
+          });                    
+        } else {
+          this.className = 'des';
+          rows.sort(function(a,b){ 
+            if (a[0].toUpperCase() < b[0].toUpperCase()) { 
+              return 1; 
+            } else if (a[0].toUpperCase() > b[0].toUpperCase()) { 
+              return -1; 
+            } else {
+              return 0;
+            }
+          });                    
+        }
+      }
+   });
+}
+
+/**
+  * Alphabetic Sorter function for table sort
+  * String comparator looks at length, not alphabetic 
+  :TODO:
+**/
 
 /**
  * Draws a bar chart of the distribution of cases across regions
