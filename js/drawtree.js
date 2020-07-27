@@ -225,7 +225,7 @@ function draw_clusters(tips) {
     .on("click", function(d) {
       
       beadplot(d.cluster_idx);
-      search(d.cluster_idx);
+      search();
       
       // reset all rectangles to high transparency
       if ($('#search-input').val() === "") {

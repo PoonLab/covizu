@@ -8,7 +8,7 @@ var selected = [];
  *
  * @param substr
  */
-function select_beads_by_substring(substr, accn) {
+function select_beads_by_substring(substr) {
 	selected = [];
 	d3.selectAll("circle").dispatch('mouseout');
 
@@ -142,7 +142,7 @@ function get_autocomplete_source_fn(accn_to_cid) {
 	}
 }
 
-function search(accn) {
+function search() {
 	var query = $('#search-input').val();
 	const accn_pat = /^EPI_ISL_[0-9]+$/i;  // case-insensitive
 	if (accn_pat.test(query)) {
@@ -151,11 +151,11 @@ function search(accn) {
 	}
 	else {
 		// substring search
-		select_beads_by_substring(query, accn);
+		select_beads_by_substring(query);
 	}
 }
 
-$('#search-button').on('click', search(0));
+$('#search-button').on('click', search());
 
 $('#search-input').on('keydown', function(e) {
 	if (e.keyCode == 13) {
@@ -163,6 +163,6 @@ $('#search-input').on('keydown', function(e) {
 		if ($('#search-input').val() !== "") {
 		  d3.selectAll("rect.clicked").attr('class', "default");
 		}
-		search(0);
+		search();
 	}
 })
