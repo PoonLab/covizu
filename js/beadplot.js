@@ -251,7 +251,7 @@ function create_selection(selected_obj) {
 function clear_selection() {
   $('#search-input').val('');
   d3.selectAll("circle:not(.selectionH)").attr("class", "default");
-  d3.select('div#svg-timetree').selectAll("rect:not(.clicked)").attr("class", "default");
+  d3.select('#svg-timetree').selectAll("rect:not(.clicked)").attr("class", "default");
   d3.selectAll("circle.selectionH").remove();
 }
 /**
@@ -260,7 +260,6 @@ function clear_selection() {
  * @param {Number} cid:  integer index of cluster to draw as beadplot
  */
 function beadplot(cid) {
-  console.log(cid);
 
   var variants = beaddata[cid].variants,
       edgelist = beaddata[cid].edgelist,

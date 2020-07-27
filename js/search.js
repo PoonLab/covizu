@@ -21,13 +21,25 @@ function select_beads_by_substring(substr, accn) {
 	var rects = d3.selectAll("#svg-timetree > svg > g > rect").filter(function(d) {
 		return(d.searchtext.match(substr) !== null);
 	});
-
-	// jump to the first hit
-	//d3.select(rects.nodes()[0]).dispatch('click');
+	
+	// jump to the first hit if new search
+	if (d3.selectAll('.clicked').empty()){
+	  var first_cluster_idx;
+	  d3.select(rects.nodes().pop()).attr("class", "clicked");
+	  d3.select(rects.nodes().pop()).each(function(d) {
+	  first_cluster_idx = d.cluster_idx;
+	  });
+	beadplot(first_cluster_idx);
+	var itter = rects.nodes().splice(0, rects.nodes().length-1);
+	d3.select("#svg-timetree").selectAll("rect:not(.clicked)").attr("class","not_SelectedCluster");
+	console.log(itter);
+	} else{
+	  d3.select("#svg-timetree").selectAll("rect").attr("class","not_SelectedCluster");
+	  var itter = rects.nodes();
+	}
 	
 	// FIXME: other matching clusters not getting highlighted, due to click below?
-	d3.select("#svg-timetree").selectAll("rect").attr("class","not_SelectedCluster");
-	for (const node of rects.nodes()) {
+	for (const node of itter) {
 		d3.select(node).attr("class","SelectedCluster");
 	}
 	
@@ -36,12 +48,12 @@ function select_beads_by_substring(substr, accn) {
 	});
 	selected = beads.nodes();
 	d3.selectAll("circle:not(.selectionH)").attr("class", "not_SelectedBead");
-	//beads.nodes()[0].scrollIntoView();
 	for (const node of beads.nodes()) {
 		//d3.select(node).dispatch('mouseover');
 		var selected_obj = d3.select(node);
 		create_selection(selected_obj);
 	}
+	beads.nodes()[0].scrollIntoView({block: "center"});
 }
 
 
@@ -51,13 +63,13 @@ function select_beads_by_substring(substr, accn) {
  */
 function select_bead_by_accession(accn) {
 	// reset all highlights
-	console.log(accn);
 	selected = [];
 	d3.selectAll("circle").dispatch('mouseout');
 
 	// switch to cluster beadplot
 	var cid = accn_to_cid[accn];
 	if (cid !== undefined) {
+		d3.selectAll("#svg-timetree > svg > g > rect").attr("class", "not_SelectedCluster");
 		var rect = d3.selectAll("#svg-timetree > svg > g > rect")
 				.filter(function(d) { return(d.cluster_idx === cid); })
 				.attr("class", "clicked");
@@ -69,8 +81,7 @@ function select_bead_by_accession(accn) {
 		});
 		create_selection(bead);
 		
-		//bead.node().scrollIntoView();
-		//selected.push(bead.node());
+		bead.node().scrollIntoView({block: "center"});
 	}
 }
 
@@ -149,6 +160,9 @@ $('#search-button').on('click', search(0));
 $('#search-input').on('keydown', function(e) {
 	if (e.keyCode == 13) {
 		// type <enter> to run search
+		if ($('#search-input').val() !== "") {
+		  d3.selectAll("rect.clicked").attr('class', "default");
+		}
 		search(0);
 	}
 })
