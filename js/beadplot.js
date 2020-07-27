@@ -230,6 +230,9 @@ function parse_clusters(clusters) {
 
 function create_selection(selected_obj) {
   d3.select("div#svg-cluster").selectAll("line").attr("stroke-opacity", 0.3);
+  d3.select("div#svg-cluster")
+    .selectAll("circle:not(.SelectedBead):not(.selectionH)")
+    .attr("class", "not_SelectedBead");
   selected_obj.attr("class","SelectedBead");
   d3.selectAll("circle.SelectedBead").each(function(r) {
     visB.append("circle").lower()
@@ -246,7 +249,9 @@ function create_selection(selected_obj) {
 }
 
 function clear_selection() {
-  d3.selectAll("circle:not(.selectionH)").attr("class", "not_SelectedBead");
+  $('#search-input').val('');
+  d3.selectAll("circle:not(.selectionH)").attr("class", "default");
+  d3.select('div#svg-timetree').selectAll("rect:not(.clicked)").attr("class", "default");
   d3.selectAll("circle.selectionH").remove();
 }
 /**

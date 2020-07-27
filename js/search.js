@@ -14,6 +14,7 @@ function select_beads_by_substring(substr, accn) {
 
 	if (substr === "") {
 		// user submitted empty string
+		clear_selection();
 		return;
 	}
 
