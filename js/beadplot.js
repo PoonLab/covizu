@@ -230,6 +230,7 @@ function parse_clusters(clusters) {
 
 function create_selection(selected_obj) {
   d3.select("div#svg-cluster").selectAll("line").attr("stroke-opacity", 0.3);
+  d3.select("#svg-timetree").selectAll("line").attr("stroke-opacity", 0.3);
   d3.select("div#svg-cluster")
     .selectAll("circle:not(.SelectedBead):not(.selectionH)")
     .attr("class", "not_SelectedBead");
@@ -250,6 +251,8 @@ function create_selection(selected_obj) {
 
 function clear_selection() {
   $('#search-input').val('');
+  d3.select("#svg-cluster").selectAll("line").attr("stroke-opacity", 1);
+  d3.select("#svg-timetree").selectAll("line").attr("stroke-opacity", 1);
   d3.selectAll("circle:not(.selectionH)").attr("class", "default");
   d3.select('#svg-timetree').selectAll("rect:not(.clicked)").attr("class", "default");
   d3.selectAll("circle.selectionH").remove();
@@ -408,31 +411,9 @@ function beadplot(cid) {
         
         var cur_obj = d3.select(this);
         create_selection(cur_obj);
-      
-
-
-        //if (cur_obj.classed("SelectedBead")) {
-        //  cur_obj.classed("SelectedBead", false);
-        //} else {
-        //  cur_obj.classed("SelectedBead", true);
-        //}
-
-        //var sum_regions = [];
-        //var sum_countries = [];
-
-        //d3.selectAll("circle.SelectedBead").each(function(r) {
-        //  sum_regions.push(r.region);
-        //  sum_countries.push(r.country);
-        //});
-
-        //d3.selectAll("circle:not(.SelectedBead)").style("opacity", 0.3);
-        //d3.selectAll("circle.SelectedBead").style("opacity", 1);
-
-        //var my_countries = table(sum_countries.flat());
-        //var mystr = gentable(my_countries);
-        //$("#text-node").html(mystr);
-
-        //draw_region_distribution(table(sum_regions.flat()));
+        
+        d3.select("#svg-timetree").selectAll("line").attr("stroke-opacity", 1);
+        
       });
 
   // draw x-axis
