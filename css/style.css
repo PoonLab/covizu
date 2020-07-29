@@ -83,10 +83,6 @@ rect.default{
   fill-opacity: 0.33;
 }
 
-rect:hover{
-  fill-opacity: 0.66;
-}
-
 rect.clicked{
   stroke: black;
   fill-opacity: 0.33;
@@ -100,6 +96,10 @@ rect.SelectedCluster{
 
 rect.not_SelectedCluster{
   fill-opacity: 0.1;
+}
+
+rect:hover{
+  fill-opacity: 0.66;
 }
 
 .container {
