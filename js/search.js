@@ -29,12 +29,17 @@ function select_beads_by_substring(substr) {
 	  d3.select(rects.nodes().pop()).each(function(d) {
 	  first_cluster_idx = d.cluster_idx;
 	  });
+	  
 	beadplot(first_cluster_idx);
+	
 	var itter = rects.nodes().splice(0, rects.nodes().length-1);
+	
 	d3.select("#svg-timetree").selectAll("rect:not(.clicked)").attr("class","not_SelectedCluster");
-	console.log(itter);
+	
 	} else{
+	  
 	  d3.select("#svg-timetree").selectAll("rect").attr("class","not_SelectedCluster");
+	  
 	  var itter = rects.nodes();
 	}
 	
@@ -53,7 +58,9 @@ function select_beads_by_substring(substr) {
 		var selected_obj = d3.select(node);
 		create_selection(selected_obj);
 	}
-	beads.nodes()[0].scrollIntoView({block: "center"});
+	if (beads.nodes().length !== 0) {
+	  beads.nodes()[0].scrollIntoView({block: "center"});
+	}
 }
 
 
