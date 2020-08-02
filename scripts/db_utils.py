@@ -75,6 +75,9 @@ def open_connection(database):
                    "gender VARCHAR(30), age INT, ptstatus VARCHAR(20))"
     cur.execute(ptinfo_table)
 
+    raw_seq_table = "CREATE TABLE IF NOT EXISTS RAWSEQ (accession VARCHAR(255) PRIMARY KEY, header VARCHAR(255), unaligned BLOB);"
+    cur.execute(raw_seq_table)
+
     conn.commit()
     return cur, conn
 
@@ -85,11 +88,29 @@ def insert_seq(cursor, seq, header, aligned):
             :cursor: sqlite database handler
             :seq: raw sequence
             :header: fasta header
+            :aligned: aligned sequence
     """
     vars= [header.split('|')[1], header, hash(seq.strip('N')), aligned]
     result = cursor.execute("REPLACE INTO SEQUENCES('accession', 'header', 'unaligned_hash', 'aligned') VALUES(?, ?, ?, ?)", vars)
     return 0
 
+def insert_into_rawseqs(database, fasta):
+    """ Wrapper function for inserting into RAWSEQ table
+        :params:
+            :database: sqlite database 
+            :fasta: file containing raw seqs
+    """
+    conn = sqlite3.connect(database)
+    cursor = conn.cursor()
+
+    handle = gotoh2.convert_fasta(open(fasta))
+
+    for header,seq in handle:
+        vars= [header.split('|')[1], header, seq]
+        result = cursor.execute("REPLACE INTO RAWSEQ ('accession', 'header', 'unaligned') VALUES (?,?,?)", vars)
+    conn.commit()
+    conn.close()
+    return 0
 
 def find_seq(conn, seq, refseq):
     """
