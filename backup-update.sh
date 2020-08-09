@@ -16,6 +16,10 @@ rm -v !("$(date +"%Y_%m_%d").gsaid.db")
 # screen for non-human and low-coverage samples -> gisaid-filtered.fa
 python3 scripts/filtering.py
 
+# Run pangolin lineage assingment & upload to database
+pangolin data/gisaid-filtered.fa -o data --outfile data/gisaid-filtered.pango.csv
+python3 scripts/db_utils --lineagecsv data/gisaid-filtered.pango.csv
+
 # calculate TN93 distances
 tn93 -t 0.00005 -o data/gisaid.tn93.csv data/gisaid-filtered.fa
 
