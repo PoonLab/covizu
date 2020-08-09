@@ -4,6 +4,7 @@ import argparse
 import threading
 import queue
 import time
+import csv
 
 
 class AlignerThread(threading.Thread):
@@ -78,6 +79,10 @@ def open_connection(database):
     raw_seq_table = "CREATE TABLE IF NOT EXISTS RAWSEQ (accession VARCHAR(255) PRIMARY KEY, header VARCHAR(255), unaligned BLOB);"
     cur.execute(raw_seq_table)
 
+    lineage_table = "CREATE TABLE IF NOT EXISTS LINEAGE (entry_id INTEGER PRIMARY KEY, accession VARCHAR(255), lineage varchar(15), probability REAL, pangoLEARN_version DATE,status VARCHAR(255), note BLOB);"
+
+    cur.execute(lineage_table)
+
     conn.commit()
     return cur, conn
 
@@ -139,6 +144,22 @@ def find_seq(conn, seq, refseq):
 
     return aligned
 
+def iterate_lineage_csv(cursor, csvFile):
+    """
+    Wrapper function for inserting into LINEAGES table
+    :params:
+        :cursor: sqlite database handler
+        :csvFile: output of pangolin containing run data
+    :out:
+        :None:
+
+    """
+    with open(csvFile, "r") as infile:
+        reader = csv.reader(infile)
+        next(reader, None) # skip header
+        for row in reader:
+            vars = [row[0].split('|')[1], row[1], row[2], row[3], row[4], row[5]]
+            cursor.execute("INSERT INTO LINEAGE(`accession`, `lineage`, `probability`, `pangoLEARN_version`, `status`, `note`) VALUES(?,?, ?, DATE(?),?,?)", vars)
 
 def insert_sample_sequencing(cursor, tsvFile):
     """
@@ -389,15 +410,17 @@ def parse_args():
                         help='XLS file containing acknowledgement data.')
     parser.add_argument('--outfasta', '-o',
                         help='Path to write outputfile for alignment')
-    parser.add_argument('--targetdb',
-                        help='Name of target database')
+    parser.add_argument('--targetdb', '-t',
+                        help='Path to targetdb for migration')
+    parser.add_argument('--lineagecsv', '-l',
+                        help='Path to csv file containing pangolin output')
 
     return parser.parse_args()
 
 
 if __name__ == '__main__':
     args = parse_args()
-    conn, cursor = open_connection(args.db)
+    cursor, conn = open_connection(args.db)
 
     if args.srcfile is not None:
         iterate_fasta(args.srcfile, args.ref)
@@ -419,4 +442,7 @@ if __name__ == '__main__':
         conn.close()
         migrate_entries(args.db, args.targetdb)
 
-
+    if args.lineagecsv is not None:
+        iterate_lineage_csv(cursor, args.lineagecsv)
+        conn.commit()
+        conn.close()
