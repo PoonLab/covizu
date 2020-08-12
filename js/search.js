@@ -231,8 +231,9 @@ $('#search-input').on('keydown', function(e) {
 		// type <enter> to run search
 		if ($('#search-input').val() !== "") {
 		  d3.selectAll("rect.clicked").attr('class', "default");
+		  d3.selectAll("rect.clickedH").remove();
 		}
-		d3.selectAll("rect.clickedH").remove();
+		
 		search();
 	}
 })
