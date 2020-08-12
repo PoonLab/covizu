@@ -66,6 +66,44 @@ div.tooltip{
   pointer-events: none;
 }
 
+circle.default{
+  fill-opacity: 1;
+  stroke: black;
+}
+
+.not_SelectedBead{
+  fill-opacity: 0.3;
+}
+
+.SelectedBead{
+  fill-opacity: 1;
+}
+
+rect.default{
+  fill-opacity: 0.5;
+}
+
+rect.SelectedCluster{
+  fill-opacity: 0.9;
+}
+
+rect.not_SelectedCluster{
+  fill-opacity: 0.1;
+}
+
+rect.clicked{
+  fill-opacity: 1;
+}
+
+rect.SelectedCluster:hover{
+  stroke: gray;
+  stroke-width: 2;
+}
+
+rect:hover{
+  fill-opacity: 1;
+}
+
 .container {
     padding-top: 30px;
 }
