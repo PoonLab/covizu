@@ -28,6 +28,29 @@ var axis = d3.select("div#svg-timetreeaxis")
   .attr("height", 25)
   .append("g");
 
+function create_clusterH(obj, obj_2) {
+  
+  vis.append("rect")
+    .attr('class', "clickedH")
+    .attr("x", xMap1(obj)-2)
+    .attr("y", yMap(obj)-2)
+    .attr("width", xWide(obj)+4)
+    .attr("height", 14)
+    .attr("fill", "white")
+    .attr("stroke", "black")
+    .attr("fill-opacity", 1)
+    .attr("stroke-width", 2);
+      
+  d3.select(obj_2).raise();
+
+  d3.select("#svg-timetree")
+      .selectAll("line")
+      .raise();
+      
+  d3.select("#svg-timetree")
+      .selectAll("text")
+      .raise();
+}
 
 /**
  * Rectangular layout of tree, update nodes in place with x,y coordinates
@@ -165,10 +188,9 @@ function map_clusters_to_tips(df, clusters) {
  * @param {Array} tips, clusters that have been mapped to tips of tree
  */
 function draw_clusters(tips) {
-  //console.log(tips);
-
   // draw x-axis
   var xaxis_to_date = function(x) {
+    
     var origin = tips[0],
       coldate = new Date(origin.coldate),
       dx = x - origin.x;  // year units
@@ -188,24 +210,10 @@ function draw_clusters(tips) {
       .ticks(3)
       .tickFormat(d => xaxis_to_date(d)));
 
-  // TODO: label tips of time-scaled tree (but with what?)
-  vis.selectAll("text")
-      .data(tips)
-      .enter().append("text")
-      .style("font-size", "10px")
-      .attr("text-anchor", "start")
-      .attr("alignment-baseline", "middle")
-      .attr("x", function(d) {
-        return(xScale(d.x));
-      })
-      .attr("y", function(d) {
-        return(yScale(d.y-0.15));
-      })
-      .text(function(d) { return(d.label1); });
-
   vis.selectAll("rect")
     .data(tips)
     .enter()
+    .lower()
     .append("rect")
     //.attr("selected", false)
     .attr("x", xMap1)
@@ -224,6 +232,8 @@ function draw_clusters(tips) {
     })
     .on("click", function(d) {
       
+      d3.selectAll("rect.clickedH").remove();
+      
       beadplot(d.cluster_idx);
       search();
       
@@ -233,6 +243,9 @@ function draw_clusters(tips) {
       }
 
       d3.select(this).attr("class", "clicked");
+      
+      create_clusterH(d, this);
+      
       $("#barplot").text(null);
 
       draw_region_distribution(d.allregions);
@@ -241,4 +254,23 @@ function draw_clusters(tips) {
       $("#text-node").text(`Number of cases: ${d.count}\nNumber of variants: ${d.varcount}\n`);
 
     });
+  
+  d3.select("#svg-timetree")
+  .selectAll("line")
+  .raise();
+  
+      // TODO: label tips of time-scaled tree (but with what?)
+  vis.selectAll("text")
+      .data(tips)
+      .enter().append("text")
+      .style("font-size", "10px")
+      .attr("text-anchor", "start")
+      .attr("alignment-baseline", "middle")
+      .attr("x", function(d) {
+        return(xScale(d.x));
+      })
+      .attr("y", function(d) {
+        return(yScale(d.y-0.15));
+      })
+      .text(function(d) { return(d.label1); });
 }

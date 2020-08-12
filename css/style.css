@@ -80,26 +80,28 @@ circle.default{
 }
 
 rect.default{
-  fill-opacity: 0.33;
-}
-
-rect.clicked{
-  stroke: black;
-  fill-opacity: 0.33;
+  fill-opacity: 0.5;
 }
 
 rect.SelectedCluster{
-  stroke: grey;
-  stroke-width: 2;
-  fill-opacity: 0.66;
+  fill-opacity: 0.9;
 }
 
 rect.not_SelectedCluster{
   fill-opacity: 0.1;
 }
 
+rect.clicked{
+  fill-opacity: 1;
+}
+
+rect.SelectedCluster:hover{
+  stroke: gray;
+  stroke-width: 2;
+}
+
 rect:hover{
-  fill-opacity: 0.66;
+  fill-opacity: 1;
 }
 
 .container {
