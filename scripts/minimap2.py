@@ -71,7 +71,7 @@ def parse_args():
     parser.add_argument('-a', '--align', action='store_true',
                         help="<option> output aligned sequences as FASTA")
     parser.add_argument('--ref', help="<input> path to target FASTA (reference)",
-                        default='../data/NC_045512.fa')
+                        default='data/NC_045512.fa')
     return parser.parse_args()
 
 
