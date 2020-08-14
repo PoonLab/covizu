@@ -2,6 +2,7 @@ import subprocess
 import argparse
 import re
 import sys
+from seq_utils import convert_fasta
 
 def apply_cigar(seq, rpos, cigar):
     """
@@ -22,7 +23,7 @@ def apply_cigar(seq, rpos, cigar):
             left += length
         elif operation == 'D':
             aligned += '-'*length
-        elif operation == 'S':
+        elif operation in 'SI':
             left += length  # soft clip
 
     return aligned
@@ -50,9 +51,11 @@ def minimap2(fasta, ref, path='minimap2', retseq=False):
 
 
 # return aligned sequence?
-def output_fasta(iter, outfile):
+def output_fasta(iter, reflen, outfile):
     for qname, rpos, cigar, seq in iter:
         aligned = apply_cigar(seq, rpos, cigar)
+        # pad on right
+        aligned += '-'*(reflen-len(aligned))
         outfile.write('>{}\n{}\n'.format(qname, aligned))
 
 
@@ -60,8 +63,11 @@ def parse_args():
     parser = argparse.ArgumentParser("Wrapper script for minimap2")
     parser.add_argument('fasta', type=argparse.FileType('r'),
                         help="<input> path to query FASTA file")
-    parser.add_argument('outfile', type=argparse.FileType('w'),
-                        nargs='?', help="<output> path to write output")
+    parser.add_argument('-o', '--outfile',
+                        type=argparse.FileType('w'),
+                        required=False,
+                        help="<output, optional> path to write output, "
+                             "defaults to stdout")
     parser.add_argument('-a', '--align', action='store_true',
                         help="<option> output aligned sequences as FASTA")
     parser.add_argument('--ref', help="<input> path to target FASTA (reference)",
@@ -76,4 +82,6 @@ if __name__ == '__main__':
 
     mm2 = minimap2(args.fasta.name, ref=args.ref)
     if args.align:
-        output_fasta(mm2, outfile=args.outfile)
+        # get length of reference
+        reflen = len(convert_fasta(open(args.ref))[0][1])
+        output_fasta(mm2, reflen=reflen, outfile=args.outfile)
