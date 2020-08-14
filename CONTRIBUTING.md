@@ -42,8 +42,9 @@ Consequently, you should only use this approach if you are running CoVizu in a f
 
 The downloading scripts can be automated through `crontab` on Linux:
 ```
-0 0 * * * nohup python /home/covid/SeliniumAutobot.py >> /home/covid/Autobot.log 2>&1
+0 0 * * * nohup python /home/covid/autobot.py >> /home/covid/Autobot.log 2>&1
 ```
+Note that the absolute paths in the above are specific to the filesystem on our own server, and that you should replace this with your own path specification!
 
 
 ## Coding style
@@ -64,6 +65,19 @@ The downloading scripts can be automated through `crontab` on Linux:
 
 
 ### R 
+
+* Indent with two spaces
+* Use base R whenever possible
+* Use `.` to separate words in variable and functino names, not `_`
+* Use `#'` prefix to document functions, *e.g.*:
+  ```R
+  #' @param node: str, label of current node variant
+  #' @param parent: str, label of current node's parental variant
+  #' @param el: str, edge list from minimum spanning tree
+  #' @return linearized vector of parent->child pairs
+  traverse <- function(node, parent, el, edges=c()) {
+  ```
+* Place any package requirements (*i.e.*, `require(igraph)`) at the top of the script
 
 
 ## Commiting your code
