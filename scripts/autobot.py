@@ -62,9 +62,12 @@ def login(driver):
 
     # call javascript login function
     driver.execute_script('doLogin()')
-    time.sleep(5)
-
-        # navigate to corona virus page
+    time.sleep(15)
+    # navigate to corona virus page
+    print('switching to Covid Homepage')
+    element = driver.find_element_by_xpath("//*[contains(text(), 'EpiCoV™')]")
+    element.click()
+    time.sleep(15)
     print('navigating to CoV db')
     element = driver.find_element_by_xpath("//*[contains(text(), 'Browse')]")
     element.click()

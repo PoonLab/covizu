@@ -15,7 +15,7 @@ import getpass
 
 from gotoh2 import *
 from autobot import get_driver, login, retrieve_genomes
-from db_utils import pull_field, open_connection, insert_seq, find_seq, iterate_handle
+from db_utils import pull_field, open_connection, insert_seq, find_seq, iterate_handle, insert_into_rawseqs
 
 todaystr = datetime.strftime(datetime.now(), '%Y-%m-%d')
 
@@ -33,7 +33,8 @@ def compare_fields(hash_dictionary, header_dictionary, new_fasta):
         hashed_seq = hash(s.strip('N'))
         try:
             if hash_dictionary[accession] != hashed_seq or header_dictionary[accession] != h:
-                modified_seqs[h] = s
+                #modified_seqs[h] = s
+                pass
         except KeyError:
             modified_seqs[h] = s
 
@@ -45,7 +46,7 @@ def parse_args():
         description="Python3 Script to Automate retrieval of genomes deposited in a given day."
     )
     parser.add_argument(
-        '-d', '-dir', type=str, default=tempfile.TemporaryDirectory(),
+        '-d', '--dir', type=str, default=tempfile.TemporaryDirectory(),
         help="Temporary directory to download files."
     )
     parser.add_argument(
@@ -68,13 +69,20 @@ def parse_args():
         '-r', '--ref', type=str, default = 'data/NC_045512.fa',
         help='Path to ref seq'
     )
+    parser.add_argument(
+        '--debug', action='store_true', help='Saves missing sequences into missing.fa flat file'
+    )
+    parser.add_argument(
+        '--saveraw', action = 'store_true', help='inserts all raw sequences into database'
+    )
     return parser.parse_args()
 
 
 if __name__ == '__main__':
     #initialize webdriver
     args = parse_args()
-    download_folder = args.d.name
+    print(args)
+    download_folder = args.dir.name
     driver = get_driver(download_folder=download_folder, executable_path=args.binpath)
     driver = login(driver=driver)
     log = 'Changed headers \n' #debug tool
@@ -113,20 +121,18 @@ if __name__ == '__main__':
     #download all chunks, and compare sequences within
     for start, end in bdates:
         srcfile = retrieve_genomes(driver=driver, start=start, end=end, download_folder=download_folder)
-        # fix missing line breaks in-place
-        retcode = subprocess.check_call(['sed', '-i', 's/([ACGT?])>hCo[Vv]/\1\\n>hCoV/g', srcfile])
         print(srcfile)
         #update modified_seqs dictionary
         modified_seqs.update(compare_fields(hash_dictionary, header_dictionary, srcfile))
-
-    """
-    #:DEBUG:
-    debugout= open('missing.fa', 'w')
-    for h,s in modified_seqs.items():
-        debugout.write('>{}\n{}\n'.format(h,s))
-    debugout.close()
-    """
+        if args.saveraw:
+            insert_into_rawseqs(args.database, srcfile)
+    if args.debug:
+        #:DEBUG:
+        debugout= open('missing.fa', 'w')
+        for h,s in modified_seqs.items():
+            debugout.write('>{}\n{}\n'.format(h,s))
+        debugout.close()
 
     driver.quit()
     #call the updater, passing modified sequences as a list
-    iterate_handle(modified_seqs.items(), args.ref, database = args.database)
+    #iterate_handle(modified_seqs.items(), args.ref, database = args.database)

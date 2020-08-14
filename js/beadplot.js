@@ -251,14 +251,38 @@ function parse_clusters(clusters) {
   return(beaddata);
 }
 
+function create_selection(selected_obj) {
+  d3.select("div#svg-cluster").selectAll("line").attr("stroke-opacity", 0.3);
+  d3.select("div#svg-cluster")
+    .selectAll("circle:not(.SelectedBead):not(.selectionH)")
+    .attr("class", "not_SelectedBead");
+  selected_obj.attr("class","SelectedBead");
+  d3.selectAll("circle.SelectedBead").each(function(r) {
+    visB.append("circle").lower()
+    .attr('class', "selectionH")
+    .attr("cx", xScaleB(xValueB(r)))
+    .attr("cy", yScaleB(yValueB(r)))
+    .attr("r", 4*Math.sqrt(r.count)+4)
+    .attr("fill", "none")
+    .attr("stroke", "grey")
+    .attr("fill-opacity", 1)
+    .attr("stroke-width", 5);
+  });
+}
 
+function clear_selection() {
+  $('#search-input').val('');
+  d3.select("#svg-cluster").selectAll("line").attr("stroke-opacity", 1);
+  d3.selectAll("circle:not(.selectionH)").attr("class", "default");
+  d3.select('#svg-timetree').selectAll("rect:not(.clicked):not(.clickedH)").attr("class", "default");
+  d3.selectAll("circle.selectionH").remove();
+}
 /**
  * Draw the beadplot for a specific cluster (identified through its
  * integer index <cid>) in the SVG.
  * @param {Number} cid:  integer index of cluster to draw as beadplot
  */
 function beadplot(cid) {
-  console.log(cid);
 
   var variants = beaddata[cid].variants,
       edgelist = beaddata[cid].edgelist,
@@ -407,10 +431,13 @@ function beadplot(cid) {
       .attr("r", function(d) { return (4*Math.sqrt(d.count)); })
       .attr("cx", xMapB)
       .attr("cy", yMapB)
+      .attr("class", "default")
       .attr("fill", function(d) {
         return(country_pal[d.region1]);
       })
-      .attr("stroke", "black")
+      .attr("stroke", function(d) {
+        return(country_pal[d.region1]);
+      })
       .on("mouseover", function(d) {
         d3.select(this).attr("stroke-width", 2)
             .attr("r", 4*Math.sqrt(d.count)+3);
@@ -434,36 +461,21 @@ function beadplot(cid) {
             .style("top", (d3.event.pageY + "px"));
       })
       .on("mouseout", function(d) {
-        if (!selected.includes(this)) {
           d3.select(this).attr("stroke-width", 1)
               .attr("r", 4*Math.sqrt(d.count));
           bTooltip.transition()     // Hide tooltip
               .duration(50)
               .style("opacity", 0);
-        }
       })
       .on("click", function(d) {
-        // TODO: display first 3, collapsed text
-        //console.log(d.labels);
-        //var cur_obj = d3.select(this);
 
-        //if (cur_obj.classed("SelectedBead")) {
-        //  cur_obj.classed("SelectedBead", false);
-        //} else {
-        //  cur_obj.classed("SelectedBead", true);
-        //}
-
-        //var sum_regions = [];
-        //var sum_countries = [];
-
-        //d3.selectAll("circle.SelectedBead").each(function(r) {
-        //  sum_regions.push(r.region);
-        //  sum_countries.push(r.country);
-        //});
-
-        //d3.selectAll("circle:not(.SelectedBead)").style("opacity", 0.3);
-        //d3.selectAll("circle.SelectedBead").style("opacity", 1);
-
+        clear_selection();
+        
+        var cur_obj = d3.select(this);
+        create_selection(cur_obj);
+        
+        d3.select("#svg-timetree").selectAll("line").attr("stroke-opacity", 1);
+        
         gentable(d);
         draw_region_distribution(table(d.region));
       });

@@ -4,6 +4,7 @@ import argparse
 import threading
 import queue
 import time
+import csv
 
 
 class AlignerThread(threading.Thread):
@@ -75,6 +76,13 @@ def open_connection(database):
                    "gender VARCHAR(30), age INT, ptstatus VARCHAR(20))"
     cur.execute(ptinfo_table)
 
+    raw_seq_table = "CREATE TABLE IF NOT EXISTS RAWSEQ (accession VARCHAR(255) PRIMARY KEY, header VARCHAR(255), unaligned BLOB);"
+    cur.execute(raw_seq_table)
+
+    lineage_table = "CREATE TABLE IF NOT EXISTS LINEAGE (entry_id INTEGER PRIMARY KEY, accession VARCHAR(255), lineage varchar(15), probability REAL, pangoLEARN_version DATE,status VARCHAR(255), note BLOB);"
+
+    cur.execute(lineage_table)
+
     conn.commit()
     return cur, conn
 
@@ -85,11 +93,29 @@ def insert_seq(cursor, seq, header, aligned):
             :cursor: sqlite database handler
             :seq: raw sequence
             :header: fasta header
+            :aligned: aligned sequence
     """
     vars= [header.split('|')[1], header, hash(seq.strip('N')), aligned]
     result = cursor.execute("REPLACE INTO SEQUENCES('accession', 'header', 'unaligned_hash', 'aligned') VALUES(?, ?, ?, ?)", vars)
     return 0
 
+def insert_into_rawseqs(database, fasta):
+    """ Wrapper function for inserting into RAWSEQ table
+        :params:
+            :database: sqlite database 
+            :fasta: file containing raw seqs
+    """
+    conn = sqlite3.connect(database)
+    cursor = conn.cursor()
+
+    handle = gotoh2.convert_fasta(open(fasta))
+
+    for header,seq in handle:
+        vars= [header.split('|')[1], header, seq]
+        result = cursor.execute("REPLACE INTO RAWSEQ ('accession', 'header', 'unaligned') VALUES (?,?,?)", vars)
+    conn.commit()
+    conn.close()
+    return 0
 
 def find_seq(conn, seq, refseq):
     """
@@ -118,6 +144,22 @@ def find_seq(conn, seq, refseq):
 
     return aligned
 
+def iterate_lineage_csv(cursor, csvFile):
+    """
+    Wrapper function for inserting into LINEAGES table
+    :params:
+        :cursor: sqlite database handler
+        :csvFile: output of pangolin containing run data
+    :out:
+        :None:
+
+    """
+    with open(csvFile, "r") as infile:
+        reader = csv.reader(infile)
+        next(reader, None) # skip header
+        for row in reader:
+            vars = [row[0].split('|')[1], row[1], row[2], row[3], row[4], row[5]]
+            cursor.execute("INSERT INTO LINEAGE(`accession`, `lineage`, `probability`, `pangoLEARN_version`, `status`, `note`) VALUES(?,?, ?, DATE(?),?,?)", vars)
 
 def insert_sample_sequencing(cursor, tsvFile):
     """
@@ -237,7 +279,7 @@ def iterate_fasta(fasta, ref, database = 'data/gsaid.db'):
     :param fasta: file containing sequences
     :param ref: file containing reference sequence, default-> NC_04552.fa
     """
-    handle = gotoh2.iter_fasta(open(fasta))
+    handle = gotoh2.convert_fasta(open(fasta))
     _, refseq = gotoh2.convert_fasta(open(ref))[0]
     cursor, conn = open_connection(database)
 
@@ -305,6 +347,48 @@ def iterate_handle_threaded(handle, ref, database = 'data/gsaid.db'):
     conn.close()
     out_queue.join()
 
+def migrate_entries(old_db, new_db):
+    """
+    Function to migrate missing seqs from old_db to new_db
+    :params:
+        :old_db: sqlite3 target db
+        :new_db: sqlite3 db with missing seqs
+    """
+    oldconnect = sqlite3.connect(old_db)
+    chunkyconnect = sqlite3.connect(new_db)
+    oldcursor = oldconnect.cursor()
+    chunkcursor = chunkyconnect.cursor()
+    #get existing accessions in target db, create list to derive missing accesions
+    existing_accessions = list(oldcursor.execute('SELECT accession from SEQUENCES;').fetchall())
+    EA_list = []
+    for accession in existing_accessions:
+        EA_list.append(accession[0])
+
+    #get all sequences from the source db and insert them into target
+    All_chunk_seqs = list(chunkcursor.execute('SELECT * FROM SEQUENCES;').fetchall())
+    count = 0
+    for accession, header, unaligned_hash, aligned in All_chunk_seqs:
+        if accession not in EA_list:
+            count+=1
+            oldcursor.execute('INSERT INTO SEQUENCES (accession, header, unaligned_hash, aligned) VALUES (?,?,?,?);', [accession, header, unaligned_hash, aligned])
+            oldconnect.commit()
+
+    print('Updated {}, inserted {} seqs.'.format(old_db, str(count)))
+
+    #get all existing hashes from target db, create list to derive missing accesions
+    existing_hashes = list(oldcursor.execute('SELECT hash_key FROM HASHEDSEQS').fetchall())
+    EH_list = []
+    for hash_key in existing_hashes:
+        EH_list.append(hash_key[0])
+
+    hash_count = 0
+    All_chunk_hashes = list(chunkcursor.execute('SELECT * FROM HASHEDSEQS;').fetchall())
+    for hash_key, aligned_seq in All_chunk_hashes:
+        if hash_key not in EH_list:
+            hash_count+=1
+            oldcursor.execute('INSERT INTO HASHEDSEQS (hash_key, aligned_seq) VALUES (?,?)', [hash_key, aligned_seq])
+            oldconnect.commit()
+    print('Updated {}, inserted {} hashes.'.format(old_db, str(hash_count)))
 
 def parse_args():
     """ Command-line interface """
@@ -326,12 +410,17 @@ def parse_args():
                         help='XLS file containing acknowledgement data.')
     parser.add_argument('--outfasta', '-o',
                         help='Path to write outputfile for alignment')
+    parser.add_argument('--targetdb', '-t',
+                        help='Path to targetdb for migration')
+    parser.add_argument('--lineagecsv', '-l',
+                        help='Path to csv file containing pangolin output')
+
     return parser.parse_args()
 
 
 if __name__ == '__main__':
     args = parse_args()
-    conn, cursor = open_connection(args.db)
+    cursor, conn = open_connection(args.db)
 
     if args.srcfile is not None:
         iterate_fasta(args.srcfile, args.ref)
@@ -349,4 +438,11 @@ if __name__ == '__main__':
         export_fasta(cursor, args.outfasta)
         conn.close()
 
+    if args.targetdb is not None:
+        conn.close()
+        migrate_entries(args.db, args.targetdb)
 
+    if args.lineagecsv is not None:
+        iterate_lineage_csv(cursor, args.lineagecsv)
+        conn.commit()
+        conn.close()
