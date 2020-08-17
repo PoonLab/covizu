@@ -29,14 +29,14 @@ def apply_cigar(seq, rpos, cigar):
     return aligned
 
 
-def minimap2(fasta, ref, path='minimap2', retseq=False):
+def minimap2(fasta, ref, path='minimap2', nthread=3):
     """
     Wrapper function for minimap2
     :param fasta: str, path to FASTA with query sequences
     :param ref: str, path to FASTA with reference sequence(s)
     :param path: str, path to binary executable
     """
-    p = subprocess.Popen([path, '-a', '--eqx', ref, fasta],
+    p = subprocess.Popen([path, '-t', str(nthread), '-a', '--eqx', ref, fasta],
                          stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
     for line in map(lambda x: x.decode('utf-8'), p.stdout):
         if line.startswith('@'):
@@ -70,6 +70,8 @@ def parse_args():
                              "defaults to stdout")
     parser.add_argument('-a', '--align', action='store_true',
                         help="<option> output aligned sequences as FASTA")
+    parser.add_argument('-t', '--thread', type=int, default=3, 
+                        help="<option> number of threads")
     parser.add_argument('--ref', help="<input> path to target FASTA (reference)",
                         default='data/NC_045512.fa')
     return parser.parse_args()
@@ -80,7 +82,7 @@ if __name__ == '__main__':
     if args.outfile is None:
         args.outfile = sys.stdout
 
-    mm2 = minimap2(args.fasta.name, ref=args.ref)
+    mm2 = minimap2(args.fasta.name, ref=args.ref, nthread=args.thread)
     if args.align:
         # get length of reference
         reflen = len(convert_fasta(open(args.ref))[0][1])
