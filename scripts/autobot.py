@@ -17,7 +17,7 @@ import json
 def get_driver(download_folder, executable_path):
     """
     Instantiate remote control interface for Firefox web browser
-    
+    Debug code:print(driver.page_source)
     :param download_folder:  path to write downloaded files
     :param executable_path:  path to geckodriver executable
     :return:
@@ -68,9 +68,11 @@ def login(driver):
     element = driver.find_element_by_xpath("//*[contains(text(), 'EpiCoV™')]")
     element.click()
     time.sleep(15)
+
     print('navigating to CoV db')
     element = driver.find_element_by_xpath("//*[contains(text(), 'Browse')]")
-    element.click()
+    driver.execute_script("arguments[0].click();", element)
+    #element.click() :TODO: this broke for some reason?
     time.sleep(5)
 
     return driver
@@ -213,6 +215,7 @@ def parse_args():
         help='Path to reference fasta')
     parser.add_argument('--db', default = 'data/gsaid.db',
         help='Name of database.')
+
     return parser.parse_args()
 
 
@@ -225,3 +228,4 @@ if __name__ == '__main__':
                                download_folder=args.d)
     driver.quit()
     update_local(srcfile=srcfile, ref= args.ref, db=args.db)
+
