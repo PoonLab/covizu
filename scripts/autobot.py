@@ -228,4 +228,4 @@ if __name__ == '__main__':
                                download_folder=args.d)
     driver.quit()
     update_local(srcfile=srcfile, ref= args.ref, db=args.db)
-
+    insert_into_rawseqs(args.db, srcfile)
