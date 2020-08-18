@@ -144,13 +144,14 @@ if __name__ == '__main__':
         args.outfile = sys.stdout
 
     # check input headers for spaces
-    for line in args.fasta:
-        if line.startswith('>') and ' ' in line:
-            print("WARNING: at least one FASTA header contains a space")
-            print(line)
-            print("Use '-f' to force this script to process the file")
-            print("Otherwise use `sed -i 's/ /_/g' <file>` to replace all spaces in place.")
-            sys.exit()
+    if not args.force_headers:
+        for line in args.fasta:
+            if line.startswith('>') and ' ' in line:
+                print("WARNING: at least one FASTA header contains a space")
+                print(line)
+                print("Use '-f' to force this script to process the file")
+                print("Otherwise use `sed -i 's/ /_/g' <file>` to replace all spaces in place.")
+                sys.exit()
 
     # get length of reference
     reflen = len(convert_fasta(open(args.ref))[0][1])
