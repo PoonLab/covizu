@@ -128,7 +128,7 @@ def parse_args():
     parser.add_argument('-a', '--align', action='store_true',
                         help="<option> output aligned sequences as FASTA")
     parser.add_argument('-t', '--thread', type=int, default=3, 
-                        help="<option> number of threads")''
+                        help="<option> number of threads")
     parser.add_argument('-f', '--force-headers', action='store_true',
                         help="<option> use -f to force this script to accept "
                              "headers with spaces, which will be truncated "
@@ -144,15 +144,13 @@ if __name__ == '__main__':
         args.outfile = sys.stdout
 
     # check input headers for spaces
-    if not args.force:
-        with open(args.fasta) as handle:
-            for line in handle:
-                if line.startswith('>') and ' ' in line:
-                    print("WARNING: at least one FASTA header contains a space")
-                    print(line)
-                    print("Use '-f' to force this script to process the file")
-                    print("Otherwise use `sed -i 's/ /_/g' <file>` to replace all spaces in place.")
-                    sys.exit()
+    for line in args.fasta:
+        if line.startswith('>') and ' ' in line:
+            print("WARNING: at least one FASTA header contains a space")
+            print(line)
+            print("Use '-f' to force this script to process the file")
+            print("Otherwise use `sed -i 's/ /_/g' <file>` to replace all spaces in place.")
+            sys.exit()
 
     # get length of reference
     reflen = len(convert_fasta(open(args.ref))[0][1])
@@ -162,3 +160,4 @@ if __name__ == '__main__':
         output_fasta(mm2, reflen=reflen, outfile=args.outfile)
     else:
         encode_diffs(mm2, reflen=reflen)
+
