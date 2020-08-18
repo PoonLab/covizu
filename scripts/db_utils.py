@@ -390,6 +390,21 @@ def migrate_entries(old_db, new_db):
             oldconnect.commit()
     print('Updated {}, inserted {} hashes.'.format(old_db, str(hash_count)))
 
+def dump_raw(outfile, db='data/gsaid.db'):
+    """
+    Function to dump all raw seqs in RAQSEQ table
+    :params:
+        :outfile: destination (fasta) file to write seqs to
+        :db: sqlite3 database
+    """
+    cur, conn = open_connection(db)
+    seqs = cur.execute("SELECT `header`, `unaligned` FROM rawseq;").fetchall()
+    with open(outfile, 'w') as fastafile:
+        for h,s in seqs:
+            fastafile.write('>{}\n{}'.format(h,s))
+    fastafile.close()
+    conn.close()
+
 def parse_args():
     """ Command-line interface """
     parser = argparse.ArgumentParser(
@@ -414,6 +429,9 @@ def parse_args():
                         help='Path to targetdb for migration')
     parser.add_argument('--lineagecsv', '-l',
                         help='Path to csv file containing pangolin output')
+    parser.add_argument('--rawfasta',
+                        help='Path to write outputfile for rawseqs')
+
 
     return parser.parse_args()
 
@@ -446,3 +464,7 @@ if __name__ == '__main__':
         iterate_lineage_csv(cursor, args.lineagecsv)
         conn.commit()
         conn.close()
+    if args.rawfasta is not None:
+        dump_raw(args.rawfasta, db='data/gsaid.db')
+
+

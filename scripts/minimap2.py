@@ -5,7 +5,32 @@ import sys
 from seq_utils import convert_fasta
 
 
-def minimap2(fasta, ref, path='minimap2'):
+def apply_cigar(seq, rpos, cigar):
+    """
+    Use CIGAR to pad sequence with gaps as required to
+    align to reference.  Adapted from http://github.com/cfe-lab/MiCall
+    """
+    is_valid = re.match(r'^((\d+)([MIDNSHPX=]))*$', cigar)
+
+    if not is_valid:
+        raise RuntimeError('Invalid CIGAR string: {!r}.'.format(cigar))
+    tokens = re.findall(r'  (\d+)([MIDNSHPX=])', cigar, re.VERBOSE)
+    aligned = '-'*rpos
+    left = 0
+    for length, operation in tokens:
+        length = int(length)
+        if operation in 'M=X':
+            aligned += seq[left:(left+length)]
+            left += length
+        elif operation == 'D':
+            aligned += '-'*length
+        elif operation in 'SI':
+            left += length  # soft clip
+
+    return aligned
+
+
+def minimap2(fasta, ref, path='minimap2', nthread=3):
     """
     Wrapper function for minimap2
     :param fasta: str, path to FASTA with query sequences
@@ -14,7 +39,7 @@ def minimap2(fasta, ref, path='minimap2'):
     :yield:  query sequence name, reference index, CIGAR and original
              sequence
     """
-    p = subprocess.Popen([path, '-a', '--eqx', ref, fasta],
+    p = subprocess.Popen([path, '-t', str(nthread), '-a', '--eqx', ref, fasta],
                          stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
     for line in map(lambda x: x.decode('utf-8'), p.stdout):
         if line.startswith('@'):
@@ -102,6 +127,8 @@ def parse_args():
                              "defaults to stdout")
     parser.add_argument('-a', '--align', action='store_true',
                         help="<option> output aligned sequences as FASTA")
+    parser.add_argument('-t', '--thread', type=int, default=3, 
+                        help="<option> number of threads")
     parser.add_argument('--ref', help="<input> path to target FASTA (reference)",
                         default='data/NC_045512.fa')
     return parser.parse_args()
@@ -114,7 +141,8 @@ if __name__ == '__main__':
 
     # get length of reference
     reflen = len(convert_fasta(open(args.ref))[0][1])
-    mm2 = minimap2(args.fasta.name, ref=args.ref)
+    mm2 = minimap2(args.fasta.name, ref=args.ref, nthread=args.thread)
+
     if args.align:
         output_fasta(mm2, reflen=reflen, outfile=args.outfile)
     else:
