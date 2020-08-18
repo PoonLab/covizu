@@ -401,7 +401,7 @@ def dump_raw(outfile, db='data/gsaid.db'):
     seqs = cur.execute("SELECT `header`, `unaligned` FROM rawseq;").fetchall()
     with open(outfile, 'w') as fastafile:
         for h,s in seqs:
-            fastafile.write('>{}\n{}'.format(h,s))
+            fastafile.write('>{}\n{}\n'.format(h,s))
     fastafile.close()
     conn.close()
 
