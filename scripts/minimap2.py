@@ -113,7 +113,7 @@ def encode_diffs(iter, reflen):
         for length, operation in tokens:
             if operation == 'X':
                 # each nucleotide is a separate diff
-                
+                pass                
 
 
 def parse_args():
