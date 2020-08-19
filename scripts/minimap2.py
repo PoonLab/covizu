@@ -124,18 +124,21 @@ def encode_diffs(iter, reflen):
                 else:
                     # assume adjacent mismatches are independent substitutions
                     for i, nt in enumerate(substr):
-                        diffs.append(tuple(['~', left+i, nt]))
-
+                        diffs.append(tuple(['~', rpos+i, nt]))
+                left += length
+                rpos += length
             elif operator == 'S':
                 # soft clip, move along query
                 left += length
             elif operator == 'I':
-                diffs.append(tuple(['+', left, substr]))
+                diffs.append(tuple(['+', rpos, substr]))
                 left += length
             elif operator == 'D':
-                diffs.append(tuple(['-', left, length]))
+                diffs.append(tuple(['-', rpos, length]))
+                rpos += length
             elif operator == '=':
                 left += length
+                rpos += length
             else:
                 print("ERROR: unexpected operator {}".format(operator))
                 sys.exit()
