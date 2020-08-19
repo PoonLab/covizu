@@ -154,11 +154,11 @@ def encode_diffs(iter, reflen):
                 print("ERROR: unexpected operator {}".format(operator))
                 sys.exit()
 
-        # TODO: update missing if sequence incomplete on the right
+        # update missing if sequence incomplete on the right
         if left < reflen:
             missing.append(tuple([left, reflen]))
 
-        yield diffs, missing
+        yield qname, diffs, missing
 
 
 def parse_args():
@@ -205,5 +205,6 @@ if __name__ == '__main__':
     if args.align:
         output_fasta(mm2, reflen=reflen, outfile=args.outfile)
     else:
-        encode_diffs(mm2, reflen=reflen)
+        for qname, diffs, missing in encode_diffs(mm2, reflen=reflen):
+            print(qname, diffs, missing)
 
