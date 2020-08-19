@@ -107,11 +107,16 @@ def encode_diffs(iter, reflen):
     NOTE: runs of 'N's are also represented by 'X' tokens in the CIGAR
     string.
     :param iter:  generator from minimap2()
+    :param reflen:  length of reference genome
     """
     for qname, rpos, cigar, seq in iter:
         diffs = []
         missing = []
-        left = 0
+        if rpos > 0:
+            # incomplete on left
+            missing.append(tuple([0, rpos]))
+        left = 0  # index for query
+
         tokens = re.findall(r'  (\d+)([MIDNSHPX=])', cigar, re.VERBOSE)
         for length, operator in tokens:
             length = int(length)
@@ -120,7 +125,7 @@ def encode_diffs(iter, reflen):
                 # each nucleotide is a separate diff
                 if 'N' in substr:
                     # for now, assume the whole substring is bs
-                    missing.append(tuple([left, left+length]))
+                    missing.append(tuple([rpos, rpos+length]))
                 else:
                     # assume adjacent mismatches are independent substitutions
                     for i, nt in enumerate(substr):
@@ -128,23 +133,32 @@ def encode_diffs(iter, reflen):
                 left += length
                 rpos += length
             elif operator == 'S':
-                # soft clip, move along query
+                # discard soft clip
                 left += length
             elif operator == 'I':
+                # insertion relative to reference
                 diffs.append(tuple(['+', rpos, substr]))
                 left += length
             elif operator == 'D':
+                # deletion relative to reference
                 diffs.append(tuple(['-', rpos, length]))
                 rpos += length
             elif operator == '=':
+                # exact match
                 left += length
                 rpos += length
+            elif operator == 'H':
+                # hard clip, do nothing
+                pass
             else:
                 print("ERROR: unexpected operator {}".format(operator))
                 sys.exit()
 
-        print(diffs)
-        print(missing)
+        # TODO: update missing if sequence incomplete on the right
+        if left < reflen:
+            missing.append(tuple([left, reflen]))
+
+        yield diffs, missing
 
 
 def parse_args():
