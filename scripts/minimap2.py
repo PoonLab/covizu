@@ -104,16 +104,44 @@ def encode_diffs(iter, reflen):
     Serialize differences of query sequences to reference
     genome, which comprise nucleotide substitutions, in-frame
     indels, and locations of missing data.
+    NOTE: runs of 'N's are also represented by 'X' tokens in the CIGAR
+    string.
     :param iter:  generator from minimap2()
     """
     for qname, rpos, cigar, seq in iter:
         diffs = []
+        missing = []
         left = 0
         tokens = re.findall(r'  (\d+)([MIDNSHPX=])', cigar, re.VERBOSE)
-        for length, operation in tokens:
-            if operation == 'X':
+        for length, operator in tokens:
+            length = int(length)
+            substr = seq[left:(left + length)]
+            if operator == 'X':
                 # each nucleotide is a separate diff
-                pass                
+                if 'N' in substr:
+                    # for now, assume the whole substring is bs
+                    missing.append(tuple([left, left+length]))
+                else:
+                    # assume adjacent mismatches are independent substitutions
+                    for i, nt in enumerate(substr):
+                        diffs.append(tuple(['~', left+i, nt]))
+
+            elif operator == 'S':
+                # soft clip, move along query
+                left += length
+            elif operator == 'I':
+                diffs.append(tuple(['+', left, substr]))
+                left += length
+            elif operator == 'D':
+                diffs.append(tuple(['-', left, length]))
+            elif operator == '=':
+                left += length
+            else:
+                print("ERROR: unexpected operator {}".format(operator))
+                sys.exit()
+
+        print(diffs)
+        print(missing)
 
 
 def parse_args():
