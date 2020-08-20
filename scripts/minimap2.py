@@ -3,6 +3,7 @@ import argparse
 import re
 import sys
 from seq_utils import convert_fasta
+import json
 
 
 def apply_cigar(seq, rpos, cigar):
@@ -205,6 +206,8 @@ if __name__ == '__main__':
     if args.align:
         output_fasta(mm2, reflen=reflen, outfile=args.outfile)
     else:
+        # serialize feature vectors as JSON
+        res = {}
         for qname, diffs, missing in encode_diffs(mm2, reflen=reflen):
-            print(qname, diffs, missing)
-
+            res.update({qname: {'diffs': diffs, 'missing': missing}})
+        json.dump(res, args.outfile)
