@@ -207,7 +207,9 @@ if __name__ == '__main__':
         output_fasta(mm2, reflen=reflen, outfile=args.outfile)
     else:
         # serialize feature vectors as JSON
-        res = {}
+        res = []
         for qname, diffs, missing in encode_diffs(mm2, reflen=reflen):
-            res.update({qname: {'diffs': diffs, 'missing': missing}})
-        json.dump(res, args.outfile)
+            res.append({'name': qname, 'diffs': diffs, 'missing': missing})
+        serial = json.dumps(res).replace('},', '},\n')
+        args.outfile.write(serial)
+
