@@ -59,12 +59,13 @@ def open_connection(database):
 
     sample_table = "CREATE TABLE IF NOT EXISTS SAMPLE (accession VARCHAR(255) " \
                    "PRIMARY KEY, virus_name VARCHAR(255), collection_date VARCHAR(10), " \
-                   "location VARCHAR(30));"
+                   "location VARCHAR(30), lineage VARCHAR(20), clade VARCHAR(30) );"
     cur.execute(sample_table)
 
     sequencing_table = "CREATE TABLE IF NOT EXISTS SEQUENCING (accession VARCHAR(255) " \
                        "PRIMARY KEY, platform VARCHAR(100), assembly_method VARCHAR(100), " \
                        "sample_type VARCHAR(100))"
+
     cur.execute(sequencing_table)
 
     acknowledgement_table = "CREATE TABLE IF NOT EXISTS ACKNOWLEDGEMENTS (accession " \
@@ -161,7 +162,7 @@ def iterate_lineage_csv(cursor, csvFile):
             vars = [row[0].split('|')[1], row[1], row[2], row[3], row[4], row[5]]
             cursor.execute("INSERT INTO LINEAGE(`accession`, `lineage`, `probability`, `pangoLEARN_version`, `status`, `note`) VALUES(?,?, ?, DATE(?),?,?)", vars)
 
-def insert_sample_sequencing(cursor, tsvFile):
+def process_tech_meta(cursor, tsvFile):
     """
     Wrapper function for inserting into SAMPLE & SEQUENCING table
     #FROM SEQUENCING TECH METADATA
@@ -174,17 +175,17 @@ def insert_sample_sequencing(cursor, tsvFile):
     """
 
     with open(tsvFile) as handle:
-        handle = handle.readlines()[2:]
-        for row in handle.split('	'):
-            sample_vars = [row[1], row[0], row[2], row[3]]
+        reader= csv.reader(handle, delimiter="\t")
+        header = next(reader)
+
+        for row in reader:
+            sample_vars = [row[1], row[0], row[2], row[3], row[12], row[13]]
             result1 = cursor.execute("REPLACE INTO SAMPLE('accession', 'virus_name', "
-                                     "'collection_date', 'location') VALUES(?, ?, ?, ?)", sample_vars)
+                                     "'collection_date', 'location', 'lineage', 'clade') VALUES(?, ?, ?, ?, ?, ?)", sample_vars)
             sequencing_vars = [row[1], row[8], row[9], row[6]]
             result2 = cursor.execute("REPLACE INTO SEQUENCING('accession', "
                                      "'platform', 'assembly_method', 'sample_type') "
                                      "VALUES(?, ?, ?, ?)", sequencing_vars)
-            conn.commit()
-
 
 def insert_acknowledgement(cursor, tsvFile):
     """
@@ -199,15 +200,16 @@ def insert_acknowledgement(cursor, tsvFile):
     """
 
     with open(tsvFile) as handle:
-        handle = handle.readlines()[3:]
-        for row in handle.split('	'):
+        reader= csv.reader(handle, delimiter="\t")
+        header = next(reader)
+
+        for row in reader:
             vars = [row[0], row[4], row[5], row[6]]
             result = cursor.execute("REPLACE INTO ACKNOWLEDGEMENTS('accession', 'originating_lab', 'sub_lab', "
                                     "'authors') VALUES(?, ?, ?, ?)", vars)
-            conn.commit()
+    handle.close()
 
-
-def insert_ptinfo(cursor, tsvFile):
+def process_ptinfo(cursor, tsvFile):
     """
     Wrapper function for processing tsvFile and inserting into PTINFO table
     #FROM Patient status metadata
@@ -218,14 +220,16 @@ def insert_ptinfo(cursor, tsvFile):
     :out:
         :debug: report
     """
+
     with open(tsvFile) as handle:
-        handle = handle.readlines()[2:]
-        for row in handle.split('	'):
+        reader= csv.reader(handle, delimiter="\t")
+        header = next(reader)
+        for row in reader:
+            #PTINFO table
             vars = [row[1], row[5], row[6], row[7]]
             result = cursor.execute("REPLACE INTO PTINFO('accession', 'gender', 'age', "
                                     "'ptstatus') VALUES(?, ?, ?, ?)", vars)
-            conn.commit()
-
+    handle.close()
 
 def pull_field(cursor, field):
     """
@@ -403,6 +407,22 @@ def dump_raw(outfile, db='data/gsaid.db'):
         for h,s in seqs:
             fastafile.write('>{}\n{}\n'.format(h,s))
     fastafile.close()
+    conn.close()
+
+def process_meta (db, metafiles):
+    """
+    Function to process tsv files containing meta data
+    :params:
+        :db: sqlite3 database
+        :metafiles: [meta_epi,meta_tech] - list containing absolute paths
+    """
+    cursor, conn = open_connection(db)
+    #process pt_info file
+    process_ptinfo(cursor, metafiles[0])
+
+    #process tech file
+    process_tech_meta(cursor, metafiles[1])
+    conn.commit()
     conn.close()
 
 def parse_args():
