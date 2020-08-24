@@ -156,8 +156,8 @@ def encode_diffs(iter, reflen):
                 sys.exit()
 
         # update missing if sequence incomplete on the right
-        if left < reflen:
-            missing.append(tuple([left, reflen]))
+        if rpos < reflen:
+            missing.append(tuple([rpos, reflen]))
 
         yield qname, diffs, missing
 
