@@ -109,12 +109,13 @@ def split_by_lineage(features, lineages):
     result = {}
     for row in features:
         accn = row['name'].split('|')[1]
-        lineage = lineages.get(accn, None)
-        if lineage is None:
+        val = lineages.get(accn, None)
+        if val is None:
             print("Error in clustering::split_by_lineage(), no lineage assignment"
                   " for accession {}".format(accn))
             sys.exit()
-
+        lineage = val['lineage']
+        
         if lineage not in result:
             result.update({lineage: []})
         result[lineage].append(row)
