@@ -31,7 +31,7 @@ def apply_cigar(seq, rpos, cigar):
     return aligned
 
 
-def minimap2(fasta, ref, path='minimap2', nthread=3):
+def minimap2(fasta, ref, path='minimap2', nthread=3, minlen=29000):
     """
     Wrapper function for minimap2
     :param fasta: str, path to FASTA with query sequences
@@ -49,6 +49,10 @@ def minimap2(fasta, ref, path='minimap2', nthread=3):
             line.strip().split()[:10]
         if rname == '*' or ((int(flag) & 0x800) != 0):
             # did not map, or supplementary alignment
+            continue
+
+        if len(seq) < minlen:
+            # reject sequence that is too short
             continue
 
         # validate CIGAR string
@@ -89,15 +93,6 @@ def output_fasta(iter, outfile, reflen=0):
         # pad on right
         aligned += '-'*(reflen-len(aligned))
         outfile.write('>{}\n{}\n'.format(qname, aligned))
-
-
-def compress_intervals(iseq):
-    """
-    Compress consecutive integers in a sequence into
-    intervals.  Return as a serialized string.
-    :param iseq:  list, integer sequence
-    """
-    pass
 
 
 def encode_diffs(iter, reflen):
@@ -181,6 +176,9 @@ def parse_args():
                              "by minimap2")
     parser.add_argument('--ref', help="<input> path to target FASTA (reference)",
                         default='data/NC_045512.fa')
+    parser.add_argument('--minlen', help="<option> minimum sequence length, "
+                                         "defaults to 29000nt.",
+                        type=int, default=29000)
     return parser.parse_args()
 
 
@@ -201,7 +199,8 @@ if __name__ == '__main__':
 
     # get length of reference
     reflen = len(convert_fasta(open(args.ref))[0][1])
-    mm2 = minimap2(args.fasta.name, ref=args.ref, nthread=args.thread)
+    mm2 = minimap2(args.fasta.name, ref=args.ref, nthread=args.thread,
+                   minlen=args.minlen)
 
     if args.align:
         output_fasta(mm2, reflen=reflen, outfile=args.outfile)
