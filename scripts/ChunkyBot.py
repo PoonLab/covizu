@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import re
+import csv
 from datetime import date, timedelta, datetime
 
 from selenium import webdriver
@@ -15,7 +16,7 @@ import getpass
 
 from gotoh2 import *
 from autobot import get_driver, login, retrieve_genomes
-from db_utils import pull_field, open_connection, insert_seq, find_seq, iterate_handle, insert_into_rawseqs
+from db_utils import pull_field, open_connection, insert_seq, find_seq, iterate_handle, insert_into_rawseqs, process_meta
 
 todaystr = datetime.strftime(datetime.now(), '%Y-%m-%d')
 
@@ -39,6 +40,96 @@ def compare_fields(hash_dictionary, header_dictionary, new_fasta):
             modified_seqs[h] = s
 
     return modified_seqs
+
+def retrieve_meta(driver, start, end, download_folder):
+    """
+    Retrieve meta data with a specified deposition date range in the GISAID database.
+    Adding several time delays to avoid spamming the database.
+
+    :param driver:  webdriver.Firefox object from login()
+    :param start:  date in ISO format (yyyy-mm-dd)
+    :param end:  date in ISO format (yyyy-mm-dd)
+    :return:  paths to epi meta, patient meta
+    """
+    # find prefix variable
+    element = driver.find_element_by_xpath("//div[@class='buttons container-slot']")
+    htmlid_as_list = element.get_attribute('id').split('_')
+    variable = htmlid_as_list[1]
+
+    # trigger selection change
+    time_string = '[id^="ce_' + variable + '"][id$="_input"]'
+
+    driver.execute_script("document.querySelectorAll('{}')[2].value = '{}'".format(time_string, start))
+    driver.execute_script("document.querySelectorAll('{}')[2].onchange()".format(time_string))
+
+    driver.execute_script("document.querySelectorAll('{}')[3].value = '{}'".format(time_string, end))
+    driver.execute_script("document.querySelectorAll('{}')[3].onchange()".format(time_string))
+
+    driver.execute_script("document.querySelectorAll('[id^=\"ce_{}\"][id$=_input]')[2].onchange()".format(variable))
+    time.sleep(15)
+
+    print('selecting all seqs')
+    element = driver.find_element_by_xpath("//*[contains(text(), 'Total')]")
+    count = element.get_attribute('innerHTML').split()[1].replace(',', '')
+    if int(count) > 10000:
+        time.sleep(15)
+
+    checkbox = driver.find_element_by_xpath("//span[@class='yui-dt-label']/input[@type='checkbox']")
+    checkbox.click()
+    time.sleep(5)
+
+    #download two meta data files - epi, tech
+    metafiles = []
+    metafiles.append(wait_for_download(driver, download_folder, 'meta_epi'))
+    metafiles.append(wait_for_download(driver, download_folder, 'meta_tech'))
+
+    #reset selection
+    element = driver.find_element_by_xpath("//button[@class='sys-event-hook sys-form-button']")
+    element.click()
+
+    return metafiles
+
+def wait_for_download(driver, download_folder, target):
+    # download pt status
+    element = driver.find_element_by_xpath("//*[contains(text(), 'Download')]")
+    driver.execute_script("arguments[0].click();", element)
+    time.sleep(5)
+    # switch to iframe to download
+    driver.switch_to.frame(driver.find_element_by_tag_name("iframe"))
+    print("Download")
+    time.sleep(5)
+    file_query = "input[type='radio'][value='{}']".format(target)
+    radio = driver.find_element_by_css_selector(file_query).click()
+
+    button = driver.find_element_by_xpath(
+        "//*[contains(text(), 'Download')]//ancestor::div[@style='float: right']"
+    )
+    button.click()
+    time.sleep(5)
+
+    # wait for download to complete
+    while True:
+        files = os.listdir(download_folder)
+        if len(files) == 0:
+            # download has not started yet
+            time.sleep(10)
+            continue
+        if any([f.endswith('.part') for f in files]):
+            time.sleep(5)
+            continue
+        break
+
+    print('Downloading complete')
+    # reset browser
+    time.sleep(30)
+    driver.switch_to.default_content()
+    #Get newest file in directory
+    downloaded_dir= os.listdir(download_folder)
+    abs_dir= []
+    for path in downloaded_dir:
+        abs_dir.append(os.path.join(download_folder, path))
+    downloaded_file = max(abs_dir, key=os.path.getctime)
+    return downloaded_file
 
 def parse_args():
     """ Command line interface """
@@ -81,7 +172,6 @@ def parse_args():
 if __name__ == '__main__':
     #initialize webdriver
     args = parse_args()
-    print(args)
     download_folder = args.dir.name
     driver = get_driver(download_folder=download_folder, executable_path=args.binpath)
     driver = login(driver=driver)
@@ -126,6 +216,10 @@ if __name__ == '__main__':
         modified_seqs.update(compare_fields(hash_dictionary, header_dictionary, srcfile))
         if args.saveraw:
             insert_into_rawseqs(args.database, srcfile)
+        #retrieve meta data
+        metafiles = retrieve_meta(driver, start=start, end=end, download_folder=download_folder)
+        process_meta(args.database, metafiles)
+        time.sleep(50)
     if args.debug:
         #:DEBUG:
         debugout= open('missing.fa', 'w')
@@ -135,4 +229,4 @@ if __name__ == '__main__':
 
     driver.quit()
     #call the updater, passing modified sequences as a list
-    #iterate_handle(modified_seqs.items(), args.ref, database = args.database)
+    iterate_handle(modified_seqs.items(), args.ref, database = args.database)
