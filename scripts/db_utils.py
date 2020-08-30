@@ -77,10 +77,13 @@ def open_connection(database):
                    "gender VARCHAR(30), age INT, ptstatus VARCHAR(20))"
     cur.execute(ptinfo_table)
 
-    raw_seq_table = "CREATE TABLE IF NOT EXISTS RAWSEQ (accession VARCHAR(255) PRIMARY KEY, header VARCHAR(255), unaligned BLOB);"
+    raw_seq_table = "CREATE TABLE IF NOT EXISTS RAWSEQ (accession VARCHAR(255) PRIMARY KEY, " \
+                    "header VARCHAR(255), unaligned BLOB);"
     cur.execute(raw_seq_table)
 
-    lineage_table = "CREATE TABLE IF NOT EXISTS LINEAGE (entry_id INTEGER PRIMARY KEY, accession VARCHAR(255), lineage varchar(15), probability REAL, pangoLEARN_version DATE,status VARCHAR(255), note BLOB);"
+    lineage_table = "CREATE TABLE IF NOT EXISTS LINEAGE (entry_id INTEGER PRIMARY KEY, " \
+                    "accession VARCHAR(255), lineage varchar(15), probability REAL, pangoLEARN_version DATE," \
+                    "status VARCHAR(255), note BLOB);"
 
     cur.execute(lineage_table)
 
@@ -97,8 +100,11 @@ def insert_seq(cursor, seq, header, aligned):
             :aligned: aligned sequence
     """
     vars= [header.split('|')[1], header, hash(seq.strip('N')), aligned]
-    result = cursor.execute("REPLACE INTO SEQUENCES('accession', 'header', 'unaligned_hash', 'aligned') VALUES(?, ?, ?, ?)", vars)
+    result = cursor.execute(
+        "REPLACE INTO SEQUENCES('accession', 'header', 'unaligned_hash', 'aligned') "
+        "VALUES(?, ?, ?, ?)", vars)
     return 0
+
 
 def insert_into_rawseqs(database, fasta):
     """ Wrapper function for inserting into RAWSEQ table
@@ -113,10 +119,13 @@ def insert_into_rawseqs(database, fasta):
 
     for header,seq in handle:
         vars= [header.split('|')[1], header, seq]
-        result = cursor.execute("REPLACE INTO RAWSEQ ('accession', 'header', 'unaligned') VALUES (?,?,?)", vars)
+        result = cursor.execute(
+            "REPLACE INTO RAWSEQ ('accession', 'header', 'unaligned') VALUES "
+            "(?,?,?)", vars)
     conn.commit()
     conn.close()
     return 0
+
 
 def find_seq(conn, seq, refseq):
     """
@@ -145,6 +154,7 @@ def find_seq(conn, seq, refseq):
 
     return aligned
 
+
 def iterate_lineage_csv(cursor, csvFile):
     """
     Wrapper function for inserting into LINEAGES table
@@ -161,6 +171,7 @@ def iterate_lineage_csv(cursor, csvFile):
         for row in reader:
             vars = [row[0].split('|')[1], row[1], row[2], row[3], row[4], row[5]]
             cursor.execute("INSERT INTO LINEAGE(`accession`, `lineage`, `probability`, `pangoLEARN_version`, `status`, `note`) VALUES(?,?, ?, DATE(?),?,?)", vars)
+
 
 def process_tech_meta(cursor, tsvFile):
     """
@@ -187,6 +198,7 @@ def process_tech_meta(cursor, tsvFile):
                                      "'platform', 'assembly_method', 'sample_type') "
                                      "VALUES(?, ?, ?, ?)", sequencing_vars)
 
+
 def insert_acknowledgement(cursor, tsvFile):
     """
     Wrapper function for processing tsvFile and inserting into PTINFO table
@@ -209,6 +221,7 @@ def insert_acknowledgement(cursor, tsvFile):
                                     "'authors') VALUES(?, ?, ?, ?)", vars)
     handle.close()
 
+
 def process_ptinfo(cursor, tsvFile):
     """
     Wrapper function for processing tsvFile and inserting into PTINFO table
@@ -230,6 +243,7 @@ def process_ptinfo(cursor, tsvFile):
             result = cursor.execute("REPLACE INTO PTINFO('accession', 'gender', 'age', "
                                     "'ptstatus') VALUES(?, ?, ?, ?)", vars)
     handle.close()
+
 
 def pull_field(cursor, field):
     """
@@ -306,16 +320,17 @@ def iterate_handle(handle, ref, database = 'data/gsaid.db'):
     _, refseq = gotoh2.convert_fasta(open(ref))[0]
     cursor, conn = open_connection(database)
 
-    #align and insert into database
+    # align and insert into database
     for header, seq in handle:
         alignedseq = find_seq(conn, seq, refseq)
-        #if alignedseq returns 0; raw seq length <5,000
+        # if alignedseq returns 0; raw seq length <5,000
         if alignedseq == 0:
             print('Sequence {} with a length of {} cannot be aligned.'.format(header, len(seq)))
         else:
             print('Aligning {}.'.format(header))
             insert_seq(cursor, seq, header, alignedseq)
             conn.commit()
+
 
 def iterate_handle_threaded(handle, ref, database = 'data/gsaid.db'):
     """
@@ -351,6 +366,7 @@ def iterate_handle_threaded(handle, ref, database = 'data/gsaid.db'):
     conn.close()
     out_queue.join()
 
+
 def migrate_entries(old_db, new_db):
     """
     Function to migrate missing seqs from old_db to new_db
@@ -362,16 +378,17 @@ def migrate_entries(old_db, new_db):
     chunkyconnect = sqlite3.connect(new_db)
     oldcursor = oldconnect.cursor()
     chunkcursor = chunkyconnect.cursor()
-    #get existing accessions in target db, create list to derive missing accesions
+
+    # get existing accessions in target db, create list to derive missing accesions
     existing_accessions = list(oldcursor.execute('SELECT accession from SEQUENCES;').fetchall())
     EA_list = []
     for accession in existing_accessions:
         EA_list.append(accession[0])
 
-    #get all sequences from the source db and insert them into target
-    All_chunk_seqs = list(chunkcursor.execute('SELECT * FROM SEQUENCES;').fetchall())
+    # get all sequences from the source db and insert them into target
+    all_chunk_seqs = list(chunkcursor.execute('SELECT * FROM SEQUENCES;').fetchall())
     count = 0
-    for accession, header, unaligned_hash, aligned in All_chunk_seqs:
+    for accession, header, unaligned_hash, aligned in all_chunk_seqs:
         if accession not in EA_list:
             count+=1
             oldcursor.execute('INSERT INTO SEQUENCES (accession, header, unaligned_hash, aligned) VALUES (?,?,?,?);', [accession, header, unaligned_hash, aligned])
@@ -379,20 +396,22 @@ def migrate_entries(old_db, new_db):
 
     print('Updated {}, inserted {} seqs.'.format(old_db, str(count)))
 
-    #get all existing hashes from target db, create list to derive missing accesions
+    # get all existing hashes from target db, create list to derive missing accesions
     existing_hashes = list(oldcursor.execute('SELECT hash_key FROM HASHEDSEQS').fetchall())
     EH_list = []
     for hash_key in existing_hashes:
         EH_list.append(hash_key[0])
 
     hash_count = 0
-    All_chunk_hashes = list(chunkcursor.execute('SELECT * FROM HASHEDSEQS;').fetchall())
-    for hash_key, aligned_seq in All_chunk_hashes:
+    all_chunk_hashes = list(chunkcursor.execute('SELECT * FROM HASHEDSEQS;').fetchall())
+    for hash_key, aligned_seq in all_chunk_hashes:
         if hash_key not in EH_list:
             hash_count+=1
             oldcursor.execute('INSERT INTO HASHEDSEQS (hash_key, aligned_seq) VALUES (?,?)', [hash_key, aligned_seq])
             oldconnect.commit()
+
     print('Updated {}, inserted {} hashes.'.format(old_db, str(hash_count)))
+
 
 def dump_raw(outfile, db='data/gsaid.db'):
     """
@@ -409,6 +428,7 @@ def dump_raw(outfile, db='data/gsaid.db'):
     fastafile.close()
     conn.close()
 
+
 def process_meta (db, metafiles):
     """
     Function to process tsv files containing meta data
@@ -417,13 +437,14 @@ def process_meta (db, metafiles):
         :metafiles: [meta_epi,meta_tech] - list containing absolute paths
     """
     cursor, conn = open_connection(db)
-    #process pt_info file
+    # process pt_info file
     process_ptinfo(cursor, metafiles[0])
 
-    #process tech file
+    # process tech file
     process_tech_meta(cursor, metafiles[1])
     conn.commit()
     conn.close()
+
 
 def parse_args():
     """ Command-line interface """
@@ -451,7 +472,6 @@ def parse_args():
                         help='Path to csv file containing pangolin output')
     parser.add_argument('--rawfasta',
                         help='Path to write outputfile for rawseqs')
-
 
     return parser.parse_args()
 
