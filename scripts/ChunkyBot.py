@@ -96,7 +96,7 @@ def wait_for_download(driver, download_folder, target):
     time.sleep(5)
     # switch to iframe to download
     driver.switch_to.frame(driver.find_element_by_tag_name("iframe"))
-    print("Download")
+    print("Downloading {}.".format(target))
     time.sleep(5)
     file_query = "input[type='radio'][value='{}']".format(target)
     radio = driver.find_element_by_css_selector(file_query).click()
@@ -119,9 +119,8 @@ def wait_for_download(driver, download_folder, target):
             continue
         break
 
-    print('Downloading complete')
     # reset browser
-    time.sleep(30)
+    time.sleep(60)
     driver.switch_to.default_content()
     #Get newest file in directory
     downloaded_dir= os.listdir(download_folder)
@@ -129,6 +128,8 @@ def wait_for_download(driver, download_folder, target):
     for path in downloaded_dir:
         abs_dir.append(os.path.join(download_folder, path))
     downloaded_file = max(abs_dir, key=os.path.getctime)
+    print('Download of {} complete.'.format(downloaded_file))
+
     return downloaded_file
 
 def parse_args():

@@ -145,12 +145,11 @@ def retrieve_genomes(driver, start, end, download_folder):
 
     print('Downloading complete')
 
-    #Get newest file in directory
-    downloaded_dir= os.listdir(download_folder)
-    abs_dir= []
-    for path in downloaded_dir:
-        abs_dir.append(os.path.join(download_folder, path))
-    downloaded_file = max(abs_dir, key=os.path.getctime)
+    downloaded_file = find_fasta(download_folder)
+    while not downloaded_file.endswith( '.fasta'):
+        time.sleep(15)
+        downloaded_file = find_fasta(download_folder)
+        print(downloaded_file)
 
     # reset browser
     time.sleep(30)
@@ -158,6 +157,15 @@ def retrieve_genomes(driver, start, end, download_folder):
     element = driver.find_element_by_xpath("//button[@class='sys-event-hook sys-form-button']")
     element.click()
 
+    return downloaded_file
+
+def find_fasta(download_folder):
+    #Get newest file in directory
+    downloaded_dir= os.listdir(download_folder)
+    abs_dir= []
+    for path in downloaded_dir:
+        abs_dir.append(os.path.join(download_folder, path))
+    downloaded_file = max(abs_dir, key=os.path.getmtime)
     return downloaded_file
 
 def update_local(srcfile, ref, db='data/gsaid.db'):
