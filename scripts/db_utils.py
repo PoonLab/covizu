@@ -445,6 +445,46 @@ def process_meta (db, metafiles):
     conn.commit()
     conn.close()
 
+def dump_concordance(db, concordanceOUT, discordanceOUT):
+    """
+    Function to dump lineage assignments with accession no's
+
+    :params:
+        :db: sqlite3 database
+        :concordanceOUT: csv file for concordant records (same assignment gisaid/ local pangolin)
+        :discordanceOUT: csv file for discordant records (diff assignment gisaid/ local pangolin)
+    """
+    cur, conn = open_connection(db)
+    #Handle concordance first
+    CONoutfile = open('data/{}.txt'.format(concordanceOUT), 'w')
+    #take most recent lineage assigment, join lineage and sample tables on accession
+    CONhandle = cursor.execute('SELECT \
+        filtered_lineage.accession, filtered_lineage.lineage as local_lineage, probability, pangoLEARN_version, status, note, virus_name, collection_date, location, sample.lineage AS gisaid_lineage, clade \
+        FROM (SELECT accession, lineage, probability, max(pangoLEARN_version) AS pangoLEARN_version, status, note FROM LINEAGE GROUP BY accession) AS filtered_lineage, sample \
+        WHERE sample.accession = filtered_lineage.accession AND local_lineage == gisaid_lineage;').fetchall()
+
+    #create start of csv file
+    CONouthandle = ['accession, local_lineage, local_probability,  local_pangoLEARN_version, local_status, seq_name, sample_col_date, sample_location, gisaid_lineage, gisaid_clade \n']
+    #iterate handle, print out fields to csv
+    for id, accession1, lineage1, prob, version, note, something, accession2, name, date, location, lineage2, clade in CONhandle:
+        CONouthandle.append('{},{},{},{},{},{},{},{},{},{}\n'.format( accession1, lineage1, prob, version, note, name, date, location, lineage2, clade))
+    CONoutfile.writelines(CONouthandle) #process and write outfile
+    CONoutfile.close()
+
+    #repeat for dicordance
+    DIShandle = cursor.execute('SELECT \
+        filtered_lineage.accession, filtered_lineage.lineage as local_lineage, probability, pangoLEARN_version, status, note, virus_name, collection_date, location, sample.lineage AS gisaid_lineage, clade \
+        FROM (SELECT accession, lineage, probability, max(pangoLEARN_version) AS pangoLEARN_version, status, note FROM LINEAGE GROUP BY accession) AS filtered_lineage, sample \
+        WHERE sample.accession = filtered_lineage.accession AND local_lineage != gisaid_lineage;').fetchall()
+    #open outfile, write header row, and write to file
+    DISoutfile = open('data/{}.txt'.format(discordanceOUT), 'w')
+    DISouthandle = ['accession, local_lineage, local_probability,  local_pangoLEARN_version, local_status, seq_name, sample_col_date, sample_location, gisaid_lineage, gisaid_clade \n']
+    for id, accession1, lineage1, prob, version, note, something, accession2, name, date, location, lineage2, clade in DIShandle:
+        DISouthandle.append('{}, {},{},{},{},{},{},{},{},{}\n'.format( accession1, lineage1, prob, version, note, name, date, location, lineage2, clade))
+    DISoutfile.writelines(DISouthandle)
+
+    DISoutfile.close()
+
 
 def parse_args():
     """ Command-line interface """
