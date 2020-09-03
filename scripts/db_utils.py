@@ -456,7 +456,7 @@ def dump_concordance(db, concordanceOUT, discordanceOUT):
     """
     cur, conn = open_connection(db)
     #Handle concordance first
-    CONoutfile = open('data/{}.txt'.format(concordanceOUT), 'w')
+    CONoutfile = open('data/{}.csv'.format(concordanceOUT), 'w')
     #take most recent lineage assigment, join lineage and sample tables on accession
     CONhandle = cursor.execute('SELECT \
         filtered_lineage.accession, filtered_lineage.lineage as local_lineage, probability, pangoLEARN_version, status, note, virus_name, collection_date, location, sample.lineage AS gisaid_lineage, clade \
@@ -464,10 +464,10 @@ def dump_concordance(db, concordanceOUT, discordanceOUT):
         WHERE sample.accession = filtered_lineage.accession AND local_lineage == gisaid_lineage;').fetchall()
 
     #create start of csv file
-    CONouthandle = ['accession, local_lineage, local_probability,  local_pangoLEARN_version, local_status, seq_name, sample_col_date, sample_location, gisaid_lineage, gisaid_clade \n']
+    CONouthandle = ['accession,local_lineage,local_probability,local_pangoLEARN_version,local_status,seq_name,sample_col_date,sample_location,gisaid_lineage,gisaid_clade \n']
     #iterate handle, print out fields to csv
-    for id, accession1, lineage1, prob, version, note, something, accession2, name, date, location, lineage2, clade in CONhandle:
-        CONouthandle.append('{},{},{},{},{},{},{},{},{},{}\n'.format( accession1, lineage1, prob, version, note, name, date, location, lineage2, clade))
+    for accession1, lineage1, prob, version, status, note, name, date, location, lineage2, clade in CONhandle:
+        CONouthandle.append('{},{},{},{},{},{},{},{},{},{},{}\n'.format( accession1, lineage1, prob, version, status, note, name, date, location, lineage2, clade))
     CONoutfile.writelines(CONouthandle) #process and write outfile
     CONoutfile.close()
 
@@ -477,14 +477,14 @@ def dump_concordance(db, concordanceOUT, discordanceOUT):
         FROM (SELECT accession, lineage, probability, max(pangoLEARN_version) AS pangoLEARN_version, status, note FROM LINEAGE GROUP BY accession) AS filtered_lineage, sample \
         WHERE sample.accession = filtered_lineage.accession AND local_lineage != gisaid_lineage;').fetchall()
     #open outfile, write header row, and write to file
-    DISoutfile = open('data/{}.txt'.format(discordanceOUT), 'w')
-    DISouthandle = ['accession, local_lineage, local_probability,  local_pangoLEARN_version, local_status, seq_name, sample_col_date, sample_location, gisaid_lineage, gisaid_clade \n']
-    for id, accession1, lineage1, prob, version, note, something, accession2, name, date, location, lineage2, clade in DIShandle:
-        DISouthandle.append('{}, {},{},{},{},{},{},{},{},{}\n'.format( accession1, lineage1, prob, version, note, name, date, location, lineage2, clade))
+    DISoutfile = open('data/{}.csv'.format(discordanceOUT), 'w')
+    DISouthandle = ['accession,local_lineage,local_probability,local_pangoLEARN_version,local_status,seq_name,sample_col_date,sample_location,gisaid_lineage,gisaid_clade \n']
+    for accession1, lineage1, prob, version, status, note, name, date, location, lineage2, clade in DIShandle:
+        DISouthandle.append('{},{},{},{},{},{},{},{},{},{},{}\n'.format( accession1, lineage1, prob, version, status, note, name, date, location, lineage2, clade))
     DISoutfile.writelines(DISouthandle)
 
     DISoutfile.close()
-
+    conn.close()
 
 def parse_args():
     """ Command-line interface """
@@ -512,7 +512,8 @@ def parse_args():
                         help='Path to csv file containing pangolin output')
     parser.add_argument('--rawfasta',
                         help='Path to write outputfile for rawseqs')
-
+    parser.add_argument('--lineageReport', action='store_true',
+                        help='Export lineage (dis/con)cordance to LineageConcordance.csv, LineageDiscordance.csv')
     return parser.parse_args()
 
 
@@ -547,4 +548,5 @@ if __name__ == '__main__':
     if args.rawfasta is not None:
         dump_raw(args.rawfasta, db='data/gsaid.db')
 
-
+    if args.lineageReport is not None:
+        dump_concordance(args.db, 'LineageConcordance', 'LineageDiscordance')
