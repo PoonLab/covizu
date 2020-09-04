@@ -5,6 +5,8 @@ import sys
 from urllib import request
 import db_utils
 import argparse
+import tempfile
+import subprocess
 
 
 def dump_lineages(db='data/gsaid.db'):
@@ -105,7 +107,21 @@ def import_json(path, max_missing=600):
     return features
 
 
+def apply_features(row, refseq):
+    """
+    Reconstitute genome sequence from feature vector (genetic differences) and
+    missing data vector.
+    """
+    pass
+
+
 def split_by_lineage(features, lineages):
+    """
+    Partition feature list by Pangolin lineage assignments
+    :param features:  list, feature vectors by GISAID record
+    :param lineages:  dict, lineage assignment keyed by accession, from dump_lineages()
+    :return:  dict, feature lists keyed by lineage
+    """
     result = {}
     for row in features:
         accn = row['name'].split('|')[1]
@@ -115,7 +131,7 @@ def split_by_lineage(features, lineages):
                   " for accession {}".format(accn))
             sys.exit()
         lineage = val['lineage']
-        
+
         if lineage not in result:
             result.update({lineage: []})
         result[lineage].append(row)
@@ -130,16 +146,22 @@ def get_union(features):
 
 
 def write_dists(outfile, features):
-    # n = len(features)
-    n = 1000  # override for debugging
+    """
+    Write pairwise distance matrix in PHYLIP format to file.
+    If list contains fewer than 3 feature vectors, then return False.
+    :param outfile:  file, open stream in write mode
+    :param features:  list, feature vectors
+    :return:  True if successful
+    """
+    n = len(features)
+    if n < 3:
+        # not much point making this tree
+        return False
 
     # print('generating union')
     # un = get_union(features)
-
-    print('calculating distance matrix')
     # number of taxa
     outfile.write('{0:>5}\n'.format(n))
-
     for i in range(n):
         row = features[i]
         outfile.write('{}'.format(row['name']))  # .split('_')[-1]))
@@ -148,8 +170,29 @@ def write_dists(outfile, features):
             md = manhattan_dist(features[i]['diffs'], features[j]['diffs'])
             outfile.write(' {0:>2}'.format(md))
         outfile.write('\n')
+    return True
 
-    outfile.close()
+
+def rapidnj(features, negative=False, binpath='rapidnj'):
+    """
+    Wrapper function for rapidNJ.  Writes a pairwise distance matrix to a
+    temporary file and calls rapidNJ to apply neighbor-joining to the matrix.
+
+    :param features:  list, differences from reference as feature vectors
+    :param negative:  if True, allow negative branch lengths
+    :return:  str, Newick tree string
+    """
+    with tempfile.NamedTemporaryFile('w', delete=False) as outfile:
+        success = write_dists(outfile, features)
+
+    if not success:
+        return None
+
+    cmd = [binpath, outfile.name, '-i', 'pd']
+    if not negative:
+        cmd.append('--no-negative-length')
+    stdout = subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
+    return stdout.decode('utf-8')
 
 
 def parse_args():
@@ -172,5 +215,12 @@ if __name__ == "__main__":
 
     print('loading JSON')
     features = import_json(args.json)
-    by_lineage = split_by_lineage(features, lineages)
 
+    by_lineage = split_by_lineage(features, lineages)
+    for lineage, lfeatures in by_lineage.items():
+        nwk_str = rapidnj(lfeatures)
+        if nwk_str is None:
+            continue
+
+        with open('{}.nwk'.format(lineage), 'w') as outfile:
+            outfile.write(nwk_str)
