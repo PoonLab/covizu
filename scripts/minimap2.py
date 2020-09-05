@@ -95,7 +95,7 @@ def output_fasta(iter, outfile, reflen=0):
         outfile.write('>{}\n{}\n'.format(qname, aligned))
 
 
-def encode_diffs(iter, reflen):
+def encode_diffs(iter, reflen, alphabet='ACGT'):
     """
     Serialize differences of query sequences to reference
     genome, which comprise nucleotide substitutions, in-frame
@@ -125,7 +125,12 @@ def encode_diffs(iter, reflen):
                 else:
                     # assume adjacent mismatches are independent substitutions
                     for i, nt in enumerate(substr):
-                        diffs.append(tuple(['~', rpos+i, nt]))
+                        if nt in alphabet:
+                            diffs.append(tuple(['~', rpos + i, nt]))
+                        else:
+                            # skip ambiguous base calls, like "R"
+                            missing.append(tuple([rpos+i, rpos+i+1]))
+
                 left += length
                 rpos += length
             elif operator == 'S':

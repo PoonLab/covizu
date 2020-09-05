@@ -7,6 +7,9 @@ import db_utils
 import argparse
 import tempfile
 import subprocess
+from functools import reduce
+from Bio import Phylo
+from io import StringIO
 
 
 def dump_lineages(db='data/gsaid.db'):
@@ -60,29 +63,6 @@ def filter_problematic(features, url='https://raw.githubusercontent.com/W-L/Prob
     return features
 
 
-def sample_with_replacement(population, k):
-    n = len(population)
-    pop = list(population)
-    return [pop[int(n * random.random())] for _ in range(k)]
-
-
-def manhattan_dist(fv1, fv2, boot=None):
-    """
-    Calculate the Manhattan distance between two feature vectors
-    (differences of genomes from reference).
-
-    :param fv1:  list, feature vector for first genome (differences
-                 relative to reference)
-    :param fv2:  list, feature vector for second genome
-    :param un:  set, union of features (bootstrapping)
-    """
-    symdiff = set(fv1) ^ set(fv2)  # symmetric difference
-    if boot:
-        return sum([boot.count(feat) for feat in symdiff])
-    else:
-        return len(symdiff)
-
-
 def total_missing(row):
     res = 0
     for left, right in row['missing']:
@@ -94,15 +74,15 @@ def import_json(path, max_missing=600):
     with open(path) as fp:
         features = json.load(fp)
 
+    # remove features known to be problematic
+    features = filter_problematic(features)
+
     # remove genomes with too many uncalled bases
     count = len(features)
     features = [row for row in features if total_missing(row) < max_missing]
     print("dropped {} records with uncalled bases in excess of {}".format(
         count - len(features), max_missing
     ))
-
-    # remove features known to be problematic
-    features = filter_problematic(features)
 
     return features
 
@@ -138,61 +118,89 @@ def split_by_lineage(features, lineages):
     return result
 
 
-def get_union(features):
-    un = set()
-    for row in features:
-        un = un.union(set(row['diffs']))
-    return un
+def sample_with_replacement(population, k):
+    """ Sample <k> items from iterable <population> with replacement """
+    n = len(population)
+    pop = list(population)
+    return [pop[int(n * random.random())] for _ in range(k)]
 
 
-def write_dists(outfile, features):
+def get_distances(features, nboot=1):
     """
     Write pairwise distance matrix in PHYLIP format to file.
-    If list contains fewer than 3 feature vectors, then return False.
-    :param outfile:  file, open stream in write mode
-    :param features:  list, feature vectors
-    :return:  True if successful
+
+    :param features:  list, feature vectors from load_json()/split_by_lineage()
+    :param nboot:  int, number of bootstrap samples
+    :return:  list, nested lists representing <n x n x nboot> matrix of
+              pairwise distances
     """
     n = len(features)
-    if n < 3:
-        # not much point making this tree
-        return False
 
-    # print('generating union')
-    # un = get_union(features)
-    # number of taxa
+    # recast feature vectors as sets
+    fvs = [set(f['diffs']) for f in features]
+
+    # calculate symmetric differences
+    sym_diffs = {}
+    for i in range(n-1):
+        for j in range(i+1, n):
+            sym_diffs[(i, j)] = fvs[i] ^ fvs[j]
+
+    # bootstrap sampling from feature set union
+    dists = [[[0]*nboot for _ in range(n)] for _ in range(n)]
+    union = reduce(lambda x, y: x.union(y), fvs)
+    for k in range(nboot):
+        sample = sample_with_replacement(union, len(union))
+        weights = dict([(f, sample.count(f)) for f in set(sample)])
+        for i in range(n-1):
+            for j in range(i+1, n):
+                dists[j][i][k] = dists[i][j][k] = sum([
+                    weights.get(f, 0) for f in sym_diffs[(i, j)]
+                ])
+    return dists
+
+
+def write_dists(k, dists, labels):
+    """
+    Export pairwise distance matrix to a temporary file.
+    :param k:  int, bootstrap sample number
+    :param dists:  list, nested lists of pairwise distances from get_distances()
+    :param features:  list, sequence names and feature vectors
+    :return:  file object, temporary file
+    """
+    outfile = tempfile.NamedTemporaryFile('w', delete=False)
+    n = len(dists)
+
     outfile.write('{0:>5}\n'.format(n))
     for i in range(n):
-        row = features[i]
-        outfile.write('{}'.format(row['name']))  # .split('_')[-1]))
-
+        outfile.write('{}'.format(features[i]['name']))
         for j in range(n):
-            md = manhattan_dist(features[i]['diffs'], features[j]['diffs'])
-            outfile.write(' {0:>2}'.format(md))
+            outfile.write(' {0:>2}'.format(dists[i][j][k]))
         outfile.write('\n')
-    return True
+
+    outfile.close()
+    return outfile
 
 
-def rapidnj(features, negative=False, binpath='rapidnj'):
+def rapidnj(dists, labels, negative=False, binpath='rapidnj'):
     """
     Wrapper function for rapidNJ.  Writes a pairwise distance matrix to a
     temporary file and calls rapidNJ to apply neighbor-joining to the matrix.
 
     :param features:  list, differences from reference as feature vectors
     :param negative:  if True, allow negative branch lengths
-    :return:  str, Newick tree string
+    :yield:  Biopython.Phylo.BaseTree objects
     """
-    with tempfile.NamedTemporaryFile('w', delete=False) as outfile:
-        success = write_dists(outfile, features)
+    nboot = len(dists[0][0])
+    for k in range(nboot):
+        outfile = write_dists(k, dists, labels)
 
-    if not success:
-        return None
+        cmd = [binpath, outfile.name, '-i', 'pd']
+        if not negative:
+            cmd.append('--no-negative-length')
 
-    cmd = [binpath, outfile.name, '-i', 'pd']
-    if not negative:
-        cmd.append('--no-negative-length')
-    stdout = subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
-    return stdout.decode('utf-8')
+        stdout = subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
+        with StringIO(stdout.decode('utf-8')) as handle:
+            yield Phylo.read(handle, 'newick')
 
 
 def parse_args():
@@ -210,7 +218,7 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
 
-    print ('loading lineage classifications from database')
+    print('loading lineage classifications from database')
     lineages = dump_lineages(args.db)
 
     print('loading JSON')
@@ -218,9 +226,11 @@ if __name__ == "__main__":
 
     by_lineage = split_by_lineage(features, lineages)
     for lineage, lfeatures in by_lineage.items():
-        nwk_str = rapidnj(lfeatures)
-        if nwk_str is None:
-            continue
+        print(lineage)
+        dists = get_distances(lfeatures, 10)
+        labels = [row['name'] for row in lfeatures]
 
-        with open('{}.nwk'.format(lineage), 'w') as outfile:
-            outfile.write(nwk_str)
+        result = [phy for phy in rapidnj(dists, labels)]
+        for i, phy in enumerate(result):
+            Phylo.write(phy, file='{}-{}.nwk'.format(lineage, i), format='newick')
+        break
