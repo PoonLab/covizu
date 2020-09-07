@@ -195,6 +195,12 @@
         // to be populated in beadplot.js
         var country_tbody = country_table.append("tbody");
 
+        // Populate sequence details table
+        var seq_table = d3.select("#seq-table").append('table');
+        var thead = seq_table.append('thead');
+        var seq_theaders = ["GISAID accession", "Name", "Date"];
+        var dclicks = {Accn: 0, Name: 0, Date: 0}
+        var seq_tbody = seq_table.append('tbody');
 
     </script>
 </body>
