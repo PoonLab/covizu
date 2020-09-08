@@ -32,6 +32,15 @@ def dump_lineages(db='data/gsaid.db'):
 
 def filter_problematic(features, url='https://raw.githubusercontent.com/W-L/ProblematicSites'
                                      '_SARS-CoV2/master/problematic_sites_sarsCov2.vcf'):
+    """
+    Apply problematic sites annotation from de Maio et al.,
+    https://virological.org/t/issues-with-sars-cov-2-sequencing-data/473
+    which are published and maintained as a VCF-formatted file.
+
+    :param features:  list, return object from import_json()
+    :param url:  str, URL to the VCF file
+    :return:
+    """
     vcf = request.urlopen(url)
     mask = {}
     for line in vcf.readlines():
@@ -64,6 +73,7 @@ def filter_problematic(features, url='https://raw.githubusercontent.com/W-L/Prob
 
 
 def total_missing(row):
+    """ Calculate the total number of missing sites from closed-open interval annotations """
     res = 0
     for left, right in row['missing']:
         res += right-left
@@ -71,6 +81,13 @@ def total_missing(row):
 
 
 def import_json(path, max_missing=600):
+    """
+    Read genome features (genetic differences from reference) from JSON file.
+
+    :param path:  str, relative or absolute path to JSON input file
+    :param max_missing:  int, maximum tolerated number of uncalled bases
+    :return:  list, each entry comprises a dict with keys 'name', 'diffs', and 'missing'
+    """
     with open(path) as fp:
         features = json.load(fp)
 
@@ -91,6 +108,9 @@ def apply_features(row, refseq):
     """
     Reconstitute genome sequence from feature vector (genetic differences) and
     missing data vector.
+
+    :param row:  dict, entry from features list returned by import_json()
+    :param refseq:  str, reference genome
     """
     pass
 
@@ -186,8 +206,12 @@ def rapidnj(dists, labels, negative=False, binpath='rapidnj'):
     Wrapper function for rapidNJ.  Writes a pairwise distance matrix to a
     temporary file and calls rapidNJ to apply neighbor-joining to the matrix.
 
-    :param features:  list, differences from reference as feature vectors
+    :param dists:  list, an <n x n x B> matrix as nested lists, where `n` is the
+                   number of genomes and `B` is the number of bootstrap samples.
+    :param labels:  list, genome names for labeling tree tips.
     :param negative:  if True, allow negative branch lengths
+    :param binpath:  str, path to rapidNJ executable
+
     :yield:  Biopython.Phylo.BaseTree objects
     """
     nboot = len(dists[0][0])
@@ -203,7 +227,44 @@ def rapidnj(dists, labels, negative=False, binpath='rapidnj'):
             yield Phylo.read(handle, 'newick')
 
 
+def consensus_tree(iter, minboot=0.5):
+    """
+    Generate consensus tree from trees reconstructed from bootstrap samples.
+    FIXME: Bio.Phylo.Consensus has function majority_consensus() - is this for rooted trees only?
+
+    :param iter:  generator, Phylo.BaseTree objects from rapidnj()
+    :param minboot:  float, minimum threshold to maintain clade/split
+    :return:
+    """
+    splits = {}
+    for phy in iter:
+        tips = [tip.name for tip in phy.get_terminals()]
+        dups = [tip for tip in set(tips) if tips.count(tip) > 1]
+        if dups:
+            print("ERROR: in consensus_tree(), found duplicate tip labels:")
+            for tipname in dups:
+                print(tipname)
+            sys.exit()
+
+        all_tips = set(tips)
+        for clade in phy.get_nonterminals():
+            if clade is phy.root:
+                continue
+            my_tips = set([tip.name for tip in clade.get_terminals()])
+            their_tips = all_tips - my_tips
+
+            key = (my_tips, their_tips) if len(my_tips) < len(their_tips) else (their_tips, my_tips)
+            if key not in splits:
+                splits.update({key: 0})
+            splits[key] += 1
+
+    # construct consensus tree from majority splits
+
+
+
+
 def parse_args():
+    """ Command-line interface """
     parser = argparse.ArgumentParser(
         description="Partition genomes by Pangolin lineage, generate distance"
                     "matrices and use neighbor-joining."
