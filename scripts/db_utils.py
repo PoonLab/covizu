@@ -454,5 +454,5 @@ if __name__ == '__main__':
     if args.rawfasta is not None:
         dump_raw(args.rawfasta, db='data/gsaid.db')
 
-    if args.lineageReport is not None:
+    if args.lineageReport == True:
         dump_concordance(args.db, 'LineageConcordance', 'LineageDiscordance')
