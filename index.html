@@ -26,7 +26,8 @@
 
         <div id="navigation">
           <span id="search_stats"></span>
-          <button type="button">Next</button>
+          <button type="button" id="next_button">Next</button>
+          <button type="button" id="clear_button">Clear</button>
         </div>
     </div>
 
@@ -158,6 +159,32 @@
                //search(accn);
             }
           });
+
+          $('#search-input').on('keydown', function(e) {
+          	if (e.keyCode == 13) {
+          		// type <enter> to run search
+          		if ($('#search-input').val() !== "") {
+          		  d3.selectAll("rect.clicked").attr('class', "default");
+          		  d3.selectAll("rect.clickedH").remove();
+          		}
+
+          		search(beaddata);
+          	}
+          });
+
+          // Clear search
+          $('#clear_button').click(function(){
+            clear_selection();
+            search(beaddata);
+          });
+
+          // Iterate results
+          $('#next_button').click(function(){
+            const stats = search_stats.update({
+              current_bead: search_stats.get().current_bead + 1,
+            });
+            update_search_stats(stats);
+          });
         });
 
         // populate countries table
@@ -168,6 +195,12 @@
         // to be populated in beadplot.js
         var country_tbody = country_table.append("tbody");
 
+        // Populate sequence details table
+        var seq_table = d3.select("#seq-table").append('table');
+        var thead = seq_table.append('thead');
+        var seq_theaders = ["GISAID accession", "Name", "Date"];
+        var dclicks = {Accn: 0, Name: 0, Date: 0}
+        var seq_tbody = seq_table.append('tbody');
 
     </script>
 </body>

@@ -355,13 +355,7 @@ function beadplot(cid) {
       .on("click", function(d) { 
         gentable(d);
         draw_region_distribution(table(d.region));
-        /*
-        var mystr = "";
-        for (let [key, value] of Object.entries(d.country)) {
-          mystr += `${key}: ${value}\n`;
-        }
-        $("#text-node").text(mystr);
-         */
+        gen_details_table(d);
       });
 
   // label variants with earliest sample name
@@ -478,6 +472,7 @@ function beadplot(cid) {
         
         gentable(d);
         draw_region_distribution(table(d.region));
+        gen_details_table(d);
       });
 
   // draw x-axis
@@ -514,6 +509,144 @@ function region_to_string(my_regions) {
   return regStr;
 }
 
+/**
+ * Creates a table that displays sequence details (Sequence name, GISAID accession number, collection date)
+ * @param obj: JS object with the attribute
+ */
+function gen_details_table(obj) {
+  var details = [];
+  let formatDate = d3.timeFormat("%Y-%m-%d");
+
+  // "zip" the sequence details of each sample
+  for (let i = 0; i < obj.accessions.length; i++) {
+    let sample_details = [obj.accessions[i], obj.labels[i], formatDate(new Date(obj.x))];
+    details.push(sample_details);
+  }
+
+  thead.html("")
+
+  var headers = thead.append('tr')
+      .selectAll('th')
+      .data(seq_theaders)
+      .enter()
+      .append('th')
+      .text(function (x) {
+        return x;
+      })
+      .on('click', function (x) {
+
+        if (x.startsWith("GISAID")){
+          //sort function for GISAID accession (Numeric)
+          this.className = 'aes';
+          dclicks.Accn++;
+
+          if (dclicks.Accn % 2 === 0){
+            t_rows.sort(function(a,b) {
+              if (a[2] < b[2]) {
+                return 1;
+              } else if (a[2] > b[2]) {
+                return -1;
+              } else {
+                return 0;
+              }
+            });
+          } else {
+            this.className = 'des';
+            t_rows.sort(function(a,b) {
+              if (a[2] < b[2]) {
+                return -1;
+              } else if (a[2] > b[2]) {
+                return 1;
+              } else {
+                return 0;
+              }
+            });
+          }
+        }
+
+        if (x === "Name") {
+          //sort function for Sequence Names (alphabetic)
+          this.className = 'aes';
+          dclicks.Name++;
+          if (dclicks.Name % 2 === 0) {
+            t_rows.sort(function (a, b) {
+              if (a[0].toUpperCase() < b[0].toUpperCase()) {
+                return -1;
+              } else if (a[0].toUpperCase() > b[0].toUpperCase()) {
+                return 1;
+              } else {
+                return 0;
+              }
+            });
+          } else {
+            this.className = 'des';
+            t_rows.sort(function (a, b) {
+              if (a[0].toUpperCase() < b[0].toUpperCase()) {
+                return 1;
+              } else if (a[0].toUpperCase() > b[0].toUpperCase()) {
+                return -1;
+              } else {
+                return 0;
+              }
+            });
+          }
+
+          if (x === "Date") {
+            //sort function for Date
+            this.className = 'aes';
+            dclicks.Date++;
+            if (dclicks.Date % 2 === 0) {
+              t_rows.sort(function (a, b) {
+                if (a[0].toUpperCase() < b[0].toUpperCase()) {
+                  return -1;
+                } else if (a[0].toUpperCase() > b[0].toUpperCase()) {
+                  return 1;
+                } else {
+                  return 0;
+                }
+              });
+            } else {
+              this.className = 'des';
+              t_rows.sort(function (a, b) {
+                if (a[0].toUpperCase() < b[0].toUpperCase()) {
+                  return 1;
+                } else if (a[0].toUpperCase() > b[0].toUpperCase()) {
+                  return -1;
+                } else {
+                  return 0;
+                }
+              });
+            }
+          }
+        }
+
+      });
+
+  // Create a row for each sample
+  var t_rows = seq_tbody.selectAll('tr')
+      .data(details)
+      .enter()
+      .append('tr');
+
+  // Create a cell for every row in the column
+  t_rows.selectAll('td')
+      .data(function (r) {
+        return r;
+      })
+      .enter()
+      .append('td')
+      .on("mouseover", function () {
+        d3.select(this).style("background-color", "grey");  // Highlight on mouseover
+      })
+      .on("mouseout", function () {            // Remove highlighting on mouseout
+        d3.select(this).style("background-color", null);
+      })
+      .text(function (x) {
+        return x;
+      })
+      .style("font", "0.9em/1.2 Lato, sans-serif");
+}
+
 
 /**
  * Function to generate table from my_countries object on bead click
@@ -540,9 +673,9 @@ function gentable(obj) {
   rows.enter() 
     .append("tr")
     .on("mouseover", function(){
-      d3.select(this).style("background-color", "grey");}) //mousover highlight
-    .on("mouseout", function(d){
-      d3.select(this).style("background-color",null);})  //mousout unhighlight
+      d3.select(this).style("background-color", "grey");}) //mouseover highlight
+    .on("mouseout", function(){
+      d3.select(this).style("background-color", null);})  //mouseout unhighlight
     .selectAll("td")
     .data(function(d) { return d; })
     .enter()

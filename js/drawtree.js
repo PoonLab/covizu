@@ -29,7 +29,7 @@ var axis = d3.select("div#svg-timetreeaxis")
   .append("g");
 
 function create_clusterH(obj, obj_2) {
-  
+
   vis.append("rect")
     .attr('class', "clickedH")
     .attr("x", xMap1(obj)-2)
@@ -40,13 +40,13 @@ function create_clusterH(obj, obj_2) {
     .attr("stroke", "black")
     .attr("fill-opacity", 1)
     .attr("stroke-width", 2);
-      
+
   d3.select(obj_2).raise();
 
   d3.select("#svg-timetree")
       .selectAll("line")
       .raise();
-      
+
   d3.select("#svg-timetree")
       .selectAll("text")
       .raise();
@@ -74,7 +74,7 @@ function rectLayout(root) {
       node.y /= node.children.length;
     }
   }
-  
+
   // assign horizontal positions by preorder traversal
   for (const node of traverse(root, 'preorder')) {
     if (node.parent === null) {
@@ -95,10 +95,10 @@ function rectLayout(root) {
 function drawtree(timetree) {
   // generate tree layout (x, y coordinates
   rectLayout(timetree);
-  
+
   var df = fortify(timetree),
     edgeset = edges(df, rectangular=true);
-  
+
   // adjust d3 scales to data frame
   xScale.domain([
     d3.min(df, xValue)-0.05, d3.max(df, xValue)+0.2
@@ -106,7 +106,7 @@ function drawtree(timetree) {
   yScale.domain([
     d3.min(df, yValue)-1, d3.max(df, yValue)+1
   ]);
-  
+
   // draw lines
   vis.selectAll("lines")
     .data(edgeset)
@@ -118,7 +118,7 @@ function drawtree(timetree) {
     .attr("y2", yMap2)
     .attr("stroke-width", 2)
     .attr("stroke", "#777");
-  
+
   return(df);
 }
 
@@ -139,7 +139,7 @@ function map_clusters_to_tips(df, clusters) {
     if (cluster["nodes"].length === 1) {
       continue
     }
-    
+
     // find variant in cluster that matches a tip label
     var labels = Object.keys(cluster['nodes']),
         root = tip_labels.filter(value => -1 !== labels.indexOf(value))[0];
@@ -152,7 +152,7 @@ function map_clusters_to_tips(df, clusters) {
     var root_idx = tip_labels.indexOf(root),  // row index in data frame
         root_xcoord = tips[root_idx].x,
         dt;
-    
+
     // find most recent sample collection date
     var coldates = Array(),
       label, variant;
@@ -166,7 +166,7 @@ function map_clusters_to_tips(df, clusters) {
     var origin = new Date(cluster['nodes'][root][0]['coldate']),
         first_date = new Date(coldates[0]),
         last_date = new Date(coldates[coldates.length-1]);
-    
+
     // augment data frame with cluster data
     tips[root_idx].cluster_idx = cidx;
     tips[root_idx].region = cluster.region;
@@ -198,7 +198,7 @@ function map_clusters_to_tips(df, clusters) {
 function draw_clusters(tips) {
   // draw x-axis
   var xaxis_to_date = function(x) {
-    
+
     var origin = tips[0],
       coldate = new Date(origin.coldate),
       dx = x - origin.x;  // year units
@@ -214,7 +214,7 @@ function draw_clusters(tips) {
   // Create a div for the tooltip
   let cTooltip = d3.select("#tooltipContainer")
       .style("opacity", 0);
-  
+
   axis.append("g")
     .attr("class", "treeaxis")
     .attr("transform", "translate(0,20)")
@@ -271,21 +271,21 @@ function draw_clusters(tips) {
           .style("opacity", 0);
     })
     .on("click", function(d) {
-      
+
       d3.selectAll("rect.clickedH").remove();
-      
+
       beadplot(d.cluster_idx);
-      search();
-      
+      search(beaddata);
+
       // reset all rectangles to high transparency
       if ($('#search-input').val() === "") {
         vis.selectAll("rect.clicked").attr('class', "default");
       }
 
       d3.select(this).attr("class", "clicked");
-      
+
       create_clusterH(d, this);
-      
+
       $("#barplot").text(null);
 
       gentable(d);
@@ -295,11 +295,11 @@ function draw_clusters(tips) {
       $("#text-node").text(`Number of cases: ${d.count}\nNumber of variants: ${d.varcount}\n`);
 
     });
-  
+
   d3.select("#svg-timetree")
   .selectAll("line")
   .raise();
-  
+
       // TODO: label tips of time-scaled tree (but with what?)
   vis.selectAll("text")
       .data(tips)
