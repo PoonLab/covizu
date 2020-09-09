@@ -1,6 +1,6 @@
 import random
 import json
-from time import time
+from datetime import datetime
 import sys
 from urllib import request
 import db_utils
@@ -9,7 +9,9 @@ import tempfile
 import subprocess
 from functools import reduce
 from Bio import Phylo
+from Bio.Phylo.Consensus import _BitString, majority_consensus
 from io import StringIO
+from ast import literal_eval
 
 
 def dump_lineages(db='data/gsaid.db'):
@@ -154,35 +156,62 @@ def get_distances(features, nboot=1):
     :return:  list, nested lists representing <n x n x nboot> matrix of
               pairwise distances
     """
-    n = len(features)
+    t0 = datetime.now()
+    print('[{}] start dist computation'.format(t0))
 
-    # recast feature vectors as sets
-    fvs = [set(f['diffs']) for f in features]
+    # compress genomes with identical feature vectors
+    fvecs = {}
+    for row in features:
+        key = tuple(row['diffs'])
+        if key not in fvecs:
+            fvecs.update({key: []})
+        fvecs[key].append(row['name'])
+
+    # generate union of all features
+    union = {}
+    for fvec in fvecs:
+        for feat in fvec:
+            if feat not in union:
+                union.update({feat: len(union)})
+    print('[{}] generated feature set union'.format(datetime.now()-t0))
+
+    # recode feature vectors as integers
+    indexed = []
+    for fvec in fvecs:
+        indexed.append(set(union[feat] for feat in fvec))
+    print('[{}] recoded feature vectors as integers'.format(datetime.now()-t0))
 
     # calculate symmetric differences
     sym_diffs = {}
+    n = len(fvecs)
     for i in range(n-1):
         for j in range(i+1, n):
-            sym_diffs[(i, j)] = fvs[i] ^ fvs[j]
+            if (i*n+j) % 1e6 == 0:
+                print('[{}] {}/{}'.format(datetime.now()-t0, i*n+j, int(n*(n-1))))
+            sym_diffs[(i, j)] = tuple(indexed[i] ^ indexed[j])
+    print('[{}] sym diff matrix complete'.format(datetime.now() - t0))
 
     # bootstrap sampling from feature set union
-    dists = [[[0]*nboot for _ in range(n)] for _ in range(n)]
-    union = reduce(lambda x, y: x.union(y), fvs)
+    dists = [[0 for _ in range(n)] for _ in range(n)]
+    print('[{}] allocated dists matrix'.format(datetime.now() - t0))
+
+    m = len(union)
     for k in range(nboot):
-        sample = sample_with_replacement(union, len(union))
-        weights = dict([(f, sample.count(f)) for f in set(sample)])
+        sample = [int(m*random.random()) for _ in range(m)]
+        weights = dict([(y, sample.count(y)) for y in set(sample)])
         for i in range(n-1):
             for j in range(i+1, n):
-                dists[j][i][k] = dists[i][j][k] = sum([
+                dists[j][i] = dists[i][j] = sum([
                     weights.get(f, 0) for f in sym_diffs[(i, j)]
                 ])
-    return dists
+        print('[{}] applied weights'.format(datetime.now() - t0))
+        yield dists
 
 
-def write_dists(k, dists, labels):
+def write_dists(dists, labels):
     """
-    Export pairwise distance matrix to a temporary file.
-    :param k:  int, bootstrap sample number
+    Export pairwise distance matrix to a temporary file as input for rapidNJ.
+
     :param dists:  list, nested lists of pairwise distances from get_distances()
     :param features:  list, sequence names and feature vectors
     :return:  file object, temporary file
@@ -194,7 +223,7 @@ def write_dists(k, dists, labels):
     for i in range(n):
         outfile.write('{}'.format(features[i]['name']))
         for j in range(n):
-            outfile.write(' {0:>2}'.format(dists[i][j][k]))
+            outfile.write(' {0:>2}'.format(dists[i][j]))
         outfile.write('\n')
 
     outfile.close()
@@ -212,32 +241,29 @@ def rapidnj(dists, labels, negative=False, binpath='rapidnj'):
     :param negative:  if True, allow negative branch lengths
     :param binpath:  str, path to rapidNJ executable
 
-    :yield:  Biopython.Phylo.BaseTree objects
+    :return:  Biopython.Phylo.BaseTree objects
     """
-    nboot = len(dists[0][0])
-    for k in range(nboot):
-        outfile = write_dists(k, dists, labels)
+    outfile = write_dists(dists, labels)
+    cmd = [binpath, outfile.name, '-i', 'pd']
+    if not negative:
+        cmd.append('--no-negative-length')
 
-        cmd = [binpath, outfile.name, '-i', 'pd']
-        if not negative:
-            cmd.append('--no-negative-length')
-
-        stdout = subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
-        with StringIO(stdout.decode('utf-8')) as handle:
-            yield Phylo.read(handle, 'newick')
+    stdout = subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
+    with StringIO(stdout.decode('utf-8')) as handle:
+        return Phylo.read(handle, 'newick')
 
 
-def consensus_tree(iter, minboot=0.5):
+def consensus_tree(tree_iter, minboot=0.5):
     """
     Generate consensus tree from trees reconstructed from bootstrap samples.
     FIXME: Bio.Phylo.Consensus has function majority_consensus() - is this for rooted trees only?
 
-    :param iter:  generator, Phylo.BaseTree objects from rapidnj()
+    :param tree_iter:  generator, Phylo.BaseTree objects from rapidnj()
     :param minboot:  float, minimum threshold to maintain clade/split
     :return:
     """
     splits = {}
-    for phy in iter:
+    for phy in tree_iter:
         tips = [tip.name for tip in phy.get_terminals()]
         dups = [tip for tip in set(tips) if tips.count(tip) > 1]
         if dups:
@@ -259,8 +285,6 @@ def consensus_tree(iter, minboot=0.5):
             splits[key] += 1
 
     # construct consensus tree from majority splits
-
-
 
 
 def parse_args():
@@ -286,12 +310,34 @@ if __name__ == "__main__":
     features = import_json(args.json)
 
     by_lineage = split_by_lineage(features, lineages)
+
+    lineage = 'B.1'
+    lfeatures = by_lineage[lineage]
+    labels = [row['name'] for row in lfeatures]
+
+    trees = []
+    for dists in get_distances(lfeatures, 10):
+        trees.append(rapidnj(dists, labels))
+
+    contree = majority_consensus(trees, cutoff=0.5)
+    Phylo.write(contree, file='{}.nwk'.format(lineage), format='newick')
+
+    sys.exit()
+
+    t0 = datetime.now()
     for lineage, lfeatures in by_lineage.items():
-        print(lineage)
-        dists = get_distances(lfeatures, 10)
+        print('[{}] start {}, {} entries'.format(
+            datetime.now() - t0, lineage, len(lfeatures))
+        )
+        dists = get_distances(lfeatures, 100)
+
+        print('[{}] generated distance matrix'.format(datetime.now() - t0))
         labels = [row['name'] for row in lfeatures]
 
-        result = [phy for phy in rapidnj(dists, labels)]
-        for i, phy in enumerate(result):
-            Phylo.write(phy, file='{}-{}.nwk'.format(lineage, i), format='newick')
-        break
+        trees = rapidnj(dists, labels)
+        print('[{}] built NJ trees'.format(datetime.now() - t0))
+
+        contree = majority_consensus(trees, cutoff=0.5)
+        print('[{}] built consensus tree'.format(datetime.now() - t0))
+        Phylo.write(contree, file='{}.nwk'.format(lineage), format='newick')
+
