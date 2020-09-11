@@ -13,6 +13,7 @@ import subprocess
 import argparse
 import tempfile
 import getpass
+import numpy as np
 
 from gotoh2 import *
 from autobot import get_driver, login, retrieve_genomes
@@ -164,9 +165,6 @@ def parse_args():
     parser.add_argument(
         '--debug', action='store_true', help='Saves missing sequences into missing.fa flat file'
     )
-    parser.add_argument(
-        '--saveraw', action = 'store_true', help='inserts all raw sequences into database'
-    )
     return parser.parse_args()
 
 
@@ -181,10 +179,12 @@ if __name__ == '__main__':
     _, refseq = convert_fasta(open(args.ref))[0]
 
     #load in existing file names with their pre-defined date ranges
-    bdates= [['2019-01-01','2020-04-16'],['2020-04-17','2020-05-08'],['2020-05-09','2020-05-15']]
+    bdates= [['2019-01-01','2020-04-16'],['2020-04-17','2020-05-08'],['2020-05-09','2020-05-15'], ['2020-05-16', '2020-05-31'], ['2020-06-01','2020-06-10'], \
+    ['2020-06-11','2020-06-22'], ['2020-06-23','2020-07-04'], ['2020-07-05','2020-07-21'], ['2020-07-22','2020-08-07'], ['2020-08-08','2020-08-24'], \
+    ['2020-08-25','2020-09-05']]
 
     #find the date ranges for all non-predefined chunks
-    startdate = datetime(2020, 5, 16)
+    startdate = datetime(2020, 9, 6)
     today = datetime.now()
     delta = (today- startdate).days
     newchunks = delta//7 + 1    #find number of weekly blocks
@@ -209,18 +209,21 @@ if __name__ == '__main__':
     conn.close()
     modified_seqs= {}
 
+    missing_from_gsaid = list(header_dictionary.keys())
+
     #download all chunks, and compare sequences within
     for start, end in bdates:
         srcfile = retrieve_genomes(driver=driver, start=start, end=end, download_folder=download_folder)
         print(srcfile)
         #update modified_seqs dictionary
         modified_seqs.update(compare_fields(hash_dictionary, header_dictionary, srcfile))
-        if args.saveraw:
-            insert_into_rawseqs(args.database, srcfile)
+        raw_accessions = insert_into_rawseqs(args.database, srcfile)
         #retrieve meta data
+        time.sleep(60)
         metafiles = retrieve_meta(driver, start=start, end=end, download_folder=download_folder)
         process_meta(args.database, metafiles)
-        time.sleep(50)
+        time.sleep(60)
+        missing_from_gsaid= np.setdiff1d(missing_from_gsaid, raw_accessions)
     if args.debug:
         #:DEBUG:
         debugout= open('missing.fa', 'w')
@@ -229,5 +232,6 @@ if __name__ == '__main__':
         debugout.close()
 
     driver.quit()
+    print('Number of seqs removed from GISAID database: {}\n'.format(len(missing_from_gsaid)))
     #call the updater, passing modified sequences as a list
     iterate_handle(modified_seqs.items(), args.ref, database = args.database)

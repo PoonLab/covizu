@@ -94,14 +94,16 @@ def insert_into_rawseqs(database, fasta):
 
     handle = gotoh2.convert_fasta(open(fasta))
 
+    inserted_acessions = []
     for header,seq in handle:
         vars= [header.split('|')[1], header, seq]
         result = cursor.execute(
             "REPLACE INTO RAWSEQ ('accession', 'header', 'unaligned') VALUES "
             "(?,?,?)", vars)
+        inserted_acessions.append(vars[0])
     conn.commit()
     conn.close()
-    return 0
+    return inserted_acessions
 
 
 def find_seq(conn, seq, refseq):
