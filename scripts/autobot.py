@@ -121,7 +121,7 @@ def retrieve_genomes(driver, start, end, download_folder):
     time.sleep(5)
 
     # switch to iframe to download
-    driver.switch_to_frame(driver.find_element_by_tag_name("iframe"))
+    driver.switch_to.frame(driver.find_element_by_tag_name("iframe"))
     print("Download")
     time.sleep(5)
 

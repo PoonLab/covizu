@@ -25,23 +25,19 @@ function prepare_search_stats(initial_stats) {
 
 const search_stats = prepare_search_stats({
   query: undefined,
-  current_bead: 1,
-  total_beads: NaN,
+  current_point: 1,
+  total_points: NaN,
+  points: [],
 });
 
 function update_search_stats(stats) {
-  $('#search_stats').text(`${stats.current_bead} of ${stats.total_beads}`);
+  $('#search_stats').text(`${stats.current_point} of ${stats.total_points} points`);
 }
 
-function find_beads(beadsdata, query){
-  return beadsdata.map((cluster) =>
-      cluster.points.map((point) =>
-        point.labels
-      )
-      .flat()
-    )
+function find_beads_points(beadsdata, query){
+  return beadsdata.map(bead => bead.points)
     .flat()
-    .filter(label => label.includes(query))
+    .filter(point => point.labels.some(label => label.includes(query)))
 }
 
 /**
@@ -122,7 +118,7 @@ function select_bead_by_accession(accn) {
   var cid = accn_to_cid[accn];
 
   if (cid !== undefined) {
-     if (d3.selectAll('.clicked').empty()) {
+     // if (d3.selectAll('.clicked').empty()) {
 
         d3.selectAll("#svg-timetree > svg > g > rect:not(.clickedH)").attr("class", "not_SelectedCluster");
         var rect = d3.selectAll("#svg-timetree > svg > g > rect:not(.clickedH)")
@@ -142,27 +138,27 @@ function select_bead_by_accession(accn) {
         create_selection(bead);
         bead.node().scrollIntoView({block: "center"});
 
-     } else {
-       d3.selectAll("#svg-timetree > svg > g > rect:not(.clickedH)").attr("class", "not_SelectedCluster");
-       var rect = d3.selectAll("#svg-timetree > svg > g > rect:not(.clickedH)")
-        .filter(function(d) { return(d.cluster_idx === cid); })
-        .attr("class", "SelectedCluster");
-
-        var bead = d3.selectAll("circle").filter(function(d) {
-          return d.accessions.includes(accn);
-        });
-
-        if (bead.nodes().length !== 0) {
-          create_selection(bead);
-          bead.node().scrollIntoView({block: "center"});
-        } else {
-          d3.select("div#svg-cluster").selectAll("line").attr("stroke-opacity", 0.3);
-
-          d3.select("div#svg-cluster")
-          .selectAll("circle:not(.SelectedBead):not(.selectionH)")
-          .attr("class", "not_SelectedBead");
-        }
-     }
+     // } else {
+     //   d3.selectAll("#svg-timetree > svg > g > rect:not(.clickedH)").attr("class", "not_SelectedCluster");
+     //   var rect = d3.selectAll("#svg-timetree > svg > g > rect:not(.clickedH)")
+     //    .filter(function(d) { return(d.cluster_idx === cid); })
+     //    .attr("class", "SelectedCluster");
+     //
+     //    var bead = d3.selectAll("circle").filter(function(d) {
+     //      return d.accessions.includes(accn);
+     //    });
+     //
+     //    if (bead.nodes().length !== 0) {
+     //      create_selection(bead);
+     //      bead.node().scrollIntoView({block: "center"});
+     //    } else {
+     //      d3.select("div#svg-cluster").selectAll("line").attr("stroke-opacity", 0.3);
+     //
+     //      d3.select("div#svg-cluster")
+     //      .selectAll("circle:not(.SelectedBead):not(.selectionH)")
+     //      .attr("class", "not_SelectedBead");
+     //    }
+     // }
   }
 }
 
@@ -227,13 +223,14 @@ function search(beaddata) {
 	var query = $('#search-input').val();
 	const accn_pat = /^EPI_ISL_[0-9]+$/i;  // case-insensitive
   // FIX ME: Accn search returning 0 beads
-  const beads = find_beads(beaddata, query);
-  // TODO: Make select_bead_by_* use find_beads result
+  const points = find_beads_points(beaddata, query);
+  // TODO: Make select_bead_by_* use find_beads_points result
   accn_pat.test(query) ? select_bead_by_accession(query) : select_beads_by_substring(query);
   const stats = search_stats.update({
     query,
-    current_bead: 1,
-    total_beads: beads.length,
+    current_point: 1,
+    total_points: points.length,
+    points: points,
   });
   update_search_stats(stats);
 }

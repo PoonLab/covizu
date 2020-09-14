@@ -18,10 +18,14 @@
 
     <div class="bar">
         <div id="search-bar">
-            <span>
-                <input type="search" id="search-input"
-                       placeholder="e.g., EPI_ISL_434070 or Canada"></span>
-            <span><div class="search_btn"></div></span>
+              <input type="search" id="search-input"
+                       placeholder="e.g., EPI_ISL_434070 or Canada">
+              <span class="or">or</span>
+              <input id="start-date" class="dates"
+                        placeholder="Start">
+              to
+              <input id="end-date" class="dates"
+                        placeholder="End">
         </div>
 
         <div id="navigation">
@@ -172,6 +176,10 @@
           	}
           });
 
+          $('#start-date').datepicker();
+
+          $('#end-date').datepicker();
+
           // Clear search
           $('#clear_button').click(function(){
             clear_selection();
@@ -181,9 +189,13 @@
           // Iterate results
           $('#next_button').click(function(){
             const stats = search_stats.update({
-              current_bead: search_stats.get().current_bead + 1,
+              current_point: search_stats.get().current_point + 1,
             });
             update_search_stats(stats);
+            const point = stats.points[stats.current_point - 1];
+            // TODO: Select the accesion with a more general approach
+            const accn = point.accessions[0];
+            select_bead_by_accession(accn);
           });
         });
 
