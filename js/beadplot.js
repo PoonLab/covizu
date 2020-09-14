@@ -523,74 +523,35 @@ function gen_details_table(obj) {
     details.push(sample_details);
   }
 
-  thead.html("");
+  thead.html(""); // clear table headers
+  var sort_ascending = true;
 
   var headers = thead.append('tr')
       .selectAll('th')
       .data(seq_theaders)
       .enter()
       .append('th')
-      .text(function (x) {
-        return x;
-      })
-      .on('click', function (x) {
-        if (x.startsWith("GISAID")){
-          // Sort function for GISAID accession (Numeric)
-          this.className = 'des';
-          dclicks.Accn++;
-          if (dclicks.Accn % 2 === 0) {
-            t_rows.sort(function(a, b) {
-              console.log(a)
-              if (a[0] < b[0]) {
-                return 1;
-              } else if (a[0] > b[0]) {
-                return -1;
-              } else {
-                return 0;
-              }
-            });
-          } else {
-            this.className = 'aes';
-            t_rows.sort(function(a, b) {
-              if (a[0] < b[0]) {
-                return -1;
-              } else if (a[0] > b[0]) {
-                return 1;
-              } else {
-                return 0;
-              }
-            });
-          }
-        }
+      .on('click', function (x, i) {
+        // Reset sorting arrows
+        thead.selectAll('a').classed('hide-before', false);
+        thead.selectAll('a').classed('hide-after', false);
 
-        if (x === "Name") {
-          // Sort function for Sequence Names (alphabetic)
-          this.className = 'aes';
-          dclicks.Name++;
-          if (dclicks.Name % 2 === 0) {
-            t_rows.sort(function (a, b) {
-              if (a[1].toUpperCase() < b[1].toUpperCase()) {
-                return -1;
-              } else if (a[1].toUpperCase() > b[1].toUpperCase()) {
-                return 1;
-              } else {
-                return 0;
-              }
-            });
-          } else {
-            this.className = 'des';
-            t_rows.sort(function (a, b) {
-              if (a[1].toUpperCase() < b[1].toUpperCase()) {
-                return 1;
-              } else if (a[1].toUpperCase() > b[1].toUpperCase()) {
-                return -1;
-              } else {
-                return 0;
-              }
-            });
-          }
+        // Sort columns
+        if (sort_ascending) {
+          t_rows.sort(function(a, b) { return d3.ascending(b[i], a[i]); });
+          sort_ascending = false;
+          d3.select(this).select('a').classed('hide-after', true);
+          d3.select(this).select('a').classed('hide-before', false);
+        } else {
+          t_rows.sort(function(a, b) { return d3.descending(b[i], a[i]); });
+          sort_ascending = true;
+          d3.select(this).select('a').classed('hide-before', true);
+          d3.select(this).select('a').classed('hide-after', false);
         }
-      });
+      })
+      .append('a')
+      .text(function (x) { return x; })
+      .classed('sort-by', true);
 
   // Create a row for each sample
   seq_tbody.html("");
@@ -607,14 +568,10 @@ function gen_details_table(obj) {
 
   // Create a cell for every row in the column
   t_rows.selectAll('td')
-      .data(function (r) {
-        return r;
-      })
+      .data(function (r) { return r; })
       .enter()
       .append('td')
-      .text(function (x) {
-        return x;
-      })
+      .text(function (x) { return x; })
       .style("font", "0.9em/1.2 Lato, sans-serif");
 }
 
@@ -659,107 +616,36 @@ function gentable(obj) {
     .data(function(d) { return d; })
     cells.text(function(d) { return d; })
 
+  var sort_ascending = true;
 
- var headers = country_table.append("thead").append("tr")
-    .selectAll("th")
-    .data(theaders)
-    .enter()
-    .append("th")
-    .text(function(d) { return d; })
-    .on('click', function (d) {
-      country_table.selectAll('th').attr('class', null)
+  var headers = country_table.append("thead").append("tr")
+      .selectAll("th")
+      .data(theaders)
+      .enter()
+      .append("th")
+      .on('click', function (x, i) {
+        // Reset sorting arrows
+        country_table.select('thead').selectAll('a').classed('hide-before', false);
+        country_table.select('thead').selectAll('a').classed('hide-after', false);
 
-      if (d == "Country"){
-        //sort function for Country (alphabetic)
-        clicks.Country++;
-        if (clicks.Country%2==0){
-          this.className = 'aes';
-          rows.sort(function(a,b){ 
-            if (a[1].toUpperCase() < b[1].toUpperCase()) { 
-              return -1; 
-            } else if (a[1].toUpperCase() > b[1].toUpperCase()) { 
-              return 1; 
-            } else {
-              return 0;
-            }
-          });             
-        } else{
-          this.className = 'des';
-          rows.sort(function(a,b){ 
-            if (a[1].toUpperCase() < b[1].toUpperCase()) { 
-              return 1; 
-            } else if (a[1].toUpperCase() > b[1].toUpperCase()) { 
-              return -1; 
-            } else {
-              return 0;
-            }
-          });              
-        }
-      }
-
-      if (d == "Count"){
-        //sort function for Case count (Numeric)
-        this.className = 'aes';
-        clicks.Count++;
-        if (clicks.Count%2==0){
-          rows.sort(function(a,b) { 
-            if (+a[2] < +b[2]) { 
-              return 1; 
-             } else if (+a[2] > +b[2]) { 
-              return -1; 
-             } else {
-              return 0;
-            }
-          });              
+        // Sort columns
+        if (sort_ascending) {
+          rows.sort(function(a, b) { return d3.ascending(b[i], a[i]); });
+          sort_ascending = false;
+          d3.select(this).select('a').classed('hide-after', true);
+          d3.select(this).select('a').classed('hide-before', false);
         } else {
-          this.className = 'des';
-          rows.sort(function(a,b) { 
-            if (+a[2] < +b[2]) { 
-              return -1; 
-            } else if (+a[2] > +b[2]) { 
-              return 1; 
-            } else {
-              return 0;
-            }
-          });
+          rows.sort(function(a, b) { return d3.descending(b[i], a[i]); });
+          sort_ascending = true;
+          d3.select(this).select('a').classed('hide-before', true);
+          d3.select(this).select('a').classed('hide-after', false);
         }
-      }
-
-      if (d == "Region"){
-        //sort function for Region (alphabetic)
-        this.className = 'aes';
-        clicks.Region++;
-        if (clicks.Region%2==0){
-          rows.sort(function(a,b){ 
-            if (a[0].toUpperCase() < b[0].toUpperCase()) { 
-              return -1; 
-            } else if (a[0].toUpperCase() > b[0].toUpperCase()) { 
-              return 1; 
-            } else {
-              return 0;
-            }
-          });                    
-        } else {
-          this.className = 'des';
-          rows.sort(function(a,b){ 
-            if (a[0].toUpperCase() < b[0].toUpperCase()) { 
-              return 1; 
-            } else if (a[0].toUpperCase() > b[0].toUpperCase()) { 
-              return -1; 
-            } else {
-              return 0;
-            }
-          });                    
-        }
-      }
-   });
+      })
+      .append('a')
+      .text(function (x) { return x; })
+      .classed('sort-by', true);
 }
 
-/**
-  * Alphabetic Sorter function for table sort
-  * String comparator looks at length, not alphabetic 
-  :TODO:
-**/
 
 /**
  * Draws a bar chart of the distribution of cases across regions

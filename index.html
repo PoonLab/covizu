@@ -202,7 +202,6 @@
         // populate countries table
         var country_table = d3.select("#country-table").append('table');
         var theaders = ["Region", "Country", "Count"]
-        var clicks = {Region: 0, Country: 0, Count: 0};
 
         // to be populated in beadplot.js
         var country_tbody = country_table.append("tbody");
@@ -211,7 +210,6 @@
         var seq_table = d3.select("#seq-table").append('table');
         var thead = seq_table.append('thead');
         var seq_theaders = ["GISAID accession", "Name", "Date"];
-        var dclicks = {Accn: 0, Name: 0, Date: 0}
         var seq_tbody = seq_table.append('tbody');
 
     </script>
