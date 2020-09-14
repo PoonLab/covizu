@@ -179,22 +179,19 @@ rightbar {
     margin: 0;
     padding: 0;
     width: 250px;
-    top: 80px;
+    top: 0px;
     background-color: white;
     position: fixed;
     height: 100%;
     overflow: auto;
     right :0;
+    z-index: 20;
+    overflow-x: hidden;
+    padding-bottom: 2px;
+    &::-webkit-scrollbar {
+      display: none;
 }
 
-namebar {
-    width: 250px;
-    top: 0;
-    background-color: white;
-    position: absolute;
-    right :0;
-    z-index: 20;
-}
 .bar {
   position:fixed;
   z-index:10;
