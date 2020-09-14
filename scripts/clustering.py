@@ -12,6 +12,11 @@ from Bio import Phylo
 from Bio.Phylo.Consensus import _BitString, majority_consensus
 from io import StringIO
 from ast import literal_eval
+import sys
+
+
+# potential fix for issue #127
+sys.setrecursionlimit(10000)  # default 1000
 
 
 def dump_lineages(db='data/gsaid.db'):
@@ -249,8 +254,9 @@ def rapidnj(dists, labels, negative=False, binpath='rapidnj'):
         cmd.append('--no-negative-length')
 
     stdout = subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
-    with StringIO(stdout.decode('utf-8')) as handle:
-        return Phylo.read(handle, 'newick')
+    handle = StringIO(stdout.decode('utf-8'))
+    phy = Phylo.read(handle, 'newick')
+    return phy
 
 
 def consensus_tree(tree_iter, minboot=0.5):
@@ -316,8 +322,12 @@ if __name__ == "__main__":
     labels = [row['name'] for row in lfeatures]
 
     trees = []
+    counter = 0
     for dists in get_distances(lfeatures, 10):
-        trees.append(rapidnj(dists, labels))
+        phy = rapidnj(dists, labels)
+        Phylo.write(phy, file='B.1-tree{}.nwk'.format(counter), format='newick')
+        trees.append(phy)
+        counter += 1
 
     contree = majority_consensus(trees, cutoff=0.5)
     Phylo.write(contree, file='{}.nwk'.format(lineage), format='newick')
