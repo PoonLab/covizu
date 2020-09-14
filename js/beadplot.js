@@ -523,7 +523,7 @@ function gen_details_table(obj) {
     details.push(sample_details);
   }
 
-  thead.html("")
+  thead.html("");
 
   var headers = thead.append('tr')
       .selectAll('th')
@@ -534,28 +534,27 @@ function gen_details_table(obj) {
         return x;
       })
       .on('click', function (x) {
-
         if (x.startsWith("GISAID")){
-          //sort function for GISAID accession (Numeric)
-          this.className = 'aes';
+          // Sort function for GISAID accession (Numeric)
+          this.className = 'des';
           dclicks.Accn++;
-
-          if (dclicks.Accn % 2 === 0){
-            t_rows.sort(function(a,b) {
-              if (a[2] < b[2]) {
+          if (dclicks.Accn % 2 === 0) {
+            t_rows.sort(function(a, b) {
+              console.log(a)
+              if (a[0] < b[0]) {
                 return 1;
-              } else if (a[2] > b[2]) {
+              } else if (a[0] > b[0]) {
                 return -1;
               } else {
                 return 0;
               }
             });
           } else {
-            this.className = 'des';
-            t_rows.sort(function(a,b) {
-              if (a[2] < b[2]) {
+            this.className = 'aes';
+            t_rows.sort(function(a, b) {
+              if (a[0] < b[0]) {
                 return -1;
-              } else if (a[2] > b[2]) {
+              } else if (a[0] > b[0]) {
                 return 1;
               } else {
                 return 0;
@@ -565,14 +564,14 @@ function gen_details_table(obj) {
         }
 
         if (x === "Name") {
-          //sort function for Sequence Names (alphabetic)
+          // Sort function for Sequence Names (alphabetic)
           this.className = 'aes';
           dclicks.Name++;
           if (dclicks.Name % 2 === 0) {
             t_rows.sort(function (a, b) {
-              if (a[0].toUpperCase() < b[0].toUpperCase()) {
+              if (a[1].toUpperCase() < b[1].toUpperCase()) {
                 return -1;
-              } else if (a[0].toUpperCase() > b[0].toUpperCase()) {
+              } else if (a[1].toUpperCase() > b[1].toUpperCase()) {
                 return 1;
               } else {
                 return 0;
@@ -581,52 +580,30 @@ function gen_details_table(obj) {
           } else {
             this.className = 'des';
             t_rows.sort(function (a, b) {
-              if (a[0].toUpperCase() < b[0].toUpperCase()) {
+              if (a[1].toUpperCase() < b[1].toUpperCase()) {
                 return 1;
-              } else if (a[0].toUpperCase() > b[0].toUpperCase()) {
+              } else if (a[1].toUpperCase() > b[1].toUpperCase()) {
                 return -1;
               } else {
                 return 0;
               }
             });
           }
-
-          if (x === "Date") {
-            //sort function for Date
-            this.className = 'aes';
-            dclicks.Date++;
-            if (dclicks.Date % 2 === 0) {
-              t_rows.sort(function (a, b) {
-                if (a[0].toUpperCase() < b[0].toUpperCase()) {
-                  return -1;
-                } else if (a[0].toUpperCase() > b[0].toUpperCase()) {
-                  return 1;
-                } else {
-                  return 0;
-                }
-              });
-            } else {
-              this.className = 'des';
-              t_rows.sort(function (a, b) {
-                if (a[0].toUpperCase() < b[0].toUpperCase()) {
-                  return 1;
-                } else if (a[0].toUpperCase() > b[0].toUpperCase()) {
-                  return -1;
-                } else {
-                  return 0;
-                }
-              });
-            }
-          }
         }
-
       });
 
   // Create a row for each sample
+  seq_tbody.html("");
   var t_rows = seq_tbody.selectAll('tr')
       .data(details)
       .enter()
-      .append('tr');
+      .append('tr')
+      .on("mouseover", function () {
+        d3.select(this).style("background-color", "grey");  // Highlight on mouseover
+      })
+      .on("mouseout", function () {            // Remove highlighting on mouseout
+        d3.select(this).style("background-color", null);
+      });
 
   // Create a cell for every row in the column
   t_rows.selectAll('td')
@@ -635,12 +612,6 @@ function gen_details_table(obj) {
       })
       .enter()
       .append('td')
-      .on("mouseover", function () {
-        d3.select(this).style("background-color", "grey");  // Highlight on mouseover
-      })
-      .on("mouseout", function () {            // Remove highlighting on mouseout
-        d3.select(this).style("background-color", null);
-      })
       .text(function (x) {
         return x;
       })
