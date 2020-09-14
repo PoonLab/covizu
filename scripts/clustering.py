@@ -152,18 +152,15 @@ def sample_with_replacement(population, k):
     return [pop[int(n * random.random())] for _ in range(k)]
 
 
-def get_distances(features, nboot=1):
+def get_sym_diffs(features):
     """
-    Write pairwise distance matrix in PHYLIP format to file.
+    Calculate symmetric differences of feature vectors.
 
     :param features:  list, feature vectors from load_json()/split_by_lineage()
-    :param nboot:  int, number of bootstrap samples
-    :return:  list, nested lists representing <n x n x nboot> matrix of
-              pairwise distances
+    :return:  dict, symmetric differences indexed by (i,j) tuples;
+              int, number of features in set union
+              list, nested list of genome labels by index
     """
-    t0 = datetime.now()
-    print('[{}] start dist computation'.format(t0))
-
     # compress genomes with identical feature vectors
     fvecs = {}
     for row in features:
@@ -178,47 +175,57 @@ def get_distances(features, nboot=1):
         for feat in fvec:
             if feat not in union:
                 union.update({feat: len(union)})
-    print('[{}] generated feature set union'.format(datetime.now()-t0))
 
     # recode feature vectors as integers
     indexed = []
+    labels = []
     for fvec in fvecs:
         indexed.append(set(union[feat] for feat in fvec))
-    print('[{}] recoded feature vectors as integers'.format(datetime.now()-t0))
+        labels.append(fvecs[fvec])
 
     # calculate symmetric differences
     sym_diffs = {}
     n = len(fvecs)
     for i in range(n-1):
         for j in range(i+1, n):
-            if (i*n+j) % 1e6 == 0:
-                print('[{}] {}/{}'.format(datetime.now()-t0, i*n+j, int(n*(n-1))))
             sym_diffs[(i, j)] = tuple(indexed[i] ^ indexed[j])
-    print('[{}] sym diff matrix complete'.format(datetime.now() - t0))
 
-    # bootstrap sampling from feature set union
+    return sym_diffs, len(union), labels
+
+
+def bootstrap(sym_diffs, n, m, nboot):
+    """
+    Use nonparametric bootstrap sampling of the feature set union to convert symmetric
+    differences to distances by re-weighting features.
+
+    :param sym_diffs:  dict, symmetric difference subsets keyed by (i, j) tuples
+    :param n:  int, number of unique feature vectors
+    :param m:  int, size of feature set union
+    :param nboot:  int, number of bootstrap samples
+
+    :return:  list, nested lists representing <n x n x nboot> matrix of
+              pairwise distances
+    """
+    # allocate distance matrix
     dists = [[0 for _ in range(n)] for _ in range(n)]
-    print('[{}] allocated dists matrix'.format(datetime.now() - t0))
 
-    m = len(union)
     for k in range(nboot):
         sample = [int(m*random.random()) for _ in range(m)]
         weights = dict([(y, sample.count(y)) for y in set(sample)])
-        for i in range(n-1):
-            for j in range(i+1, n):
-                dists[j][i] = dists[i][j] = sum([
-                    weights.get(f, 0) for f in sym_diffs[(i, j)]
-                ])
-        print('[{}] applied weights'.format(datetime.now() - t0))
+
+        for i, j in sym_diffs:
+            dists[j][i] = dists[i][j] = sum([
+                weights.get(f, 0) for f in sym_diffs[(i, j)]
+            ])
+
         yield dists
 
 
-def write_dists(dists, labels):
+def write_dists(dists):
     """
     Export pairwise distance matrix to a temporary file as input for rapidNJ.
 
     :param dists:  list, nested lists of pairwise distances from get_distances()
-    :param features:  list, sequence names and feature vectors
     :return:  file object, temporary file
     """
     outfile = tempfile.NamedTemporaryFile('w', delete=False)
@@ -226,7 +233,7 @@ def write_dists(dists, labels):
 
     outfile.write('{0:>5}\n'.format(n))
     for i in range(n):
-        outfile.write('{}'.format(features[i]['name']))
+        outfile.write('{}'.format(i))
         for j in range(n):
             outfile.write(' {0:>2}'.format(dists[i][j]))
         outfile.write('\n')
@@ -235,20 +242,19 @@ def write_dists(dists, labels):
     return outfile
 
 
-def rapidnj(dists, labels, negative=False, binpath='rapidnj'):
+def rapidnj(dists, negative=False, binpath='rapidnj'):
     """
     Wrapper function for rapidNJ.  Writes a pairwise distance matrix to a
     temporary file and calls rapidNJ to apply neighbor-joining to the matrix.
 
     :param dists:  list, an <n x n x B> matrix as nested lists, where `n` is the
                    number of genomes and `B` is the number of bootstrap samples.
-    :param labels:  list, genome names for labeling tree tips.
     :param negative:  if True, allow negative branch lengths
     :param binpath:  str, path to rapidNJ executable
 
     :return:  Biopython.Phylo.BaseTree objects
     """
-    outfile = write_dists(dists, labels)
+    outfile = write_dists(dists)
     cmd = [binpath, outfile.name, '-i', 'pd']
     if not negative:
         cmd.append('--no-negative-length')
@@ -303,11 +309,14 @@ def parse_args():
                         help="input, JSON file generated by minimap2.py")
     parser.add_argument("--db", type=str, default="data/gsaid.db",
                         help="Path to sqlite3 database")
+    parser.add_argument("--nboot", type=int, default=100,
+                        help="Number of bootstrap samples, default 100.")
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
+    t0 = datetime.now()
 
     print('loading lineage classifications from database')
     lineages = dump_lineages(args.db)
@@ -316,38 +325,34 @@ if __name__ == "__main__":
     features = import_json(args.json)
 
     by_lineage = split_by_lineage(features, lineages)
-
-    lineage = 'B.1'
-    lfeatures = by_lineage[lineage]
-    labels = [row['name'] for row in lfeatures]
-
-    trees = []
-    counter = 0
-    for dists in get_distances(lfeatures, 10):
-        phy = rapidnj(dists, labels)
-        Phylo.write(phy, file='B.1-tree{}.nwk'.format(counter), format='newick')
-        trees.append(phy)
-        counter += 1
-
-    contree = majority_consensus(trees, cutoff=0.5)
-    Phylo.write(contree, file='{}.nwk'.format(lineage), format='newick')
-
-    sys.exit()
-
-    t0 = datetime.now()
     for lineage, lfeatures in by_lineage.items():
         print('[{}] start {}, {} entries'.format(
             datetime.now() - t0, lineage, len(lfeatures))
         )
-        dists = get_distances(lfeatures, 100)
 
+        # compute symmetric differences
+        sym_diffs, m, labels = get_sym_diffs(lfeatures)
         print('[{}] generated distance matrix'.format(datetime.now() - t0))
-        labels = [row['name'] for row in lfeatures]
 
-        trees = rapidnj(dists, labels)
+        # export labels
+        outfile = open('{}.labels.csv'.format(lineage), 'w')
+        outfile.write('index,name\n')
+        for i, names in enumerate(labels):
+            for na in names:
+                outfile.write('{},{}\n'.format(i, na))
+        outfile.close()
+
+        # bootstrap sampling and tree reconstruction
+        trees = []
+        for dists in bootstrap(sym_diffs, n=len(labels), m=m, nboot=args.nboot):
+            phy = rapidnj(dists)
+            trees.append(phy)
         print('[{}] built NJ trees'.format(datetime.now() - t0))
 
-        contree = majority_consensus(trees, cutoff=0.5)
+        contree = majority_consensus(trees, cutoff=0.8)
         print('[{}] built consensus tree'.format(datetime.now() - t0))
         Phylo.write(contree, file='{}.nwk'.format(lineage), format='newick')
+
+        break
+
 

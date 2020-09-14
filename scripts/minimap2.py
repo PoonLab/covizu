@@ -33,10 +33,14 @@ def apply_cigar(seq, rpos, cigar):
 
 def minimap2(fasta, ref, path='minimap2', nthread=3, minlen=29000):
     """
-    Wrapper function for minimap2
-    :param fasta: str, path to FASTA with query sequences
-    :param ref: str, path to FASTA with reference sequence(s)
-    :param path: str, path to binary executable
+    Wrapper function for minimap2.
+
+    :param fasta:  str, path to FASTA with query sequences
+    :param ref:  str, path to FASTA with reference sequence(s)
+    :param path:  str, path to binary executable
+    :param nthread:  int, number of threads for parallel execution of minimap2
+    :param minlen:  int, filter genomes below minimum length; to accept all, set to 0.
+
     :yield:  query sequence name, reference index, CIGAR and original
              sequence
     """
