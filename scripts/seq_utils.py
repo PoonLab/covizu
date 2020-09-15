@@ -1,5 +1,8 @@
 # copied directly from ArtPoon/gotoh2/gotoh_utils.py
 import re
+from datetime import datetime
+import sys
+
 
 # regex for terminal gaps
 tgap_regex = re.compile("^(-*)[^-].+[^-](-*)$")
@@ -209,3 +212,16 @@ def apply_prot_to_nuc(aligned_prot, nuc):
         res += nuc[i:(i + 3)]
         i += 3
     return res
+
+
+class Callback:
+    def __init__(self):
+        self.t0 = datetime.now()
+        self.last_msg_length = 0
+
+    def callback(self, msg, replace=False):
+        if replace:
+            sys.stdout.write('\b'*self.last_msg_length)
+        self.last_msg_length = sys.stdout.write('[{}] {}'.format(datetime.now() - self.t0, msg))
+        if not replace:
+            sys.stdout.write('\n')
