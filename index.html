@@ -16,7 +16,7 @@
         </svg>
     </a>
 
-    <div class="bar">
+    <div class="bar" style="position: fixed; top: 10px; z-index:10" >
         <div id="search-bar">
               <input type="search" id="search-input"
                        placeholder="e.g., EPI_ISL_434070 or Canada">
@@ -45,14 +45,6 @@
                 top:0px;
                 left:0px"></div>
 
-    <namebar style='padding-right: 5%; padding-left: 5%'>
-        <h1>CoVizu</h1>
-        <h3>Near real-time visualization of SARS-CoV-2 genomic variation</h3>
-    </namebar>
-
-
-
-
     <div class="container">
         <table>
             <tr>
@@ -67,6 +59,8 @@
                     <div id="svg-cluster"></div></td>
                 <td>
                     <rightbar style='padding-right: 5%; padding-left: 5%'>
+                      <h1>CoVizu</h1>
+                      <h3>Near real-time visualization of SARS-CoV-2 genomic variation</h3>
                         <p>
                           <div id="div-last-update"></div>
                           <div id="div-number-genomes"></div>
