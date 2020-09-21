@@ -2,6 +2,11 @@ require(igraph)
 require(jsonlite)
 require(Rtsne)
 
+#setwd("./")
+
+# length of reference sequence (NCBI - "NC_045512.2")
+ref_len <- 29903
+
 # open TN93 distance matrix
 cat("loading TN93 distance matrix\n")
 tn93 <- read.csv('data/variants.tn93.txt', skip=1, header=F)
@@ -102,12 +107,12 @@ for (i in 1:max(clusters)) {
   # extract cluster indices to map to headers vector
   idx <- as.integer(which(clusters==i))
 
-  # cluster mean pairwise distance
-  pdist <- mean.pdist[[i]]
-  
-  # cluster mean root distance
-  rdist <- mean.rdist[[i]]
-  
+  # cluster mean pairwise distance dot genome size (mean number of substitutions)
+  pdist <- mean.pdist[[i]] * ref_len
+
+  # cluster mean root distance dot genome size (mean number of substitutions)
+  rdist <- mean.rdist[[i]] * ref_len
+
   if (length(idx)==1) {
     list(nodes=headers[idx], edges=NA)
   } 
