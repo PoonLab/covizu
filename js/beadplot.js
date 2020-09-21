@@ -591,7 +591,7 @@ function gen_details_table(obj) {
       .enter()
       .append('td')
       .text(function (x) { return x; })
-      .style("font", "0.9em/1.2 Lato, sans-serif");
+      .style("font", "0.875em/1.2 Lato, sans-serif");
 }
 
 
