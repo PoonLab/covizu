@@ -123,6 +123,8 @@ rect:hover{
 
 .dates{
   width: 90px;
+  position: relative;
+  z-index: 15;
 }
 
 #navigation {

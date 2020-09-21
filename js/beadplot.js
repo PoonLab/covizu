@@ -114,7 +114,7 @@ function parse_clusters(clusters) {
       points,  // the "beads"
       beaddata = [];  // return value
 
-  for (var cidx = 0; cidx < clusters.length; cidx++) {
+  for (const cidx in clusters) {
     cluster = clusters[cidx];
     if (cluster.nodes.length === 1) {
       console.log('skip '+ cluster.nodes);
@@ -161,7 +161,7 @@ function parse_clusters(clusters) {
         samples = variant.filter(x => x.coldate === isodate);
         country = samples.map(x => x.country);
         regions = country.map(x => countries[x]);
-        
+
         // warn developers if no region for country
         if (regions.includes(undefined)) {
           console.log("Developer msg, need to update countries.json:");
@@ -169,8 +169,9 @@ function parse_clusters(clusters) {
             console.log(`"${samples[j].country}"`);
           }
         }
-        
+
         points.push({
+          cidx,
           'x': new Date(isodate),
           'y': y,
           'count': samples.length,
@@ -309,7 +310,7 @@ function beadplot(cid) {
   // clear SVG
   visB.selectAll('*').remove();
   visBaxis.selectAll('*').remove();
-	
+
   // draw horizontal line segments that represent variants in cluster
   visB.selectAll("lines")
       .data(variants)
@@ -352,7 +353,7 @@ function beadplot(cid) {
             .duration(50)
             .style("opacity", 0);
       })
-      .on("click", function(d) { 
+      .on("click", function(d) {
         gentable(d);
         draw_region_distribution(table(d.region));
         gen_details_table(d);
@@ -464,12 +465,12 @@ function beadplot(cid) {
       .on("click", function(d) {
 
         clear_selection();
-        
+
         var cur_obj = d3.select(this);
         create_selection(cur_obj);
-        
+
         d3.select("#svg-timetree").selectAll("line").attr("stroke-opacity", 1);
-        
+
         gentable(d);
         draw_region_distribution(table(d.region));
         gen_details_table(d);
@@ -594,11 +595,11 @@ function gentable(obj) {
   country_table.selectAll('thead').remove()
 
   // https://stackoverflow.com/questions/32871044/how-to-update-d3-table
-  //create a row <tr> for each item in my_countries array, set mouse over over color, then create one column <td> for each item in array 
+  //create a row <tr> for each item in my_countries array, set mouse over over color, then create one column <td> for each item in array
   var rows = country_tbody.selectAll("tr")
     .data(my_countries);
   rows.exit().remove();
-  rows.enter() 
+  rows.enter()
     .append("tr")
     .on("mouseover", function(){
       d3.select(this).style("background-color", "grey");}) //mouseover highlight
@@ -609,7 +610,7 @@ function gentable(obj) {
     .enter()
     .append("td")
     .text(function(d) { return d; });
-  
+
   var rows = country_tbody.selectAll("tr") //reselect all rows
 
   var cells = rows.selectAll("td")

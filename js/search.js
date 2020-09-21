@@ -25,6 +25,8 @@ function prepare_search_stats(initial_stats) {
 
 const search_stats = prepare_search_stats({
   query: undefined,
+  start: undefined,
+  end: undefined,
   current_point: 1,
   total_points: NaN,
   points: [],
@@ -34,32 +36,25 @@ function update_search_stats(stats) {
   $('#search_stats').text(`${stats.current_point} of ${stats.total_points} points`);
 }
 
-function find_beads_points(beadsdata, query){
-  return beadsdata.map(bead => bead.points)
-    .flat()
-    .filter(point => point.labels.some(label => label.includes(query)))
+function find_beads_points(beadsdata){
+  return beadsdata.map(bead => bead.points).flat()
 }
 
 /**
- * Highlight clusters containing samples that match substring,
- * and highlight samples in currently displayed bead plot.
- * When user switches bead plots, update highlighted samples.
+ * Highlight clusters for which the cluster function returns true
+ * and highlight points in currently displayed bead plot.
+ * When user switches bead plots, update highlighted points.
  *
- * @param substr
+ * @param clusters function that takes a cluster datum and returns true
+ *                 when the cluster must be selected. False otherwise.
+ * @param points function that takes a points datum and returns true
+ *               when the point must be selected. False otherwise.
  */
-function select_beads_by_substring(substr) {
-	selected = [];
+function select_beads_by_comparators(clusters, points) {
+  selected = [];
 	d3.selectAll("circle").dispatch('mouseout');
 
-	if (substr === "") {
-		// user submitted empty string
-		clear_selection();
-		return;
-	}
-
-	var rects = d3.selectAll("#svg-timetree > svg > g > rect:not(.clickedH)").filter(function(d) {
-		return(d.searchtext.match(substr) !== null);
-	});
+	var rects = d3.selectAll("#svg-timetree > svg > g > rect:not(.clickedH)").filter(clusters);
 
 	// jump to the first hit if new search
 	if (d3.selectAll('.clicked').empty()){
@@ -68,9 +63,8 @@ function select_beads_by_substring(substr) {
 	  d3.select(rects.nodes().pop()).attr("class", "clicked");
 
 	  d3.select(rects.nodes().pop()).each(function(d) {
-	  first_cluster_idx = d.cluster_idx;
-	  create_clusterH(d, this);
-
+  	  first_cluster_idx = d.cluster_idx;
+  	  create_clusterH(d, this);
 	  });
 
 	  beadplot(first_cluster_idx);
@@ -91,22 +85,57 @@ function select_beads_by_substring(substr) {
 		d3.select(node).attr("class","SelectedCluster");
 	}
 
-	var beads_ui = d3.selectAll("#svg-cluster > svg > g > circle").filter(function(d) {
-		return(d.labels.some(x => x.includes(substr)));
-	});
-	selected = beads_ui.nodes();
+	var points_ui = d3.selectAll("#svg-cluster > svg > g > circle").filter(points);
+	selected = points_ui.nodes();
 	d3.selectAll("circle:not(.selectionH)").attr("class", "not_SelectedBead");
 	d3.select("div#svg-cluster").selectAll("line").attr("stroke-opacity", 0.3);
-	for (const node of beads_ui.nodes()) {
+	for (const node of points_ui.nodes()) {
 		//d3.select(node).dispatch('mouseover');
 		var selected_obj = d3.select(node);
 		create_selection(selected_obj);
 	}
-	if (beads_ui.nodes().length !== 0) {
-	  beads_ui.nodes()[0].scrollIntoView({block: "center"});
+	if (points_ui.nodes().length !== 0) {
+	  points_ui.nodes()[0].scrollIntoView({block: "center"});
 	}
 }
 
+/**
+ * Highlight clusters containing samples that match substring,
+ * and highlight samples in currently displayed bead plot.
+ * When user switches bead plots, update highlighted samples.
+ *
+ * @param substr
+ */
+function select_beads_by_substring(substr) {
+  if (substr === "") {
+    // user submitted empty string
+    clear_selection();
+    return;
+  }
+
+  const clusters = (datum) => datum.searchtext.match(substr) !== null;
+  const points = (datum) => datum.labels.some(x => x.includes(substr));
+  select_beads_by_comparators(clusters, points);
+}
+
+/**
+ * Highlight clusters containing the points.
+ *
+ * @param points an array of points
+ */
+function select_by_points(points){
+  if (points.length <= 0) {
+    // user submitted empty string
+    clear_selection();
+    return;
+  }
+
+  const labels = new Set(points.map(point => point.labels).flat());
+  const cidx = new Set(points.map(point => point.cidx));
+  const clusters_fn = (cluster) => cluster.cluster_idx && cidx.has(cluster.cluster_idx);
+  const points_fn = (point) => point && point.labels.some(label => labels.has(label));
+  select_beads_by_comparators(clusters_fn, points_fn);
+}
 
 /**
  * Highlight and jump to node in beadplot by sample accession number.
@@ -223,11 +252,28 @@ function search(beaddata) {
 	var query = $('#search-input').val();
 	const accn_pat = /^EPI_ISL_[0-9]+$/i;  // case-insensitive
   // FIX ME: Accn search returning 0 beads
-  const points = find_beads_points(beaddata, query);
+  const points = find_beads_points(beaddata)
+    .filter(point => point.labels.some(label => label.includes(query)));
   // TODO: Make select_bead_by_* use find_beads_points result
   accn_pat.test(query) ? select_bead_by_accession(query) : select_beads_by_substring(query);
   const stats = search_stats.update({
     query,
+    current_point: 1,
+    total_points: points.length,
+    points: points,
+  });
+  update_search_stats(stats);
+}
+
+function search_by_dates(beaddata, start, end){
+  const points = find_beads_points(beaddata)
+    .filter(point => point.x >= start && point.x <= end);
+
+  select_by_points(points);
+
+  const stats = search_stats.update({
+    start,
+    end,
     current_point: 1,
     total_points: points.length,
     points: points,

@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8"/>
     <title>CoVizu</title>
-    <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
@@ -170,14 +170,29 @@
           	}
           });
 
-          $('#start-date').datepicker();
+          const dateFormat = 'yy-mm-dd'; // ISO_8601
+          $('#start-date').datepicker({
+            dateFormat,
+            onSelect: function(date_text){
+                const start = new Date(date_text);
+                search_by_dates(beaddata, start, search_stats.get().end);
+            }
+          });
 
-          $('#end-date').datepicker();
+          $('#end-date').datepicker({
+            dateFormat,
+            onSelect: function(date_text){
+              const end = new Date(date_text);
+              search_by_dates(beaddata, search_stats.get().start, end);
+            }
+          });
 
           // Clear search
           $('#clear_button').click(function(){
             clear_selection();
             search(beaddata);
+            $('#end-date').val('');
+            $('#start-date').val('');
           });
 
           // Iterate results
