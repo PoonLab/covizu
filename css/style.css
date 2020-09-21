@@ -186,12 +186,14 @@ rightbar {
     position: fixed;
     height: 100%;
     overflow: auto;
-    right :0;
-   /* z-index: 20;*/
+    right: 0;
+    /* z-index: 20;*/
     overflow-x: hidden;
     padding-bottom: 2px;
-    &::-webkit-scrollbar {
-      display: none;
+}
+
+rightbar::-webkit-scrollbar {
+    display: none;
 }
 
 .bar {

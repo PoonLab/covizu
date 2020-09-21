@@ -202,7 +202,7 @@
             });
             update_search_stats(stats);
             const point = stats.points[stats.current_point - 1];
-            // TODO: Select the accesion with a more general approach
+            // TODO: Select the accession with a more general approach
             const accn = point.accessions[0];
             select_bead_by_accession(accn);
           });
@@ -210,7 +210,7 @@
 
         // populate countries table
         var country_table = d3.select("#country-table").append('table');
-        var theaders = ["Region", "Country", "Count"]
+        var theaders = ["Region", "Country", "Count"];
 
         // to be populated in beadplot.js
         var country_tbody = country_table.append("tbody");
@@ -218,7 +218,7 @@
         // Populate sequence details table
         var seq_table = d3.select("#seq-table").append('table');
         var thead = seq_table.append('thead');
-        var seq_theaders = ["GISAID accession", "Name", "Date"];
+        var seq_theaders = ["Accession", "Name", "Date"];
         var seq_tbody = seq_table.append('tbody');
 
     </script>
