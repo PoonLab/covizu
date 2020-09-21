@@ -356,7 +356,8 @@ function beadplot(cid) {
       .on("click", function(d) {
         gentable(d);
         draw_region_distribution(table(d.region));
-        gen_details_table(d);
+        let var_samples = points.filter(x => x.y === d.y1);
+        gen_details_table(var_samples);
       });
 
   // label variants with earliest sample name
@@ -512,17 +513,34 @@ function region_to_string(my_regions) {
 
 /**
  * Creates a table that displays sequence details (Sequence name, GISAID accession number, collection date)
- * @param obj: JS object with the attribute
+ * @param obj: JS object or an array of JS Objects
  */
 function gen_details_table(obj) {
   var details = [];
   let formatDate = d3.timeFormat("%Y-%m-%d");
 
-  // "zip" the sequence details of each sample
-  for (let i = 0; i < obj.accessions.length; i++) {
-    let sample_details = [obj.accessions[i], obj.labels[i], formatDate(new Date(obj.x))];
-    details.push(sample_details);
+  // Check for a list of samples
+  if (Array.isArray(obj)) {
+
+    // Iterate over each sample in the list
+    for (let j = 0; j < obj.length; j++) {
+
+      // "zip" the sequence details of each sample
+      for (let i = 0; i < obj[j].accessions.length; i++) {
+        let sample_details = [obj[j].accessions[i], obj[j].labels[i], formatDate(new Date(obj[j].x))];
+        details.push(sample_details);
+      }
+    }
   }
+
+  else {
+    // "zip" the sequence details of each sample
+    for (let i = 0; i < obj.accessions.length; i++) {
+      let sample_details = [obj.accessions[i], obj.labels[i], formatDate(new Date(obj.x))];
+      details.push(sample_details);
+    }
+  }
+
 
   thead.html(""); // clear table headers
   var sort_ascending = true;
