@@ -6,6 +6,8 @@ from datetime import date, timedelta
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 from db_utils import *
+from pangorider import *
+from minimap2 import *
 
 import subprocess
 import argparse
@@ -157,6 +159,11 @@ def retrieve_genomes(driver, start, end, download_folder):
     element = driver.find_element_by_xpath("//button[@class='sys-event-hook sys-form-button']")
     element.click()
 
+    #fix missing line breaks in-place
+    retcode = subprocess.check_call(['sed', '-i', 's/([ACGT?])>hCo[Vv]/\1\\n>hCoV/g', downloaded_file])
+    #fix spaces in header in-place
+    retcode = subprocess.check_call(['sed', '-i', 's/ /_/g', downloaded_file])
+
     return downloaded_file
 
 def find_fasta(download_folder):
@@ -168,19 +175,8 @@ def find_fasta(download_folder):
     downloaded_file = max(abs_dir, key=os.path.getmtime)
     return downloaded_file
 
-def update_local(srcfile, ref, db='data/gsaid.db'):
-    """
-    Use functions in db_utils.py to insert sequences into sqlite database
-    :params:
-        srcfile: path to FASTA file with downloaded genomes
-    """
-    # fix missing line breaks in-place
-    retcode = subprocess.check_call(['sed', '-i', 's/([ACGT?])>hCo[Vv]/\1\\n>hCoV/g', srcfile])
-    #open connection to db and insert sequences
-    print('Writing to database')
 
-    iterate_handle(gotoh2.convert_fasta(open(srcfile, 'r')), ref, db)
-
+def write_dbstats(db='data/gsaid.db'):
     # write latest update string, with number of seqs
     cur, conn = open_connection(db)
     numseqs = cur.execute('SELECT * FROM SEQUENCES')
@@ -191,6 +187,7 @@ def update_local(srcfile, ref, db='data/gsaid.db'):
         }
         json.dump(data, jsonfile, indent=2)
     conn.close()
+
 
 def parse_args():
     """ Command line interface """
@@ -211,7 +208,7 @@ def parse_args():
         help="Destination file to align and append downloaded sequences."
     )
     parser.add_argument(
-        '-d', '-dir', type=str, default=tempfile.TemporaryDirectory().name,
+        '-d', '-dir', type=str, default=tempfile.TemporaryDirectory(),
         help="Temporary directory to download files."
     )
     parser.add_argument(
@@ -219,21 +216,48 @@ def parse_args():
         help='Path to geckodriver binary executable'
     )
     parser.add_argument(
-        '-r', '--ref', type= str, default='data/NC_045512.fa',
+        '-r', '--ref', type= str, default='data/LR757995.fa',
         help='Path to reference fasta')
     parser.add_argument('--db', default = 'data/gsaid.db',
         help='Name of database.')
-
+    parser.add_argument('--filterout', default = 'debug/filtered.log', type =argparse.FileType('w'),
+        help='Log for filtered seqs')
+    parser.add_argument('--thread', default = 1,
+        help='Number of threads for minimap')
+    parser.add_argument('--minlen', help="<option> minimum sequence length, "
+        "defaults to 29000nt.", default = 29000)
+    site_packages = next(p for p in sys.path if 'site-packages' in p)
+    parser.add_argument('--pangolindir', help ='PangoLEARN data dir, defaults to .../site_packages/panoLEARN/data/',
+        default=site_packages+'/pangoLEARN/data/')
+    parser.add_argument('--indicies', help='Indicies to keep, defaults to [265:29674]')
     return parser.parse_args()
 
 
 
 if __name__ == '__main__':
     args = parse_args()
-    driver = get_driver(download_folder=args.d, executable_path=args.binpath)
+    indiciesToKeep = args.indicies
+
+    driver = get_driver(download_folder=args.d.name, executable_path=args.binpath)
     driver = login(driver=driver)
     srcfile = retrieve_genomes(driver=driver, start=args.start, end=args.end,
-                               download_folder=args.d)
+                               download_folder=args.d.name)
     driver.quit()
-    update_local(srcfile=srcfile, ref= args.ref, db=args.db)
+
+    #align sequences in srcfile
+    reflen = len(convert_fasta(open(args.ref))[0][1])
+    mm2 = minimap2(srcfile, ref=args.ref, nthread=args.thread,
+                   minlen=args.minlen)
+    #generate handle from mm2
+    sequence_handle=stream_fasta(mm2, reflen=reflen)
+
+    #insert aligned seqs into database
+    iterate_handle(sequence_handle, args.db)
+
+    #filter seqs here :TODO:
+    filtered_handle = filter_seqs(sequence_handle, args.filterout, max_prop_n=0.05, minlen=29000)
+    #classify by PANGOLIN & insert processed seqs
+    classify_and_insert(args.pangolindir+ 'decisionTreeHeaders_v1.joblib', args.pangolindir+'decisionTree_v1.joblib', filtered_handle, indiciesToKeep, args.db)
+
     insert_into_rawseqs(args.db, srcfile)
+    write_dbstats()

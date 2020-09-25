@@ -7,39 +7,30 @@ from sklearn.datasets import make_classification
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, classification_report, confusion_matrix
 from datetime import datetime
+from db_utils import *
+
+import gotoh2
 import argparse
 import joblib
 import argparse
 import pangoLEARN
-
-
-
+import re
+import sys
 
 def parse_args():
     parser = argparse.ArgumentParser(description='pangoLEARN.')
-    parser.add_argument("--header-file", action="store", type=str, dest="header_file")
-    parser.add_argument("--model-file", action="store", type=str, dest="model_file")
+    site_packages = next(p for p in sys.path if 'site-packages' in p)
+    parser.add_argument('--pangolindir', help ='PangoLEARN data dir, defaults to .../site_packages/panoLEARN/data/',
+        default=site_packages+'/pangoLEARN/data/')
+    parser.add_argument("--header_file", action="store", type=str, dest="header_file")
+    parser.add_argument("--model_file", action="store", type=str, dest="model_file")
     parser.add_argument("--fasta", action="store", type=str, dest="sequences_file")
     parser.add_argument("-o","--outfile", action="store", type=str, dest="outfile")
+    parser.add_argument('--indicies', help='Indicies to keep, defaults to [265:29674]')
+    parser.add_argument('--filterout', default = 'debug/filtered.log', type =argparse.FileType('w'),
+        help='Log for filtered seqs')
+
     return parser.parse_args()
-
-
-#Functions for converting raw sequences to acceptable handle for pangorider_main()
-def filter_raw():
-    """
-    :TODO:
-    Quality control step from pangolin combined with covizu filters 
-    """
-    pass
-
-def align_raw():
-    """
-    :TODO:
-    Need to implement minimap 
-    Returns python list with 
-    """
-    pass
-    #return handle
 
 def build_sequence_handle(sequence_file):
     """
@@ -90,9 +81,9 @@ def readInAndFormatData(sequence_handle, indiciesToKeep, blockSize=1000):
 
     # parse the handle collecting a list of the sequences
     for seqid, currentSeq in sequence_handle:        
-            idList.append(seqid)
-            seqList.append(encodeSeq(currentSeq, indiciesToKeep))
-            currentSeq = ""
+        idList.append(seqid)
+        seqList.append(encodeSeq(currentSeq, indiciesToKeep))
+        currentSeq = ""
 
         if len(seqList) == blockSize:
             yield idList, seqList
@@ -105,8 +96,104 @@ def readInAndFormatData(sequence_handle, indiciesToKeep, blockSize=1000):
 
     yield idList, seqList
 
+def filter_seqs(sequence_handle, outfile, max_prop_n=0.05, minlen=29000):
+    """
+    Filter FASTA file for partial and non-human SARS-COV-2 genome sequences.
 
-def classify_and_insert(header_file, model_file, sequence_handle, database):
+    *Adapted from filtering.py*
+
+    :param fasta_file:  open file stream to GISAID FASTA file
+    :param outfile:  open file stream to write filtered FASTA file
+    :param trim_left:  int, number of bases to drop from left
+    :param trim_right:  int, number of bases to drop from right
+    :param max_prop_n:  float, maximum proportion of N's (ambiguous bases)
+                        tolerated per genome
+    :param minlen:  int, minimum tolerated sequence length
+
+    :return:  dict, containing lists of headers for rejected genomes
+    """
+    # lower-case label in place of country identifies non-human samples
+    pat = re.compile('^[^/]+/[a-z]')
+    pat2 = re.compile("^[HhCcOoVv]+-19/[A-Z][^/]+/[^/]+/[0-9-]+\|[^|]+\|[0-9]{4}-[0-9]+-[0-9]+")
+    pat3 = re.compile('^-*')
+    pat4 = re.compile('-*$')
+
+    accessions = {}
+    discards = {'nonhuman': [], 'ambiguous': [], 'short': [],
+                'duplicates': [], 'mangled header': []}
+    filter_handle = []
+
+    for h, s in sequence_handle:
+        if not type(h)==str or not type(s)==str:
+            print("Error: entry {} not string type: sequence {}".format(h, s))
+            continue
+        if pat.findall(h):
+            discards['nonhuman'].append(h)
+            continue
+
+        if len(s) < minlen:
+            discards['short'].append(h)
+            continue
+
+        # apply sequence trims :Depreciated:
+        #seq = s[trim_left:(-trim_right)]
+        seq = s
+
+        # this is conservative - all internal gaps are interpreted as deletions
+        gap_prefix = len(pat3.findall(seq)[0])
+        gap_suffix = len(pat4.findall(seq)[0])
+        seqlen = len(seq) - gap_prefix - gap_suffix
+
+        n_ambig = seq.count('?') + seq.count('N') + gap_prefix + gap_suffix
+        if n_ambig / float(len(seq)) > max_prop_n:
+            discards['ambiguous'].append(h)
+            continue
+
+        if pat2.search(h) is None:
+            discards['mangled header'].append(h)
+            continue
+
+        desc, accn, coldate = h.split('|')
+        if accn in accessions:
+            discards['duplicates'].append(h)
+            continue
+        accessions.update({accn: desc})
+
+        # add genome to filtered handle
+        filter_handle.append([h,s])
+
+    outfile.write("Discarded {} non-human sequences.\n".format(len(discards['nonhuman'])))
+    for h in discards['nonhuman']:
+        outfile.write('  {}\n'.format(h))
+
+    outfile.write("Discarded {} problematic sequences with prop N > {}.\n".format(
+        len(discards['ambiguous']), max_prop_n
+    ))
+    for h in discards['ambiguous']:
+        outfile.write('  {}\n'.format(h))
+
+    outfile.write("Discarded {} sequences of length < {}\n".format(
+        len(discards['short']), minlen
+    ))
+    for h in discards['short']:
+        outfile.write('  {}\n'.format(h))
+
+    outfile.write("Discarded {} sequences with duplicate accession numbers\n".format(
+        len(discards['duplicates'])
+    ))
+    for h in discards['duplicates']:
+        outfile.write('  {}\n'.format(h))
+
+    outfile.write("Discarded {} sequences with mangled headers / ambiguous sample dates\n".format(
+        len(discards['mangled header'])
+    ))
+    for h in discards['mangled header']:
+        outfile.write('  {}\n'.format(h))
+
+    return filter_handle
+
+
+def classify_and_insert(header_file, model_file, sequence_handle, indiciesToKeep, database):
     """
     Re-written wrapper for pangoLEARN
     Assumes raw seqs in alignedseq are filtered (passed_qc) and aligned to LR757995.1
@@ -164,9 +251,17 @@ def classify_and_insert(header_file, model_file, sequence_handle, database):
             payload = [accession, prediction, score, pangoLEARN.__version__, 'passed_qc', '']
             insert_lineage(cursor, payload)
 
-if __name_ == '__main__':
+    conn.commit()
+
+if __name__ == '__main__':
 
     args = parse_args()
-    sequence_handle = open(args.sequences_file, 'r')
-    pangolin_version =
-    pangorider_main(args.header_file, args.model_file, args.sequence_handle)
+    sequence_handle = gotoh2.convert_fasta(open(args.sequences_file, 'r'))
+
+    filtered_handle = filter_seqs(sequence_handle, args.filterout, max_prop_n=0.05, minlen=29000)
+
+    if args.header-file == None and args.model-file == None:
+        classify_and_insert(args.pangolindir+ 'decisionTreeHeaders_v1.joblib', args.pangolindir+'decisionTree_v1.joblib', filtered_handle, args.indicies, args.db)
+    else:
+        classify_and_insert(args.header_file, args.model_file, filtered_handle, args.indicies, args.db)
+

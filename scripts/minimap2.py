@@ -98,6 +98,36 @@ def output_fasta(iter, outfile, reflen=0):
         aligned += '-'*(reflen-len(aligned))
         outfile.write('>{}\n{}\n'.format(qname, aligned))
 
+# return aligned sequence?
+def stream_fasta(iter, reflen=0):
+    """
+    Stream output from minimap2 into list of tuples [(header, seq), ... , (header, seq)]
+    of aligned sequences.  CIGAR parsing code adapted from
+    http://github.com/cfe-lab/MiCall
+
+    :param iter:  generator from minimap2()
+    :param reflen:  int, length of reference genome to pad sequences;
+                    defaults to no padding.
+    """
+    sequence_handle = []
+    for qname, rpos, cigar, seq in iter:
+        tokens = re.findall(r'  (\d+)([MIDNSHPX=])', cigar, re.VERBOSE)
+        aligned = '-' * rpos
+        left = 0
+        for length, operation in tokens:
+            length = int(length)
+            if operation in 'M=X':
+                aligned += seq[left:(left + length)]
+                left += length
+            elif operation == 'D':
+                aligned += '-' * length
+            elif operation in 'SI':
+                left += length  # soft clip
+
+        # pad on right
+        aligned += '-'*(reflen-len(aligned))
+        sequence_handle.append([qname, aligned])
+    return sequence_handle
 
 def encode_diffs(iter, reflen, alphabet='ACGT'):
     """
