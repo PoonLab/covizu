@@ -142,7 +142,6 @@ function select_by_points(points){
  * @param {string} accn:  accession number to search for
  */
 function select_bead_by_accession(accn) {
-  d3.selectAll("circle").dispatch('mouseout');
   // switch to cluster beadplot
   var cid = accn_to_cid[accn];
 
@@ -166,6 +165,12 @@ function select_bead_by_accession(accn) {
 
         create_selection(bead);
         bead.node().scrollIntoView({block: "center"});
+
+        // Update information panel
+        const datum = bead.datum();
+        gentable(datum);
+        draw_region_distribution(table(datum.region));
+        gen_details_table(datum);
 
      // } else {
      //   d3.selectAll("#svg-timetree > svg > g > rect:not(.clickedH)").attr("class", "not_SelectedCluster");
