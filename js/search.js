@@ -172,27 +172,6 @@ function select_bead_by_accession(accn) {
         draw_region_distribution(table(datum.region));
         gen_details_table(datum);
 
-     // } else {
-     //   d3.selectAll("#svg-timetree > svg > g > rect:not(.clickedH)").attr("class", "not_SelectedCluster");
-     //   var rect = d3.selectAll("#svg-timetree > svg > g > rect:not(.clickedH)")
-     //    .filter(function(d) { return(d.cluster_idx === cid); })
-     //    .attr("class", "SelectedCluster");
-     //
-     //    var bead = d3.selectAll("circle").filter(function(d) {
-     //      return d.accessions.includes(accn);
-     //    });
-     //
-     //    if (bead.nodes().length !== 0) {
-     //      create_selection(bead);
-     //      bead.node().scrollIntoView({block: "center"});
-     //    } else {
-     //      d3.select("div#svg-cluster").selectAll("line").attr("stroke-opacity", 0.3);
-     //
-     //      d3.select("div#svg-cluster")
-     //      .selectAll("circle:not(.SelectedBead):not(.selectionH)")
-     //      .attr("class", "not_SelectedBead");
-     //    }
-     // }
   }
 }
 
