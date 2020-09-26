@@ -142,7 +142,6 @@ function select_by_points(points){
  * @param {string} accn:  accession number to search for
  */
 function select_bead_by_accession(accn) {
-  d3.selectAll("circle").dispatch('mouseout');
   // switch to cluster beadplot
   var cid = accn_to_cid[accn];
 
