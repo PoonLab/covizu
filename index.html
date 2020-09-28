@@ -30,6 +30,7 @@
 
         <div id="navigation">
           <span id="search_stats"></span>
+          <button type="button" id="previous_button">Previous</button>
           <button type="button" id="next_button">Next</button>
           <button type="button" id="clear_button">Clear</button>
         </div>
@@ -71,6 +72,7 @@
                             <summary>Country distribution</summary>
                             <div id="country-table"></div>
                         </details>
+                        <br />
                         <details>
                             <summary>Sequence details</summary>
                             <div id="seq-table"></div>
@@ -206,6 +208,19 @@
             const accn = point.accessions[0];
             select_bead_by_accession(accn);
           });
+
+          $('#previous_button').click(function(){
+            const stats = search_stats.update({
+              current_point: search_stats.get().current_point - 1,
+            });
+            update_search_stats(stats);
+            const point = stats.points[stats.current_point - 1];
+            // TODO: Select the accession with a more general approach
+            const accn = point.accessions[0];
+            select_bead_by_accession(accn);
+          });
+
+
         });
 
         // populate countries table
