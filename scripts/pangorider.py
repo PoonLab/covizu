@@ -18,7 +18,7 @@ import re
 import sys
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='pangoLEARN.')
+    parser = argparse.ArgumentParser(description='pangorider. A derivative of PANGOLIN')
     site_packages = next(p for p in sys.path if 'site-packages' in p)
     parser.add_argument('--pangolindir', help ='PangoLEARN data dir, defaults to .../site_packages/panoLEARN/data/',
         default=site_packages+'/pangoLEARN/data/')
@@ -27,7 +27,7 @@ def parse_args():
     parser.add_argument("--fasta", action="store", type=str, dest="sequences_file")
     parser.add_argument("-o","--outfile", action="store", type=str, dest="outfile")
     parser.add_argument('--indicies', help='Indicies to keep, defaults to [265:29674]')
-    parser.add_argument('--filterout', default = 'debug/filtered.log', type =argparse.FileType('w'),
+    parser.add_argument('--filterout', default = 'debug/filtered.log', type =argparse.FileType('w+'),
         help='Log for filtered seqs')
 
     return parser.parse_args()

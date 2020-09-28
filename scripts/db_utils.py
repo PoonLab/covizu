@@ -1,5 +1,4 @@
 import sqlite3
-import gotoh2
 import argparse
 import queue
 import time
@@ -91,7 +90,7 @@ def insert_into_rawseqs(database, fasta):
     conn = sqlite3.connect(database)
     cursor = conn.cursor()
 
-    handle = gotoh2.convert_fasta(open(fasta))
+    handle = convert_fasta(open(fasta))
 
     inserted_acessions = []
     for header,seq in handle:
@@ -216,6 +215,64 @@ def pull_field(cursor, field):
     field_dict= dict(result.fetchall())
     return field_dict
 
+def report_changes(database, header, seq):
+    """
+    Function to check for changes in uploaded seqs, replaces different headers
+    :params:
+        :cursor:
+        :header: seq name
+        :seq: unaligned covid seq
+    """
+    cursor, conn = open_connection(database) 
+
+    accession = header.split('|')[1]
+    record = cursor.execute('SELECT header, unaligned from rawseq WHERE accession = ?', [accession]).fetchone()
+    if type(record) == None:
+        conn.commit()
+        conn.close()
+        return [header, seq]
+
+    old_header, old_seq = record #otherwise unpack values
+
+    if header != old_header:
+        cursor.execute('REPLACE INTO sequences SET header = ? WHERE accession = ?', [header, accession])
+        conn.commit()
+        conn.close()
+        return 1
+    if hash(seq) != hash(old_seq): #hash comparison is quicker?
+        conn.commit()
+        conn.close()
+        return [header, seq]
+    conn.commit()
+    conn.close()
+
+    return 0
+
+def convert_fasta(handle):
+    """
+    Taken from gotoh2 by artpoon
+    Parse FASTA file as a list of header, sequence list objects
+    :param handle:  open file stream
+    :return:  List of [header, sequence] records
+    """
+    result = []
+    h, sequence = None, ''
+
+    for line in handle:
+        if line.startswith('$'):  # skip comment
+            continue
+        elif line.startswith('>') or line.startswith('#'):
+            if len(sequence) > 0:
+                result.append([h, sequence])
+                sequence = ''
+            h = line.lstrip('>').rstrip()
+        else:
+            sequence += line.strip().upper()
+
+    result.append([h, sequence])  # handle last entry
+    return result
+
+
 def iterate_fasta(fasta, database = 'data/gsaid.db'):
     """
     Function to iterate through aligned fasta file *non threaded*
@@ -223,7 +280,7 @@ def iterate_fasta(fasta, database = 'data/gsaid.db'):
     :param fasta: file containing sequences
     :param ref: file containing reference sequence, default-> NC_04552.fa
     """
-    handle = gotoh2.convert_fasta(open(fasta))
+    handle = convert_fasta(open(fasta))
     cursor, conn = open_connection(database)
 
     for header, seq in handle:
