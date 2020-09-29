@@ -1,5 +1,4 @@
 import sqlite3
-import gotoh2
 import argparse
 import queue
 import time
@@ -30,8 +29,7 @@ def open_connection(database):
 
     # create tables if they don't exist
     seqs_table = 'CREATE TABLE IF NOT EXISTS SEQUENCES (accession VARCHAR(255) ' \
-                 'PRIMARY KEY, header VARCHAR(255), unaligned_hash VARCHAR(100), ' \
-                 'aligned BLOB);'
+                 'PRIMARY KEY, header VARCHAR(255), aligned BLOB);'
     cur.execute(seqs_table)
 
     sample_table = "CREATE TABLE IF NOT EXISTS SAMPLE (accession VARCHAR(255) " \
@@ -68,7 +66,7 @@ def open_connection(database):
     return cur, conn
 
 
-def insert_seq(cursor, seq, header, aligned):
+def insert_seq(cursor, header, aligned):
     """ Wrapper function for aligning & inserting into SEQUENCES table
         :params:
             :cursor: sqlite database handler
@@ -76,10 +74,10 @@ def insert_seq(cursor, seq, header, aligned):
             :header: fasta header
             :aligned: aligned sequence
     """
-    vars= [header.split('|')[1], header, hash(seq.strip('N')), aligned]
+    vars= [header.split('|')[1], header, aligned]
     result = cursor.execute(
-        "REPLACE INTO SEQUENCES('accession', 'header', 'unaligned_hash', 'aligned') "
-        "VALUES(?, ?, ?, ?)", vars)
+        "REPLACE INTO SEQUENCES('accession', 'header', 'aligned') "
+        "VALUES(?, ?, ?)", vars)
     return 0
 
 
@@ -92,7 +90,7 @@ def insert_into_rawseqs(database, fasta):
     conn = sqlite3.connect(database)
     cursor = conn.cursor()
 
-    handle = gotoh2.convert_fasta(open(fasta))
+    handle = convert_fasta(open(fasta))
 
     inserted_acessions = []
     for header,seq in handle:
@@ -106,37 +104,9 @@ def insert_into_rawseqs(database, fasta):
     return inserted_acessions
 
 
-def find_seq(conn, seq, refseq):
-    """
-    Function that either returns aligned seq from database or performs procrust align itself
-    :params:
-        :cursor: sqlite db handler
-        :seq: raw sequence
-        :ref: NC_045512 sequence
-    """
-    if len(seq) < 5000:
-        return 0
-
-    # hash the raw sequence to find the hashkey in aligned table
-    rawhash = hash(seq.strip('N'))
-    result = conn.cursor().execute('SELECT aligned_seq FROM HASHEDSEQS WHERE `hash_key` = ?',
-                                   [rawhash]).fetchall()
-    if len(result) == 1:
-        aligned = result[0][0]
-    else:
-        aligner = gotoh2.Aligner()
-        aligned = gotoh2.procrust_align(refseq, seq, aligner)[0]
-        vars = [hash(seq.strip('N')), aligned]
-        conn.cursor().execute('REPLACE INTO HASHEDSEQS(`hash_key`, '
-                              '`aligned_seq`) VALUES(?,?);', vars)
-        conn.commit()
-
-    return aligned
-
-
 def iterate_lineage_csv(cursor, csvFile):
     """
-    Wrapper function for inserting into LINEAGES table
+    Wrapper function for inserting csv's into LINEAGES table
     :params:
         :cursor: sqlite database handler
         :csvFile: output of pangolin containing run data
@@ -151,6 +121,18 @@ def iterate_lineage_csv(cursor, csvFile):
             vars = [row[0].split('|')[1], row[1], row[2], row[3], row[4], row[5]]
             cursor.execute("INSERT INTO LINEAGE(`accession`, `lineage`, `probability`, "
             	"`pangoLEARN_version`, `status`, `note`) VALUES(?,?, ?, DATE(?),?,?)", vars)
+
+def insert_lineage(cursor, payload):
+    """
+    Wrapper function for streaming Lineage typing into sqlite database -Lineage table-
+        :params:
+            :cursor: sqlite database handler
+            :payload: data streamed from pangorider [accession, lineage, probability, pangoLEARN_version ]
+        :output:
+            None
+    """
+    cursor.execute("INSERT INTO LINEAGE(`accession`, `lineage`, `probability`, "
+                "`pangoLEARN_version`, `status`, `note`) VALUES(?,?, ?, DATE(?),?,?)", payload)
 
 
 def process_tech_meta(cursor, tsvFile):
@@ -233,46 +215,94 @@ def pull_field(cursor, field):
     field_dict= dict(result.fetchall())
     return field_dict
 
-def iterate_fasta(fasta, ref, database = 'data/gsaid.db'):
+def report_changes(database, header, seq):
     """
-    Function to iterate through fasta file *non threaded*
+    Function to check for changes in uploaded seqs, replaces different headers
+    :params:
+        :cursor:
+        :header: seq name
+        :seq: unaligned covid seq
+    """
+    cursor, conn = open_connection(database) 
+
+    accession = header.split('|')[1]
+    record = cursor.execute('SELECT header, unaligned from rawseq WHERE accession = ?', [accession]).fetchone()
+    if type(record) == None:
+        conn.commit()
+        conn.close()
+        return [header, seq]
+
+    old_header, old_seq = record #otherwise unpack values
+
+    if header != old_header:
+        cursor.execute('REPLACE INTO sequences SET header = ? WHERE accession = ?', [header, accession])
+        conn.commit()
+        conn.close()
+        return 1
+    if hash(seq) != hash(old_seq): #hash comparison is quicker?
+        conn.commit()
+        conn.close()
+        return [header, seq]
+    conn.commit()
+    conn.close()
+
+    return 0
+
+def convert_fasta(handle):
+    """
+    Taken from gotoh2 by artpoon
+    Parse FASTA file as a list of header, sequence list objects
+    :param handle:  open file stream
+    :return:  List of [header, sequence] records
+    """
+    result = []
+    h, sequence = None, ''
+
+    for line in handle:
+        if line.startswith('$'):  # skip comment
+            continue
+        elif line.startswith('>') or line.startswith('#'):
+            if len(sequence) > 0:
+                result.append([h, sequence])
+                sequence = ''
+            h = line.lstrip('>').rstrip()
+        else:
+            sequence += line.strip().upper()
+
+    result.append([h, sequence])  # handle last entry
+    return result
+
+
+def iterate_fasta(fasta, database = 'data/gsaid.db'):
+    """
+    Function to iterate through aligned fasta file *non threaded*
     :param cursor: sqlite database handler
     :param fasta: file containing sequences
     :param ref: file containing reference sequence, default-> NC_04552.fa
     """
-    handle = gotoh2.convert_fasta(open(fasta))
-    _, refseq = gotoh2.convert_fasta(open(ref))[0]
+    handle = convert_fasta(open(fasta))
     cursor, conn = open_connection(database)
 
-    # stream records into queue
     for header, seq in handle:
-        alignedseq = find_seq(conn, seq, refseq)
-        insert_seq(cursor, seq, header, alignedseq)
+        insert_seq(cursor, header, seq)
         conn.commit()
     conn.close()
 
 
-def iterate_handle(handle, ref, database = 'data/gsaid.db'):
+def iterate_handle(handle, database = 'data/gsaid.db'):
     """
-    Function to iterate through list [(header,seq)....] passed by ChunkyBot ##NON THREADED##
+    Function to iterate through list [(header,seq)....]
     :param cursor: sqlite database handler
     :param handle: list containing tuples (header, raw seq)
     :param ref: file containing reference sequence, default-> NC_04552.fa
     """
 
-    _, refseq = gotoh2.convert_fasta(open(ref))[0]
     cursor, conn = open_connection(database)
 
     # align and insert into database
-    for header, seq in handle:
-        alignedseq = find_seq(conn, seq, refseq)
-        # if alignedseq returns 0; raw seq length <5,000
-        if alignedseq == 0:
-            print('Sequence {} with a length of {} cannot be aligned.'.format(header, len(seq)))
-        else:
-            print('Aligning {}.'.format(header))
-            insert_seq(cursor, seq, header, alignedseq)
-            conn.commit()
+    for header, alignedseq in handle:
+        insert_seq(cursor, header, alignedseq)
+    conn.commit()
 
 
 def migrate_entries(old_db, new_db):
@@ -430,7 +460,7 @@ if __name__ == '__main__':
     cursor, conn = open_connection(args.db)
 
     if args.srcfile is not None:
-        iterate_fasta(args.srcfile, args.ref)
+        iterate_fasta(args.srcfile)
 
     if args.sequencingmeta is not None:
         insert_sample_sequencing(cursor, args.sequencingmeta)

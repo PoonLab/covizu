@@ -114,7 +114,7 @@ function parse_clusters(clusters) {
       points,  // the "beads"
       beaddata = [];  // return value
 
-  for (var cidx = 0; cidx < clusters.length; cidx++) {
+  for (const cidx in clusters) {
     cluster = clusters[cidx];
     if (cluster.nodes.length === 1) {
       console.log('skip '+ cluster.nodes);
@@ -161,7 +161,7 @@ function parse_clusters(clusters) {
         samples = variant.filter(x => x.coldate === isodate);
         country = samples.map(x => x.country);
         regions = country.map(x => countries[x]);
-        
+
         // warn developers if no region for country
         if (regions.includes(undefined)) {
           console.log("Developer msg, need to update countries.json:");
@@ -169,8 +169,9 @@ function parse_clusters(clusters) {
             console.log(`"${samples[j].country}"`);
           }
         }
-        
+
         points.push({
+          cidx,
           'x': new Date(isodate),
           'y': y,
           'count': samples.length,
@@ -309,7 +310,7 @@ function beadplot(cid) {
   // clear SVG
   visB.selectAll('*').remove();
   visBaxis.selectAll('*').remove();
-	
+
   // draw horizontal line segments that represent variants in cluster
   visB.selectAll("lines")
       .data(variants)
@@ -352,10 +353,11 @@ function beadplot(cid) {
             .duration(50)
             .style("opacity", 0);
       })
-      .on("click", function(d) { 
+      .on("click", function(d) {
         gentable(d);
         draw_region_distribution(table(d.region));
-        gen_details_table(d);
+        let var_samples = points.filter(x => x.y === d.y1);
+        gen_details_table(var_samples);
       });
 
   // label variants with earliest sample name
@@ -464,12 +466,12 @@ function beadplot(cid) {
       .on("click", function(d) {
 
         clear_selection();
-        
+
         var cur_obj = d3.select(this);
         create_selection(cur_obj);
-        
+
         d3.select("#svg-timetree").selectAll("line").attr("stroke-opacity", 1);
-        
+
         gentable(d);
         draw_region_distribution(table(d.region));
         gen_details_table(d);
@@ -511,17 +513,34 @@ function region_to_string(my_regions) {
 
 /**
  * Creates a table that displays sequence details (Sequence name, GISAID accession number, collection date)
- * @param obj: JS object with the attribute
+ * @param obj: JS object or an array of JS Objects
  */
 function gen_details_table(obj) {
   var details = [];
   let formatDate = d3.timeFormat("%Y-%m-%d");
 
-  // "zip" the sequence details of each sample
-  for (let i = 0; i < obj.accessions.length; i++) {
-    let sample_details = [obj.accessions[i], obj.labels[i], formatDate(new Date(obj.x))];
-    details.push(sample_details);
+  // Check for a list of samples
+  if (Array.isArray(obj)) {
+
+    // Iterate over each sample in the list
+    for (let j = 0; j < obj.length; j++) {
+
+      // "zip" the sequence details of each sample
+      for (let i = 0; i < obj[j].accessions.length; i++) {
+        let sample_details = [obj[j].accessions[i], obj[j].labels[i], formatDate(new Date(obj[j].x))];
+        details.push(sample_details);
+      }
+    }
   }
+
+  else {
+    // "zip" the sequence details of each sample
+    for (let i = 0; i < obj.accessions.length; i++) {
+      let sample_details = [obj.accessions[i], obj.labels[i], formatDate(new Date(obj.x))];
+      details.push(sample_details);
+    }
+  }
+
 
   thead.html(""); // clear table headers
   var sort_ascending = true;
@@ -572,7 +591,7 @@ function gen_details_table(obj) {
       .enter()
       .append('td')
       .text(function (x) { return x; })
-      .style("font", "0.9em/1.2 Lato, sans-serif");
+      .style("font", "0.875em/1.2 Lato, sans-serif");
 }
 
 
@@ -594,11 +613,11 @@ function gentable(obj) {
   country_table.selectAll('thead').remove()
 
   // https://stackoverflow.com/questions/32871044/how-to-update-d3-table
-  //create a row <tr> for each item in my_countries array, set mouse over over color, then create one column <td> for each item in array 
+  //create a row <tr> for each item in my_countries array, set mouse over over color, then create one column <td> for each item in array
   var rows = country_tbody.selectAll("tr")
     .data(my_countries);
   rows.exit().remove();
-  rows.enter() 
+  rows.enter()
     .append("tr")
     .on("mouseover", function(){
       d3.select(this).style("background-color", "grey");}) //mouseover highlight
@@ -609,7 +628,7 @@ function gentable(obj) {
     .enter()
     .append("td")
     .text(function(d) { return d; });
-  
+
   var rows = country_tbody.selectAll("tr") //reselect all rows
 
   var cells = rows.selectAll("td")

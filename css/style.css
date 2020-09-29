@@ -123,6 +123,8 @@ rect:hover{
 
 .dates{
   width: 90px;
+  position: relative;
+  z-index: 15;
 }
 
 #navigation {
@@ -184,12 +186,14 @@ rightbar {
     position: fixed;
     height: 100%;
     overflow: auto;
-    right :0;
-   /* z-index: 20;*/
+    right: 0;
+    /* z-index: 20;*/
     overflow-x: hidden;
     padding-bottom: 2px;
-    &::-webkit-scrollbar {
-      display: none;
+}
+
+rightbar::-webkit-scrollbar {
+    display: none;
 }
 
 .bar {
@@ -226,10 +230,17 @@ rightbar {
     /* background-color: #fffa; */
 }
 
+rightbar table {
+    table-layout: fixed;
+    width: 106%;
+    overflow-wrap: anywhere;
+    font: 0.775em/1.2 Lato, sans-serif;
+}
 
 th, td {
     text-align: left;
     padding: 0 1em 0.5ex 0;
+    width: 33%;
 }
 
 /* Add zebra stripping for rows */
@@ -257,7 +268,7 @@ a.sort-by:before, a.sort-by:after {
     content: "";
     display: block;
     height: 0;
-    right: 5px;
+    right: 10px;
     top: 50%;
     position: absolute;
     width: 0;

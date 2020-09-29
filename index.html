@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8"/>
     <title>CoVizu</title>
-    <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
@@ -30,6 +30,7 @@
 
         <div id="navigation">
           <span id="search_stats"></span>
+          <button type="button" id="previous_button">Previous</button>
           <button type="button" id="next_button">Next</button>
           <button type="button" id="clear_button">Clear</button>
         </div>
@@ -71,6 +72,7 @@
                             <summary>Country distribution</summary>
                             <div id="country-table"></div>
                         </details>
+                        <br />
                         <details>
                             <summary>Sequence details</summary>
                             <div id="seq-table"></div>
@@ -170,14 +172,29 @@
           	}
           });
 
-          $('#start-date').datepicker();
+          const dateFormat = 'yy-mm-dd'; // ISO_8601
+          $('#start-date').datepicker({
+            dateFormat,
+            onSelect: function(date_text){
+                const start = new Date(date_text);
+                search_by_dates(beaddata, start, search_stats.get().end);
+            }
+          });
 
-          $('#end-date').datepicker();
+          $('#end-date').datepicker({
+            dateFormat,
+            onSelect: function(date_text){
+              const end = new Date(date_text);
+              search_by_dates(beaddata, search_stats.get().start, end);
+            }
+          });
 
           // Clear search
           $('#clear_button').click(function(){
             clear_selection();
             search(beaddata);
+            $('#end-date').val('');
+            $('#start-date').val('');
           });
 
           // Iterate results
@@ -187,15 +204,28 @@
             });
             update_search_stats(stats);
             const point = stats.points[stats.current_point - 1];
-            // TODO: Select the accesion with a more general approach
+            // TODO: Select the accession with a more general approach
             const accn = point.accessions[0];
             select_bead_by_accession(accn);
           });
+
+          $('#previous_button').click(function(){
+            const stats = search_stats.update({
+              current_point: search_stats.get().current_point - 1,
+            });
+            update_search_stats(stats);
+            const point = stats.points[stats.current_point - 1];
+            // TODO: Select the accession with a more general approach
+            const accn = point.accessions[0];
+            select_bead_by_accession(accn);
+          });
+
+
         });
 
         // populate countries table
         var country_table = d3.select("#country-table").append('table');
-        var theaders = ["Region", "Country", "Count"]
+        var theaders = ["Region", "Country", "Count"];
 
         // to be populated in beadplot.js
         var country_tbody = country_table.append("tbody");
@@ -203,7 +233,7 @@
         // Populate sequence details table
         var seq_table = d3.select("#seq-table").append('table');
         var thead = seq_table.append('thead');
-        var seq_theaders = ["GISAID accession", "Name", "Date"];
+        var seq_theaders = ["Accession", "Name", "Date"];
         var seq_tbody = seq_table.append('tbody');
 
     </script>
