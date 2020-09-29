@@ -331,27 +331,15 @@ if __name__ == "__main__":
     args = parse_args()
     cb = Callback()
 
+    # TODO: tuck this into a main function
     cb.callback('loading lineage classifications from database')
     lineages = dump_lineages(args.db)
 
     cb.callback('loading JSON')
     features = import_json(args.json)
 
-    # load reference genome for testing
-    with open('data/NC_045512.fa') as handle:
-        refseq = convert_fasta(handle)[0][1]
-
     by_lineage = split_by_lineage(features, lineages)
     for lineage, lfeatures in by_lineage.items():
-
-        # write out aligned sequences
-        outfile = open('temp.fasta', 'w')
-        for row in lfeatures:
-            seq = apply_features(row, refseq)
-            outfile.write('>{}\n{}\n'.format(row['name'], seq))
-        outfile.close()
-
-
         cb.callback('start {}, {} entries'.format(lineage, len(lfeatures)))
 
         # compute symmetric differences
@@ -398,6 +386,5 @@ if __name__ == "__main__":
                 format='newick'
             )
 
-        break  # DEBUGGING
 
 
