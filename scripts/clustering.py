@@ -5,7 +5,7 @@ from datetime import datetime
 from urllib import request
 
 import db_utils
-from seq_utils import Callback
+from seq_utils import Callback, convert_fasta
 
 import argparse
 import tempfile
@@ -125,8 +125,26 @@ def apply_features(row, refseq):
 
     :param row:  dict, entry from features list returned by import_json()
     :param refseq:  str, reference genome
+    :return:  str, aligned genome
     """
-    pass
+
+    # strings are not mutable
+    result = list(refseq)
+
+    # apply missing intervals
+    for left, right in row['missing']:
+        for i in range(left, right):
+            result[i] = 'N'
+
+    # apply substitutions and deletions (skip insertions)
+    for dtype, pos, diff in row['diffs']:
+        if dtype == '~':
+            result[pos] = diff
+        elif dtype == '-':
+            for i in range(pos, pos+diff):
+                result[i] = '-'
+
+    return ''.join(result)
 
 
 def split_by_lineage(features, lineages):
@@ -319,12 +337,20 @@ if __name__ == "__main__":
     cb.callback('loading JSON')
     features = import_json(args.json)
 
+    # load reference genome for testing
+    with open('data/NC_045512.fa') as handle:
+        refseq = convert_fasta(handle)[0][1]
+
     by_lineage = split_by_lineage(features, lineages)
     for lineage, lfeatures in by_lineage.items():
 
-        if lineage != 'B.1':
-            # FIXME: DEBUGGING
-            continue
+        # write out aligned sequences
+        outfile = open('temp.fasta', 'w')
+        for row in lfeatures:
+            seq = apply_features(row, refseq)
+            outfile.write('>{}\n{}\n'.format(row['name'], seq))
+        outfile.close()
+
 
         cb.callback('start {}, {} entries'.format(lineage, len(lfeatures)))
 
