@@ -6,7 +6,7 @@ from sklearn import metrics
 from sklearn.datasets import make_classification
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, classification_report, confusion_matrix
-from datetime import datetime
+import datetime
 from db_utils import *
 
 import gotoh2
@@ -123,6 +123,10 @@ def filter_seqs(sequence_handle, outfile, max_prop_n=0.05, minlen=29000):
                 'duplicates': [], 'mangled header': []}
     filter_handle = []
 
+    #Set date vars, headers must be within this, otherwise consider it mangled
+    today = datetime.datetime.today().date()
+    init_day = datetime.date(2019,12,1) #earliest possible Covid seq cannot be before Dec 2019
+
     for h, s in sequence_handle:
         if not type(h)==str or not type(s)==str:
             print("Error: entry {} not string type: sequence {}".format(h, s))
@@ -158,6 +162,18 @@ def filter_seqs(sequence_handle, outfile, max_prop_n=0.05, minlen=29000):
             discards['duplicates'].append(h)
             continue
         accessions.update({accn: desc})
+
+        #check if date in proper format
+        coldate_parsed = coldate.split('-')
+        if len(coldate_parsed) != 3:
+            discards['mangled header'].append(h)
+            continue
+        else:
+            coldate_parsed = [int(i) for i in coldate_parsed]
+            seq_date = datetime.date(coldate_parsed[0], coldate_parsed[1], coldate_parsed[2])
+            if seq_date < init_day or seq_date > today:
+                discards['mangled header'].append(h)
+                continue
 
         # add genome to filtered handle
         filter_handle.append([h,s])
@@ -204,14 +220,14 @@ def classify_and_insert(header_file, model_file, sequence_handle, indiciesToKeep
     model_headers = joblib.load(header_file)
     indiciesToKeep = model_headers[1:]
 
-    print("loading model " + datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
+    print("loading model " + datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
     loaded_model = joblib.load(model_file)
 
     # write predictions to the LINEAGE table
     cursor, conn = open_connection(database)
     for idList, seqList in readInAndFormatData(sequence_handle, indiciesToKeep):
         print("processing block of {} sequences {}".format(
-            len(seqList), datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+            len(seqList), datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
         ))
 
         # create a data from from the seqList
