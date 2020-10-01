@@ -39,7 +39,7 @@ def dump_lineages(db='data/gsaid.db'):
     return result
 
 
-def filter_problematic(features, vcf_file="data/problematic_sites_sarsCov2.vcf"):
+def filter_problematic(features, vcf_file="data/problematic_sites_sarsCov2.vcf", callback=None):
     """
     Apply problematic sites annotation from de Maio et al.,
     https://virological.org/t/issues-with-sars-cov-2-sequencing-data/473
@@ -76,7 +76,8 @@ def filter_problematic(features, vcf_file="data/problematic_sites_sarsCov2.vcf")
         count += len(row['diffs']) - len(filtered)
         row['diffs'] = filtered
 
-    print('filtered {} problematic features'.format(count))
+    if callback:
+        callback('filtered {} problematic features'.format(count))
     return features
 
 
@@ -88,7 +89,7 @@ def total_missing(row):
     return res
 
 
-def import_json(path, max_missing=600):
+def import_json(path, max_missing=600, callback=None):
     """
     Read genome features (genetic differences from reference) from JSON file.
 
@@ -100,15 +101,15 @@ def import_json(path, max_missing=600):
         features = json.load(fp)
 
     # remove features known to be problematic
-    features = filter_problematic(features)
+    features = filter_problematic(features, callback=callback)
 
     # remove genomes with too many uncalled bases
     count = len(features)
     features = [row for row in features if total_missing(row) < max_missing]
-    print("dropped {} records with uncalled bases in excess of {}".format(
-        count - len(features), max_missing
-    ))
 
+    if callback:
+        callback("dropped {} records with uncalled bases in excess "
+                 "of {}".format(count - len(features), max_missing))
     return features
 
 
@@ -383,9 +384,9 @@ if __name__ == "__main__":
     lineages = dump_lineages(args.db)
 
     cb.callback('loading JSON')
-    features = import_json(args.json)
-
-    for lineage, lfeatures in split_by_lineage(features, lineages):
+    features = import_json(args.json, callback=cb.callback)
+    by_lineage = split_by_lineage(features, lineages)
+    for lineage, lfeatures in by_lineage.items():
         cb.callback('start {}, {} entries'.format(lineage, len(lfeatures)))
 
         # calculate symmetric difference matrix and run NJ on bootstrap samples
