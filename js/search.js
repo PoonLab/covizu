@@ -151,7 +151,7 @@ function select_bead_by_accession(accn, reset_clusters_tree = true) {
     if (reset_clusters_tree === true) {
       d3.selectAll("#svg-timetree > svg > g > rect:not(.clickedH)").attr("class", "not_SelectedCluster");
     }
-    
+
     var rect = d3.selectAll("#svg-timetree > svg > g > rect:not(.clickedH)")
       .filter(function(d) { return(d.cluster_idx === cid); })
       .attr("class", "clicked");
@@ -237,12 +237,12 @@ function get_autocomplete_source_fn(accn_to_cid) {
 
 function search(beaddata) {
 	var query = $('#search-input').val();
-	const accn_pat = /^EPI_ISL_[0-9]+$/i;  // case-insensitive
+
   // FIX ME: Accn search returning 0 beads
   const points = find_beads_points(beaddata)
     .filter(point => point.labels.some(label => label.includes(query)));
   // TODO: Make select_bead_by_* use find_beads_points result
-  accn_pat.test(query) ? select_bead_by_accession(query) : select_beads_by_substring(query);
+  is_accn(query) ? select_bead_by_accession(query) : select_beads_by_substring(query);
   const stats = search_stats.update({
     query,
     current_point: 1,

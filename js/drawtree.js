@@ -53,6 +53,14 @@ function create_clusterH(obj, obj_2) {
 }
 
 /**
+ * Returns true if the string is an accession number
+ */
+function is_accn(string) {
+  const accn_pat = /^EPI_ISL_[0-9]+$/i;  // case-insensitive
+  return accn_pat.test(string);
+}
+
+/**
  * Rectangular layout of tree, update nodes in place with x,y coordinates
  * @param {object} root
  */
@@ -275,6 +283,11 @@ function draw_clusters(tips) {
       d3.selectAll("rect.clickedH").remove();
 
       beadplot(d.cluster_idx);
+
+      if (is_accn($('#search-input').val())) {
+        $('#search-input').val('');
+      }
+
       search(beaddata);
 
       // reset all rectangles to high transparency
