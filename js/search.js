@@ -242,7 +242,7 @@ function search(beaddata) {
   const points = find_beads_points(beaddata)
     .filter(point => point.labels.some(label => label.includes(query)));
   // TODO: Make select_bead_by_* use find_beads_points result
-  is_accn(query) ? select_bead_by_accession(query) : select_beads_by_substring(query);
+  isAccn(query) ? select_bead_by_accession(query) : select_beads_by_substring(query);
   const stats = search_stats.update({
     query,
     current_point: 1,

@@ -53,14 +53,6 @@ function create_clusterH(obj, obj_2) {
 }
 
 /**
- * Returns true if the string is an accession number
- */
-function is_accn(string) {
-  const accn_pat = /^EPI_ISL_[0-9]+$/i;  // case-insensitive
-  return accn_pat.test(string);
-}
-
-/**
  * Rectangular layout of tree, update nodes in place with x,y coordinates
  * @param {object} root
  */
@@ -255,8 +247,7 @@ function draw_clusters(tips) {
       let ctooltipText = `<b>Mean pairwise distance:</b> ${d.pdist}<br><b>Mean root distance:</b> ${d.rdist}<br><br>`;
       ctooltipText += region_to_string(d.allregions);
       ctooltipText += `<br><b>Number of variants:</b> ${d.varcount}<br>`;
-      const formatDate = d3.timeFormat("%Y-%m-%d");
-      ctooltipText += `<br><b>Collection dates:</b><br>${formatDate(new Date(d.first_date))} / ${formatDate(new Date(d.last_date))}<br>`;
+      ctooltipText += `<br><b>Collection dates:</b><br>${formatDate(d.first_date)} / ${formatDate(d.last_date)}<br>`;
 
       cTooltip.html(ctooltipText)
           .style("left", (d3.event.pageX + 10) + "px")    // Tooltip appears 10 pixels left of the cursor
@@ -284,7 +275,7 @@ function draw_clusters(tips) {
 
       beadplot(d.cluster_idx);
 
-      if (is_accn($('#search-input').val())) {
+      if (isAccn($('#search-input').val())) {
         $('#search-input').val('');
       }
 

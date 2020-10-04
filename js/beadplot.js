@@ -337,8 +337,7 @@ function beadplot(cid) {
 
         tooltipText += region_to_string(table(d.region));
         tooltipText += `<br><b>Unique collection dates:</b> ${d.numBeads}<br>`;
-        let formatDate = d3.timeFormat("%Y-%m-%d");
-        tooltipText += `<br><b>Collection dates:</b><br>${formatDate(new Date(d.x1))} / ${formatDate(new Date(d.x2))}<br>`;
+        tooltipText += `<br><b>Collection dates:</b><br>${formatDate(d.x1)} / ${formatDate(d.x2)}<br>`;
 
         // Tooltip appears 10 pixels left of the cursor
         bTooltip.html(tooltipText)
@@ -400,8 +399,7 @@ function beadplot(cid) {
         let tooltipText = `<b>Parent:</b> ${d.parent}<br><b>Child:</b> ${d.child}<br>`;
         tooltipText += `<b>Genomic distance:</b> ${d.dist}<br><br>`;
 
-        let formatDate = d3.timeFormat("%Y-%m-%d");
-        tooltipText += `<b>Collection date:</b> ${formatDate(new Date(d.x2))}`;
+        tooltipText += `<b>Collection date:</b> ${formatDate(d.x2)}`;
 
         // Tooltip appears 10 pixels left of the cursor
         bTooltip.html(tooltipText)
@@ -448,8 +446,7 @@ function beadplot(cid) {
         }
 
         tooltipText += region_to_string(table(d.region));
-        let formatDate = d3.timeFormat("%Y-%m-%d");
-        tooltipText += `<br><b>Collection date:</b> ${formatDate(new Date(d.x))}<br>`;
+        tooltipText += `<br><b>Collection date:</b> ${formatDate(d.x)}<br>`;
 
         // Tooltip appears 10 pixels left of the cursor
         bTooltip.html(tooltipText)
@@ -517,7 +514,6 @@ function region_to_string(my_regions) {
  */
 function gen_details_table(obj) {
   var details = [];
-  let formatDate = d3.timeFormat("%Y-%m-%d");
 
   // Check for a list of samples
   if (Array.isArray(obj)) {
@@ -527,7 +523,7 @@ function gen_details_table(obj) {
 
       // "zip" the sequence details of each sample
       for (let i = 0; i < obj[j].accessions.length; i++) {
-        let sample_details = [obj[j].accessions[i], obj[j].labels[i], formatDate(new Date(obj[j].x))];
+        let sample_details = [obj[j].accessions[i], obj[j].labels[i], formatDate(obj[j].x)];
         details.push(sample_details);
       }
     }
@@ -536,7 +532,7 @@ function gen_details_table(obj) {
   else {
     // "zip" the sequence details of each sample
     for (let i = 0; i < obj.accessions.length; i++) {
-      let sample_details = [obj.accessions[i], obj.labels[i], formatDate(new Date(obj.x))];
+      let sample_details = [obj.accessions[i], obj.labels[i], formatDate(obj.x)];
       details.push(sample_details);
     }
   }
