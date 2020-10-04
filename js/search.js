@@ -140,37 +140,40 @@ function select_by_points(points){
 /**
  * Highlight and jump to node in beadplot by sample accession number.
  * @param {string} accn:  accession number to search for
+ * @param {Boolean} reset_clusters_tree: when false, the cluster tree remain unchanged
  */
-function select_bead_by_accession(accn) {
+function select_bead_by_accession(accn, reset_clusters_tree = true) {
   // switch to cluster beadplot
   var cid = accn_to_cid[accn];
 
   if (cid !== undefined) {
-     // if (d3.selectAll('.clicked').empty()) {
 
-        d3.selectAll("#svg-timetree > svg > g > rect:not(.clickedH)").attr("class", "not_SelectedCluster");
-        var rect = d3.selectAll("#svg-timetree > svg > g > rect:not(.clickedH)")
-        .filter(function(d) { return(d.cluster_idx === cid); })
-        .attr("class", "clicked");
+    if (reset_clusters_tree === true) {
+      d3.selectAll("#svg-timetree > svg > g > rect:not(.clickedH)").attr("class", "not_SelectedCluster");
+    }
+    
+    var rect = d3.selectAll("#svg-timetree > svg > g > rect:not(.clickedH)")
+      .filter(function(d) { return(d.cluster_idx === cid); })
+      .attr("class", "clicked");
 
-        d3.select(rect.nodes().pop()).each(function(d) {
-          create_clusterH(d, this);
-        });
+    d3.select(rect.nodes().pop()).each(function(d) {
+      create_clusterH(d, this);
+    });
 
-        beadplot(cid);
+    beadplot(cid);
 
-        var bead = d3.selectAll("circle").filter(function(d) {
-          return d.accessions.includes(accn);
-        });
+    var bead = d3.selectAll("circle").filter(function(d) {
+      return d.accessions.includes(accn);
+    });
 
-        create_selection(bead);
-        bead.node().scrollIntoView({block: "center"});
+    create_selection(bead);
+    bead.node().scrollIntoView({block: "center"});
 
-        // Update information panel
-        const datum = bead.datum();
-        gentable(datum);
-        draw_region_distribution(table(datum.region));
-        gen_details_table(datum);
+    // Update information panel
+    const datum = bead.datum();
+    gentable(datum);
+    draw_region_distribution(table(datum.region));
+    gen_details_table(datum);
 
   }
 }

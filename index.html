@@ -206,7 +206,7 @@
             const point = stats.points[stats.current_point - 1];
             // TODO: Select the accession with a more general approach
             const accn = point.accessions[0];
-            select_bead_by_accession(accn);
+            select_bead_by_accession(accn, false);
           });
 
           $('#previous_button').click(function(){
