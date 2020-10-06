@@ -4,6 +4,7 @@ import queue
 import time
 import csv
 
+
 def export_fasta(cursor, outfile='data/gisaid-aligned.fa'):
     """ Function that writes fasta to outfile
     :params:
@@ -119,8 +120,12 @@ def iterate_lineage_csv(cursor, csvFile):
         next(reader, None) # skip header
         for row in reader:
             vars = [row[0].split('|')[1], row[1], row[2], row[3], row[4], row[5]]
-            cursor.execute("INSERT INTO LINEAGE(`accession`, `lineage`, `probability`, "
-            	"`pangoLEARN_version`, `status`, `note`) VALUES(?,?, ?, DATE(?),?,?)", vars)
+            cursor.execute(
+                "INSERT INTO LINEAGE(`accession`, `lineage`, `probability`, "
+                "`pangoLEARN_version`, `status`, `note`) VALUES(?,?, ?, DATE(?),?,?)",
+                vars
+            )
+
 
 def insert_lineage(cursor, payload):
     """
@@ -131,8 +136,11 @@ def insert_lineage(cursor, payload):
         :output:
             None
     """
-    cursor.execute("INSERT INTO LINEAGE(`accession`, `lineage`, `probability`, "
-                "`pangoLEARN_version`, `status`, `note`) VALUES(?,?, ?, DATE(?),?,?)", payload)
+    cursor.execute(
+        "INSERT INTO LINEAGE(`accession`, `lineage`, `probability`, "
+        "`pangoLEARN_version`, `status`, `note`) VALUES(?,?, ?, DATE(?),?,?)",
+        payload
+    )
 
 
 def process_tech_meta(cursor, tsvFile):
@@ -153,12 +161,17 @@ def process_tech_meta(cursor, tsvFile):
 
         for row in reader:
             sample_vars = [row[1], row[0], row[2], row[3], row[12], row[13]]
-            result1 = cursor.execute("REPLACE INTO SAMPLE('accession', 'virus_name', "
-                                     "'collection_date', 'location', 'lineage', 'clade') VALUES(?, ?, ?, ?, ?, ?)", sample_vars)
+            result1 = cursor.execute(
+                "REPLACE INTO SAMPLE('accession', 'virus_name', "
+                "'collection_date', 'location', 'lineage', 'clade') VALUES(?, ?, ?, ?, ?, ?)",
+                sample_vars
+            )
             sequencing_vars = [row[1], row[8], row[9], row[6]]
-            result2 = cursor.execute("REPLACE INTO SEQUENCING('accession', "
-                                     "'platform', 'assembly_method', 'sample_type') "
-                                     "VALUES(?, ?, ?, ?)", sequencing_vars)
+            result2 = cursor.execute(
+                "REPLACE INTO SEQUENCING('accession', 'platform', 'assembly_method', "
+                "'sample_type') VALUES(?, ?, ?, ?)",
+                sequencing_vars
+            )
 
 
 def insert_acknowledgement(cursor, tsvFile):
@@ -179,9 +192,13 @@ def insert_acknowledgement(cursor, tsvFile):
 
         for row in reader:
             vars = [row[0], row[4], row[5], row[6]]
-            result = cursor.execute("REPLACE INTO ACKNOWLEDGEMENTS('accession', 'originating_lab', 'sub_lab', "
-                                    "'authors') VALUES(?, ?, ?, ?)", vars)
+            result = cursor.execute(
+                "REPLACE INTO ACKNOWLEDGEMENTS('accession', 'originating_lab', 'sub_lab', "
+                "'authors') VALUES(?, ?, ?, ?)",
+                vars
+            )
     handle.close()
+
 
 def process_ptinfo(cursor, tsvFile):
     """
@@ -201,8 +218,11 @@ def process_ptinfo(cursor, tsvFile):
         for row in reader:
             #PTINFO table
             vars = [row[1], row[5], row[6], row[7]]
-            result = cursor.execute("REPLACE INTO PTINFO('accession', 'gender', 'age', "
-                                    "'ptstatus') VALUES(?, ?, ?, ?)", vars)
+            result = cursor.execute(
+                "REPLACE INTO PTINFO('accession', 'gender', 'age', 'ptstatus') "
+                "VALUES(?, ?, ?, ?)",
+                vars
+            )
     handle.close()
 
 
@@ -215,6 +235,7 @@ def pull_field(cursor, field):
     field_dict= dict(result.fetchall())
     return field_dict
 
+
 def report_changes(database, header, seq):
     """
     Function to check for changes in uploaded seqs, replaces different headers
@@ -226,7 +247,8 @@ def report_changes(database, header, seq):
     cursor, conn = open_connection(database) 
 
     accession = header.split('|')[1]
-    record = cursor.execute('SELECT header, unaligned from rawseq WHERE accession = ?', [accession]).fetchone()
+    record = cursor.execute('SELECT header, unaligned from rawseq WHERE accession = ?',
+                            [accession]).fetchone()
     if type(record) == None:
         conn.commit()
         conn.close()
@@ -235,7 +257,8 @@ def report_changes(database, header, seq):
     old_header, old_seq = record #otherwise unpack values
 
     if header != old_header:
-        cursor.execute('REPLACE INTO sequences SET header = ? WHERE accession = ?', [header, accession])
+        cursor.execute('REPLACE INTO sequences SET header = ? WHERE accession = ?',
+                       [header, accession])
         conn.commit()
         conn.close()
         return 1
@@ -247,6 +270,7 @@ def report_changes(database, header, seq):
     conn.close()
 
     return 0
+
 
 def convert_fasta(handle):
     """
@@ -289,7 +313,7 @@ def iterate_fasta(fasta, database = 'data/gsaid.db'):
     conn.close()
 
 
-def iterate_handle(handle, database = 'data/gsaid.db'):
+def iterate_handle(handle, database='data/gsaid.db'):
     """
     Function to iterate through list [(header,seq)....]
     :param cursor: sqlite database handler
@@ -329,7 +353,8 @@ def migrate_entries(old_db, new_db):
     for accession, header, unaligned_hash, aligned in all_chunk_seqs:
         if accession not in EA_list:
             count+=1
-            oldcursor.execute('INSERT INTO SEQUENCES (accession, header, unaligned_hash, aligned) VALUES (?,?,?,?);', [accession, header, unaligned_hash, aligned])
+            oldcursor.execute('INSERT INTO SEQUENCES (accession, header, unaligned_hash, aligned) '
+                              'VALUES (?,?,?,?);', [accession, header, unaligned_hash, aligned])
             oldconnect.commit()
 
     print('Updated {}, inserted {} seqs.'.format(old_db, str(count)))
@@ -345,7 +370,8 @@ def migrate_entries(old_db, new_db):
     for hash_key, aligned_seq in all_chunk_hashes:
         if hash_key not in EH_list:
             hash_count+=1
-            oldcursor.execute('INSERT INTO HASHEDSEQS (hash_key, aligned_seq) VALUES (?,?)', [hash_key, aligned_seq])
+            oldcursor.execute('INSERT INTO HASHEDSEQS (hash_key, aligned_seq) VALUES (?,?)',
+                              [hash_key, aligned_seq])
             oldconnect.commit()
 
     print('Updated {}, inserted {} hashes.'.format(old_db, str(hash_count)))
@@ -367,7 +393,35 @@ def dump_raw(outfile, db='data/gsaid.db'):
     conn.close()
 
 
-def process_meta (db, metafiles):
+def dump_lineages(db='data/gsaid.db', by_lineage=False):
+    """
+    Connect to sqlite3 database and retrieve all records from the LINEAGE
+    table.  Construct a dictionary keyed by accession number.
+    :param db:  str, path to sqlite3 database
+    :return:  dict, lineage assignments keyed by accession
+    """
+    cursor, conn = db_utils.open_connection(db)
+    labels = cursor.execute("SELECT `accession`, `header` FROM SEQUENCES").fetchall()
+    labels = dict(labels)
+
+    data = cursor.execute("SELECT `accession`, `lineage`, `probability`, `pangoLEARN_version` "
+                          "FROM LINEAGE;").fetchall()
+    result = {}
+    if by_lineage:
+        # used by treetime.py
+        for accn, lineage, prob, version in data:
+            if lineage not in result:
+                result.update({lineage: []})
+            result[lineage].append(labels[accn])
+    else:
+        for accn, lineage, prob, version in data:
+            result.update({accn: {
+                'lineage': lineage, 'prob': prob, 'version': version
+            }})
+    return result
+
+
+def process_meta(db, metafiles):
     """
     Function to process tsv files containing meta data
     :params:
@@ -383,6 +437,7 @@ def process_meta (db, metafiles):
     conn.commit()
     conn.close()
 
+
 def dump_concordance(db, concordanceOUT, discordanceOUT):
     """
     Function to dump lineage assignments with accession no's
@@ -393,28 +448,41 @@ def dump_concordance(db, concordanceOUT, discordanceOUT):
         :discordanceOUT: csv file for discordant records (diff assignment gisaid/ local pangolin)
     """
     cur, conn = open_connection(db)
-    #Handle concordance first
+    # Handle concordance first
     CONoutfile = open('data/{}.csv'.format(concordanceOUT), 'w')
-    #take most recent lineage assigment, join lineage and sample tables on accession
-    CONhandle = cursor.execute('SELECT \
-        filtered_lineage.accession, filtered_lineage.lineage as local_lineage, probability, pangoLEARN_version, status, note, virus_name, collection_date, location, sample.lineage AS gisaid_lineage, clade \
-        FROM (SELECT accession, lineage, probability, max(pangoLEARN_version) AS pangoLEARN_version, status, note FROM LINEAGE GROUP BY accession) AS filtered_lineage, sample \
-        WHERE sample.accession = filtered_lineage.accession AND local_lineage == gisaid_lineage;').fetchall()
+    # take most recent lineage assigment, join lineage and sample tables on accession
+    CONhandle = cursor.execute(
+        'SELECT filtered_lineage.accession, filtered_lineage.lineage as local_lineage, probability, '
+        'pangoLEARN_version, status, note, virus_name, collection_date, location, sample.lineage '
+        'AS gisaid_lineage, clade '
+        'FROM (SELECT accession, lineage, probability, max(pangoLEARN_version) '
+        'AS pangoLEARN_version, status, note '
+        'FROM LINEAGE GROUP BY accession) AS filtered_lineage, sample '
+        'WHERE sample.accession = filtered_lineage.accession '
+        'AND local_lineage == gisaid_lineage;'
+    ).fetchall()
 
-    #create start of csv file
+    # create start of csv file
     CONouthandle = ['accession,local_lineage,local_probability,local_pangoLEARN_version,local_status,seq_name,sample_col_date,sample_location,gisaid_lineage,gisaid_clade \n']
-    #iterate handle, print out fields to csv
+    # iterate handle, print out fields to csv
     for accession1, lineage1, prob, version, status, note, name, date, location, lineage2, clade in CONhandle:
         CONouthandle.append('{},{},{},{},{},{},{},{},{},{},{}\n'.format( accession1, lineage1, prob, version, status, note, name, date, location, lineage2, clade))
-    CONoutfile.writelines(CONouthandle) #process and write outfile
+    CONoutfile.writelines(CONouthandle)  # process and write outfile
     CONoutfile.close()
 
-    #repeat for dicordance
-    DIShandle = cursor.execute('SELECT \
-        filtered_lineage.accession, filtered_lineage.lineage as local_lineage, probability, pangoLEARN_version, status, note, virus_name, collection_date, location, sample.lineage AS gisaid_lineage, clade \
-        FROM (SELECT accession, lineage, probability, max(pangoLEARN_version) AS pangoLEARN_version, status, note FROM LINEAGE GROUP BY accession) AS filtered_lineage, sample \
-        WHERE sample.accession = filtered_lineage.accession AND local_lineage != gisaid_lineage;').fetchall()
-    #open outfile, write header row, and write to file
+    # repeat for dicordance
+    DIShandle = cursor.execute(
+        'SELECT filtered_lineage.accession, filtered_lineage.lineage '
+        'as local_lineage, probability, pangoLEARN_version, status, note, virus_name, '
+        'collection_date, location, sample.lineage '
+        'AS gisaid_lineage, clade '
+        'FROM (SELECT accession, lineage, probability, max(pangoLEARN_version) '
+        'AS pangoLEARN_version, status, note '
+        'FROM LINEAGE GROUP BY accession) AS filtered_lineage, sample '
+        'WHERE sample.accession = filtered_lineage.accession AND local_lineage != gisaid_lineage;'
+    ).fetchall()
+
+    # open outfile, write header row, and write to file
     DISoutfile = open('data/{}.csv'.format(discordanceOUT), 'w')
     DISouthandle = ['accession,local_lineage,local_probability,local_pangoLEARN_version,local_status,seq_name,sample_col_date,sample_location,gisaid_lineage,gisaid_clade \n']
     for accession1, lineage1, prob, version, status, note, name, date, location, lineage2, clade in DIShandle:
@@ -423,6 +491,7 @@ def dump_concordance(db, concordanceOUT, discordanceOUT):
 
     DISoutfile.close()
     conn.close()
+
 
 def parse_args():
     """ Command-line interface """
