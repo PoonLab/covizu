@@ -3,6 +3,7 @@ import argparse
 import queue
 import time
 import csv
+from datetime import date
 
 
 def export_fasta(cursor, outfile='data/gisaid-aligned.fa'):
@@ -393,14 +394,25 @@ def dump_raw(outfile, db='data/gsaid.db'):
     conn.close()
 
 
+def retrieve_seqs(headers, db="data/gsaid.db"):
+    """ Retrieve genomes with list of headers (labels) """
+    cur, conn = open_connection(db)
+    seqs = []
+    for h in headers:
+        seq = cur.execute("SELECT `aligned` from SEQUENCES where `header`='{}'".format(h))
+        seqs.append(seq)
+    return seqs
+
+
 def dump_lineages(db='data/gsaid.db', by_lineage=False):
     """
     Connect to sqlite3 database and retrieve all records from the LINEAGE
     table.  Construct a dictionary keyed by accession number.
     :param db:  str, path to sqlite3 database
-    :return:  dict, lineage assignments keyed by accession
+    :return:  dict, lineage assignments keyed by accession (default), or lists of
+              genome labels (headers) keyed by lineage if by_lineage is True
     """
-    cursor, conn = db_utils.open_connection(db)
+    cursor, conn = open_connection(db)
     labels = cursor.execute("SELECT `accession`, `header` FROM SEQUENCES").fetchall()
     labels = dict(labels)
 
@@ -418,6 +430,7 @@ def dump_lineages(db='data/gsaid.db', by_lineage=False):
             result.update({accn: {
                 'lineage': lineage, 'prob': prob, 'version': version
             }})
+    conn.close()
     return result
 
 

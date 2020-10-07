@@ -1,7 +1,7 @@
 import argparse
 from subprocess import Popen, PIPE, check_call
 import json
-from gotoh2 import iter_fasta
+from seq_utils import iter_fasta, parse_label
 from tempfile import NamedTemporaryFile
 import os
 import math
@@ -10,6 +10,7 @@ from io import StringIO
 from datetime import date
 import re
 import sys
+from db_utils import dump_lineages, retrieve_seqs
 
 
 def filter_fasta(fasta_file, json_file, cutoff=10):
@@ -162,6 +163,29 @@ def parse_nexus(nexus_file, fasta, date_tol):
 
     Phylo.write(phy, file=nexus_file.replace('.nexus', '.nwk'),
                 format='newick')
+
+
+def retrieve_genomes(db="data/gsaid.db"):
+    """
+    Query database for Pangolin lineages and then retrieve the earliest
+    sampled genome sequence for each.  Export as FASTA for TreeTime analysis.
+    :param db:  str, path to sqlite3 database
+    :return:  list, (header, sequence) tuples
+    """
+    lineages = dump_lineages(db=db, by_lineage=True)
+    query = []
+    for lineage, headers in lineages.items():
+        # parse_label returns tuples of (country, coldate)
+        intermed = []
+        for h in headers:
+            _, dt = parse_label(h)  # returns (country, coldate)
+            if dt:  # exclude None
+                intermed.append((dt, h))
+        intermed.sort()  # increasing
+        query.append(intermed[0][1])
+
+    seqs = retrieve_seqs(headers=query, db=db)
+    return list(zip(lineages.keys(), seqs))
 
 
 def parse_args():

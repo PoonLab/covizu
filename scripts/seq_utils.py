@@ -1,6 +1,6 @@
 # copied directly from ArtPoon/gotoh2/gotoh_utils.py
 import re
-from datetime import datetime
+from datetime import datetime, date
 import sys
 
 
@@ -51,6 +51,25 @@ def read_seq(handle):
     for line in handle:
         seq += line.strip()
     return seq
+
+
+def parse_label(label):
+    """
+    Extract country and date of sample collection from GISAID label.
+    Return date as None if collection date is ambiguous.
+
+    :param label:  str, GISAID sequence label
+    :return: (country, date)
+    """
+    info, epi_id, ymd = label.split('|')
+    country = info.split('/')[1]
+    try:
+        year, month, day = list(map(int, ymd.split('-')))
+        return country, date(year, month, day)
+    except ValueError:
+        return country, None
+    except:
+        raise
 
 
 def iter_fasta(handle):
