@@ -48,7 +48,7 @@ def filter_fasta(fasta_file, json_file, cutoff=10):
     return result
 
 
-def fasttree(fasta, seed=1):
+def fasttree(fasta, binpath='fasttree2', seed=1):
     """
     Wrapper for FastTree2, passing FASTA as stdin and capturing the
     resulting Newick tree string as stdout.
@@ -59,7 +59,7 @@ def fasttree(fasta, seed=1):
     for h, s in fasta.items():
         accn = h.split('|')[1]
         in_str += '>{}\n{}\n'.format(accn, s)
-    p = Popen(['fasttree2', '-nt', '-quote', '-seed', str(seed)],
+    p = Popen([binpath, '-nt', '-quote', '-seed', str(seed)],
               stdin=PIPE, stdout=PIPE)
     # TODO: exception handling with stderr?
     stdout, stderr = p.communicate(input=in_str.encode('utf-8'))
@@ -174,6 +174,7 @@ def retrieve_genomes(db="data/gsaid.db"):
     """
     lineages = dump_lineages(db=db, by_lineage=True)
     query = []
+    coldates = []
     for lineage, headers in lineages.items():
         # parse_label returns tuples of (country, coldate)
         intermed = []
@@ -183,9 +184,14 @@ def retrieve_genomes(db="data/gsaid.db"):
                 intermed.append((dt, h))
         intermed.sort()  # increasing
         query.append(intermed[0][1])
+        coldates.append(intermed[0][0])
 
+    # retrieve aligned genome sequences from database
     seqs = retrieve_seqs(headers=query, db=db)
-    return list(zip(lineages.keys(), seqs))
+
+    # generate new headers in {name}|{accession}|{date} format expected by treetime()
+    headers = map(lambda xy: '|{}|{}'.format(*xy), zip(lineages.keys(), coldates))
+    return dict(zip(headers, seqs))
 
 
 def parse_args():

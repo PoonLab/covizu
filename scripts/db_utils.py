@@ -388,8 +388,8 @@ def dump_raw(outfile, db='data/gsaid.db'):
     cur, conn = open_connection(db)
     seqs = cur.execute("SELECT `header`, `unaligned` FROM rawseq;").fetchall()
     with open(outfile, 'w') as fastafile:
-        for h,s in seqs:
-            fastafile.write('>{}\n{}\n'.format(h,s))
+        for h, s in seqs:
+            fastafile.write('>{}\n{}\n'.format(h, s))
     fastafile.close()
     conn.close()
 
@@ -399,8 +399,12 @@ def retrieve_seqs(headers, db="data/gsaid.db"):
     cur, conn = open_connection(db)
     seqs = []
     for h in headers:
-        seq = cur.execute("SELECT `aligned` from SEQUENCES where `header`='{}'".format(h))
-        seqs.append(seq)
+        result = cur.execute(
+            "SELECT `aligned` from SEQUENCES where `header`='{}';".format(h)
+        ).fetchall()
+        # TODO: warn if multiple results?
+        seqs.append(result[0][0])
+    conn.close()
     return seqs
 
 
@@ -422,6 +426,9 @@ def dump_lineages(db='data/gsaid.db', by_lineage=False):
     if by_lineage:
         # used by treetime.py
         for accn, lineage, prob, version in data:
+            header = labels.get(accn, None)
+            if header is None:
+                continue
             if lineage not in result:
                 result.update({lineage: []})
             result[lineage].append(labels[accn])
