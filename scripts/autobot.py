@@ -120,7 +120,7 @@ def retrieve_genomes(driver, start, end, download_folder):
     # download seqs
     element = driver.find_element_by_xpath("//*[contains(text(), 'Download')]")
     driver.execute_script("arguments[0].click();", element)
-    time.sleep(5)
+    time.sleep(15)
 
     # switch to iframe to download
     driver.switch_to.frame(driver.find_element_by_tag_name("iframe"))
@@ -220,9 +220,9 @@ def parse_args():
         help='Path to reference fasta')
     parser.add_argument('--db', default = 'data/gsaid.db',
         help='Name of database.')
-    parser.add_argument('--filterout', default = 'debug/filtered.log', type =argparse.FileType('w'),
+    parser.add_argument('--filterout', default = 'debug/filtered.log', type =argparse.FileType('w+'),
         help='Log for filtered seqs')
-    parser.add_argument('--thread', default = 1,
+    parser.add_argument('--thread', default = 8,
         help='Number of threads for minimap')
     parser.add_argument('--minlen', help="<option> minimum sequence length, "
         "defaults to 29000nt.", default = 29000)
@@ -246,18 +246,23 @@ if __name__ == '__main__':
 
     #align sequences in srcfile
     reflen = len(convert_fasta(open(args.ref))[0][1])
+    print('Starting minimap')
     mm2 = minimap2(srcfile, ref=args.ref, nthread=args.thread,
                    minlen=args.minlen)
     #generate handle from mm2
+    print('Reconstructing sequences')
     sequence_handle=stream_fasta(mm2, reflen=reflen)
 
     #insert aligned seqs into database
     iterate_handle(sequence_handle, args.db)
 
-    #filter seqs here :TODO:
+    #filter seqs here
+    print('Filtering sequences for Lineage-typing')
     filtered_handle = filter_seqs(sequence_handle, args.filterout, max_prop_n=0.05, minlen=29000)
+    print('Filtered {} seqs.'.format(str(len(filtered_handle))))
+
     #classify by PANGOLIN & insert processed seqs
     classify_and_insert(args.pangolindir+ 'decisionTreeHeaders_v1.joblib', args.pangolindir+'decisionTree_v1.joblib', filtered_handle, indiciesToKeep, args.db)
-
+    print('Saving Lineages')
     insert_into_rawseqs(args.db, srcfile)
     write_dbstats()
