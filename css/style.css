@@ -112,7 +112,7 @@ rect:hover{
     display: inline-block;
 }
 
-#search-input{
+#search-input {
   width: 250px;
 }
 
@@ -129,6 +129,14 @@ rect:hover{
 
 #navigation {
   display: inline-block;
+}
+
+#search_stats {
+  color: #000;
+}
+
+.disabled_stats{
+  color: #ccc !important;
 }
 
 /*

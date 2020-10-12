@@ -161,6 +161,25 @@
             }
           });
 
+          // Enable and Disable "Next" and "Previous" buttons when needed
+          function disable_buttons() {
+            $('#next_button').attr("disabled", true);
+            $('#previous_button').attr("disabled", true);
+            $('#search_stats').addClass("disabled_stats");
+          }
+
+          function enable_buttons() {
+            if (search_stats.get().total_points > 0) {
+              $('#next_button').removeAttr("disabled");
+              $('#previous_button').removeAttr("disabled");
+              $('#search_stats').removeClass("disabled_stats");
+            } else {
+              disable_buttons();
+            }
+          }
+
+          disable_buttons();
+
           $('#search-input').on('keydown', function(e) {
           	if (e.keyCode == 13) {
           		// type <enter> to run search
@@ -170,6 +189,7 @@
           		}
 
           		search(beaddata);
+              enable_buttons();
           	}
           });
 
@@ -179,6 +199,7 @@
             onSelect: function(date_text){
                 const start = new Date(date_text);
                 search_by_dates(beaddata, start, search_stats.get().end);
+                enable_buttons();
             }
           });
 
@@ -187,6 +208,7 @@
             onSelect: function(date_text){
               const end = new Date(date_text);
               search_by_dates(beaddata, search_stats.get().start, end);
+              enable_buttons();
             }
           });
 
@@ -196,6 +218,7 @@
             search(beaddata);
             $('#end-date').val('');
             $('#start-date').val('');
+            disable_buttons();
           });
 
           // Iterate results
