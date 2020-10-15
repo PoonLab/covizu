@@ -104,6 +104,10 @@ rect:hover{
   fill-opacity: 1;
 }
 
+txt_hover{
+  fill-opacity: 1;
+}
+
 .container {
     padding-top: 30px;
 }

@@ -221,6 +221,34 @@ function draw_clusters(tips) {
     .call(d3.axisTop(xScale)
       .ticks(3)
       .tickFormat(d => xaxis_to_date(d)));
+  
+  function mouseover(d) {
+
+    d3.select("rect#id-" + d.cluster_idx)
+      .attr("class", "txt_hover");
+ 
+    cTooltip.transition()       // Show tooltip
+            .duration(50)
+            .style("opacity", 0.9);
+      
+    let ctooltipText = `<b>Mean pairwise distance:</b> ${d.pdist}<br><b>Mean root distance:</b> ${d.rdist}<br><br>`;
+    ctooltipText += region_to_string(d.allregions); 
+    ctooltipText += `<br><b>Number of variants:</b> ${d.varcount}<br>`;
+    ctooltipText += `<br><b>Collection dates:</b><br>${formatDate(d.first_date)} / ${formatDate(d.last_date)}<br>`;
+      
+    cTooltip.html(ctooltipText)
+            .style("left", (d3.event.pageX + 10) + "px")    // Tooltip appears 10 pixels left of the cursor    
+            .style("top", function(){
+            // Position tooltip based on the y-position of the cluster
+              let tooltipHeight = cTooltip.node().getBoundingClientRect().height;
+              if (d3.event.pageY + tooltipHeight > 1200) {
+                return d3.event.pageY - tooltipHeight + "px";
+              } else { 
+                return d3.event.pageY + "px";
+              }
+            });
+    
+  }
 
   vis.selectAll("rect")
     .data(tips)
@@ -236,34 +264,10 @@ function draw_clusters(tips) {
       return(country_pal[d.region]);
     })
     .attr("class", "default")
-    .on('mouseover', function(d) {
-
-      d3.select(this).attr("fill-opacity", "0.67");
-
-      cTooltip.transition()       // Show tooltip
-          .duration(50)
-          .style("opacity", 0.9);
-
-      let ctooltipText = `<b>Mean pairwise distance:</b> ${d.pdist}<br><b>Mean root distance:</b> ${d.rdist}<br><br>`;
-      ctooltipText += region_to_string(d.allregions);
-      ctooltipText += `<br><b>Number of variants:</b> ${d.varcount}<br>`;
-      ctooltipText += `<br><b>Collection dates:</b><br>${formatDate(d.first_date)} / ${formatDate(d.last_date)}<br>`;
-
-      cTooltip.html(ctooltipText)
-          .style("left", (d3.event.pageX + 10) + "px")    // Tooltip appears 10 pixels left of the cursor
-          .style("top", function(){
-            // Position tooltip based on the y-position of the cluster
-            let tooltipHeight = cTooltip.node().getBoundingClientRect().height;
-            if (d3.event.pageY + tooltipHeight > 1200) {
-              return d3.event.pageY - tooltipHeight + "px";
-            } else {
-              return d3.event.pageY + "px";
-            }
-          });
-
-    })
+    .attr("id", function(d) { return "id-" + d.cluster_idx; })
+    .on('mouseover', mouseover)
     .on("mouseout", function() {
-      d3.select(this).attr("fill-opacity", "0.33");
+      d3.select(this).attr("class", "default");
 
       cTooltip.transition()     // Hide tooltip
           .duration(50)
@@ -294,7 +298,7 @@ function draw_clusters(tips) {
 
       gentable(d);
       draw_region_distribution(d.allregions);
-
+      
       // FIXME: this is the same div used for making barplot SVG
       $("#text-node").text(`Number of cases: ${d.count}\nNumber of variants: ${d.varcount}\n`);
 
@@ -317,5 +321,14 @@ function draw_clusters(tips) {
       .attr("y", function(d) {
         return(yScale(d.y-0.15));
       })
-      .text(function(d) { return(d.label1); });
+      .text(function(d) { return(d.label1); })
+      .on("mouseover", function(d) {
+	mouseover(d);
+      })
+      .on("mouseout", function(d) {
+        d3.select("#id-" + d.cluster_idx).dispatch('mouseout');
+      })
+      .on("click", function(d) {
+        d3.select("#id-" + d.cluster_idx).dispatch('click');
+      });
 }
