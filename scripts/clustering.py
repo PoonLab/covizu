@@ -2,7 +2,7 @@ import random
 import json
 
 import db_utils
-from seq_utils import Callback, convert_fasta
+from seq_utils import Callback, total_missing, apply_features
 
 import argparse
 import tempfile
@@ -81,14 +81,6 @@ def filter_problematic(features, vcf_file="data/problematic_sites_sarsCov2.vcf",
     return features
 
 
-def total_missing(row):
-    """ Calculate the total number of missing sites from closed-open interval annotations """
-    res = 0
-    for left, right in row['missing']:
-        res += right-left
-    return res
-
-
 def import_json(path, max_missing=600, callback=None):
     """
     Read genome features (genetic differences from reference) from JSON file.
@@ -111,33 +103,6 @@ def import_json(path, max_missing=600, callback=None):
         callback("dropped {} records with uncalled bases in excess "
                  "of {}".format(count - len(features), max_missing))
     return features
-
-
-def apply_features(row, refseq):
-    """
-    Reconstitute genome sequence from feature vector (genetic differences) and
-    missing data vector.
-
-    :param row:  dict, entry from features list returned by import_json()
-    :param refseq:  str, reference genome
-    :return:  str, aligned genome
-    """
-    result = list(refseq)  # strings are not mutable
-
-    # apply missing intervals
-    for left, right in row['missing']:
-        for i in range(left, right):
-            result[i] = 'N'
-
-    # apply substitutions and deletions (skip insertions)
-    for dtype, pos, diff in row['diffs']:
-        if dtype == '~':
-            result[pos] = diff
-        elif dtype == '-':
-            for i in range(pos, pos+diff):
-                result[i] = '-'
-
-    return ''.join(result)
 
 
 def split_by_lineage(features, lineages):

@@ -166,10 +166,11 @@ def retrieve_genomes(driver, start, end, download_folder):
 
     return downloaded_file
 
+
 def find_fasta(download_folder):
-    #Get newest file in directory
-    downloaded_dir= os.listdir(download_folder)
-    abs_dir= []
+    """ Get newest file in directory """
+    downloaded_dir = os.listdir(download_folder)
+    abs_dir = []
     for path in downloaded_dir:
         abs_dir.append(os.path.join(download_folder, path))
     downloaded_file = max(abs_dir, key=os.path.getmtime)
@@ -177,7 +178,7 @@ def find_fasta(download_folder):
 
 
 def write_dbstats(db='data/gsaid.db'):
-    # write latest update string, with number of seqs
+    """ write latest update string, with number of seqs """
     cur, conn = open_connection(db)
     numseqs = cur.execute('SELECT * FROM SEQUENCES')
     with open('data/dbstats.json', 'w') as jsonfile:
@@ -244,20 +245,22 @@ if __name__ == '__main__':
                                download_folder=args.d.name)
     driver.quit()
 
-    #align sequences in srcfile
+    # align sequences in srcfile
     reflen = len(convert_fasta(open(args.ref))[0][1])
     mm2 = minimap2(srcfile, ref=args.ref, nthread=args.thread,
                    minlen=args.minlen)
-    #generate handle from mm2
-    sequence_handle=stream_fasta(mm2, reflen=reflen)
+    # generate handle from mm2
+    sequence_handle = stream_fasta(mm2, reflen=reflen)
 
-    #insert aligned seqs into database
+    # insert aligned seqs into database
     iterate_handle(sequence_handle, args.db)
 
-    #filter seqs here :TODO:
+    # filter seqs here :TODO:
     filtered_handle = filter_seqs(sequence_handle, args.filterout, max_prop_n=0.05, minlen=29000)
-    #classify by PANGOLIN & insert processed seqs
-    classify_and_insert(args.pangolindir+ 'decisionTreeHeaders_v1.joblib', args.pangolindir+'decisionTree_v1.joblib', filtered_handle, indiciesToKeep, args.db)
+    # classify by PANGOLIN & insert processed seqs
+    classify_and_insert(args.pangolindir + 'decisionTreeHeaders_v1.joblib',
+                        args.pangolindir + 'decisionTree_v1.joblib',
+                        filtered_handle, indiciesToKeep, args.db)
 
     insert_into_rawseqs(args.db, srcfile)
     write_dbstats()

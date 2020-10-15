@@ -100,18 +100,14 @@ def convert_fasta(handle):
     """
     result = []
     h, sequence = None, ''
-
     for line in handle:
-        if line.startswith('$'):  # skip comment
-            continue
-        elif line.startswith('>') or line.startswith('#'):
+        if line.startswith('>') or line.startswith('#'):
             if len(sequence) > 0:
                 result.append([h, sequence])
                 sequence = ''
             h = line.lstrip('>').rstrip()
         else:
             sequence += line.strip().upper()
-
     result.append([h, sequence])  # handle last entry
     return result
 
@@ -244,3 +240,50 @@ class Callback:
         self.last_msg_length = sys.stdout.write('[{}] {}'.format(datetime.now() - self.t0, msg))
         if not replace:
             sys.stdout.write('\n')
+
+
+def total_missing(row):
+    """ Calculate the total number of missing sites from closed-open interval annotations """
+    res = 0
+    if type(row) is dict:
+        missing = row['missing']
+    else:
+        _, _, missing = row
+    for left, right in missing:
+        res += right-left
+    return res
+
+
+def apply_features(row, refseq):
+    """
+    Reconstitute genome sequence from feature vector (genetic differences) and
+    missing data vector.
+
+    :param row:  dict, entry from features list returned by import_json()
+    :param refseq:  str, reference genome
+    :return:  str, aligned genome
+    """
+    result = list(refseq)  # strings are not mutable
+
+    # handle case where row is a dict
+    if type(row) is dict:
+        diffs = row['diffs']
+        missing = row['missing']
+    else:
+        # unpack tuple
+        _, diffs, missing = row
+
+    # apply missing intervals
+    for left, right in missing:
+        for i in range(left, right):
+            result[i] = 'N'
+
+    # apply substitutions and deletions (skip insertions)
+    for dtype, pos, diff in diffs:
+        if dtype == '~':
+            result[pos] = diff
+        elif dtype == '-':
+            for i in range(pos, pos+diff):
+                result[i] = '-'
+
+    return ''.join(result)

@@ -1,9 +1,8 @@
 import sqlite3
 import argparse
-import queue
-import time
 import csv
-from datetime import date
+import sys
+from tempfile import NamedTemporaryFile
 
 
 def export_fasta(cursor, outfile='data/gisaid-aligned.fa'):
@@ -403,6 +402,10 @@ def retrieve_seqs(headers, db="data/gsaid.db"):
             "SELECT `aligned` from SEQUENCES where `header`='{}';".format(h)
         ).fetchall()
         # TODO: warn if multiple results?
+        if len(result) == 0:
+            print("ERROR: query {} failed to retrieve any genomes".format(headers))
+            sys.exit()
+
         seqs.append(result[0][0])
     conn.close()
     return seqs
@@ -413,6 +416,7 @@ def dump_lineages(db='data/gsaid.db', by_lineage=False):
     Connect to sqlite3 database and retrieve all records from the LINEAGE
     table.  Construct a dictionary keyed by accession number.
     :param db:  str, path to sqlite3 database
+    :param by_lineage:  bool, if True then returned dict is keyed by lineage
     :return:  dict, lineage assignments keyed by accession (default), or lists of
               genome labels (headers) keyed by lineage if by_lineage is True
     """
@@ -439,6 +443,29 @@ def dump_lineages(db='data/gsaid.db', by_lineage=False):
             }})
     conn.close()
     return result
+
+
+def dump_raw_by_lineage(db='data/gsaid.db'):
+    """
+    Creates a generator that yields handles to named temporary files
+    containing the unaligned genomes for each Pangolin lineage
+    :param db:  str, path to sqlite3 database
+    :yield:  tuples, Pangolin lineage and path to temporary FASTA file
+    """
+    cursor, conn = open_connection(db)
+    lineages = cursor.execute("select DISTINCT(lineage) from LINEAGE;").fetchall()
+    for lineage in lineages:
+        # retrieve unaligned genomes from db
+        raw = cursor.execute(
+            "select header, unaligned from RAWSEQ where accession in \
+            (select accession from LINEAGE where lineage='{}');".format(lineage[0])
+        ).fetchall()
+        handle = NamedTemporaryFile('w', delete=False)
+        for h, s in raw:
+            handle.write('>{}\n{}\n'.format(h, s))
+        handle.close()
+        yield lineage[0], handle.name
+    conn.close()
 
 
 def process_meta(db, metafiles):

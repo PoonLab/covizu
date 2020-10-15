@@ -98,7 +98,7 @@ def output_fasta(iter, outfile, reflen=0):
         aligned += '-'*(reflen-len(aligned))
         outfile.write('>{}\n{}\n'.format(qname, aligned))
 
-# return aligned sequence?
+
 def stream_fasta(iter, reflen=0):
     """
     Stream output from minimap2 into list of tuples [(header, seq), ... , (header, seq)]
@@ -128,6 +128,7 @@ def stream_fasta(iter, reflen=0):
         aligned += '-'*(reflen-len(aligned))
         sequence_handle.append([qname, aligned])
     return sequence_handle
+
 
 def encode_diffs(iter, reflen, alphabet='ACGT'):
     """

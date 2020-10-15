@@ -1,16 +1,78 @@
 import argparse
 from subprocess import Popen, PIPE, check_call
 import json
-from seq_utils import iter_fasta, parse_label
 from tempfile import NamedTemporaryFile
 import os
 import math
-from Bio import Phylo
 from io import StringIO
 from datetime import date
 import re
 import sys
-from db_utils import dump_lineages, retrieve_seqs
+import bisect
+
+# third party libraries
+from Bio import Phylo
+from scipy.stats import poisson
+from scipy.optimize import root
+
+# local libraries
+from seq_utils import *
+from db_utils import dump_raw_by_lineage, retrieve_seqs
+from minimap2 import minimap2, encode_diffs
+
+
+def fromisoformat(dt):
+    """ Support versions earlier than Python 3.7 """
+    year, month, day = map(int, dt.split('-'))
+    return date(year, month, day)
+
+
+class QPois:
+    """
+    Cache the quantile transition points for Poisson distribution for a given
+    rate <L> and varying time <t>, s.t. \exp(-Lt)\sum_{i=0}^{k} (Lt)^i/i! = Q.
+    """
+    def __init__(self, quantile, rate, maxtime, origin='2019-12-01'):
+        self.q = quantile
+        self.rate = rate
+        self.maxtime = maxtime
+        self.origin = fromisoformat(origin)
+
+        self.timepoints = self.compute_timepoints()
+
+    def objfunc(self, x, k):
+        """ Use root-finding to find transition point for Poisson CDF """
+        return self.q - poisson.cdf(k=k, mu=self.rate*x)
+
+    def compute_timepoints(self, maxk=100):
+        """ Store transition points until time exceeds maxtime """
+        timepoints = []
+        t = 0
+        for k in range(maxk):
+            res = root(self.objfunc, x0=t, args=(k, ))
+            if not res.success:
+                print("Error in QPois: failed to locate root, q={} k={} rate={}".format(
+                    self.q, k, self.rate))
+                print(res)
+                break
+            t = res.x[0]
+            if t > self.maxtime:
+                break
+            timepoints.append(t)
+        return timepoints
+
+    def lookup(self, time):
+        """ Retrieve quantile count, given time """
+        return bisect.bisect(self.timepoints, time)
+
+    def is_outlier(self, coldate, ndiffs):
+        if type(coldate) is str:
+            coldate = fromisoformat(coldate)
+        dt = (coldate - self.origin).days
+        qmax = self.lookup(dt)
+        if ndiffs > qmax:
+            return True
+        return False
 
 
 def filter_fasta(fasta_file, json_file, cutoff=10):
@@ -66,7 +128,7 @@ def fasttree(fasta, binpath='fasttree2', seed=1):
     return stdout.decode('utf-8')
 
 
-def treetime(nwk, fasta, outdir, clock=None):
+def treetime(nwk, fasta, outdir, binpath='treetime', clock=None):
     """
     :param nwk: str, Newick tree string from fasttree()
     :param fasta: dict, header-sequence pairs
@@ -90,7 +152,7 @@ def treetime(nwk, fasta, outdir, clock=None):
     with NamedTemporaryFile('w', delete=False) as nwkfile:
         nwkfile.write(nwk.replace(' ', ''))
 
-    call = ['treetime', '--tree', nwkfile.name,
+    call = [binpath, '--tree', nwkfile.name,
             '--aln', alnfile.name, '--dates', datefile.name,
             '--outdir', outdir]
     if clock:
@@ -165,32 +227,78 @@ def parse_nexus(nexus_file, fasta, date_tol):
                 format='newick')
 
 
-def retrieve_genomes(db="data/gsaid.db"):
+def filter_outliers(iter, origin='2019-12-01', rate=8e-4*29900/365., cutoff=0.005, maxtime=1e3):
+    """
+    Exclude genomes that contain an excessive number of genetic differences
+    from the reference, assuming that the mean number of differences increases
+    linearly over time and that the variation around this mean follows a
+    Poisson distribution.
+    :param iter:  generator, returned by encode_diffs()
+    :param origin:  str, date of root sequence in ISO format (yyyy-mm-dd)
+    :param rate:  float, molecular clock rate (subs/genome/day)
+    :param cutoff:  float, use 1-cutoff to compute quantile of Poisson
+                    distribution
+    :param maxtime:  int, maximum number of days to cache Poisson quantiles
+    :yield:  tuples from generator that pass filter
+    """
+    qp = QPois(quantile=1-cutoff, rate=rate, maxtime=maxtime, origin=origin)
+    for qname, diffs, missing in iter:
+        coldate = qname.split('|')[-1]
+        if coldate.count('-') != 2:
+            continue
+        ndiffs = len(diffs)
+        if qp.is_outlier(coldate, ndiffs):
+            # reject genome with too many differences given date
+            continue
+        yield qname, diffs, missing
+
+
+def retrieve_genomes(db="data/gsaid.db", ref_file='data/MT291829.fa', reflen=29774, misstol=300):
     """
     Query database for Pangolin lineages and then retrieve the earliest
     sampled genome sequence for each.  Export as FASTA for TreeTime analysis.
     :param db:  str, path to sqlite3 database
     :return:  list, (header, sequence) tuples
     """
-    lineages = dump_lineages(db=db, by_lineage=True)
-    query = []
-    coldates = []
-    for lineage, headers in lineages.items():
-        # parse_label returns tuples of (country, coldate)
-        intermed = []
-        for h in headers:
-            _, dt = parse_label(h)  # returns (country, coldate)
-            if dt:  # exclude None
-                intermed.append((dt, h))
-        intermed.sort()  # increasing
-        query.append(intermed[0][1])
-        coldates.append(intermed[0][0])
 
-    # retrieve aligned genome sequences from database
-    seqs = retrieve_seqs(headers=query, db=db)
+    # load and parse reference genome
+    with open(ref_file) as handle:
+        _, refseq = convert_fasta(handle)[0]
+
+    # allocate lists
+    coldates = []
+    lineages = []
+    seqs = []
+
+    for lineage, fasta in dump_raw_by_lineage(db):
+        mm2 = minimap2(fasta=fasta, ref=ref_file)
+        intermed = []
+
+        iter = encode_diffs(mm2, reflen=reflen)
+        for row in filter_outliers(iter):
+            # exclude genomes too divergent from expectation
+            if total_missing(row) > misstol:
+                continue
+
+            qname, _, _ = row
+            _, coldate = parse_label(qname)
+            intermed.append([coldate, row])
+
+        if len(intermed) == 0:
+            continue
+        intermed.sort()  # defaults to increasing order
+        coldate, row = intermed[0]  # earliest valid genome
+
+        # update lists
+        lineages.append(lineage)
+        coldates.append(coldate)
+
+        # reconstruct aligned sequence from feature vector
+        seq = apply_features(row, refseq=refseq)
+        seqs.append(seq)
 
     # generate new headers in {name}|{accession}|{date} format expected by treetime()
-    headers = map(lambda xy: '|{}|{}'.format(*xy), zip(lineages.keys(), coldates))
+    headers = map(lambda xy: '|{}|{}'.format(*xy), zip(lineages, coldates))
     return dict(zip(headers, seqs))
 
 
@@ -198,17 +306,11 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="Generate inputs for TreeTime analysis."
     )
-    parser.add_argument('--json', type=argparse.FileType('r'),
-                        default=open('data/clusters.json'),
-                        help='input, JSON file generated by hclust.R '
-                             'identifying representative cluster sequences')
-    parser.add_argument('--fasta', type=argparse.FileType('r'),
-                        default=open('data/variants.fa'),
-                        help='input, FASTA file with unique variant '
-                             'sequences')
-    parser.add_argument('--mincount', type=int, default=math.inf,
-                        help='optional, minimum count of variant to be '
-                             'added to tree (default: no count-based variants)')
+    parser.add_argument('--db', type=str, default='data/gsaid.db',
+                        help='input, sqlite3 database')
+    parser.add_argument('--ref', type=str, default='data/MT291829.fa',
+                        help='input, FASTA file with reference genome')
+    parser.add_argument('--reflen', type=int, default=29774)
     parser.add_argument('--clock', type=float, default=8e-4,
                         help='optional, specify molecular clock rate for '
                              'constraining Treetime analysis (default 8e-4).')
@@ -218,13 +320,19 @@ def parse_args():
                              'known sample collection dates (year units,'
                              'default: 0.1)')
     parser.add_argument('--outdir', default='data/',
-                        help='directory to write TreeTime output files')
+                        help='optional, directory to write TreeTime output files')
+    parser.add_argument('--ft2bin', default='fasttree2',
+                        help='optional, path to fasttree2 binary executable')
+    parser.add_argument('--ttbin', default='treetime',
+                        help='optional, path to treetime binary executable')
     return parser.parse_args()
 
 
 if __name__ == '__main__':
     args = parse_args()
-    fasta = filter_fasta(args.fasta, args.json, cutoff=args.mincount)
-    nwk = fasttree(fasta)
-    nexus_file = treetime(nwk, fasta, outdir=args.outdir, clock=args.clock)
+
+    fasta = retrieve_genomes(args.db, ref_file=args.ref, reflen=args.reflen)
+    nwk = fasttree(fasta, binpath=args.ft2bin)
+    nexus_file = treetime(nwk, fasta, outdir=args.outdir, binpath=args.ttbin,
+                          clock=args.clock)
     parse_nexus(nexus_file, fasta, date_tol=args.datetol)
