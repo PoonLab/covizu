@@ -16,9 +16,9 @@ import tempfile
 import getpass
 import numpy as np
 
-from autobot import *
-from pangorider import *
-from db_utils import *
+from covizu.autobot import *
+from covizu.pangorider import *
+from covizu.db_utils import *
 
 todaystr = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d')
 

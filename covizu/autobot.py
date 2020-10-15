@@ -5,9 +5,10 @@ from datetime import date, timedelta
 
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
-from db_utils import *
-from pangorider import *
-from minimap2 import *
+
+from covizu.utils.db_utils import *
+from covizu.pangorider import *
+from covizu.minimap2 import *
 
 import subprocess
 import argparse

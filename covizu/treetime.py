@@ -3,76 +3,13 @@ from subprocess import Popen, PIPE, check_call
 import json
 from tempfile import NamedTemporaryFile
 import os
-import math
 from io import StringIO
-from datetime import date
-import re
-import sys
-import bisect
 
-# third party libraries
 from Bio import Phylo
-from scipy.stats import poisson
-from scipy.optimize import root
 
-# local libraries
-from seq_utils import *
-from db_utils import dump_raw_by_lineage, retrieve_seqs
-from minimap2 import minimap2, encode_diffs
-
-
-def fromisoformat(dt):
-    """ Support versions earlier than Python 3.7 """
-    year, month, day = map(int, dt.split('-'))
-    return date(year, month, day)
-
-
-class QPois:
-    """
-    Cache the quantile transition points for Poisson distribution for a given
-    rate <L> and varying time <t>, s.t. \exp(-Lt)\sum_{i=0}^{k} (Lt)^i/i! = Q.
-    """
-    def __init__(self, quantile, rate, maxtime, origin='2019-12-01'):
-        self.q = quantile
-        self.rate = rate
-        self.maxtime = maxtime
-        self.origin = fromisoformat(origin)
-
-        self.timepoints = self.compute_timepoints()
-
-    def objfunc(self, x, k):
-        """ Use root-finding to find transition point for Poisson CDF """
-        return self.q - poisson.cdf(k=k, mu=self.rate*x)
-
-    def compute_timepoints(self, maxk=100):
-        """ Store transition points until time exceeds maxtime """
-        timepoints = []
-        t = 0
-        for k in range(maxk):
-            res = root(self.objfunc, x0=t, args=(k, ))
-            if not res.success:
-                print("Error in QPois: failed to locate root, q={} k={} rate={}".format(
-                    self.q, k, self.rate))
-                print(res)
-                break
-            t = res.x[0]
-            if t > self.maxtime:
-                break
-            timepoints.append(t)
-        return timepoints
-
-    def lookup(self, time):
-        """ Retrieve quantile count, given time """
-        return bisect.bisect(self.timepoints, time)
-
-    def is_outlier(self, coldate, ndiffs):
-        if type(coldate) is str:
-            coldate = fromisoformat(coldate)
-        dt = (coldate - self.origin).days
-        qmax = self.lookup(dt)
-        if ndiffs > qmax:
-            return True
-        return False
+from covizu.utils.seq_utils import *
+from covizu.utils.db_utils import dump_raw_by_lineage, retrieve_seqs
+from covizu.minimap2 import minimap2, encode_diffs
 
 
 def filter_fasta(fasta_file, json_file, cutoff=10):
@@ -225,32 +162,6 @@ def parse_nexus(nexus_file, fasta, date_tol):
 
     Phylo.write(phy, file=nexus_file.replace('.nexus', '.nwk'),
                 format='newick')
-
-
-def filter_outliers(iter, origin='2019-12-01', rate=8e-4*29900/365., cutoff=0.005, maxtime=1e3):
-    """
-    Exclude genomes that contain an excessive number of genetic differences
-    from the reference, assuming that the mean number of differences increases
-    linearly over time and that the variation around this mean follows a
-    Poisson distribution.
-    :param iter:  generator, returned by encode_diffs()
-    :param origin:  str, date of root sequence in ISO format (yyyy-mm-dd)
-    :param rate:  float, molecular clock rate (subs/genome/day)
-    :param cutoff:  float, use 1-cutoff to compute quantile of Poisson
-                    distribution
-    :param maxtime:  int, maximum number of days to cache Poisson quantiles
-    :yield:  tuples from generator that pass filter
-    """
-    qp = QPois(quantile=1-cutoff, rate=rate, maxtime=maxtime, origin=origin)
-    for qname, diffs, missing in iter:
-        coldate = qname.split('|')[-1]
-        if coldate.count('-') != 2:
-            continue
-        ndiffs = len(diffs)
-        if qp.is_outlier(coldate, ndiffs):
-            # reject genome with too many differences given date
-            continue
-        yield qname, diffs, missing
 
 
 def retrieve_genomes(db="data/gsaid.db", ref_file='data/MT291829.fa', reflen=29774, misstol=300):

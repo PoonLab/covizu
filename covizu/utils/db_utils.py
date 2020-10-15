@@ -428,7 +428,7 @@ def dump_lineages(db='data/gsaid.db', by_lineage=False):
                           "FROM LINEAGE;").fetchall()
     result = {}
     if by_lineage:
-        # used by treetime.py
+        # FIXME: DEPRECATED - see treetime.py
         for accn, lineage, prob, version in data:
             header = labels.get(accn, None)
             if header is None:
@@ -437,6 +437,7 @@ def dump_lineages(db='data/gsaid.db', by_lineage=False):
                 result.update({lineage: []})
             result[lineage].append(labels[accn])
     else:
+        # used by clustering.py
         for accn, lineage, prob, version in data:
             result.update({accn: {
                 'lineage': lineage, 'prob': prob, 'version': version

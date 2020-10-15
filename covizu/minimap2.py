@@ -2,8 +2,9 @@ import subprocess
 import argparse
 import re
 import sys
-from seq_utils import convert_fasta
 import json
+
+from covizu.utils.seq_utils import convert_fasta
 
 
 def apply_cigar(seq, rpos, cigar):

@@ -7,15 +7,16 @@ from sklearn.datasets import make_classification
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, classification_report, confusion_matrix
 import datetime
-from db_utils import *
 
-import gotoh2
-import argparse
 import joblib
 import argparse
 import pangoLEARN
 import re
 import sys
+
+from covizu.utils.seq_utils import convert_fasta
+from covizu.utils.db_utils import *
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='pangorider. A derivative of PANGOLIN')
@@ -269,10 +270,10 @@ def classify_and_insert(header_file, model_file, sequence_handle, indiciesToKeep
 
     conn.commit()
 
-if __name__ == '__main__':
 
+if __name__ == '__main__':
     args = parse_args()
-    sequence_handle = gotoh2.convert_fasta(open(args.sequences_file, 'r'))
+    sequence_handle = convert_fasta(open(args.sequences_file, 'r'))
 
     filtered_handle = filter_seqs(sequence_handle, args.filterout, max_prop_n=0.05, minlen=29000)
 
