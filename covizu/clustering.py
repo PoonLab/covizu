@@ -8,6 +8,7 @@ import tempfile
 import subprocess
 
 from Bio import Phylo
+from Bio.Phylo.BaseTree import Clade
 from Bio.Phylo.Consensus import majority_consensus
 
 from io import StringIO
@@ -288,6 +289,58 @@ def build_trees(features, nboot=100, threads=1, use_file=True, callback=None):
 
     callback('built NJ trees from {} bootstraps'.format(nboot))
     return trees, labels
+
+
+def consensus(trees, cutoff=0.5):
+    """
+    Generate a consensus tree by counting splits and using the splits with
+    frequencies above the cutoff to resolve a star tree.
+    :param trees:  iterable containing Phylo.BaseTree objects
+    :param cutoff:  float, bootstrap threshold (default 0.5)
+    :return:  Phylo.BaseTree
+    """
+    splits = {}
+    terminals = {}
+    count = 0
+    for phy in trees:
+        count += 1
+        # store terminal labels and branch lengths
+        for tip in phy.get_terminals():
+            if tip.name not in terminals:
+                terminals.update({tip.name: []})
+            terminals[tip.name].append(tip.branch_length)
+
+        # record splits in tree
+        for node in phy.get_nonterminals():
+            children = [tip.name for tip in node.get_terminals()]
+            children.sort()
+            key = tuple(children)
+            if key not in splits:
+                splits.update({key: []})
+            # record branch length - list length represents frequency
+            splits[key].append(node.branch_length)
+
+    # filter splits by frequency threshold
+    intermed = [(len(k), k, v) for k, v in splits.items() if len(v)/count >= cutoff]
+    intermed.sort()
+
+    # construct consensus tree
+    orphans = dict([(tname, Clade(name=tname, branch_length=sum(blen)/len(blen)))
+                   for tname, blen in terminals.items()])
+
+    for _, key, val in intermed:
+        # average branch lengths across relevant trees
+        bl = sum(splits[key]) / len(splits[key])
+        node = Clade(branch_length=bl)
+        for child in key:
+            branch = orphans.pop(child, None)
+            if branch:
+                node.clades.append(branch)
+        # use a single tip name to label ancestral node
+        newkey = node.get_terminals()[0].name
+        orphans.update({newkey: node})
+
+    return orphans.popitem()[1]
 
 
 def parse_args():

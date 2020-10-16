@@ -3,6 +3,7 @@ import argparse
 import csv
 import sys
 from tempfile import NamedTemporaryFile
+import os
 
 
 def export_fasta(cursor, outfile='data/gisaid-aligned.fa'):
@@ -25,6 +26,10 @@ def open_connection(database):
         :out:
             :cursor: interactive sql object containing tables
     """
+    if not os.path.exists(database):
+        print("ERROR: Failed to open sqlite3 connection, path {} does not exist".format(database))
+        sys.exit()
+
     conn = sqlite3.connect(database, check_same_thread=False)
     cur = conn.cursor()
 
@@ -401,11 +406,9 @@ def retrieve_seqs(headers, db="data/gsaid.db"):
         result = cur.execute(
             "SELECT `aligned` from SEQUENCES where `header`='{}';".format(h)
         ).fetchall()
-        # TODO: warn if multiple results?
         if len(result) == 0:
-            print("ERROR: query {} failed to retrieve any genomes".format(headers))
-            sys.exit()
-
+            print("ERROR: query {} failed to retrieve genome".format(h))
+            continue
         seqs.append(result[0][0])
     conn.close()
     return seqs
