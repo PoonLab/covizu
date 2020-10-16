@@ -225,7 +225,7 @@ function draw_clusters(tips) {
   function mouseover(d) {
 
     d3.select("rect#id-" + d.cluster_idx)
-      .attr("class", "txt_hover");
+      .attr("txt_hover", "yes");
  
     cTooltip.transition()       // Show tooltip
             .duration(50)
@@ -267,7 +267,8 @@ function draw_clusters(tips) {
     .attr("id", function(d) { return "id-" + d.cluster_idx; })
     .on('mouseover', mouseover)
     .on("mouseout", function() {
-      d3.select(this).attr("class", "default");
+      d3.select(this)
+        .attr("txt_hover", null);
 
       cTooltip.transition()     // Hide tooltip
           .duration(50)
