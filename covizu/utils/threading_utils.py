@@ -1,5 +1,7 @@
 #threading
 import threading
+
+
 class AlignerThread(threading.Thread):
     def __init__(self, in_queue, out_queue):
         threading.Thread.__init__(self)
@@ -19,6 +21,7 @@ class AlignerThread(threading.Thread):
         conn.close()
         self.in_queue.task_done()
         return 0
+
 
 def iterate_fasta_threaded(fasta, ref, database = 'data/gsaid.db'):
     """
