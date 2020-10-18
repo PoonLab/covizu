@@ -18,6 +18,12 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
-    ]
+    ],
+    package_data={'covizu': [
+        'data/problematic_sites_sarsCov2.vcf',
+        'data/LR757995.fa',
+        'data/MT291829.fa',
+        'data/NC_045512.fa'
+    ]}
 )
 

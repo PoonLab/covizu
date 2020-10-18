@@ -7,4 +7,5 @@ geckodriver.log
 debug/*
 build/*
 dist/*
+venv/*
 
