@@ -114,6 +114,8 @@ def date2float(isodate):
 
 def parse_nexus(nexus_file, fasta, date_tol):
     """
+    Converting Treetime NEXUS output into Newick
+
     @param nexus_file:  str, path to write Newick tree string
     @param fasta:  dict, {header: seq} from filter_fasta()
     @param date_tol:  float, tolerance in tip date discordance
@@ -241,9 +243,17 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
+    cb = Callback()
 
+    cb.callback("Retrieving genomes")
     fasta = retrieve_genomes(args.db, ref_file=args.ref, reflen=args.reflen)
+
+    cb.callback("Reconstructing tree with {}".format(args.ft2bin))
     nwk = fasttree(fasta, binpath=args.ft2bin)
+
+    cb.callback("Reconstructing time-scaled tree with {}").format(args.ttbin)
     nexus_file = treetime(nwk, fasta, outdir=args.outdir, binpath=args.ttbin,
                           clock=args.clock)
+
+    cb.callback("")
     parse_nexus(nexus_file, fasta, date_tol=args.datetol)

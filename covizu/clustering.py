@@ -414,7 +414,7 @@ if __name__ == "__main__":
             continue
 
         if args.cons:
-            trees = majority_consensus(trees, cutoff=args.cutoff)
+            trees = consensus(trees, cutoff=args.cutoff)
             cb.callback('built consensus tree')
 
         Phylo.write(trees, file=outfile, format='newick')
