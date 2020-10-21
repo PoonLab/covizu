@@ -4,25 +4,21 @@ import argparse
 from covizu.clustering import consensus
 from Bio import Phylo
 from io import StringIO
+from csv import DictReader
 
 
 def parse_labels(handle):
     """
-    Parse labels CSV
+    Parse labels CSV - assumes header contains 'name' and 'index'
     :param handle:  open stream to CSV file in read mode
     :return:  dict, lists of genome labels keyed by tip index
     """
-    _ = next(handle)  # skip header
+    rows = DictReader(handle)
     results = {}
-    for line in handle:
-        try:
-            index, qname = line.strip().split(',')
-        except:
-            print("ERROR in parse_labels(): not a valid CSV file, expecting {index, qname}")
-            raise
-        if index not in results:
-            results.update({index: []})
-        results[index].append(qname)
+    for row in rows:
+        if row['index'] not in results:
+            results.update({row['index']: []})
+        results[row['index']].append(row['name'])
     return results
 
 
@@ -41,30 +37,29 @@ def collapse_polytomies(tree):
     :param tree:  Bio.Phylo object
     :return:  Bio.Phylo
     """
-    # prune tips with zero branch length, use to label internal node
     parents = get_parents(tree)
+
+    # prune tips with zero branch length, use to label internal node
     for tip in tree.get_terminals():
         if tip.branch_length > 0:
             continue
         parent = parents[tip]
+        parent.clades.remove(tip)
         if parent.name is None:
             parent.name = tip.name
         else:
             parent.name = '|'.join([parent.name, tip.name])
-        tree.prune(tip)
 
-    parents = get_parents(tree)  # Clade objects may have been altered
+    # remove internal branches
     for node in tree.get_nonterminals():
         if node.branch_length > 0 or node == tree.root:
             continue
-
-        # transfer child clades to parent
         parent = parents[node]
         parent.clades.remove(node)
+        # transfer child clades to parent
         parent.clades.extend(node.clades)
         for child in node.clades:
             parents[child] = parent
-
         # transfer labels to parent
         if node.name:
             if parent.name is None:
@@ -101,6 +96,9 @@ def annotate_tree(tree, label_file):
         sys.exit()
 
     tree = collapse_polytomies(tree)  # label internal nodes
+    with StringIO() as handle:
+        Phylo.write(tree, handle, "newick")
+        print(handle.getvalue())
 
     # update nodes with labels
     for tip in tree.get_terminals():
@@ -114,18 +112,10 @@ def annotate_tree(tree, label_file):
     return tree
 
 
-def newick_str(tree):
-    """ Convert Phylo.BaseTree object to Newick tree string """
-    with StringIO() as handle:
-        Phylo.write(tree, handle, "newick")
-        result = handle.getvalue()
-    return result
-
-
 def serialize_tree(tree):
     """
     Convert annotated tree object to JSON
-    TODO: we can label nodes with features (genetic differences)
+    TODO: label nodes with features (genetic differences)
     :param tree:  Phylo.BaseTree object from annotate_tree()
     :return:  dict, containing 'nodes' and 'edges'
     """
@@ -167,6 +157,8 @@ def parse_args():
                         help="input, path to file with consensus tree or bootstrap trees")
     parser.add_argument("labels", type=argparse.FileType('r'),
                         help="input, path to file with sequence label to tip index map")
+    parser.add_argument("-o", "--outfile", type=argparse.FileType('w'), default='-',
+                        help="output, path to file to write JSON, defaults to stdout")
     parser.add_argument("--boot", action="store_true",
                         help="option, indicates that input file contains bootstrap trees")
     parser.add_argument("--cutoff", type=float, default=0.5,
@@ -188,10 +180,6 @@ if __name__ == "__main__":
             trees = Phylo.parse(args.tree, 'newick')
             ctree = consensus(trees, cutoff=args.cutoff)
 
-    print(newick_str(ctree))
-
     tree = annotate_tree(ctree, args.labels)
-    print(newick_str(tree))
-
     obj = serialize_tree(tree)
-    print(json.dumps(obj, indent=2))
+    args.outfile.write(json.dumps(obj, indent=2))
