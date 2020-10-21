@@ -1,14 +1,14 @@
 import random
 import json
 
-import db_utils
-from seq_utils import Callback, total_missing, apply_features
+from covizu.utils import db_utils, seq_utils
 
 import argparse
 import tempfile
 import subprocess
 
 from Bio import Phylo
+from Bio.Phylo.BaseTree import Clade
 from Bio.Phylo.Consensus import majority_consensus
 
 from io import StringIO
@@ -21,38 +21,19 @@ import os
 sys.setrecursionlimit(20000)  # fix for issue #127, default limit 1000
 
 
-def dump_lineages(db='data/gsaid.db'):
-    """
-    Connect to sqlite3 database and retrieve all records from the LINEAGE
-    table.  Construct a dictionary keyed by accession number.
-    :param db:  str, path to sqlite3 database
-    :return:  dict, keyed by accession
-    """
-    cursor, conn = db_utils.open_connection(db)
-    data = cursor.execute("SELECT `accession`, `lineage`, `probability`, `pangoLEARN_version` "
-                          "FROM LINEAGE;").fetchall()
-    result = {}
-    for accn, lineage, prob, version in data:
-        result.update({accn: {
-            'lineage': lineage, 'prob': prob, 'version': version
-        }})
-    return result
-
-
-def filter_problematic(features, vcf_file="data/problematic_sites_sarsCov2.vcf", callback=None):
+def filter_problematic(obj, vcf_file="data/problematic_sites_sarsCov2.vcf", callback=None):
     """
     Apply problematic sites annotation from de Maio et al.,
     https://virological.org/t/issues-with-sars-cov-2-sequencing-data/473
     which are published and maintained as a VCF-formatted file.
 
-    :param features:  list, return object from import_json()
+    :param obj:  list, entries are dicts returned by import_json()
     :param vcf_file:  str, path to VCF file
     :return:
     """
     vcf = open(vcf_file)
     mask = {}
     for line in vcf.readlines():
-        #line = line.decode('utf-8')
         if line.startswith('#'):
             continue
         _, pos, _, ref, alt, _, filt, info = line.strip().split()
@@ -63,7 +44,7 @@ def filter_problematic(features, vcf_file="data/problematic_sites_sarsCov2.vcf",
 
     # apply filters to feature vectors
     count = 0
-    for row in features:
+    for row in obj:
         filtered = []
         for typ, pos, alt in row['diffs']:
             if typ == '~' and int(pos) in mask and alt in mask[pos]['alt']:
@@ -84,20 +65,22 @@ def filter_problematic(features, vcf_file="data/problematic_sites_sarsCov2.vcf",
 def import_json(path, max_missing=600, callback=None):
     """
     Read genome features (genetic differences from reference) from JSON file.
+    For command line execution with JSON file input.
 
     :param path:  str, relative or absolute path to JSON input file
     :param max_missing:  int, maximum tolerated number of uncalled bases
-    :return:  list, each entry comprises a dict with keys 'name', 'diffs', and 'missing'
+    :return:  list, [qname, diffs, missing]
     """
     with open(path) as fp:
-        features = json.load(fp)
+        obj = json.load(fp)
 
-    # remove features known to be problematic
-    features = filter_problematic(features, callback=callback)
+    # remove features known to be problematic - note entries are dicts
+    filtered = filter_problematic(obj, callback=callback)
 
     # remove genomes with too many uncalled bases
-    count = len(features)
-    features = [row for row in features if total_missing(row) < max_missing]
+    count = len(filtered)
+    features = [(row['qname'], row['diffs'], row['missing']) for row in filtered
+                if seq_utils.total_missing(row) < max_missing]
 
     if callback:
         callback("dropped {} records with uncalled bases in excess "
@@ -114,7 +97,8 @@ def split_by_lineage(features, lineages):
     """
     result = {}
     for row in features:
-        accn = row['name'].split('|')[1]
+        qname = row[0]
+        accn = qname.split('|')[1]
         val = lineages.get(accn, None)
         if val is None:
             print("Error in clustering::split_by_lineage(), no lineage assignment"
@@ -148,11 +132,11 @@ def get_sym_diffs(features, use_file=False):
     """
     # compress genomes with identical feature vectors
     fvecs = {}
-    for row in features:
-        key = tuple(row['diffs'])
+    for qname, diffs, missing in seq_utils.filter_outliers(features):
+        key = tuple(diffs)
         if key not in fvecs:
             fvecs.update({key: []})
-        fvecs[key].append(row['name'])
+        fvecs[key].append(qname)
 
     # generate union of all features
     union = {}
@@ -307,6 +291,61 @@ def build_trees(features, nboot=100, threads=1, use_file=True, callback=None):
     return trees, labels
 
 
+def consensus(trees, cutoff=0.5):
+    """
+    Generate a consensus tree by counting splits and using the splits with
+    frequencies above the cutoff to resolve a star tree.
+    :param trees:  iterable containing Phylo.BaseTree objects
+    :param cutoff:  float, bootstrap threshold (default 0.5)
+    :return:  Phylo.BaseTree
+    """
+    splits = {}
+    terminals = {}
+    count = 0
+    for phy in trees:
+        count += 1
+        # store terminal labels and branch lengths
+        for tip in phy.get_terminals():
+            if tip.name not in terminals:
+                terminals.update({tip.name: []})
+            terminals[tip.name].append(tip.branch_length)
+
+        # record splits in tree
+        for node in phy.get_nonterminals():
+            children = [tip.name for tip in node.get_terminals()]
+            children.sort()
+            key = tuple(children)
+            if key not in splits:
+                splits.update({key: []})
+            # record branch length - list length represents frequency
+            splits[key].append(node.branch_length)
+
+    # filter splits by frequency threshold
+    intermed = [(len(k), k, v) for k, v in splits.items() if len(v)/count >= cutoff]
+    intermed.sort()
+
+    # construct consensus tree
+    orphans = dict([(tname, Clade(name=tname, branch_length=sum(blen)/len(blen)))
+                   for tname, blen in terminals.items()])
+
+    for _, key, val in intermed:
+        # average branch lengths across relevant trees
+        bl = sum(splits[key]) / len(splits[key])
+        support = len(val) / count
+        node = Clade(branch_length=bl, confidence=support)
+
+        for child in key:
+            branch = orphans.pop(child, None)
+            if branch:
+                node.clades.append(branch)
+
+        # use a single tip name to label ancestral node
+        newkey = node.get_terminals()[0].name
+        orphans.update({newkey: node})
+
+    return orphans.popitem()[1]
+
+
 def parse_args():
     """ Command-line interface """
     parser = argparse.ArgumentParser(
@@ -343,13 +382,14 @@ def parse_args():
 if __name__ == "__main__":
     # command-line execution
     args = parse_args()
-    cb = Callback()
+    cb = seq_utils.Callback()
 
     cb.callback('loading lineage classifications from database')
-    lineages = dump_lineages(args.db)
+    lineages = db_utils.dump_lineages(args.db)
 
     cb.callback('loading JSON')
     features = import_json(args.json, callback=cb.callback)
+
     by_lineage = split_by_lineage(features, lineages)
     for lineage, lfeatures in by_lineage.items():
         cb.callback('start {}, {} entries'.format(lineage, len(lfeatures)))
@@ -377,7 +417,7 @@ if __name__ == "__main__":
             continue
 
         if args.cons:
-            trees = majority_consensus(trees, cutoff=args.cutoff)
+            trees = consensus(trees, cutoff=args.cutoff)
             cb.callback('built consensus tree')
 
         Phylo.write(trees, file=outfile, format='newick')

@@ -2,6 +2,11 @@
 import re
 from datetime import datetime, date
 import sys
+import bisect
+import math
+
+from scipy.stats import poisson
+from scipy.optimize import root
 
 
 # regex for terminal gaps
@@ -229,26 +234,10 @@ def apply_prot_to_nuc(aligned_prot, nuc):
     return res
 
 
-class Callback:
-    def __init__(self):
-        self.t0 = datetime.now()
-        self.last_msg_length = 0
-
-    def callback(self, msg, replace=False):
-        if replace:
-            sys.stdout.write('\b'*self.last_msg_length)
-        self.last_msg_length = sys.stdout.write('[{}] {}'.format(datetime.now() - self.t0, msg))
-        if not replace:
-            sys.stdout.write('\n')
-
-
 def total_missing(row):
     """ Calculate the total number of missing sites from closed-open interval annotations """
     res = 0
-    if type(row) is dict:
-        missing = row['missing']
-    else:
-        _, _, missing = row
+    _, _, missing = row
     for left, right in missing:
         res += right-left
     return res
@@ -259,19 +248,12 @@ def apply_features(row, refseq):
     Reconstitute genome sequence from feature vector (genetic differences) and
     missing data vector.
 
-    :param row:  dict, entry from features list returned by import_json()
+    :param row:  list, entry from features list returned by import_json()
     :param refseq:  str, reference genome
     :return:  str, aligned genome
     """
     result = list(refseq)  # strings are not mutable
-
-    # handle case where row is a dict
-    if type(row) is dict:
-        diffs = row['diffs']
-        missing = row['missing']
-    else:
-        # unpack tuple
-        _, diffs, missing = row
+    _, diffs, missing = row
 
     # apply missing intervals
     for left, right in missing:
@@ -287,3 +269,98 @@ def apply_features(row, refseq):
                 result[i] = '-'
 
     return ''.join(result)
+
+
+def fromisoformat(dt):
+    """ Convert ISO date to Python datetime.date object to support Python <3.7 """
+    year, month, day = map(int, dt.split('-'))
+    return date(year, month, day)
+
+
+class QPois:
+    """
+    Cache the quantile transition points for Poisson distribution for a given
+    rate <L> and varying time <t>, s.t. \exp(-Lt)\sum_{i=0}^{k} (Lt)^i/i! = Q.
+    """
+    def __init__(self, quantile, rate, maxtime, origin='2019-12-01'):
+        self.q = quantile
+        self.rate = rate
+        self.maxtime = maxtime
+        self.origin = fromisoformat(origin)
+
+        self.timepoints = self.compute_timepoints()
+
+    def objfunc(self, x, k):
+        """ Use root-finding to find transition point for Poisson CDF """
+        return self.q - poisson.cdf(k=k, mu=self.rate*x)
+
+    def compute_timepoints(self, maxk=100):
+        """ Store transition points until time exceeds maxtime """
+        timepoints = []
+        t = 0
+        for k in range(maxk):
+            res = root(self.objfunc, x0=t, args=(k, ))
+            if not res.success:
+                print("Error in QPois: failed to locate root, q={} k={} rate={}".format(
+                    self.q, k, self.rate))
+                print(res)
+                break
+            t = res.x[0]
+            if t > self.maxtime:
+                break
+            timepoints.append(t)
+        return timepoints
+
+    def lookup(self, time):
+        """ Retrieve quantile count, given time """
+        return bisect.bisect(self.timepoints, time)
+
+    def is_outlier(self, coldate, ndiffs):
+        if type(coldate) is str:
+            coldate = fromisoformat(coldate)
+        dt = (coldate - self.origin).days
+        qmax = self.lookup(dt)
+        if ndiffs > qmax:
+            return True
+        return False
+
+
+def filter_outliers(iter, origin='2019-12-01', rate=0.0655, cutoff=0.005, maxtime=1e3):
+    """
+    Exclude genomes that contain an excessive number of genetic differences
+    from the reference, assuming that the mean number of differences increases
+    linearly over time and that the variation around this mean follows a
+    Poisson distribution.
+
+    :param iter:  generator, returned by encode_diffs()
+    :param origin:  str, date of root sequence in ISO format (yyyy-mm-dd)
+    :param rate:  float, molecular clock rate (subs/genome/day), defaults
+                  to 8e-4 * 29900 / 365
+    :param cutoff:  float, use 1-cutoff to compute quantile of Poisson
+                    distribution, defaults to 0.005
+    :param maxtime:  int, maximum number of days to cache Poisson quantiles
+    :yield:  tuples from generator that pass filter
+    """
+    qp = QPois(quantile=1-cutoff, rate=rate, maxtime=maxtime, origin=origin)
+    for qname, diffs, missing in iter:
+        coldate = qname.split('|')[-1]
+        if coldate.count('-') != 2:
+            continue
+        ndiffs = len(diffs)
+        if qp.is_outlier(coldate, ndiffs):
+            # reject genome with too many differences given date
+            continue
+        yield qname, diffs, missing
+
+
+class Callback:
+    def __init__(self):
+        self.t0 = datetime.now()
+        self.last_msg_length = 0
+
+    def callback(self, msg, replace=False):
+        if replace:
+            sys.stdout.write('\b'*self.last_msg_length)
+        self.last_msg_length = sys.stdout.write('[{}] {}'.format(datetime.now() - self.t0, msg))
+        if not replace:
+            sys.stdout.write('\n')
