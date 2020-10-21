@@ -331,11 +331,14 @@ def consensus(trees, cutoff=0.5):
     for _, key, val in intermed:
         # average branch lengths across relevant trees
         bl = sum(splits[key]) / len(splits[key])
-        node = Clade(branch_length=bl)
+        support = len(val) / count
+        node = Clade(branch_length=bl, confidence=support)
+
         for child in key:
             branch = orphans.pop(child, None)
             if branch:
                 node.clades.append(branch)
+
         # use a single tip name to label ancestral node
         newkey = node.get_terminals()[0].name
         orphans.update({newkey: node})
