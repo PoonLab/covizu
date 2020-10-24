@@ -27,9 +27,11 @@ const search_stats = prepare_search_stats({
   query: undefined,
   start: undefined,
   end: undefined,
-  current_point: 1,
+  current_point: 0,
   total_points: NaN,
   points: [],
+  bead_indexer: 0,
+  start_idx: [],
 });
 
 function update_search_stats(stats) {
@@ -239,17 +241,18 @@ function search(beaddata) {
 	var query = $('#search-input').val();
 
   // FIX ME: Accn search returning 0 beads
-  const points = find_beads_points(beaddata)
-    .filter(point => point.labels.some(label => label.includes(query)));
+  //const points = find_beads_points(beaddata)
+    //.filter(point => point.labels.some(label => label.includes(query)));
   // TODO: Make select_bead_by_* use find_beads_points result
   isAccn(query) ? select_bead_by_accession(query) : select_beads_by_substring(query);
-  const stats = search_stats.update({
-    query,
-    current_point: 1,
-    total_points: points.length,
-    points: points,
-  });
-  update_search_stats(stats);
+  //const stats = search_stats.update({
+    //query,
+    //current_point: 0,
+    //total_points: points.length,
+    //points: points,
+    //bead_indexer: 0,
+  //});
+  //update_search_stats(stats);
 }
 
 function search_by_dates(beaddata, start, end){
@@ -261,9 +264,10 @@ function search_by_dates(beaddata, start, end){
   const stats = search_stats.update({
     start,
     end,
-    current_point: 1,
+    current_point: 0,
     total_points: points.length,
     points: points,
+    bead_indexer: 0,
   });
   update_search_stats(stats);
 }

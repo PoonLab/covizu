@@ -187,9 +187,50 @@
           		  d3.selectAll("rect.clicked").attr('class', "default");
           		  d3.selectAll("rect.clickedH").remove();
           		}
+			// Create new search stats
+			var query = $('#search-input').val();
+			const points = find_beads_points(beaddata)
+    				       .filter(point => point.labels.some(label => label.includes(query)));
 
+			// Map cluster index to id
+			var map_to_id = [], key;
+			var rect = d3.selectAll('#svg-timetree > svg > g > rect').nodes();
+			for (var i = rect.length - 1; i >= 0; i--) {
+                          key = rect[i].id;
+                          map_to_id[key] = d3.select(rect[i]).attr("cidx");
+                        }
+			
+			// Count the number of hits in each cluster
+			var count_hits_per_cluster = {}, key;
+                        for (var i = 0; i < points.length; i++) {
+                          key = 'cidx-' + points[i].cidx;
+                          if (count_hits_per_cluster[key] == null) {
+                          count_hits_per_cluster[key] = 1
+                          continue
+                        }
+                          count_hits_per_cluster[key]++;
+                        }
+
+			// First index of each cluster
+			var start_idx = [], key, start_index = 0;
+			for (const [key, value] of Object.entries(map_to_id)) {
+			  start_idx[key] = start_index;
+			  if (count_hits_per_cluster[value] != null) {
+			    start_index = start_index +  count_hits_per_cluster[value];
+			  }
+                        }
+			
+			const stats = search_stats.update({
+					query,
+    					current_point: 0,
+					total_points: points.length,
+					points: points,
+					bead_indexer: 0,
+					start_idx: start_idx,
+					});
+  			update_search_stats(stats);
           		search(beaddata);
-              enable_buttons();
+              		enable_buttons();
           	}
           });
 
@@ -223,25 +264,113 @@
 
           // Iterate results
           $('#next_button').click(function(){
-            const stats = search_stats.update({
-              current_point: search_stats.get().current_point + 1,
+
+	    // Find current cluster
+            var current_cluster = d3.selectAll(".clicked").node();
+            var current_index = current_cluster.id;
+
+	    // Find index of current bead
+	    var stats = search_stats.update({
+                current_point: search_stats.get().start_idx[current_index] + search_stats.get().bead_indexer + 1,
+		bead_indexer: search_stats.get().bead_indexer + 1,
             });
             update_search_stats(stats);
-            const point = stats.points[stats.current_point - 1];
-            // TODO: Select the accession with a more general approach
-            const accn = point.accessions[0];
-            select_bead_by_accession(accn, false);
+		
+ 
+	    // Select bead hits in the current cluster
+	    var selected_points = d3.selectAll(".SelectedBead");
+
+	    // Move to the next cluster if next bead is in next cluster
+	    if (search_stats.get().bead_indexer > selected_points.nodes().length) {
+
+	      // Select cluster hits  
+	      var selected_clusters = d3.selectAll(".SelectedCluster, .clicked").nodes();
+	      selected_clusters.sort((x, y) => d3.ascending(parseInt(x.id.substring(3)), parseInt(y.id.substring(3))));
+	
+	      // Find current cluster 
+	      var matched = selected_clusters.findIndex(function(d, i) { 
+		if (d.id === current_index)
+		  return i;
+		})
+	      
+	      // Move to next cluster and reset bead indexer
+	      var next_cluster = selected_clusters[matched - 1];
+              d3.select(next_cluster).dispatch('click');
+	      stats = search_stats.update({
+                current_point: search_stats.get().start_idx[next_cluster.id] + search_stats.get().bead_indexer + 1,
+                bead_indexer: search_stats.get().bead_indexer + 1,
+            });
+            update_search_stats(stats);
+
+	    // Select bead hits in next cluster
+	    var selected_points = d3.selectAll(".SelectedBead");
+	    }
+
+	    // Scroll to the next bead
+	    var working_bead = selected_points.nodes()[search_stats.get().bead_indexer-1];
+	    working_bead.scrollIntoView({block: "center"});
+
           });
 
           $('#previous_button').click(function(){
-            const stats = search_stats.update({
-              current_point: search_stats.get().current_point - 1,
+
+            // Find current cluster
+            var current_cluster = d3.selectAll(".clicked").node();
+            var current_index = current_cluster.id;
+
+            // Find index of current bead
+            var stats = search_stats.update({
+                current_point: search_stats.get().start_idx[current_index] + search_stats.get().bead_indexer - 1,
+                bead_indexer: search_stats.get().bead_indexer - 1,
             });
             update_search_stats(stats);
-            const point = stats.points[stats.current_point - 1];
+
+
+            // Select bead hits in the current cluster
+            var selected_points = d3.selectAll(".SelectedBead");
+
+            // Move to the previous cluster if previous bead is in previous cluster
+            if (search_stats.get().bead_indexer < 1) {
+
+              // Select cluster hits
+              var selected_clusters = d3.selectAll(".SelectedCluster, .clicked").nodes();
+              selected_clusters.sort((x, y) => d3.ascending(parseInt(x.id.substring(3)), parseInt(y.id.substring(3))));
+
+              // Find current cluster
+              var matched = selected_clusters.findIndex(function(d, i) {
+                if (d.id === current_index)
+                  return i;
+                })
+
+              // Move to next cluster and reset bead indexer
+              var previous_cluster = selected_clusters[matched + 1];
+              d3.select(previous_cluster).dispatch('click');
+
+	      // Select bead hits in next cluster
+              var selected_points = d3.selectAll(".SelectedBead");
+
+              stats = search_stats.update({
+                current_point: search_stats.get().start_idx[previous_cluster.id] + selected_points.nodes().length,
+                bead_indexer: selected_points.nodes().length,
+            });
+            update_search_stats(stats);
+
+            }
+
+            // Scroll to the next bead
+            var working_bead = selected_points.nodes()[search_stats.get().bead_indexer-1];
+            working_bead.scrollIntoView({block: "center"});
+
+
+
+            //const stats = search_stats.update({
+              //current_point: search_stats.get().current_point - 1,
+           // });
+            //update_search_stats(stats);
+            //const point = stats.points[stats.current_point - 1];
             // TODO: Select the accession with a more general approach
-            const accn = point.accessions[0];
-            select_bead_by_accession(accn, false);
+            //const accn = point.accessions[0];
+            //select_bead_by_accession(accn, false);
           });
 
 
