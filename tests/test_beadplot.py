@@ -117,3 +117,39 @@ class TestCollapsePolytomies(unittest.TestCase):
         result = beadplot.collapse_polytomies(tree4)
         expected = phylo_from_str("((A:1,B:1):1,C|D:1):0;")
         self.assertTrue(compare_phylo(expected, result))
+
+
+class TestIssues(unittest.TestCase):
+    def testIssue150(self):
+        # consensus of B.13 bootstrap trees
+        tree = phylo_from_str(
+            "(0:0.00000,(((1:0.00000,8:1.86735)0.71:1.54286,3:0.00000)"
+            "0.72:1.43662,7:0.93878)0.88:2.02326,2:1.14286,4:0.95918,5:"
+            "1.01020,6:2.19388)1.00:0.00000;"
+        )
+        labels = {
+            '0': ['hCoV-19/USA/WI-UW-306/2020|EPI_ISL_436600|2020-04-14',
+                  'hCoV-19/USA/WI-UW-278/2020|EPI_ISL_436572|2020-04-03',
+                  'hCoV-19/USA/WI-UW-279/2020|EPI_ISL_436573|2020-04-03',
+                  'hCoV-19/USA/WI-UW-287/2020|EPI_ISL_436581|2020-04-06',
+                  'hCoV-19/USA/WI-UW-289/2020|EPI_ISL_436583|2020-04-08',
+                  'hCoV-19/USA/WI-UW-291/2020|EPI_ISL_436585|2020-04-08',
+                  'hCoV-19/USA/WI-UW-299/2020|EPI_ISL_436593|2020-04-13'],
+            '1': ['hCoV-19/USA/WI-UW-310/2020|EPI_ISL_436604|2020-04-15'],
+            '2': ['hCoV-19/USA/WI-UW-314/2020|EPI_ISL_436608|2020-04-16'],
+            '3': ['hCoV-19/USA/WI-UW-315/2020|EPI_ISL_436609|2020-04-17',
+                  'hCoV-19/USA/WI-UW-282/2020|EPI_ISL_436576|2020-04-06',
+                  'hCoV-19/USA/WI-UW-286/2020|EPI_ISL_436580|2020-04-06'],
+            '4': ['hCoV-19/USA/WI-UW-281/2020|EPI_ISL_436575|2020-04-06',
+                  'hCoV-19/USA/WI-UW-292/2020|EPI_ISL_436586|2020-04-08',
+                  'hCoV-19/USA/WI-UW-305/2020|EPI_ISL_436599|2020-04-14'],
+            '5': ['hCoV-19/USA/WI-UW-294/2020|EPI_ISL_436588|2020-04-09'],
+            '6': ['hCoV-19/USA/WI-UW-298/2020|EPI_ISL_436592|2020-04-13'],
+            '7': ['hCoV-19/USA/WI-UW-301/2020|EPI_ISL_436595|2020-04-13'],
+            '8': ['hCoV-19/USA/WI-UW-302/2020|EPI_ISL_436596|2020-04-13']
+        }
+        # this raised an exception
+        tree = beadplot.annotate_tree(tree, labels)
+
+
+
