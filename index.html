@@ -194,7 +194,9 @@
 
 			// Map cluster index to id
 			var map_to_id = [], key;
-			var rect = d3.selectAll('#svg-timetree > svg > g > rect').nodes();
+			var rect = d3.selectAll('#svg-timetree > svg > g > rect')
+				     .nodes()
+				     .sort((x, y) => d3.ascending(parseInt(x.id.substring(3)), parseInt(y.id.substring(3))));
 			for (var i = rect.length - 1; i >= 0; i--) {
                           key = rect[i].id;
                           map_to_id[key] = d3.select(rect[i]).attr("cidx");
