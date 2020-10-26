@@ -108,6 +108,11 @@ rect[txt_hover="yes"]{
   fill-opacity: 1 !important;
 }
 
+rect.SelectedCluster[txt_hover="yes"]{
+  stroke: gray;
+  stroke-width: 2;
+}
+
 .container {
     padding-top: 30px;
 }

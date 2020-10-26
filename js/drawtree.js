@@ -224,9 +224,9 @@ function draw_clusters(tips) {
   
   function mouseover(d) {
 
-    d3.select("rect#id-" + d.cluster_idx)
+    d3.select("[cidx=cidx-" + d.cluster_idx + "]")
       .attr("txt_hover", "yes");
- 
+  
     cTooltip.transition()       // Show tooltip
             .duration(50)
             .style("opacity", 0.9);
@@ -264,7 +264,8 @@ function draw_clusters(tips) {
       return(country_pal[d.region]);
     })
     .attr("class", "default")
-    .attr("id", function(d) { return "id-" + d.cluster_idx; })
+    .attr("cidx", function(d) { return "cidx-" + d.cluster_idx; })
+    .attr("id", function(d, i) { return "id-" + i; })
     .on('mouseover', mouseover)
     .on("mouseout", function() {
       d3.select(this)
@@ -285,6 +286,14 @@ function draw_clusters(tips) {
       }
 
       search(beaddata);
+      // Reset search stats
+      if ($('#search-input').val() !== "") {
+	var stats = search_stats.update({
+                current_point: search_stats.get().start_idx[this.id],
+                bead_indexer: 0,
+            });
+            update_search_stats(stats); 
+      }
 
       // reset all rectangles to high transparency
       if ($('#search-input').val() === "") {
@@ -327,9 +336,9 @@ function draw_clusters(tips) {
 	mouseover(d);
       })
       .on("mouseout", function(d) {
-        d3.select("#id-" + d.cluster_idx).dispatch('mouseout');
+        d3.select("[cidx=cidx-" + d.cluster_idx + "]").dispatch('mouseout');
       })
       .on("click", function(d) {
-        d3.select("#id-" + d.cluster_idx).dispatch('click');
+        d3.select("[cidx=cidx-" + d.cluster_idx + "]").dispatch('click');
       });
 }
