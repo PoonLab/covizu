@@ -132,7 +132,7 @@ def get_sym_diffs(features, use_file=False):
     """
     # compress genomes with identical feature vectors
     fvecs = {}
-    for qname, diffs, missing in seq_utils.filter_outliers(features):
+    for qname, diffs, missing in features:
         key = tuple(diffs)
         if key not in fvecs:
             fvecs.update({key: []})
@@ -395,8 +395,10 @@ if __name__ == "__main__":
         cb.callback('start {}, {} entries'.format(lineage, len(lfeatures)))
 
         # calculate symmetric difference matrix and run NJ on bootstrap samples
-        trees, labels = build_trees(lfeatures, nboot=args.nboot, threads=args.threads,
-                                    callback=cb.callback)
+        filtered = seq_utils.filter_outliers(lfeatures)
+        trees, labels = build_trees(
+            filtered, nboot=args.nboot, threads=args.threads, callback=cb.callback
+        )
 
         # export labels as CSV
         outfile = os.path.join(args.outdir, "{}.labels.csv".format(lineage))

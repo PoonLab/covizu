@@ -4,6 +4,7 @@ import csv
 import sys
 from tempfile import NamedTemporaryFile
 import os
+from io import StringIO
 
 
 def export_fasta(cursor, outfile='data/gisaid-aligned.fa'):
@@ -382,20 +383,32 @@ def migrate_entries(old_db, new_db):
     print('Updated {}, inserted {} hashes.'.format(old_db, str(hash_count)))
 
 
-def dump_raw(outfile, db='data/gsaid.db'):
+def dump_raw(outfile=None, db='data/gsaid.db'):
     """
     Function to dump all raw seqs in RAQSEQ table
     :params:
-        :outfile: destination (fasta) file to write seqs to
+        :outfile: destination (fasta) file to write seqs to.  If None,
+                  return StringIO object.
         :db: sqlite3 database
     """
     cur, conn = open_connection(db)
     seqs = cur.execute("SELECT `header`, `unaligned` FROM rawseq;").fetchall()
-    with open(outfile, 'w') as fastafile:
+    conn.close()
+
+    if outfile is None:
+        # return file object for streaming
+        fastafile = StringIO()
         for h, s in seqs:
             fastafile.write('>{}\n{}\n'.format(h, s))
-    fastafile.close()
-    conn.close()
+        fastafile.seek(0)
+        return fastafile
+    else:
+        # write to filesystem
+        with open(outfile, 'w') as fastafile:
+            for h, s in seqs:
+                fastafile.write('>{}\n{}\n'.format(h, s))
+        fastafile.close()
+        return None
 
 
 def retrieve_seqs(headers, db="data/gsaid.db"):

@@ -7,6 +7,7 @@ from io import StringIO
 
 from Bio import Phylo
 
+import covizu
 from covizu.utils.seq_utils import *
 from covizu.utils.db_utils import dump_raw_by_lineage, retrieve_seqs
 from covizu.minimap2 import minimap2, encode_diffs
@@ -166,7 +167,7 @@ def parse_nexus(nexus_file, fasta, date_tol):
                 format='newick')
 
 
-def retrieve_genomes(db="data/gsaid.db", ref_file='data/MT291829.fa', reflen=29774, misstol=300):
+def retrieve_genomes(db="data/gsaid.db", ref_file='data/MT291829.fa', misstol=300):
     """
     Query database for Pangolin lineages and then retrieve the earliest
     sampled genome sequence for each.  Export as FASTA for TreeTime analysis.
@@ -177,6 +178,7 @@ def retrieve_genomes(db="data/gsaid.db", ref_file='data/MT291829.fa', reflen=297
     # load and parse reference genome
     with open(ref_file) as handle:
         _, refseq = convert_fasta(handle)[0]
+    reflen = len(refseq)
 
     # allocate lists
     coldates = []
@@ -221,12 +223,16 @@ def parse_args():
     )
     parser.add_argument('--db', type=str, default='data/gsaid.db',
                         help='input, sqlite3 database')
-    parser.add_argument('--ref', type=str, default='data/MT291829.fa',
-                        help='input, FASTA file with reference genome')
-    parser.add_argument('--reflen', type=int, default=29774)
+    parser.add_argument('--ref', type=argparse.FileType('r'),
+                        default=open(os.path.join(covizu.__path__[0]), "data/MT291829.fa"),
+                        help="input, FASTA file with reference genome")
+    parser.add_argument('--misstol', type=int, default=300,
+                        help="optional, maximum tolerated number of missing bases per "
+                             "genome (default 300).")
     parser.add_argument('--clock', type=float, default=8e-4,
                         help='optional, specify molecular clock rate for '
                              'constraining Treetime analysis (default 8e-4).')
+    # FIXME: I think the next argument is deprecated
     parser.add_argument('--datetol', type=float, default=0.1,
                         help='optional, exclude tips from time-scaled tree '
                              'with high discordance between estimated and '
@@ -246,7 +252,7 @@ if __name__ == '__main__':
     cb = Callback()
 
     cb.callback("Retrieving genomes")
-    fasta = retrieve_genomes(args.db, ref_file=args.ref, reflen=args.reflen)
+    fasta = retrieve_genomes(args.db, ref_file=args.ref, misstol=args.misstol)
 
     cb.callback("Reconstructing tree with {}".format(args.ft2bin))
     nwk = fasttree(fasta, binpath=args.ft2bin)

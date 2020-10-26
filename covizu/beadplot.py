@@ -129,24 +129,30 @@ def serialize_tree(tree):
     variant_d = {}
     parents = get_parents(tree)
 
+    us_count = 0  # number of unsampled variants
     for node in tree.find_clades(order='level'):
-        # sort samples by collection date
-        intermed = [label.split('|')[::-1] for label in node.labels]
-        intermed.sort()  # ISO dates sort in increasing order
+        if node.labels:
+            # sort samples by collection date
+            intermed = [label.split('|')[::-1] for label in node.labels]
+            intermed.sort()  # ISO dates sort in increasing order
 
-        # use accession of earliest sample to ID variant
-        variant = intermed[0][1]
+            # use accession of earliest sample to ID variant
+            variant = intermed[0][1]
+
+            # populate list with samples
+            obj['nodes'].update({variant: []})
+            for coldate, accn, label1 in intermed:
+                obj['nodes'][variant].append({
+                    'accession': accn,
+                    'label1': label1,
+                    'country': label1.split('/')[1],
+                    'coldate': coldate
+                })
+        else:
+            variant = 'unsampled'+str(us_count)
+            obj['nodes'].update({variant: []})
+
         variant_d.update({node: variant})
-
-        # populate list with samples
-        obj['nodes'].update({variant: []})
-        for coldate, accn, label1 in intermed:
-            obj['nodes'][variant].append({
-                'accession': accn,
-                'label1': label1,
-                'country': label1.split('/')[1],
-                'coldate': coldate
-            })
 
         if node is tree.root:
             continue  # no edge
