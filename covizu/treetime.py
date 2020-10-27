@@ -167,7 +167,7 @@ def parse_nexus(nexus_file, fasta, date_tol):
                 format='newick')
 
 
-def retrieve_genomes(db="data/gsaid.db", ref_file='data/MT291829.fa', misstol=300):
+def retrieve_genomes(db="data/gsaid.db", stream=False, nthread=1, ref_file='data/MT291829.fa', misstol=300):
     """
     Query database for Pangolin lineages and then retrieve the earliest
     sampled genome sequence for each.  Export as FASTA for TreeTime analysis.
@@ -185,24 +185,18 @@ def retrieve_genomes(db="data/gsaid.db", ref_file='data/MT291829.fa', misstol=30
     lineages = []
     seqs = []
 
-    # TODO: if dump_raw_by_lineage sorts by collection date, then we can break early
-    for lineage, fasta in dump_raw_by_lineage(db):
-        mm2 = minimap2(infile=fasta, ref=ref_file)
-        intermed = []
-
+    # retrieve unaligned genomes from database
+    for lineage, fasta_file in dump_raw_by_lineage(db):
+        mm2 = minimap2(infile=fasta_file, nthread=nthread, stream=stream, ref=ref_file)
         iter = encode_diffs(mm2, reflen=reflen)
         for row in filter_outliers(iter):
             # exclude genomes too divergent from expectation
             if total_missing(row) > misstol:
                 continue
+            # take the earliest valid genome
             qname, _, _ = row
             _, coldate = parse_label(qname)
-            intermed.append([coldate, row])
-
-        if len(intermed) == 0:
-            continue
-        intermed.sort()  # defaults to increasing order
-        coldate, row = intermed[0]  # earliest valid genome
+            break
 
         # update lists
         lineages.append(lineage)

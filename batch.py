@@ -58,7 +58,8 @@ if __name__ == "__main__":
 
     # Generate time-scaled tree of Pangolin lineages
     cb.callback("Retrieving lineage genomes")
-    fasta = treetime.retrieve_genomes(args.db, ref_file=args.ref, misstol=args.misstol)
+    fasta = treetime.retrieve_genomes(args.db, nthread=args.mmthreads, ref_file=args.ref,
+                                      misstol=args.misstol)
 
     cb.callback("Reconstructing tree with {}".format(args.ft2bin))
     nwk = treetime.fasttree(fasta, binpath=args.ft2bin)
@@ -73,7 +74,7 @@ if __name__ == "__main__":
     cb.callback("Retrieving raw genomes from database")
     with NamedTemporaryFile(prefix="cvz_") as tmpfile:
         db_utils.dump_raw(outfile=tmpfile.name, db=args.db)
-        mm2 = minimap2.minimap2(tmpfile.name, ref=args.ref, nthread=args.mmthreads)
+        mm2 = minimap2.minimap2(tmpfile, ref=args.ref, nthread=args.mmthreads)
 
         cb.callback("Extracting features and serializing to JSON")
         reflen = len(seq_utils.convert_fasta(open(args.ref))[0][1])
@@ -96,7 +97,8 @@ if __name__ == "__main__":
             filtered, nboot=args.nboot, threads=args.njthreads, callback=cb.callback
         )
         ctree = clustering.consensus(trees, cutoff=args.cutoff)
-        ctree = beadplot.annotate_tree(ctree, labels)
+        label_dict = dict([(idx, lst) for idx, lst in enumerate(labels)])
+        ctree = beadplot.annotate_tree(ctree, label_dict)
         result.append(beadplot.serialize_tree(ctree))
 
     args.outfile.write(json.dumps(result, indent=2))

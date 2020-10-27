@@ -87,7 +87,7 @@ def annotate_tree(tree, label_dict):
     For internal nodes that remain unlabelled, use the closest tip in time.
 
     :param tree:  Phylo.Clade, consensus tree
-    :param label_file:  dict, lists of genome labels keyed by tree tip integer index
+    :param label_dict:  dict, lists of genome labels keyed by tree tip integer index
     :return:  dict, lists of sequence labels keyed by integer indices
     """
 

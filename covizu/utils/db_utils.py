@@ -462,7 +462,7 @@ def dump_lineages(db='data/gsaid.db', by_lineage=False):
     return result
 
 
-def dump_raw_by_lineage(db='data/gsaid.db'):
+def dump_raw_by_lineage(db='data/gsaid.db', to_file=True):
     """
     Creates a generator that yields handles to named temporary files
     containing the unaligned genomes for each Pangolin lineage
@@ -473,16 +473,28 @@ def dump_raw_by_lineage(db='data/gsaid.db'):
     lineages = cursor.execute("select DISTINCT(lineage) from LINEAGE;").fetchall()
     for lineage in lineages:
         # retrieve unaligned genomes from db
-        # TODO: sort by collection date
         raw = cursor.execute(
             "select header, unaligned from RAWSEQ where accession in \
             (select accession from LINEAGE where lineage='{}');".format(lineage[0])
         ).fetchall()
-        handle = NamedTemporaryFile('w', delete=False)
-        for h, s in raw:
-            handle.write('>{}\n{}\n'.format(h, s))
-        handle.close()
-        yield lineage[0], handle.name
+
+        # sort by collection date
+        seqs = dict(raw)
+        intermed = [(h.split('|')[-1], h) for h, s in raw]
+        intermed.sort()
+
+        if to_file:
+            handle = NamedTemporaryFile('w', prefix='cvz_', delete=False)
+            for _, h in intermed:
+                handle.write('>{}\n{}\n'.format(h, seqs[h]))
+            handle.close()
+        else:
+            handle = StringIO('rb')
+            for _, h in intermed:
+                handle.write('>{}\n{}\n'.format(h, seqs[h]))
+            handle.seek(0)
+        yield lineage[0], handle
+
     conn.close()
 
 
