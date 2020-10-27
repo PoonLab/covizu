@@ -52,7 +52,7 @@ def collapse_polytomies(tree):
 
     # remove internal branches
     for node in tree.get_nonterminals():
-        if node.branch_length > 0 or node == tree.root:
+        if node.branch_length is None or node.branch_length > 0 or node == tree.root:
             continue
         parent = parents[node]
         parent.clades.remove(node)

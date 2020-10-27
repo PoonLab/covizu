@@ -97,7 +97,7 @@ if __name__ == "__main__":
             filtered, nboot=args.nboot, threads=args.njthreads, callback=cb.callback
         )
         ctree = clustering.consensus(trees, cutoff=args.cutoff)
-        label_dict = dict([(idx, lst) for idx, lst in enumerate(labels)])
+        label_dict = dict([(str(idx), lst) for idx, lst in enumerate(labels)])
         ctree = beadplot.annotate_tree(ctree, label_dict)
         result.append(beadplot.serialize_tree(ctree))
 
