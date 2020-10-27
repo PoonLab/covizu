@@ -9,7 +9,6 @@ import subprocess
 
 from Bio import Phylo
 from Bio.Phylo.BaseTree import Clade
-from Bio.Phylo.Consensus import majority_consensus
 
 from io import StringIO
 from multiprocessing import Pool
@@ -103,7 +102,7 @@ def split_by_lineage(features, lineages):
         if val is None:
             print("Error in clustering::split_by_lineage(), no lineage assignment"
                   " for accession {}".format(accn))
-            sys.exit()
+            continue
         lineage = val['lineage']
 
         if lineage not in result:
@@ -156,7 +155,7 @@ def get_sym_diffs(features, use_file=False):
     n = len(fvecs)
     if use_file:
         # write integer tuples to temporary CSV file
-        handle = tempfile.NamedTemporaryFile('w', delete=False)
+        handle = tempfile.NamedTemporaryFile('w', prefix="cvz_", delete=False)
         for i in range(n):
             for j in range(n):
                 sdiff = tuple(indexed[i] ^ indexed[j])
@@ -192,7 +191,7 @@ def bootstrap(sym_diffs, n, m, binpath='rapidnj', callback=None):
     weights = dict([(y, sample.count(y)) for y in set(sample)])
 
     # write directly to file to save memory
-    outfile = tempfile.NamedTemporaryFile('w', delete=False)
+    outfile = tempfile.NamedTemporaryFile('w', prefix="cvz_")
     outfile.write('{0:>5}\n'.format(n))
 
     if type(sym_diffs) is dict:
@@ -226,8 +225,8 @@ def bootstrap(sym_diffs, n, m, binpath='rapidnj', callback=None):
             if j == n-1:
                 outfile.write('\n')
 
-        infile.close()
-    outfile.close()
+        infile.close()  # delete
+    outfile.flush()
 
     if callback:
         callback('generated dist matrix')
@@ -241,6 +240,7 @@ def bootstrap(sym_diffs, n, m, binpath='rapidnj', callback=None):
 
     if callback:
         callback('rapidNJ complete')
+    outfile.close()  # delete
 
     return phy
 
@@ -273,7 +273,7 @@ def build_trees(features, nboot=100, threads=1, use_file=True, callback=None):
         return None, labels
 
     # bootstrap sampling and tree reconstruction
-    if args.threads == 1:
+    if threads == 1:
         callback('launching single-threaded mode')
         trees = []
         for _ in range(nboot):
@@ -330,7 +330,10 @@ def consensus(trees, cutoff=0.5):
 
     for _, key, val in intermed:
         # average branch lengths across relevant trees
-        bl = sum(splits[key]) / len(splits[key])
+        if all([v is None for v in splits[key]]):
+            bl = None
+        else:
+            bl = sum(splits[key]) / len(splits[key])
         support = len(val) / count
         node = Clade(branch_length=bl, confidence=support)
 

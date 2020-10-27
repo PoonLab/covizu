@@ -387,9 +387,9 @@ def dump_raw(outfile=None, db='data/gsaid.db'):
     """
     Function to dump all raw seqs in RAQSEQ table
     :params:
-        :outfile: destination (fasta) file to write seqs to.  If None,
+        :outfile: str, destination (fasta) file to write seqs to.  If None,
                   return StringIO object.
-        :db: sqlite3 database
+        :db: str, path to sqlite3 database
     """
     cur, conn = open_connection(db)
     seqs = cur.execute("SELECT `header`, `unaligned` FROM rawseq;").fetchall()
@@ -399,14 +399,14 @@ def dump_raw(outfile=None, db='data/gsaid.db'):
         # return file object for streaming
         fastafile = StringIO()
         for h, s in seqs:
-            fastafile.write('>{}\n{}\n'.format(h, s))
+            fastafile.write('>{}\n{}\n'.format(h.replace(' ', '_'), s))
         fastafile.seek(0)
         return fastafile
     else:
         # write to filesystem
         with open(outfile, 'w') as fastafile:
             for h, s in seqs:
-                fastafile.write('>{}\n{}\n'.format(h, s))
+                fastafile.write('>{}\n{}\n'.format(h.replace(' ', '_'), s))
         fastafile.close()
         return None
 
@@ -473,6 +473,7 @@ def dump_raw_by_lineage(db='data/gsaid.db'):
     lineages = cursor.execute("select DISTINCT(lineage) from LINEAGE;").fetchall()
     for lineage in lineages:
         # retrieve unaligned genomes from db
+        # TODO: sort by collection date
         raw = cursor.execute(
             "select header, unaligned from RAWSEQ where accession in \
             (select accession from LINEAGE where lineage='{}');".format(lineage[0])

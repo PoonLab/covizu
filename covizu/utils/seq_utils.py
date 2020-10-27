@@ -361,6 +361,8 @@ class Callback:
     def callback(self, msg, replace=False):
         if replace:
             sys.stdout.write('\b'*self.last_msg_length)
-        self.last_msg_length = sys.stdout.write('[{}] {}'.format(datetime.now() - self.t0, msg))
+        self.last_msg_length = sys.stdout.write(
+            u"\U0001F9A0" + ' [{}] {}'.format(datetime.now() - self.t0, msg)
+        )
         if not replace:
             sys.stdout.write('\n')

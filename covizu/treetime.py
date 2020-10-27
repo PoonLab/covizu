@@ -185,8 +185,9 @@ def retrieve_genomes(db="data/gsaid.db", ref_file='data/MT291829.fa', misstol=30
     lineages = []
     seqs = []
 
+    # TODO: if dump_raw_by_lineage sorts by collection date, then we can break early
     for lineage, fasta in dump_raw_by_lineage(db):
-        mm2 = minimap2(fasta=fasta, ref=ref_file)
+        mm2 = minimap2(infile=fasta, ref=ref_file)
         intermed = []
 
         iter = encode_diffs(mm2, reflen=reflen)
@@ -194,7 +195,6 @@ def retrieve_genomes(db="data/gsaid.db", ref_file='data/MT291829.fa', misstol=30
             # exclude genomes too divergent from expectation
             if total_missing(row) > misstol:
                 continue
-
             qname, _, _ = row
             _, coldate = parse_label(qname)
             intermed.append([coldate, row])
