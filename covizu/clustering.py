@@ -2,6 +2,7 @@ import random
 import json
 
 from covizu.utils import db_utils, seq_utils
+from covizu.utils.progress_utils import Callback
 
 import argparse
 import tempfile
@@ -385,7 +386,7 @@ def parse_args():
 if __name__ == "__main__":
     # command-line execution
     args = parse_args()
-    cb = seq_utils.Callback()
+    cb = Callback()
 
     cb.callback('loading lineage classifications from database')
     lineages = db_utils.dump_lineages(args.db)

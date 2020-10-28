@@ -481,7 +481,7 @@ def dump_raw_by_lineage(db='data/gsaid.db', to_file=True):
         # sort by collection date
         seqs = dict(raw)
         intermed = [(h.split('|')[-1], h) for h, s in raw]
-        intermed.sort()
+        intermed.sort(reverse=True)  # descending order (most recent first)
 
         if to_file:
             handle = NamedTemporaryFile('w', prefix='cvz_', delete=False)

@@ -10,6 +10,7 @@ from Bio import Phylo
 import covizu
 from covizu.utils.seq_utils import *
 from covizu.utils.db_utils import dump_raw_by_lineage, retrieve_seqs
+from covizu.utils.progress_utils import Callback
 from covizu.minimap2 import minimap2, encode_diffs
 
 
@@ -66,13 +67,14 @@ def fasttree(fasta, binpath='fasttree2', seed=1):
     return stdout.decode('utf-8')
 
 
-def treetime(nwk, fasta, outdir, binpath='treetime', clock=None):
+def treetime(nwk, fasta, outdir, binpath='treetime', clock=None, verbosity=1):
     """
     :param nwk: str, Newick tree string from fasttree()
     :param fasta: dict, header-sequence pairs
     :param outdir:  path to write output files
     :param clock: float, clock rate to constrain analysis - defaults
                   to None (no constraint)
+    :param verbosity:  verbose level, defaults to 1
     :return:  path to NEXUS output file
     """
     # extract dates from sequence headers
@@ -92,7 +94,7 @@ def treetime(nwk, fasta, outdir, binpath='treetime', clock=None):
 
     call = [binpath, '--tree', nwkfile.name,
             '--aln', alnfile.name, '--dates', datefile.name,
-            '--outdir', outdir]
+            '--outdir', outdir, '--verbose', str(verbosity)]
     if clock:
         call.extend(['--clock-rate', str(clock)])
     check_call(call)
