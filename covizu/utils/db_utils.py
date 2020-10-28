@@ -4,6 +4,7 @@ import csv
 import sys
 from tempfile import NamedTemporaryFile
 import os
+from io import StringIO
 
 
 def export_fasta(cursor, outfile='data/gisaid-aligned.fa'):
@@ -382,20 +383,32 @@ def migrate_entries(old_db, new_db):
     print('Updated {}, inserted {} hashes.'.format(old_db, str(hash_count)))
 
 
-def dump_raw(outfile, db='data/gsaid.db'):
+def dump_raw(outfile=None, db='data/gsaid.db'):
     """
     Function to dump all raw seqs in RAQSEQ table
     :params:
-        :outfile: destination (fasta) file to write seqs to
-        :db: sqlite3 database
+        :outfile: str, destination (fasta) file to write seqs to.  If None,
+                  return StringIO object.
+        :db: str, path to sqlite3 database
     """
     cur, conn = open_connection(db)
     seqs = cur.execute("SELECT `header`, `unaligned` FROM rawseq;").fetchall()
-    with open(outfile, 'w') as fastafile:
-        for h, s in seqs:
-            fastafile.write('>{}\n{}\n'.format(h, s))
-    fastafile.close()
     conn.close()
+
+    if outfile is None:
+        # return file object for streaming
+        fastafile = StringIO()
+        for h, s in seqs:
+            fastafile.write('>{}\n{}\n'.format(h.replace(' ', '_'), s))
+        fastafile.seek(0)
+        return fastafile
+    else:
+        # write to filesystem
+        with open(outfile, 'w') as fastafile:
+            for h, s in seqs:
+                fastafile.write('>{}\n{}\n'.format(h.replace(' ', '_'), s))
+        fastafile.close()
+        return None
 
 
 def retrieve_seqs(headers, db="data/gsaid.db"):
@@ -449,7 +462,7 @@ def dump_lineages(db='data/gsaid.db', by_lineage=False):
     return result
 
 
-def dump_raw_by_lineage(db='data/gsaid.db'):
+def dump_raw_by_lineage(db='data/gsaid.db', to_file=True):
     """
     Creates a generator that yields handles to named temporary files
     containing the unaligned genomes for each Pangolin lineage
@@ -464,11 +477,24 @@ def dump_raw_by_lineage(db='data/gsaid.db'):
             "select header, unaligned from RAWSEQ where accession in \
             (select accession from LINEAGE where lineage='{}');".format(lineage[0])
         ).fetchall()
-        handle = NamedTemporaryFile('w', delete=False)
-        for h, s in raw:
-            handle.write('>{}\n{}\n'.format(h, s))
-        handle.close()
-        yield lineage[0], handle.name
+
+        # sort by collection date
+        seqs = dict(raw)
+        intermed = [(h.split('|')[-1], h) for h, s in raw]
+        intermed.sort(reverse=True)  # descending order (most recent first)
+
+        if to_file:
+            handle = NamedTemporaryFile('w', prefix='cvz_', delete=False)
+            for _, h in intermed:
+                handle.write('>{}\n{}\n'.format(h, seqs[h]))
+            handle.close()
+        else:
+            handle = StringIO('rb')
+            for _, h in intermed:
+                handle.write('>{}\n{}\n'.format(h, seqs[h]))
+            handle.seek(0)
+        yield lineage[0], handle
+
     conn.close()
 
 

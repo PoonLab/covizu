@@ -2,6 +2,7 @@ import random
 import json
 
 from covizu.utils import db_utils, seq_utils
+from covizu.utils.progress_utils import Callback
 
 import argparse
 import tempfile
@@ -9,7 +10,6 @@ import subprocess
 
 from Bio import Phylo
 from Bio.Phylo.BaseTree import Clade
-from Bio.Phylo.Consensus import majority_consensus
 
 from io import StringIO
 from multiprocessing import Pool
@@ -103,7 +103,7 @@ def split_by_lineage(features, lineages):
         if val is None:
             print("Error in clustering::split_by_lineage(), no lineage assignment"
                   " for accession {}".format(accn))
-            sys.exit()
+            continue
         lineage = val['lineage']
 
         if lineage not in result:
@@ -132,7 +132,7 @@ def get_sym_diffs(features, use_file=False):
     """
     # compress genomes with identical feature vectors
     fvecs = {}
-    for qname, diffs, missing in seq_utils.filter_outliers(features):
+    for qname, diffs, missing in features:
         key = tuple(diffs)
         if key not in fvecs:
             fvecs.update({key: []})
@@ -156,7 +156,7 @@ def get_sym_diffs(features, use_file=False):
     n = len(fvecs)
     if use_file:
         # write integer tuples to temporary CSV file
-        handle = tempfile.NamedTemporaryFile('w', delete=False)
+        handle = tempfile.NamedTemporaryFile('w', prefix="cvz_", delete=False)
         for i in range(n):
             for j in range(n):
                 sdiff = tuple(indexed[i] ^ indexed[j])
@@ -192,7 +192,7 @@ def bootstrap(sym_diffs, n, m, binpath='rapidnj', callback=None):
     weights = dict([(y, sample.count(y)) for y in set(sample)])
 
     # write directly to file to save memory
-    outfile = tempfile.NamedTemporaryFile('w', delete=False)
+    outfile = tempfile.NamedTemporaryFile('w', prefix="cvz_")
     outfile.write('{0:>5}\n'.format(n))
 
     if type(sym_diffs) is dict:
@@ -226,8 +226,8 @@ def bootstrap(sym_diffs, n, m, binpath='rapidnj', callback=None):
             if j == n-1:
                 outfile.write('\n')
 
-        infile.close()
-    outfile.close()
+        infile.close()  # delete
+    outfile.flush()
 
     if callback:
         callback('generated dist matrix')
@@ -241,6 +241,7 @@ def bootstrap(sym_diffs, n, m, binpath='rapidnj', callback=None):
 
     if callback:
         callback('rapidNJ complete')
+    outfile.close()  # delete
 
     return phy
 
@@ -273,7 +274,7 @@ def build_trees(features, nboot=100, threads=1, use_file=True, callback=None):
         return None, labels
 
     # bootstrap sampling and tree reconstruction
-    if args.threads == 1:
+    if threads == 1:
         callback('launching single-threaded mode')
         trees = []
         for _ in range(nboot):
@@ -330,7 +331,10 @@ def consensus(trees, cutoff=0.5):
 
     for _, key, val in intermed:
         # average branch lengths across relevant trees
-        bl = sum(splits[key]) / len(splits[key])
+        if all([v is None for v in splits[key]]):
+            bl = None
+        else:
+            bl = sum(splits[key]) / len(splits[key])
         support = len(val) / count
         node = Clade(branch_length=bl, confidence=support)
 
@@ -382,7 +386,7 @@ def parse_args():
 if __name__ == "__main__":
     # command-line execution
     args = parse_args()
-    cb = seq_utils.Callback()
+    cb = Callback()
 
     cb.callback('loading lineage classifications from database')
     lineages = db_utils.dump_lineages(args.db)
@@ -395,8 +399,10 @@ if __name__ == "__main__":
         cb.callback('start {}, {} entries'.format(lineage, len(lfeatures)))
 
         # calculate symmetric difference matrix and run NJ on bootstrap samples
-        trees, labels = build_trees(lfeatures, nboot=args.nboot, threads=args.threads,
-                                    callback=cb.callback)
+        filtered = seq_utils.filter_outliers(lfeatures)
+        trees, labels = build_trees(
+            filtered, nboot=args.nboot, threads=args.threads, callback=cb.callback
+        )
 
         # export labels as CSV
         outfile = os.path.join(args.outdir, "{}.labels.csv".format(lineage))

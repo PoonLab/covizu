@@ -2,9 +2,12 @@ import subprocess
 import argparse
 import re
 import sys
+import os
 import json
 
+import covizu
 from covizu.utils.seq_utils import convert_fasta
+from covizu.utils.db_utils import dump_raw
 
 
 def apply_cigar(seq, rpos, cigar):
@@ -32,12 +35,13 @@ def apply_cigar(seq, rpos, cigar):
     return aligned
 
 
-def minimap2(fasta, ref, path='minimap2', nthread=3, minlen=29000):
+def minimap2(infile, ref, stream=False, path='minimap2', nthread=3, minlen=29000):
     """
     Wrapper function for minimap2.
 
-    :param fasta:  str, path to FASTA with query sequences
+    :param infile:  file object or StringIO
     :param ref:  str, path to FASTA with reference sequence(s)
+    :param stream:  bool, if True then stream data from <infile> object via stdin
     :param path:  str, path to binary executable
     :param nthread:  int, number of threads for parallel execution of minimap2
     :param minlen:  int, filter genomes below minimum length; to accept all, set to 0.
@@ -45,9 +49,25 @@ def minimap2(fasta, ref, path='minimap2', nthread=3, minlen=29000):
     :yield:  query sequence name, reference index, CIGAR and original
              sequence
     """
-    p = subprocess.Popen([path, '-t', str(nthread), '-a', '--eqx', ref, fasta],
-                         stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-    for line in map(lambda x: x.decode('utf-8'), p.stdout):
+    if stream:
+        # FIXME: still debugging, see issue #
+        # input from StringIO in memory
+        p = subprocess.Popen(
+            [path, '-t', str(nthread), '-a', '--eqx', ref, '-'], encoding='utf8',
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
+        )
+        output, outerr = p.communicate(infile.read())
+        output = output.split('\n')
+    else:
+        # input read from file
+        p = subprocess.Popen(
+            [path, '-t', str(nthread), '-a', '--eqx', ref, infile.name],
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
+        )
+        output = map(lambda x: x.decode('utf-8'), p.stdout)
+        os.remove(infile.name)  # delete temporary file
+
+    for line in output:
         if line.startswith('@'):
             continue
         qname, flag, rname, rpos, _, cigar, _, _, _, seq = \
@@ -200,10 +220,13 @@ def encode_diffs(iter, reflen, alphabet='ACGT'):
 
 def parse_args():
     parser = argparse.ArgumentParser("Wrapper script for minimap2")
-    parser.add_argument('fasta', type=argparse.FileType('r'),
-                        help="<input> path to query FASTA file")
+    parser.add_argument('infile', type=argparse.FileType('r'),
+                        help="<input> path to query FASTA file or database (--db)")
+    parser.add_argument('--stream', action="store_true",
+                        help="<option> if True, stream unaligned sequences from database.")
     parser.add_argument('-o', '--outfile',
                         type=argparse.FileType('w'),
+
                         required=False,
                         help="<output, optional> path to write output, "
                              "defaults to stdout")
@@ -215,8 +238,9 @@ def parse_args():
                         help="<option> use -f to force this script to accept "
                              "headers with spaces, which will be truncated "
                              "by minimap2")
-    parser.add_argument('--ref', help="<input> path to target FASTA (reference)",
-                        default='data/NC_045512.fa')
+    parser.add_argument('--ref', type=str,
+                        help="<input> path to target FASTA (reference)",
+                        default=os.path.join(covizu.__path__[0], "data/NC_045512.fa"))
     parser.add_argument('--minlen', help="<option> minimum sequence length, "
                                          "defaults to 29000nt.",
                         type=int, default=29000)
@@ -229,8 +253,8 @@ if __name__ == '__main__':
         args.outfile = sys.stdout
 
     # check input headers for spaces
-    if not args.force_headers:
-        for line in args.fasta:
+    if not args.db and not args.force_headers:
+        for line in args.infile:
             if line.startswith('>') and ' ' in line:
                 print("WARNING: at least one FASTA header contains a space")
                 print(line)
@@ -239,10 +263,15 @@ if __name__ == '__main__':
                 sys.exit()
 
     # get length of reference
-    reflen = len(convert_fasta(open(args.ref))[0][1])
-    mm2 = minimap2(args.fasta.name, ref=args.ref, nthread=args.thread,
-                   minlen=args.minlen)
+    if args.stream:
+        infile = dump_raw(db=args.db)
+        mm2 = minimap2(infile, stream=True, ref=args.ref, nthread=args.thread,
+                       minlen=args.minlen)
+    else:
+        mm2 = minimap2(args.infile.name, ref=args.ref, nthread=args.thread,
+                       minlen=args.minlen)
 
+    reflen = len(convert_fasta(open(args.ref))[0][1])
     if args.align:
         output_fasta(mm2, reflen=reflen, outfile=args.outfile)
     else:
