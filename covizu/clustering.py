@@ -119,7 +119,7 @@ def sample_with_replacement(population, k):
     return [pop[int(n * random.random())] for _ in range(k)]
 
 
-def get_sym_diffs(features, use_file=False):
+def get_sym_diffs(features, use_file=True):
     """
     Calculate symmetric differences of feature vectors.
 
@@ -226,8 +226,7 @@ def bootstrap(sym_diffs, n, m, binpath='rapidnj', callback=None):
             if j == n-1:
                 outfile.write('\n')
 
-        infile.close()  # delete
-        os.remove(infile)
+        infile.close()
     outfile.flush()
 
     if callback:
@@ -288,6 +287,10 @@ def build_trees(features, nboot=100, threads=1, use_file=True, callback=None):
             results = [pool.apply_async(bootstrap, [sym_diffs, len(labels), m])
                        for _ in range(nboot)]
             trees = [r.get() for r in results]
+
+    # clean up temporary files
+    if use_file:
+        os.remove(sym_diffs)
 
     callback('built NJ trees from {} bootstraps'.format(nboot))
     return trees, labels

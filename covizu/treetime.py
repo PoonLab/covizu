@@ -214,6 +214,9 @@ def retrieve_genomes(db="data/gsaid.db", stream=False, nthread=1, ref_file='data
         seq = apply_features(row, refseq=refseq)
         seqs.append(seq)
 
+        # clean up temporary files
+        os.remove(fasta_file.name)
+
     # generate new headers in {name}|{accession}|{date} format expected by treetime()
     headers = map(lambda xy: '|{}|{}'.format(*xy), zip(lineages, coldates))
     return dict(zip(headers, seqs))
