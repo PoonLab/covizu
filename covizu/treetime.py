@@ -190,8 +190,8 @@ def retrieve_genomes(db="data/gsaid.db", stream=False, nthread=1, ref_file='data
     # retrieve unaligned genomes from database
     for lineage, fasta_file in dump_raw_by_lineage(db):
         mm2 = minimap2(infile=fasta_file, nthread=nthread, stream=stream, ref=ref_file)
-        iter = encode_diffs(mm2, reflen=reflen)
-        for row in filter_outliers(iter):
+        gen = encode_diffs(mm2, reflen=reflen)
+        for row in filter_outliers(gen):
             # exclude genomes too divergent from expectation
             if total_missing(row) > misstol:
                 continue
