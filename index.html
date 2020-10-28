@@ -311,6 +311,10 @@
 	    // Scroll to the next bead
 	    var working_bead = selected_points.nodes()[search_stats.get().bead_indexer-1];
 	    working_bead.scrollIntoView({block: "center"});
+	    var selected_bead = d3.select(working_bead).datum();
+            gentable(selected_bead);
+            draw_region_distribution(table(selected_bead.region));
+            gen_details_table(selected_bead);
 
           });
 
@@ -362,17 +366,10 @@
             // Scroll to the next bead
             var working_bead = selected_points.nodes()[search_stats.get().bead_indexer-1];
             working_bead.scrollIntoView({block: "center"});
-
-
-
-            //const stats = search_stats.update({
-              //current_point: search_stats.get().current_point - 1,
-           // });
-            //update_search_stats(stats);
-            //const point = stats.points[stats.current_point - 1];
-            // TODO: Select the accession with a more general approach
-            //const accn = point.accessions[0];
-            //select_bead_by_accession(accn, false);
+            var selected_bead = d3.select(working_bead).datum();
+            gentable(selected_bead);
+            draw_region_distribution(table(selected_bead.region));
+            gen_details_table(selected_bead);
           });
 
 
