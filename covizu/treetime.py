@@ -78,9 +78,9 @@ def treetime(nwk, fasta, outdir, binpath='treetime', clock=None, verbosity=1):
     :return:  path to NEXUS output file
     """
     # extract dates from sequence headers
-    datefile = NamedTemporaryFile('w', delete=False)
+    datefile = NamedTemporaryFile('w', prefix="cvz_tt_", delete=False)
     datefile.write('name,date\n')
-    alnfile = NamedTemporaryFile('w', delete=False)
+    alnfile = NamedTemporaryFile('w', prefix="cvz_tt_", delete=False)
     for h, s in fasta.items():
         # TreeTime seems to have trouble handling labels with spaces
         _, accn, coldate = h.split('|')
@@ -89,7 +89,7 @@ def treetime(nwk, fasta, outdir, binpath='treetime', clock=None, verbosity=1):
     datefile.close()
     alnfile.close()
 
-    with NamedTemporaryFile('w', delete=False) as nwkfile:
+    with NamedTemporaryFile('w', prefix="cvz_tt_", delete=False) as nwkfile:
         nwkfile.write(nwk.replace(' ', ''))
 
     call = [binpath, '--tree', nwkfile.name,
@@ -99,6 +99,12 @@ def treetime(nwk, fasta, outdir, binpath='treetime', clock=None, verbosity=1):
         call.extend(['--clock-rate', str(clock)])
     check_call(call)
 
+    # clean up temporary files
+    os.remove(datefile.name)
+    os.remove(alnfile.name)
+    os.remove(nwkfile.name)
+
+    # return path to NEXUS file
     nexus_file = os.path.join(outdir, 'timetree.nexus')
     if not os.path.exists(nexus_file):
         print("Error: missing expected NEXUS output file {}".format(nexus_file))

@@ -484,7 +484,7 @@ def dump_raw_by_lineage(db='data/gsaid.db', to_file=True):
         intermed.sort(reverse=True)  # descending order (most recent first)
 
         if to_file:
-            handle = NamedTemporaryFile('w', prefix='cvz_', delete=False)
+            handle = NamedTemporaryFile('w', prefix='cvz_db_', delete=False)
             for _, h in intermed:
                 handle.write('>{}\n{}\n'.format(h, seqs[h]))
             handle.close()

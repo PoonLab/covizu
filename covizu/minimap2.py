@@ -87,9 +87,6 @@ def minimap2(infile, ref, stream=False, path='minimap2', nthread=3, minlen=29000
         rpos = int(rpos) - 1  # convert to 0-index
         yield qname, rpos, cigar, seq
 
-    if not stream:
-        os.remove(infile.name)  # delete temporary file
-
 
 # return aligned sequence?
 def output_fasta(iter, outfile, reflen=0):

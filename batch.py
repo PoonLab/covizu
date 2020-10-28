@@ -76,7 +76,7 @@ if __name__ == "__main__":
 
     # Retrieve raw genomes from DB, align and extract features
     cb.callback("Retrieving raw genomes from database")
-    with NamedTemporaryFile(prefix="cvz_") as tmpfile:
+    with NamedTemporaryFile(prefix="cvz_batch_") as tmpfile:
         db_utils.dump_raw(outfile=tmpfile.name, db=args.db)
         mm2 = minimap2.minimap2(tmpfile, ref=args.ref, nthread=args.mmthreads)
 
