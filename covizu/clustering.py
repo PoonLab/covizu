@@ -156,7 +156,7 @@ def get_sym_diffs(features, use_file=False):
     n = len(fvecs)
     if use_file:
         # write integer tuples to temporary CSV file
-        handle = tempfile.NamedTemporaryFile('w', prefix="cvz_", delete=False)
+        handle = tempfile.NamedTemporaryFile('w', prefix="cvz_sd_", delete=False)
         for i in range(n):
             for j in range(n):
                 sdiff = tuple(indexed[i] ^ indexed[j])
@@ -192,7 +192,7 @@ def bootstrap(sym_diffs, n, m, binpath='rapidnj', callback=None):
     weights = dict([(y, sample.count(y)) for y in set(sample)])
 
     # write directly to file to save memory
-    outfile = tempfile.NamedTemporaryFile('w', prefix="cvz_")
+    outfile = tempfile.NamedTemporaryFile('w', prefix="cvz_boot_")
     outfile.write('{0:>5}\n'.format(n))
 
     if type(sym_diffs) is dict:
@@ -227,6 +227,7 @@ def bootstrap(sym_diffs, n, m, binpath='rapidnj', callback=None):
                 outfile.write('\n')
 
         infile.close()  # delete
+        os.remove(infile)
     outfile.flush()
 
     if callback:
