@@ -173,5 +173,12 @@
     "Bahrain": "Asia",
     "Dominican Republic": "North America",
     "Myanmar": "Asia",
-    "Madagascar": "Africa"
+    "Madagascar": "Africa",
+    "South_Africa": "Africa",
+    "New_Zealand": "Oceania",
+    "South_Korea": "Asia",
+    "Hong_Kong": "China",
+    "Saudi_Arabia": "Asia",
+    "United_Arab_Emirates": "Asia",
+    "Northern_Ireland": "Europe"
 }

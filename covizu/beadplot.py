@@ -151,6 +151,7 @@ def serialize_tree(tree):
         else:
             variant = 'unsampled'+str(us_count)
             obj['nodes'].update({variant: []})
+            us_count += 1
 
         variant_d.update({node: variant})
 
