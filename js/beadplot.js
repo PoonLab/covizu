@@ -109,6 +109,7 @@ function table(arr) {
  */
 function parse_clusters(clusters) {
   var cluster, variant, coldates, samples, regions, country, labels,
+      parents, children, mindate, maxdate,
       variants,  // horizontal line segment data + labels
       edgelist,  // vertical line segment data
       points,  // the "beads"
@@ -126,6 +127,11 @@ function parse_clusters(clusters) {
     var nodelist = unique(cluster.edges.map(x => x.slice(0,2)).flat());
     //cluster.edges.map(x => x.slice(0,2)).flat().filter(onlyUnique);
 
+    coldates = nodelist.map(accn => cluster.nodes[accn].map(x => x.coldate)).flat();
+    coldates.sort()
+    mindate = coldates[0];
+    maxdate = coldates[coldates.length-1];
+
     // extract the date range for each variant in cluster
     var y = 1;
     variants = [];
@@ -135,6 +141,20 @@ function parse_clusters(clusters) {
       variant = cluster.nodes[accn];
       if (variant.length === 0) {
         // TODO: handle unsampled internal node
+        variants.push({
+          'accession': accn,
+          'label': null,
+          'x1': new Date(mindate),  // min date
+          'x2': new Date(maxdate),  // max date
+          'count': 0,
+          'country': null,
+          'region': null,
+          'y1': y,  // horizontal line segment
+          'y2': y,
+          'numBeads': 0,
+          'parent': null,
+          'dist': 0
+        });
         y++;
         continue;
       }
@@ -332,43 +352,65 @@ function beadplot(cid) {
       .attr("x2", xMap2B)
       .attr("y1", yMap1B)
       .attr("y2", yMap2B)
-      .attr("stroke-width", 3)
-      .attr("stroke", "#777")
+      .attr("stroke-width", function(d) {
+        if (d.label === null) {
+          return 1;
+        } else {
+          return 3;
+        }
+      })
+      .attr("stroke", function(d) {
+        if (d.label === null) {
+          return "#ccc";
+        } else {
+          return "#777";
+        }
+      })
       .on("mouseover", function(d) {
-        d3.select(this)
+        if (d.label !== null) {
+          d3.select(this)
             .attr("stroke-width", 5);
 
-        bTooltip.transition()       // Show tooltip
-            .duration(50)
-            .style("opacity", 0.9);
+          bTooltip.transition()       // Show tooltip
+              .duration(50)
+              .style("opacity", 0.9);
 
-        let tooltipText = "";
-        if (d.parent || d.dist) {
-          tooltipText += `<b>Parent:</b> ${d.parent}<br><b>Genomic distance:</b> ${d.dist}<br><br>`;
+          let tooltipText = "";
+          if (d.parent || d.dist) {
+            tooltipText += `<b>Parent:</b> ${d.parent}<br><b>Genomic distance:</b> ${d.dist}<br><br>`;
+          }
+
+          tooltipText += region_to_string(table(d.region));
+          tooltipText += `<br><b>Unique collection dates:</b> ${d.numBeads}<br>`;
+          tooltipText += `<br><b>Collection dates:</b><br>${formatDate(d.x1)} / ${formatDate(d.x2)}<br>`;
+
+          // Tooltip appears 10 pixels left of the cursor
+          bTooltip.html(tooltipText)
+              .style("left", (d3.event.pageX + 10) + "px")
+              .style("top", (d3.event.pageY + "px"));
         }
-
-        tooltipText += region_to_string(table(d.region));
-        tooltipText += `<br><b>Unique collection dates:</b> ${d.numBeads}<br>`;
-        tooltipText += `<br><b>Collection dates:</b><br>${formatDate(d.x1)} / ${formatDate(d.x2)}<br>`;
-
-        // Tooltip appears 10 pixels left of the cursor
-        bTooltip.html(tooltipText)
-            .style("left", (d3.event.pageX + 10) + "px")
-            .style("top", (d3.event.pageY + "px"));
-
       })
       .on("mouseout", function() {
         d3.select(this)
-            .attr("stroke-width", 3);
+            .attr("stroke-width", function(d) {
+              // reset line width
+              if (d.label === null) {
+                return 1;
+              } else {
+                return 3;
+              }
+            });
         bTooltip.transition()     // Hide tooltip
             .duration(50)
             .style("opacity", 0);
       })
       .on("click", function(d) {
-        gentable(d);
-        draw_region_distribution(table(d.region));
-        let var_samples = points.filter(x => x.y === d.y1);
-        gen_details_table(var_samples);
+        if (d.label !== null) {
+          gentable(d);
+          draw_region_distribution(table(d.region));
+          let var_samples = points.filter(x => x.y === d.y1);
+          gen_details_table(var_samples);
+        }
       });
 
   // label variants with earliest sample name
