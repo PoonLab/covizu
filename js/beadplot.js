@@ -116,7 +116,7 @@ function parse_clusters(clusters) {
 
   for (const cidx in clusters) {
     cluster = clusters[cidx];
-    if (cluster.nodes.length === 1) {
+    if (Object.keys(cluster["nodes"]).length === 1) {
       console.log('skip '+ cluster.nodes);
       beaddata.push({'variants': [], 'edgelist': [], 'points': []})
       continue;
@@ -131,7 +131,13 @@ function parse_clusters(clusters) {
     variants = [];
     points = [];
     for (const accn of nodelist) {
+      // extract collection dates for all samples of this variant
       variant = cluster.nodes[accn];
+      if (variant.length === 0) {
+        // TODO: handle unsampled internal node
+        y++;
+        continue;
+      }
       coldates = variant.map(x => x.coldate);
       coldates.sort();
 
@@ -194,6 +200,12 @@ function parse_clusters(clusters) {
       edge = cluster.edges[e];
       parent = variants.filter(x => x.accession === edge[0])[0];
       child = variants.filter(x => x.accession === edge[1])[0];
+
+      if (parent === undefined || child === undefined) {
+        // TODO: handle edge to unsampled node
+        continue;
+      }
+
       dist = parseFloat(edge[2]);
       edgelist.push({
         'y1': parent.y1,

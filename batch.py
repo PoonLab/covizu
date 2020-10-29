@@ -14,9 +14,6 @@ import itertools
 def parse_args():
     parser = argparse.ArgumentParser(description="CoVizu analysis pipeline automation")
 
-    parser.add_argument("outfile", type=argparse.FileType('w'),
-                        help="output, dest for JSON beadplot file")
-
     parser.add_argument("--db", type=str, default='data/gsaid.db',
                         help="input, path to sqlite3 database")
     parser.add_argument('-mmt', "--mmthreads", type=int, default=1,
@@ -53,6 +50,9 @@ def parse_args():
     parser.add_argument("--cutoff", type=float, default=0.5,
                         help="Bootstrap cutoff for consensus tree (default 0.5). "
                              "Only used if --cons is specified.")
+
+    parser.add_argument("outfile", type=argparse.FileType('w'), default='data/clusters.json',
+                        help="output, dest for JSON beadplot file")
 
     return parser.parse_args()
 
@@ -110,6 +110,8 @@ if __name__ == "__main__":
         ctree = beadplot.annotate_tree(ctree, label_dict)
 
         # convert to JSON format
-        result.append(beadplot.serialize_tree(ctree))
+        beaddict = beadplot.serialize_tree(ctree)
+        beaddict.update({'lineage': lineage})
+        result.append(beaddict)
 
     args.outfile.write(json.dumps(result, indent=2))

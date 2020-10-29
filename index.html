@@ -115,7 +115,7 @@
             "South America": "#77AADD"
         };
 
-        // load time-scaled phylogeny (treetime.py) from server
+        // load time-scaled phylogeny from server
         var df, countries;
         $.ajax({
             url: "data/timetree.nwk",
@@ -127,7 +127,7 @@
             countries = data;
         });
 
-        // load cluster data (hclust.R) from server
+        // load cluster data from server
         var clusters, beaddata, tips,
             accn_to_cid;
 

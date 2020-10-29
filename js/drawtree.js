@@ -141,9 +141,12 @@ function map_clusters_to_tips(df, clusters) {
     }
 
     // find variant in cluster that matches a tip label
+    /*
     var labels = Object.keys(cluster['nodes']),
         root = tip_labels.filter(value => -1 !== labels.indexOf(value))[0];
-
+     */
+    var labels = Object.keys(cluster["nodes"]),
+        root = tip_labels.filter(value => cluster['lineage'] === value)[0];
     if (root === undefined) {
       console.log("Failed to match cluster of index ", cidx, " to a tip in the tree");
       continue;
@@ -163,8 +166,7 @@ function map_clusters_to_tips(df, clusters) {
     }
     coldates.sort();  // in place, ascending order
 
-    var origin = new Date(cluster['nodes'][root][0]['coldate']),
-        first_date = new Date(coldates[0]),
+    var first_date = new Date(coldates[0]),
         last_date = new Date(coldates[coldates.length-1]);
 
     // augment data frame with cluster data
@@ -173,7 +175,7 @@ function map_clusters_to_tips(df, clusters) {
     tips[root_idx].allregions = cluster.allregions;
     tips[root_idx].country = cluster.country;
     tips[root_idx].searchtext = cluster.searchtext;
-    tips[root_idx].label1 = cluster.label1;
+    tips[root_idx].label1 = cluster["lineage"];
     tips[root_idx].count = coldates.length;
     tips[root_idx].varcount = labels.length;
     tips[root_idx].first_date = first_date;
@@ -181,10 +183,9 @@ function map_clusters_to_tips(df, clusters) {
     tips[root_idx].pdist = cluster.pdist;
     tips[root_idx].rdist = cluster.rdist;
 
-    tips[root_idx].coldate = origin;
-    dt = (first_date - origin) / 3.154e10;  // convert ms to years
-    tips[root_idx].x1 = root_xcoord + dt;
-    dt = (last_date - origin) / 3.154e10;
+    tips[root_idx].coldate = first_date;
+    tips[root_idx].x1 = root_xcoord;
+    dt = (last_date - first_date) / 3.154e10;
     tips[root_idx].x2 = root_xcoord + dt;
   }
   return tips;
