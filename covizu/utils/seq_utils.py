@@ -237,7 +237,11 @@ def apply_prot_to_nuc(aligned_prot, nuc):
 def total_missing(row):
     """ Calculate the total number of missing sites from closed-open interval annotations """
     res = 0
-    _, _, missing = row
+    if type(row) is dict:
+        missing = row['missing']
+    else:
+        _, _, missing = row
+
     for left, right in missing:
         res += right-left
     return res

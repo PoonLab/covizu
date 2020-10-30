@@ -18,12 +18,18 @@ def parse_args():
                         help="input, path to sqlite3 database")
     parser.add_argument('-mmt', "--mmthreads", type=int, default=1,
                         help="option, number of threads for minimap2.")
+
     parser.add_argument("--ref", type=str,
                         default=os.path.join(covizu.__path__[0], "data/MT291829.fa"),
                         help="input, path to FASTA file with reference genome"),
     parser.add_argument('--misstol', type=int, default=300,
                         help="option, maximum tolerated number of missing bases per "
                              "genome (default 300).")
+
+    parser.add_argument("--vcf", type=str,
+                        default=os.path.join(covizu.__path__[0], "data/problematic_sites_sarsCov2.vcf"),
+                        help="Path to VCF file of problematic sites in SARS-COV-2 genome. "
+                             "Source: https://github.com/W-L/ProblematicSites_SARS-CoV2")
 
     parser.add_argument('--ft2bin', default='fasttree2',
                         help='option, path to fasttree2 binary executable')
@@ -85,6 +91,10 @@ if __name__ == "__main__":
         features = []
         for qname, diffs, missing in minimap2.encode_diffs(mm2, reflen=reflen):
             features.append([qname, diffs, missing])
+
+    # Filter problematic sites
+    mask = clustering.load_vcf(args.vcf)
+    features = clustering.filter_problematic(features, mask=mask, callback=cb.callback)
 
     # Neighbor-joining reconstruction
     lineages = db_utils.dump_lineages(args.db)

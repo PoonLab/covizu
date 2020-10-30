@@ -21,18 +21,16 @@ import os
 sys.setrecursionlimit(20000)  # fix for issue #127, default limit 1000
 
 
-def filter_problematic(obj, from_json=True, vcf_file="data/problematic_sites_sarsCov2.vcf", callback=None):
+def load_vcf(vcf_file="data/problematic_sites_sarsCov2.vcf"):
     """
-    Apply problematic sites annotation from de Maio et al.,
-    https://virological.org/t/issues-with-sars-cov-2-sequencing-data/473
-    which are published and maintained as a VCF-formatted file.
+    Load VCF of problematic sites curated by Nick Goldman lab
+    NOTE: The curators of this VCF used MN908947.3, which is identical to NC_045512.
+    *** It is very important to check that your reference is compatible! ***
+    TODO: align user's reference to NC_045512 to generate custom coordinate system
 
-    :param obj:  list, entries are dicts returned by import_json()
-    :param from_json:  bool, if False, assume obj is a generator from minimap2::encode_diffs()
     :param vcf_file:  str, path to VCF file
-    :return:
+    :return:  dict, tuples keyed by reference coordinate
     """
-    # TODO: peel this off to its own function
     vcf = open(vcf_file)
     mask = {}
     for line in vcf.readlines():
@@ -43,40 +41,47 @@ def filter_problematic(obj, from_json=True, vcf_file="data/problematic_sites_sar
             mask.update({int(pos)-1: {  # convert to 0-index
                 'ref': ref, 'alt': alt, 'info': info}
             })
+    return mask
 
+
+def filter_problematic(obj, mask, callback=None):
+    """
+    Apply problematic sites annotation from de Maio et al.,
+    https://virological.org/t/issues-with-sars-cov-2-sequencing-data/473
+    which are published and maintained as a VCF-formatted file.
+
+    :param obj:  list, entries are (1) dicts returned by import_json or (2) tuples
+    :param mask:  dict, problematic site index from load_vcf()
+    :param vcf_file:  str, path to VCF file
+    :return:
+    """
     # apply filters to feature vectors
     count = 0
-    if from_json:
-        for row in obj:
-            filtered = []
-            for typ, pos, alt in row['diffs']:
-                if typ == '~' and int(pos) in mask and alt in mask[pos]['alt']:
-                    continue
-                if typ != '-' and 'N' in alt:
-                    # drop substitutions and insertions with uncalled bases
-                    continue
-                filtered.append(tuple([typ, pos, alt]))
+    result = []
+    for row in obj:
+        if type(row) is dict:
+            qname, diffs, missing = row['qname'], row['diffs'], row['missing']
+        else:
+            qname, diffs, missing = row
 
-            count += len(row['diffs']) - len(filtered)
-            row['diffs'] = filtered
-        if callback:
-            callback('filtered {} problematic features'.format(count))
-        return obj
-    else:
-        for qname, diffs, missing in obj:
-            filtered = []
-            for typ, pos, alt in diffs:
-                if typ == '~' and int(pos) in mask and alt in mask[pos]['alt']:
-                    continue
-                if typ != '-' and 'N' in alt:
-                    # drop substitutions and insertions with uncalled bases
-                    continue
-                filtered.append(tuple([typ, pos, alt]))
-            count += len(diffs) - len(filtered)
-            yield qname, filtered, missing
+        filtered = []
+        for typ, pos, alt in diffs:
+            if typ == '~' and int(pos) in mask and alt in mask[pos]['alt']:
+                continue
+            if typ != '-' and 'N' in alt:
+                # drop substitutions and insertions with uncalled bases
+                continue
+            filtered.append(tuple([typ, pos, alt]))
+
+        count += len(diffs) - len(filtered)
+        result.append([qname, filtered, missing])
+
+    if callback:
+        callback('filtered {} problematic features'.format(count))
+    return result
 
 
-def import_json(path, max_missing=600, callback=None):
+def import_json(path, vcf_file, max_missing=600, callback=None):
     """
     Read genome features (genetic differences from reference) from JSON file.
     For command line execution with JSON file input.
@@ -89,12 +94,12 @@ def import_json(path, max_missing=600, callback=None):
         obj = json.load(fp)
 
     # remove features known to be problematic - note entries are dicts
-    filtered = filter_problematic(obj, callback=callback)
+    mask = load_vcf(vcf_file)
+    filtered = filter_problematic(obj, mask=mask, callback=callback)
 
     # remove genomes with too many uncalled bases
     count = len(filtered)
-    features = [(row['qname'], row['diffs'], row['missing']) for row in filtered
-                if seq_utils.total_missing(row) < max_missing]
+    features = [row for row in filtered if seq_utils.total_missing(row) < max_missing]
 
     if callback:
         callback("dropped {} records with uncalled bases in excess "
@@ -410,7 +415,7 @@ if __name__ == "__main__":
     lineages = db_utils.dump_lineages(args.db)
 
     cb.callback('loading JSON')
-    features = import_json(args.json, callback=cb.callback)
+    features = import_json(args.json, vcf_file=args.vcf, callback=cb.callback)
 
     by_lineage = split_by_lineage(features, lineages)
     for lineage, lfeatures in by_lineage.items():
