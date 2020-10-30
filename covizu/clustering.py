@@ -59,10 +59,10 @@ def filter_problematic(obj, vcf_file="data/problematic_sites_sarsCov2.vcf", call
 
     if callback:
         callback('filtered {} problematic features'.format(count))
-    return features
+    return obj
 
 
-def import_json(path, max_missing=600, callback=None):
+def import_json(path, vcf_file, max_missing=600, callback=None):
     """
     Read genome features (genetic differences from reference) from JSON file.
     For command line execution with JSON file input.
@@ -75,11 +75,11 @@ def import_json(path, max_missing=600, callback=None):
         obj = json.load(fp)
 
     # remove features known to be problematic - note entries are dicts
-    filtered = filter_problematic(obj, callback=callback)
+    filtered = filter_problematic(obj, vcf_file=vcf_file, callback=callback)
 
     # remove genomes with too many uncalled bases
     count = len(filtered)
-    features = [(row['qname'], row['diffs'], row['missing']) for row in filtered
+    features = [(row['name'], row['diffs'], row['missing']) for row in filtered
                 if seq_utils.total_missing(row) < max_missing]
 
     if callback:
@@ -396,7 +396,7 @@ if __name__ == "__main__":
     lineages = db_utils.dump_lineages(args.db)
 
     cb.callback('loading JSON')
-    features = import_json(args.json, callback=cb.callback)
+    features = import_json(args.json, vcf_file=args.vcf, callback=cb.callback)
 
     by_lineage = split_by_lineage(features, lineages)
     for lineage, lfeatures in by_lineage.items():
