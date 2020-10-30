@@ -225,7 +225,6 @@ def parse_args():
                         help="<option> if True, stream unaligned sequences from database.")
     parser.add_argument('-o', '--outfile',
                         type=argparse.FileType('w'),
-
                         required=False,
                         help="<output, optional> path to write output, "
                              "defaults to stdout")
@@ -252,7 +251,7 @@ if __name__ == '__main__':
         args.outfile = sys.stdout
 
     # check input headers for spaces
-    if not args.db and not args.force_headers:
+    if not args.stream and not args.force_headers:
         for line in args.infile:
             if line.startswith('>') and ' ' in line:
                 print("WARNING: at least one FASTA header contains a space")

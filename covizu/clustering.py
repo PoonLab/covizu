@@ -21,16 +21,18 @@ import os
 sys.setrecursionlimit(20000)  # fix for issue #127, default limit 1000
 
 
-def filter_problematic(obj, vcf_file="data/problematic_sites_sarsCov2.vcf", callback=None):
+def filter_problematic(obj, from_json=True, vcf_file="data/problematic_sites_sarsCov2.vcf", callback=None):
     """
     Apply problematic sites annotation from de Maio et al.,
     https://virological.org/t/issues-with-sars-cov-2-sequencing-data/473
     which are published and maintained as a VCF-formatted file.
 
     :param obj:  list, entries are dicts returned by import_json()
+    :param from_json:  bool, if False, assume obj is a generator from minimap2::encode_diffs()
     :param vcf_file:  str, path to VCF file
     :return:
     """
+    # TODO: peel this off to its own function
     vcf = open(vcf_file)
     mask = {}
     for line in vcf.readlines():
@@ -44,22 +46,34 @@ def filter_problematic(obj, vcf_file="data/problematic_sites_sarsCov2.vcf", call
 
     # apply filters to feature vectors
     count = 0
-    for row in obj:
-        filtered = []
-        for typ, pos, alt in row['diffs']:
-            if typ == '~' and int(pos) in mask and alt in mask[pos]['alt']:
-                continue
-            if typ != '-' and 'N' in alt:
-                # drop substitutions and insertions with uncalled bases
-                continue
-            filtered.append(tuple([typ, pos, alt]))
+    if from_json:
+        for row in obj:
+            filtered = []
+            for typ, pos, alt in row['diffs']:
+                if typ == '~' and int(pos) in mask and alt in mask[pos]['alt']:
+                    continue
+                if typ != '-' and 'N' in alt:
+                    # drop substitutions and insertions with uncalled bases
+                    continue
+                filtered.append(tuple([typ, pos, alt]))
 
-        count += len(row['diffs']) - len(filtered)
-        row['diffs'] = filtered
-
-    if callback:
-        callback('filtered {} problematic features'.format(count))
-    return features
+            count += len(row['diffs']) - len(filtered)
+            row['diffs'] = filtered
+        if callback:
+            callback('filtered {} problematic features'.format(count))
+        return obj
+    else:
+        for qname, diffs, missing in obj:
+            filtered = []
+            for typ, pos, alt in diffs:
+                if typ == '~' and int(pos) in mask and alt in mask[pos]['alt']:
+                    continue
+                if typ != '-' and 'N' in alt:
+                    # drop substitutions and insertions with uncalled bases
+                    continue
+                filtered.append(tuple([typ, pos, alt]))
+            count += len(diffs) - len(filtered)
+            yield qname, filtered, missing
 
 
 def import_json(path, max_missing=600, callback=None):
