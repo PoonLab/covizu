@@ -67,10 +67,12 @@ def minimap2(infile, ref, stream=False, path='minimap2', nthread=3, minlen=29000
         output = map(lambda x: x.decode('utf-8'), p.stdout)
 
     for line in output:
-        if line.startswith('@'):
+        if line == '' or line.startswith('@'):
+            # split on \n leaves empty line; @ prefix header lines
             continue
         qname, flag, rname, rpos, _, cigar, _, _, _, seq = \
             line.strip().split()[:10]
+
         if rname == '*' or ((int(flag) & 0x800) != 0):
             # did not map, or supplementary alignment
             continue
@@ -220,7 +222,7 @@ def encode_diffs(iter, reflen, alphabet='ACGT'):
 def parse_args():
     parser = argparse.ArgumentParser("Wrapper script for minimap2")
     parser.add_argument('infile', type=argparse.FileType('r'),
-                        help="<input> path to query FASTA file or database (--db)")
+                        help="<input> path to query FASTA file or database (--stream)")
     parser.add_argument('--stream', action="store_true",
                         help="<option> if True, stream unaligned sequences from database.")
     parser.add_argument('-o', '--outfile',
@@ -252,7 +254,7 @@ if __name__ == '__main__':
         args.outfile = sys.stdout
 
     # check input headers for spaces
-    if not args.db and not args.force_headers:
+    if not args.stream and not args.force_headers:
         for line in args.infile:
             if line.startswith('>') and ' ' in line:
                 print("WARNING: at least one FASTA header contains a space")
@@ -263,7 +265,7 @@ if __name__ == '__main__':
 
     # get length of reference
     if args.stream:
-        infile = dump_raw(db=args.db)
+        infile = dump_raw(db=args.infile.name)
         mm2 = minimap2(infile, stream=True, ref=args.ref, nthread=args.thread,
                        minlen=args.minlen)
     else:
