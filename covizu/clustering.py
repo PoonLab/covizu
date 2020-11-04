@@ -17,68 +17,10 @@ from multiprocessing import Pool
 import sys
 import os
 
+from covizu.utils.seq_utils import load_vcf, filter_problematic
+
 
 sys.setrecursionlimit(20000)  # fix for issue #127, default limit 1000
-
-
-def load_vcf(vcf_file="data/problematic_sites_sarsCov2.vcf"):
-    """
-    Load VCF of problematic sites curated by Nick Goldman lab
-    NOTE: The curators of this VCF used MN908947.3, which is identical to NC_045512.
-    *** It is very important to check that your reference is compatible! ***
-    TODO: align user's reference to NC_045512 to generate custom coordinate system
-
-    :param vcf_file:  str, path to VCF file
-    :return:  dict, tuples keyed by reference coordinate
-    """
-    vcf = open(vcf_file)
-    mask = {}
-    for line in vcf.readlines():
-        if line.startswith('#'):
-            continue
-        _, pos, _, ref, alt, _, filt, info = line.strip().split()
-        if filt == 'mask':
-            mask.update({int(pos)-1: {  # convert to 0-index
-                'ref': ref, 'alt': alt, 'info': info}
-            })
-    return mask
-
-
-def filter_problematic(obj, mask, callback=None):
-    """
-    Apply problematic sites annotation from de Maio et al.,
-    https://virological.org/t/issues-with-sars-cov-2-sequencing-data/473
-    which are published and maintained as a VCF-formatted file.
-
-    :param obj:  list, entries are (1) dicts returned by import_json or (2) tuples
-    :param mask:  dict, problematic site index from load_vcf()
-    :param vcf_file:  str, path to VCF file
-    :return:
-    """
-    # apply filters to feature vectors
-    count = 0
-    result = []
-    for row in obj:
-        if type(row) is dict:
-            qname, diffs, missing = row['qname'], row['diffs'], row['missing']
-        else:
-            qname, diffs, missing = row
-
-        filtered = []
-        for typ, pos, alt in diffs:
-            if typ == '~' and int(pos) in mask and alt in mask[pos]['alt']:
-                continue
-            if typ != '-' and 'N' in alt:
-                # drop substitutions and insertions with uncalled bases
-                continue
-            filtered.append(tuple([typ, pos, alt]))
-
-        count += len(diffs) - len(filtered)
-        result.append([qname, filtered, missing])
-
-    if callback:
-        callback('filtered {} problematic features'.format(count))
-    return result
 
 
 def import_json(path, vcf_file, max_missing=600, callback=None):
@@ -315,7 +257,27 @@ def build_trees(features, nboot=100, threads=1, use_file=True, callback=None):
     return trees, labels
 
 
-def consensus(trees, cutoff=0.5):
+def label_nodes(tree, tip_index):
+    """
+    Attempt a faster annotation of internal nodes with tip labels by
+    preorder traversal.  See issue #158.
+    :param tree:  Phylo.BaseTree object
+    :param tip_index:  dict, integer indices keyed by tip name
+    :return:  Phylo.BaseTree annotated with `tip_index` attribute
+    """
+    for node in tree.get_nonterminals(order='postorder'):
+        tips = []
+        for child in node.clades:
+            if child.is_terminal():
+                tips.append(tip_index[child.name])
+            else:
+                tips.extend(child.tip_index)
+        tips.sort()
+        node.tip_index = tips
+    return tree
+
+
+def consensus(trees, cutoff=0.5, callback=None):
     """
     Generate a consensus tree by counting splits and using the splits with
     frequencies above the cutoff to resolve a star tree.
@@ -323,25 +285,32 @@ def consensus(trees, cutoff=0.5):
     :param cutoff:  float, bootstrap threshold (default 0.5)
     :return:  Phylo.BaseTree
     """
+    if type(trees) is not list:
+        # resolve generator object
+        trees = list(trees)
+
+    count = len(trees)
+
+    # store terminal labels and branch lengths
+    tip_index = {}
+    for i, tip in enumerate(trees[0].get_terminals()):
+        tip_index.update({tip.name: i})
+
+    if callback:
+        callback("Recording splits and branch lengths")
     splits = {}
-    terminals = {}
-    count = 0
+    terminals = dict([(tn, []) for tn in tip_index.keys()])
     for phy in trees:
-        count += 1
-        # store terminal labels and branch lengths
+        # record terminal branch lengths
         for tip in phy.get_terminals():
-            if tip.name not in terminals:
-                terminals.update({tip.name: []})
             terminals[tip.name].append(tip.branch_length)
 
         # record splits in tree
+        phy = label_nodes(phy, tip_index)
         for node in phy.get_nonterminals():
-            children = [tip.name for tip in node.get_terminals()]
-            children.sort()
-            key = tuple(children)
+            key = tuple(node.tip_index)
             if key not in splits:
                 splits.update({key: []})
-            # record branch length - list length represents frequency
             splits[key].append(node.branch_length)
 
     # filter splits by frequency threshold
@@ -349,8 +318,12 @@ def consensus(trees, cutoff=0.5):
     intermed.sort()
 
     # construct consensus tree
-    orphans = dict([(tname, Clade(name=tname, branch_length=sum(blen)/len(blen)))
-                   for tname, blen in terminals.items()])
+    if callback:
+        callback("Building consensus tree")
+    orphans = dict(
+        [(tip_index[tname], Clade(name=tname, branch_length=sum(tdata)/len(tdata)))
+        for tname, tdata in terminals.items()]
+    )
 
     for _, key, val in intermed:
         # average branch lengths across relevant trees
@@ -367,7 +340,7 @@ def consensus(trees, cutoff=0.5):
                 node.clades.append(branch)
 
         # use a single tip name to label ancestral node
-        newkey = node.get_terminals()[0].name
+        newkey = tip_index[node.get_terminals()[0].name]
         orphans.update({newkey: node})
 
     return orphans.popitem()[1]

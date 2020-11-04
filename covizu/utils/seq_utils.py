@@ -1,47 +1,8 @@
-# copied directly from ArtPoon/gotoh2/gotoh_utils.py
-import re
-from datetime import datetime, date
-import sys
+from datetime import date
 import bisect
-import math
 
 from scipy.stats import poisson
 from scipy.optimize import root
-
-
-# regex for terminal gaps
-tgap_regex = re.compile("^(-*)[^-].+[^-](-*)$")
-
-# conversion from codon triplets to amino acid symbols
-codon_dict = {
-    'TTT': 'F', 'TTC': 'F', 'TTA': 'L', 'TTG': 'L',
-    'TCT': 'S', 'TCC': 'S', 'TCA': 'S', 'TCG': 'S',
-    'TAT': 'Y', 'TAC': 'Y', 'TAA': '*', 'TAG': '*',
-    'TGT': 'C', 'TGC': 'C', 'TGA': '*', 'TGG': 'W',
-    'CTT': 'L', 'CTC': 'L', 'CTA': 'L', 'CTG': 'L',
-    'CCT': 'P', 'CCC': 'P', 'CCA': 'P', 'CCG': 'P',
-    'CAT': 'H', 'CAC': 'H', 'CAA': 'Q', 'CAG': 'Q',
-    'CGT': 'R', 'CGC': 'R', 'CGA': 'R', 'CGG': 'R',
-    'ATT': 'I', 'ATC': 'I', 'ATA': 'I', 'ATG': 'M',
-    'ACT': 'T', 'ACC': 'T', 'ACA': 'T', 'ACG': 'T',
-    'AAT': 'N', 'AAC': 'N', 'AAA': 'K', 'AAG': 'K',
-    'AGT': 'S', 'AGC': 'S', 'AGA': 'R', 'AGG': 'R',
-    'GTT': 'V', 'GTC': 'V', 'GTA': 'V', 'GTG': 'V',
-    'GCT': 'A', 'GCC': 'A', 'GCA': 'A', 'GCG': 'A',
-    'GAT': 'D', 'GAC': 'D', 'GAA': 'E', 'GAG': 'E',
-    'GGT': 'G', 'GGC': 'G', 'GGA': 'G', 'GGG': 'G',
-    '---': '-', 'XXX': '?'
-}
-
-mixture_regex = re.compile('[WRKYSMBDHVN-]')
-
-mixture_dict = {
-    'W': 'AT', 'R': 'AG', 'K': 'GT', 'Y': 'CT', 'S': 'CG',
-    'M': 'AC', 'V': 'AGC', 'H': 'ATC', 'D': 'ATG',
-    'B': 'TGC', 'N': 'ATGC', '-': 'ATGC'
-}
-
-ambig_dict = dict(("".join(sorted(v)), k) for k, v in mixture_dict.items())
 
 
 def read_seq(handle):
@@ -115,123 +76,6 @@ def convert_fasta(handle):
             sequence += line.strip().upper()
     result.append([h, sequence])  # handle last entry
     return result
-
-
-def len_terminal_gaps(seq):
-    """
-    Calculate lengths of terminal (prefix, suffix) gaps
-    :param seq:  str, gapped nucleotide/amino acid sequence
-    :return:  tuple, lengths of gap prefix and suffix
-    """
-    m = tgap_regex.findall(seq)
-    return tuple(map(len, m[0]))
-
-
-def get_boundaries(seq):
-    """
-    Legacy code.
-    :param seq:  str, sequence to check for terminal gaps
-    :return:  tuple, indices to slice seq to remove terminal gaps
-    """
-    left, right = len_terminal_gaps(seq)
-    return left, len(seq) - right
-
-
-def translate_nuc(seq, offset, resolve=False, return_list=False):
-    """
-    Translate nucleotide sequence into amino acid sequence.
-    offset by X shifts sequence to the right by X bases
-    Synonymous nucleotide mixtures are resolved to the corresponding residue.
-    Nonsynonymous nucleotide mixtures are encoded with '?'
-
-    :param seq:  string, nucleotide sequence
-    :param offset:  integer, number of gaps to pad sequence on the left (5' end)
-                    before translating
-    :param resolve:  if True, attempt to convert ambiguous codons into an amino acid
-    :param return_list:  if True, ambiguous codons that resolve to two or more amino
-                         acids are returned as list objects.
-    :return:  str if return_list is False (default), else list
-    """
-
-    seq = '-' * offset + seq
-
-    aa_list = []
-    aa_seq = ''  # use to align against reference, for resolving indels
-
-    # loop over codon sites in nucleotide sequence
-    for codon_site in range(0, len(seq), 3):
-        codon = seq[codon_site:codon_site + 3]
-
-        if len(codon) < 3:
-            break
-
-        # note that we're willing to handle a single missing nucleotide as an ambiguity
-        if codon.count('-') > 1 or '?' in codon:
-            if codon == '---':  # don't bother to translate incomplete codons
-                aa_seq += '-'
-                aa_list.append(['-'])
-            else:
-                aa_seq += '?'
-                aa_list.append(['?'])
-            continue
-
-        # look for nucleotide mixtures in codon, resolve to alternative codons if found
-        num_mixtures = len(mixture_regex.findall(codon))
-
-        if num_mixtures == 0:
-            aa = codon_dict[codon]
-            aa_seq += aa
-            aa_list.append([aa])
-
-        elif num_mixtures == 1:
-            resolved_AAs = []
-            for pos in range(3):
-                if codon[pos] in mixture_dict.keys():
-                    for r in mixture_dict[codon[pos]]:
-                        rcodon = codon[0:pos] + r + codon[(pos + 1):]
-                        if codon_dict[rcodon] not in resolved_AAs:
-                            resolved_AAs.append(codon_dict[rcodon])
-
-            aa_list.append(resolved_AAs)
-
-            if len(resolved_AAs) > 1:
-                if resolve:
-                    # for purposes of aligning AA sequences
-                    # it is better to have one of the resolutions
-                    # than a completely ambiguous '?'
-                    aa_seq += resolved_AAs[0]
-                else:
-                    aa_seq += '?'
-            else:
-                aa_seq += resolved_AAs[0]
-
-        else:
-            aa_seq += '?'
-            aa_list.append(['?'])
-
-    if return_list:
-        return aa_list
-
-    return aa_seq
-
-
-def apply_prot_to_nuc(aligned_prot, nuc):
-    """
-    Use aligned protein sequence to update the corresponding nucleotide
-    sequence.
-    :param aligned_prot:  str, aligned amino acid sequence
-    :param nuc:  str, original nucleotide sequence
-    :return: str, nucleotide sequence with codon gaps
-    """
-    res = ''
-    i = 0
-    for aa in aligned_prot:
-        if aa == '-':
-            res += '---'
-            continue
-        res += nuc[i:(i + 3)]
-        i += 3
-    return res
 
 
 def total_missing(row):
@@ -355,3 +199,63 @@ def filter_outliers(iter, origin='2019-12-01', rate=0.0655, cutoff=0.005, maxtim
             # reject genome with too many differences given date
             continue
         yield qname, diffs, missing
+
+
+def load_vcf(vcf_file="data/problematic_sites_sarsCov2.vcf"):
+    """
+    Load VCF of problematic sites curated by Nick Goldman lab
+    NOTE: The curators of this VCF used MN908947.3, which is identical to NC_045512.
+    *** It is very important to check that your reference is compatible! ***
+    TODO: align user's reference to NC_045512 to generate custom coordinate system
+
+    :param vcf_file:  str, path to VCF file
+    :return:  dict, tuples keyed by reference coordinate
+    """
+    vcf = open(vcf_file)
+    mask = {}
+    for line in vcf.readlines():
+        if line.startswith('#'):
+            continue
+        _, pos, _, ref, alt, _, filt, info = line.strip().split()
+        if filt == 'mask':
+            mask.update({int(pos)-1: {  # convert to 0-index
+                'ref': ref, 'alt': alt, 'info': info}
+            })
+    return mask
+
+
+def filter_problematic(obj, mask, callback=None):
+    """
+    Apply problematic sites annotation from de Maio et al.,
+    https://virological.org/t/issues-with-sars-cov-2-sequencing-data/473
+    which are published and maintained as a VCF-formatted file.
+
+    :param obj:  list, entries are (1) dicts returned by import_json or (2) tuples
+    :param mask:  dict, problematic site index from load_vcf()
+    :param vcf_file:  str, path to VCF file
+    :return:
+    """
+    # apply filters to feature vectors
+    count = 0
+    result = []
+    for row in obj:
+        if type(row) is dict:
+            qname, diffs, missing = row['qname'], row['diffs'], row['missing']
+        else:
+            qname, diffs, missing = row
+
+        filtered = []
+        for typ, pos, alt in diffs:
+            if typ == '~' and int(pos) in mask and alt in mask[pos]['alt']:
+                continue
+            if typ != '-' and 'N' in alt:
+                # drop substitutions and insertions with uncalled bases
+                continue
+            filtered.append(tuple([typ, pos, alt]))
+
+        count += len(diffs) - len(filtered)
+        result.append([qname, filtered, missing])
+
+    if callback:
+        callback('filtered {} problematic features'.format(count))
+    return result

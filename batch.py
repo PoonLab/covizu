@@ -92,9 +92,9 @@ if __name__ == "__main__":
         for qname, diffs, missing in minimap2.encode_diffs(mm2, reflen=reflen):
             features.append([qname, diffs, missing])
 
-    # Filter problematic sites
-    mask = clustering.load_vcf(args.vcf)
-    features = clustering.filter_problematic(features, mask=mask, callback=cb.callback)
+    cb.callback("Filtering problematic sites")
+    mask = seq_utils.load_vcf(args.vcf)
+    features = seq_utils.filter_problematic(features, mask=mask, callback=cb.callback)
 
     # Neighbor-joining reconstruction
     lineages = db_utils.dump_lineages(args.db)
