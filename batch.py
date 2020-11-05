@@ -20,7 +20,7 @@ def parse_args():
                         help="option, number of threads for minimap2.")
 
     parser.add_argument("--ref", type=str,
-                        default=os.path.join(covizu.__path__[0], "data/MT291829.fa"),
+                        default=os.path.join(covizu.__path__[0], "data/NC_045512.fa"),
                         help="input, path to FASTA file with reference genome"),
     parser.add_argument('--misstol', type=int, default=300,
                         help="option, maximum tolerated number of missing bases per "
@@ -86,7 +86,7 @@ if __name__ == "__main__":
         db_utils.dump_raw(outfile=tmpfile.name, db=args.db)
         mm2 = minimap2.minimap2(tmpfile, ref=args.ref, nthread=args.mmthreads)
 
-        cb.callback("Extracting features and serializing to JSON")
+        cb.callback("Aligning to {} and extracting features".format(args.ref))
         reflen = len(seq_utils.convert_fasta(open(args.ref))[0][1])
         features = []
         for qname, diffs, missing in minimap2.encode_diffs(mm2, reflen=reflen):
@@ -105,7 +105,7 @@ if __name__ == "__main__":
         filtered = seq_utils.filter_outliers(feats)
 
         # FIXME: reduce data for debugging
-        filtered = itertools.islice(filtered, 100)
+        # filtered = itertools.islice(filtered, 100)
 
         # bootstrap sampling and NJ tree reconstruction
         trees, labels = clustering.build_trees(
