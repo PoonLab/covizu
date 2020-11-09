@@ -89,8 +89,11 @@ if __name__ == "__main__":
         cb.callback("Aligning to {} and extracting features".format(args.ref))
         reflen = len(seq_utils.convert_fasta(open(args.ref))[0][1])
         features = []
-        for qname, diffs, missing in minimap2.encode_diffs(mm2, reflen=reflen):
-            features.append([qname, diffs, missing])
+        for row in minimap2.encode_diffs(mm2, reflen=reflen):
+            if seq_utils.total_missing(row) > args.misstol:
+                # reject genome with excessive uncalled bases
+                continue
+            features.append(row)
 
     cb.callback("Filtering problematic sites")
     mask = seq_utils.load_vcf(args.vcf)
