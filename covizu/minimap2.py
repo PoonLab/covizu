@@ -268,7 +268,7 @@ if __name__ == '__main__':
         mm2 = minimap2(infile, stream=True, ref=args.ref, nthread=args.thread,
                        minlen=args.minlen)
     else:
-        mm2 = minimap2(args.infile.name, ref=args.ref, nthread=args.thread,
+        mm2 = minimap2(args.infile, ref=args.ref, nthread=args.thread,
                        minlen=args.minlen)
 
     reflen = len(convert_fasta(open(args.ref))[0][1])
