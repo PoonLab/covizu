@@ -107,13 +107,28 @@ if __name__ == "__main__":
         cb.callback('start {}, {} entries'.format(lineage, len(feats)))
         filtered = seq_utils.filter_outliers(feats)
 
-        # FIXME: reduce data for debugging
-        # filtered = itertools.islice(filtered, 100)
-
         # bootstrap sampling and NJ tree reconstruction
         trees, labels = clustering.build_trees(
             filtered, nboot=args.nboot, threads=args.njthreads, callback=cb.callback
         )
+        if trees is None:
+            # lineage only has one variant, no meaningful tree
+            beaddict = {'lineage': lineage, 'nodes': {}, 'edges': []}
+
+            # use earliest sample as variant label
+            intermed = [label.split('|')[::-1] for label in labels[0]]
+            intermed.sort()
+            variant = intermed[0][1]
+            beaddict['nodes'].update({variant: []})
+            for coldate, accn, label1 in intermed:
+                beaddict['nodes'][variant].append({
+                    'accession': accn,
+                    'label1': label1,
+                    'country': label1.split('/')[1],
+                    'coldate': coldate
+                })
+            result.append(beaddict)
+            continue
 
         # generate majority consensus tree
         ctree = clustering.consensus(trees, cutoff=args.cutoff)
