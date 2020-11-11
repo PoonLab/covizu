@@ -103,13 +103,175 @@ function table(arr) {
 
 
 /**
+ * Parse nodes that belong to the same variant.
+ * A variant is a collection of genomes that are indistinguishable with respect to
+ * (1) differences from the reference or (2) placement in the phylogenetic tree.
+ * Visually, the variant is represented by a horizontal line segment spanning the
+ * sample collection dates.
+ * The samples that comprise a variant are gathered by collection date into "points"
+ * along the horizontal line.  If there are no samples, then the variant is
+ * "unsampled" and spans the entire width of the beadplot.
+ *
+ * @param {Object} variant:  associative list member of cluster.nodes
+ * @param {number} y:  vertical position
+ * @param {number} cidx:  cluster index for labeling points
+ * @param {string} accn:  accession of baseline sample of variant
+ * @param {Date} mindate:  used only for unsampled variants
+ * @param {Date} maxdate:  used only for unsampled variants
+ * @returns {{variants: [], points: []}}
+ */
+function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
+  var vdata, pdata = [];
+
+  if (variant.length === 0) {
+    // handle unsampled internal node
+    if (mindate === null || maxdate === null) {
+      // this would happen if a cluster comprised only one unsampled node - should be impossible!
+      console.log("Error in parse_variants(): cannot draw unsampled variant without min and max dates");
+    }
+    vdata = {
+      'accession': accn,
+      'label': null,
+      'x1': new Date(mindate),  // cluster min date
+      'x2': new Date(maxdate),  // cluster max date
+      'y1': y,
+      'y2': y,
+      'count': 0,
+      'country': null,
+      'region': null,
+      'numBeads': 0,
+      'parent': null,
+      'dist': 0
+    };
+  }
+  else {
+    // parse samples within variant, i.e., "beads"
+    var label = variant[0].label1.replace(pat, "$1"),
+        coldates = variant.map(x => x.coldate),
+        isodate, samples, regions;
+
+    coldates.sort();
+
+    var country = variant.map(x => x.country),
+        isodates = unique(coldates);
+
+    vdata = {
+      'accession': accn,
+      'label': label,
+      'x1': new Date(coldates[0]),  // min date
+      'x2': new Date(coldates[coldates.length-1]),  // max date
+      'y1': y,
+      'y2': y,
+      'count': coldates.length,
+      'country': country,
+      'region': country.map(x => countries[x]),
+      'numBeads': isodates.length,
+      'parent': null,
+      'dist': 0
+    };
+
+    for (var i=0; i<isodates.length; i++) {
+      isodate = isodates[i];
+      samples = variant.filter(x => x.coldate === isodate);
+      country = samples.map(x => x.country);
+      regions = country.map(x => countries[x]);
+
+      // warn developers if no region for country
+      if (regions.includes(undefined)) {
+        console.log("Developer msg, need to update countries.json:");
+        for (const j in regions.filter(x => x===undefined)) {
+          console.log(`"${samples[j].country}"`);
+        }
+      }
+
+      pdata.push({
+        cidx,
+        'x': new Date(isodate),
+        'y': y,
+        'count': samples.length,
+        'accessions': samples.map(x => x.accession),
+        'labels': samples.map(x => x.label1.replace(pat, "$1")),
+        'region1': mode(regions),
+        'region': regions,
+        'country': country,
+        'parent': null,
+        'dist': 0
+      })
+    }
+  }
+
+  return {'variant': vdata, 'points': pdata};
+}
+
+
+/**
+ *
+ * @param cluster
+ * @param variants
+ * @param points
+ * @returns {[]}
+ */
+function parse_edgelist(cluster, variants, points) {
+  // map earliest collection date of child node to vertical edges
+  var edge, parent, child, dist,
+      edgelist = [];
+
+  for (var e = 0; e < cluster.edges.length; e++) {
+    edge = cluster.edges[e];
+    parent = variants.filter(x => x.accession === edge[0])[0];
+    child = variants.filter(x => x.accession === edge[1])[0];
+
+    if (parent === undefined || child === undefined) {
+      // TODO: handle edge to unsampled node
+      continue;
+    }
+
+    dist = parseFloat(edge[2]);
+    edgelist.push({
+      'y1': parent.y1,
+      'y2': child.y1,
+      'x1': child.x1,  // vertical line segment
+      'x2': child.x1,
+      'parent': parent.label,
+      'child': child.label,
+      'dist': dist
+    });
+
+    // Assign parent and genomic distance of each variant
+    let childvariants = variants.filter(x => x.y1 === child.y1);
+    for (let v = 0; v < childvariants.length; v++) {
+      childvariants[v].parent = parent.label;
+      childvariants[v].dist = dist;
+    }
+
+    // Assign the parent and genomic distance of each point
+    let childpoints = points.filter(x => x.y === child.y1);
+    for (let c = 0; c < childpoints.length; c++) {
+      childpoints[c].parent = parent.label;
+      childpoints[c].dist = dist;
+    }
+
+    // update variant time range
+    if (parent.x1 > child.x1) {
+      parent.x1 = child.x1;
+    }
+    if (parent.x2 < child.x1) {
+      parent.x2 = child.x1;
+    }
+  }
+  return edgelist;
+}
+
+
+/**
  * Parse node and edge data from clusters JSON to a format that is
  * easier to map to SVG.
  * @param {Object} clusters:
  */
 function parse_clusters(clusters) {
-  var cluster, variant, coldates, samples, regions, country, labels,
-      parents, children, mindate, maxdate,
+  var cluster, variant, coldates, regions, labels,
+      mindate, maxdate,
+      result, vdata, pdata,
       variants,  // horizontal line segment data + labels
       edgelist,  // vertical line segment data
       points,  // the "beads"
@@ -117,156 +279,51 @@ function parse_clusters(clusters) {
 
   for (const cidx in clusters) {
     cluster = clusters[cidx];
-    if (Object.keys(cluster["nodes"]).length === 1) {
-      console.log('skip '+ cluster.nodes);
-      beaddata.push({'variants': [], 'edgelist': [], 'points': []})
-      continue;
-    }
 
-    // deconvolute edge list to get node list in preorder
-    var nodelist = unique(cluster.edges.map(x => x.slice(0,2)).flat());
-    //cluster.edges.map(x => x.slice(0,2)).flat().filter(onlyUnique);
-
-    coldates = nodelist.map(accn => cluster.nodes[accn].map(x => x.coldate)).flat();
-    coldates.sort()
-    mindate = coldates[0];
-    maxdate = coldates[coldates.length-1];
-
-    // extract the date range for each variant in cluster
-    var y = 1;
     variants = [];
     points = [];
-    for (const accn of nodelist) {
-      // extract collection dates for all samples of this variant
-      variant = cluster.nodes[accn];
-      if (variant.length === 0) {
-        // TODO: handle unsampled internal node
-        variants.push({
-          'accession': accn,
-          'label': null,
-          'x1': new Date(mindate),  // min date
-          'x2': new Date(maxdate),  // max date
-          'count': 0,
-          'country': null,
-          'region': null,
-          'y1': y,  // horizontal line segment
-          'y2': y,
-          'numBeads': 0,
-          'parent': null,
-          'dist': 0
-        });
-        y++;
-        continue;
-      }
-      coldates = variant.map(x => x.coldate);
-      coldates.sort();
-
-      country = variant.map(x => x.country);
-
-      // parse samples within variant
-      var isodates = unique(coldates),
-          isodate;
-
-      variants.push({
-        'accession': accn,
-        'label': variant[0].label1.replace(pat, "$1"),
-        'x1': new Date(coldates[0]),  // min date
-        'x2': new Date(coldates[coldates.length-1]),  // max date
-        'count': coldates.length,
-        'country': country,
-        'region': country.map(x => countries[x]),
-        'y1': y,  // horizontal line segment
-        'y2': y,
-        'numBeads': isodates.length,
-        'parent': null,
-        'dist': 0
-      });
-
-      for (var i=0; i<isodates.length; i++) {
-        isodate = isodates[i];
-        samples = variant.filter(x => x.coldate === isodate);
-        country = samples.map(x => x.country);
-        regions = country.map(x => countries[x]);
-
-        // warn developers if no region for country
-        if (regions.includes(undefined)) {
-          console.log("Developer msg, need to update countries.json:");
-          for (const j in regions.filter(x => x===undefined)) {
-            console.log(`"${samples[j].country}"`);
-          }
-        }
-
-        points.push({
-          cidx,
-          'x': new Date(isodate),
-          'y': y,
-          'count': samples.length,
-          'accessions': samples.map(x => x.accession),
-          'labels': samples.map(x => x.label1.replace(pat, "$1")),
-          'region1': mode(regions),
-          'region': regions,
-          'country': country,
-          'parent': null,
-          'dist': 0
-        })
-      }
-      y++;
-    }
-
-    // map earliest collection date of child node to vertical edges
-    var edge, parent, child, dist;
     edgelist = [];
-    for (var e = 0; e < cluster.edges.length; e++) {
-      edge = cluster.edges[e];
-      parent = variants.filter(x => x.accession === edge[0])[0];
-      child = variants.filter(x => x.accession === edge[1])[0];
 
-      if (parent === undefined || child === undefined) {
-        // TODO: handle edge to unsampled node
-        continue;
+    // deal with edge case of cluster with only one variant, no edges
+    if (Object.keys(cluster["nodes"]).length === 1) {
+      variant = Object.values(cluster.nodes)[0];
+      result = parse_variant(variant, 0, cidx, variant[0].accession, null, null);
+      vdata = result['variant'];
+      variants.push(vdata);
+
+      pdata = result['points'];
+      points = points.concat(pdata);
+    }
+    else {
+      // de-convolute edge list to get node list in preorder
+      var nodelist = unique(cluster.edges.map(x => x.slice(0, 2)).flat());
+
+      coldates = nodelist.map(a => cluster.nodes[a].map(x => x.coldate)).flat();
+      coldates.sort()
+      mindate = coldates[0];
+      maxdate = coldates[coldates.length - 1];
+
+      // extract the date range for each variant in cluster
+      var y = 1;
+      for (const accn of nodelist) {
+        // extract collection dates for all samples of this variant
+        variant = cluster.nodes[accn];
+        result = parse_variant(variant, y, cidx, accn, mindate, maxdate);
+        variants.push(result['variant']);
+        points = points.concat(result['points']);
+        y++;
       }
 
-      dist = parseFloat(edge[2]);
-      edgelist.push({
-        'y1': parent.y1,
-        'y2': child.y1,
-        'x1': child.x1,  // vertical line segment
-        'x2': child.x1,
-        'parent': parent.label,
-        'child': child.label,
-        'dist': dist
-      });
-
-      // Assign parent and genomic distance of each variant
-      let childvariants = variants.filter(x => x.y1 === child.y1);
-      for (let v = 0; v < childvariants.length; v++) {
-        childvariants[v].parent = parent.label;
-        childvariants[v].dist = dist;
-      }
-
-      // Assign the parent and genomic distance of each point
-      let childpoints = points.filter(x => x.y === child.y1);
-      for (let c = 0; c < childpoints.length; c++) {
-        childpoints[c].parent = parent.label;
-        childpoints[c].dist = dist;
-      }
-
-      // update variant time range
-      if (parent.x1 > child.x1) {
-        parent.x1 = child.x1;
-      }
-      if (parent.x2 < child.x1) {
-        parent.x2 = child.x1;
-      }
+      edgelist = parse_edgelist(cluster, variants, points);
     }
 
-    // calculate consensus region for cluster
     beaddata.push({
       'variants': variants,
       'edgelist': edgelist,
       'points': points
     });
 
+    // calculate consensus region for cluster
     // collect all region Arrays for all samples, all variants
     regions = points.map(x => x.region).flat();
     cluster['region'] = mode(regions);
@@ -279,10 +336,11 @@ function parse_clusters(clusters) {
 
     // collect all countries
     cluster['country'] = variants.map(x => x.country).flat();
-  }
 
-  return(beaddata);
+  }
+  return beaddata;
 }
+
 
 function create_selection(selected_obj) {
   d3.select("div#svg-cluster").selectAll("line").attr("stroke-opacity", 0.3);
@@ -310,6 +368,8 @@ function clear_selection() {
   d3.select('#svg-timetree').selectAll("rect:not(.clicked):not(.clickedH)").attr("class", "default");
   d3.selectAll("circle.selectionH").remove();
 }
+
+
 /**
  * Draw the beadplot for a specific cluster (identified through its
  * integer index <cid>) in the SVG.

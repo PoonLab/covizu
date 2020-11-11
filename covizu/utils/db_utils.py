@@ -455,8 +455,17 @@ def dump_lineages(db='data/gsaid.db', by_lineage=False):
     else:
         # used by clustering.py
         for accn, lineage, prob, version in data:
+            if accn in result:
+                # duplicate entries, maximize probability and pangoLEARN version
+                last_version = result[accn]['version']  # ISO date, yyyy-mm-dd
+                last_prob = float(result[accn]['prob'])
+                if version < last_version:
+                    continue  # outdated!
+                if prob <= last_prob:
+                    continue  # not more probable
+
             result.update({accn: {
-                'lineage': lineage, 'prob': prob, 'version': version
+                'lineage': lineage, 'prob': float(prob), 'version': version
             }})
     conn.close()
     return result
@@ -470,12 +479,22 @@ def dump_raw_by_lineage(db='data/gsaid.db', to_file=True):
     :yield:  tuples, Pangolin lineage and path to temporary FASTA file
     """
     cursor, conn = open_connection(db)
-    lineages = cursor.execute("select DISTINCT(lineage) from LINEAGE;").fetchall()
-    for lineage in lineages:
+    lineages = dump_lineages(db)  # returns one lineage assignment per accn
+
+    # invert dict
+    by_lineage = {}
+    for accn, ldata in lineages.items():
+        lineage = ldata['lineage']
+        if lineage not in by_lineage:
+            by_lineage.update({lineage: []})
+        by_lineage[lineage].append(accn)
+
+    # yield FASTAs of unaligned sequences per lineage
+    for lineage, accns in by_lineage.items():
         # retrieve unaligned genomes from db
+        query = "','".join(accns)
         raw = cursor.execute(
-            "select header, unaligned from RAWSEQ where accession in \
-            (select accession from LINEAGE where lineage='{}');".format(lineage[0])
+            "select header, unaligned from RAWSEQ where accession in '{}';".format(query)
         ).fetchall()
 
         # sort by collection date

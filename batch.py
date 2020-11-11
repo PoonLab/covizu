@@ -67,6 +67,10 @@ if __name__ == "__main__":
     args = parse_args()
     cb = Callback()
 
+    with open(args.ref) as handle:
+        _, refseq = seq_utils.convert_fasta(handle)[0]
+    reflen = len(refseq)
+
     # Generate time-scaled tree of Pangolin lineages
     cb.callback("Retrieving lineage genomes")
     fasta = treetime.retrieve_genomes(args.db, nthread=args.mmthreads, ref_file=args.ref,
@@ -82,34 +86,32 @@ if __name__ == "__main__":
 
     # Retrieve raw genomes from DB, align and extract features
     cb.callback("Retrieving raw genomes from database")
-    with NamedTemporaryFile(prefix="cvz_batch_") as tmpfile:
-        db_utils.dump_raw(outfile=tmpfile.name, db=args.db)
-        mm2 = minimap2.minimap2(tmpfile, ref=args.ref, nthread=args.mmthreads)
 
-        cb.callback("Aligning to {} and extracting features".format(args.ref))
-        reflen = len(seq_utils.convert_fasta(open(args.ref))[0][1])
+    mask = seq_utils.load_vcf(args.vcf)
+    data = {}
+    for lineage, fasta_file in db_utils.dump_raw_by_lineage(args.db):
+        mm2 = minimap2.minimap2(infile=fasta_file, nthread=args.mmthreads, ref=args.ref)
+        gen = minimap2.encode_diffs(mm2, reflen=reflen)
+
         features = []
-        for row in minimap2.encode_diffs(mm2, reflen=reflen):
+        # excludes genomes too divergent from expectation
+        for row in seq_utils.filter_outliers(gen):
             if seq_utils.total_missing(row) > args.misstol:
-                # reject genome with excessive uncalled bases
+                # too many uncalled bases
                 continue
             features.append(row)
 
-    cb.callback("Filtering problematic sites")
-    mask = seq_utils.load_vcf(args.vcf)
-    features = seq_utils.filter_problematic(features, mask=mask, callback=cb.callback)
+        # remove problematic sites from feature vectors
+        features = seq_utils.filter_problematic(features, mask=mask, callback=cb.callback)
+        data.update({lineage: features})
 
     # Neighbor-joining reconstruction
-    lineages = db_utils.dump_lineages(args.db)
-    result = []
-    by_lineage = clustering.split_by_lineage(features, lineages)
-    for lineage, feats in by_lineage.items():
+    for lineage, features in data.items():
         cb.callback('start {}, {} entries'.format(lineage, len(feats)))
-        filtered = seq_utils.filter_outliers(feats)
 
         # bootstrap sampling and NJ tree reconstruction
         trees, labels = clustering.build_trees(
-            filtered, nboot=args.nboot, threads=args.njthreads, callback=cb.callback
+            features, nboot=args.nboot, threads=args.njthreads, callback=cb.callback
         )
         if trees is None:
             # lineage only has one variant, no meaningful tree
