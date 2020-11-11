@@ -492,14 +492,26 @@ def dump_raw_by_lineage(db='data/gsaid.db', to_file=True):
     # yield FASTAs of unaligned sequences per lineage
     for lineage, accns in by_lineage.items():
         # retrieve unaligned genomes from db
-        query = "','".join(accns)
-        raw = cursor.execute(
-            "select header, unaligned from RAWSEQ where accession in '{}';".format(query)
-        ).fetchall()
+        seqs = {}
+        warning = []
+        for accn in accns:
+            raw = cursor.execute(
+                "select header, unaligned from RAWSEQ where accession=='{}';".format(accn)
+            ).fetchall()
+            if len(raw) == 0:
+                # FIXME: sometimes LINEAGES table has accessions not found in RAWSEQ
+                # this seems to occur when the submitting lab requests the original record
+                # to be removed
+                warning.append(accn)
+                continue
+            seqs.update(dict(raw))
 
-        # sort by collection date
-        seqs = dict(raw)
-        intermed = [(h.split('|')[-1], h) for h, s in raw]
+        if warning:
+            print("Warning: failed to retrieve {} of {} accessions from RAWSEQ "
+                  "table ({})".format(len(warning), len(accns), warning[0]))
+
+        # sort by collection date (ISO format)
+        intermed = [(h.split('|')[-1], h) for h, s in seqs.items()]
         intermed.sort(reverse=True)  # descending order (most recent first)
 
         if to_file:
@@ -512,7 +524,7 @@ def dump_raw_by_lineage(db='data/gsaid.db', to_file=True):
             for _, h in intermed:
                 handle.write('>{}\n{}\n'.format(h, seqs[h]))
             handle.seek(0)
-        yield lineage[0], handle
+        yield lineage, handle
 
     conn.close()
 

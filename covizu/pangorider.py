@@ -1,4 +1,8 @@
-#Modified script from PangoLEARN.py from PANGOLIN project https://github.com/cov-lineages/pangolin
+"""
+Modified script from PangoLEARN.py from PANGOLIN project
+https://github.com/cov-lineages/pangolin
+"""
+
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
@@ -33,14 +37,15 @@ def parse_args():
 
     return parser.parse_args()
 
+
 def build_sequence_handle(sequence_file):
     """
     Takes a cleaned and aligned fasta (sequence_file)
     """
     sequence_handle = []
-    with open(sequencesFile) as f:
+    with open(sequence_file) as f:
         currentSeq = ""
-        seqID= f.readline().strip()[1:]
+        seqID = f.readline().strip()[1:]
         for line in f:
             if line.startswith('>'):
                 #this is a header
@@ -48,7 +53,6 @@ def build_sequence_handle(sequence_file):
                 sequence_handle.append([seqID, currentSeq])
             else:
                 currentSeq+= line.strip()
-
 
     return sequence_handle
 
@@ -97,6 +101,7 @@ def readInAndFormatData(sequence_handle, indiciesToKeep, blockSize=1000):
 
     yield idList, seqList
 
+
 def filter_seqs(sequence_handle, outfile, max_prop_n=0.05, minlen=29000):
     """
     Filter FASTA file for partial and non-human SARS-COV-2 genome sequences.
@@ -124,12 +129,12 @@ def filter_seqs(sequence_handle, outfile, max_prop_n=0.05, minlen=29000):
                 'duplicates': [], 'mangled header': []}
     filter_handle = []
 
-    #Set date vars, headers must be within this, otherwise consider it mangled
+    # Set date vars, headers must be within this, otherwise consider it mangled
     today = datetime.datetime.today().date()
-    init_day = datetime.date(2019,12,1) #earliest possible Covid seq cannot be before Dec 2019
+    init_day = datetime.date(2019, 12, 1)  # earliest possible Covid seq cannot be before Dec 2019
 
     for h, s in sequence_handle:
-        if not type(h)==str or not type(s)==str:
+        if not type(h) == str or not type(s) == str:
             print("Error: entry {} not string type: sequence {}".format(h, s))
             continue
         if pat.findall(h):
@@ -252,7 +257,6 @@ def classify_and_insert(header_file, model_file, sequence_handle, indiciesToKeep
         predictions = loaded_model.predict_proba(df)
 
         for index in range(len(predictions)):
-
             maxScore = 0
             maxIndex = -1
 
@@ -277,8 +281,10 @@ if __name__ == '__main__':
 
     filtered_handle = filter_seqs(sequence_handle, args.filterout, max_prop_n=0.05, minlen=29000)
 
-    if args.header-file == None and args.model-file == None:
-        classify_and_insert(args.pangolindir+ 'decisionTreeHeaders_v1.joblib', args.pangolindir+'decisionTree_v1.joblib', filtered_handle, args.indicies, args.db)
+    if args.header_file is None and args.model_file is None:
+        classify_and_insert(args.pangolindir + 'decisionTreeHeaders_v1.joblib',
+                            args.pangolindir + 'decisionTree_v1.joblib', filtered_handle,
+                            args.indicies, args.db)
     else:
         classify_and_insert(args.header_file, args.model_file, filtered_handle, args.indicies, args.db)
 

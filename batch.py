@@ -86,7 +86,6 @@ if __name__ == "__main__":
 
     # Retrieve raw genomes from DB, align and extract features
     cb.callback("Retrieving raw genomes from database")
-
     mask = seq_utils.load_vcf(args.vcf)
     data = {}
     for lineage, fasta_file in db_utils.dump_raw_by_lineage(args.db):
@@ -102,12 +101,14 @@ if __name__ == "__main__":
             features.append(row)
 
         # remove problematic sites from feature vectors
-        features = seq_utils.filter_problematic(features, mask=mask, callback=cb.callback)
+        features = seq_utils.filter_problematic(features, mask=mask)
         data.update({lineage: features})
 
     # Neighbor-joining reconstruction
+    cb.callback("Neighbor-joining reconstruction")
+    result = []
     for lineage, features in data.items():
-        cb.callback('start {}, {} entries'.format(lineage, len(feats)))
+        cb.callback('start {}, {} entries'.format(lineage, len(features)))
 
         # bootstrap sampling and NJ tree reconstruction
         trees, labels = clustering.build_trees(
