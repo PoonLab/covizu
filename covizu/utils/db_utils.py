@@ -492,7 +492,8 @@ def dump_raw_by_lineage(db='data/gsaid.db', to_file=True, callback=None):
             "where lineage=='{}');".format(lineage[0])
         ).fetchall()
         seqs = dict(raw)
-        callback('lineage {} has {} sequences'.format(lineage[0], len(seqs)))
+        if callback:
+            callback('lineage {} has {} sequences'.format(lineage[0], len(seqs)))
 
         # sort by collection date (ISO format)
         intermed = [(h.split('|')[-1], h) for h, s in seqs.items()]

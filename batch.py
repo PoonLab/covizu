@@ -66,10 +66,6 @@ if __name__ == "__main__":
     args = parse_args()
     cb = Callback()
 
-    with open(args.ref) as handle:
-        _, refseq = seq_utils.convert_fasta(handle)[0]
-    reflen = len(refseq)
-
     # Generate time-scaled tree of Pangolin lineages
     cb.callback("Retrieving lineage genomes")
     fasta = treetime.retrieve_genomes(args.db, nthread=args.mmthreads, ref_file=args.ref,
@@ -85,9 +81,14 @@ if __name__ == "__main__":
 
     # Retrieve raw genomes from DB, align and extract features
     cb.callback("Retrieving raw genomes from database")
+
+    with open(args.ref) as handle:
+        _, refseq = seq_utils.convert_fasta(handle)[0]
+    reflen = len(refseq)
+
     mask = seq_utils.load_vcf(args.vcf)
     data = {}
-    for lineage, fasta_file in db_utils.dump_raw_by_lineage(args.db):
+    for lineage, fasta_file in db_utils.dump_raw_by_lineage(args.db, callback=cb.callback):
         mm2 = minimap2.minimap2(infile=fasta_file, nthread=args.mmthreads, ref=args.ref)
         gen = minimap2.encode_diffs(mm2, reflen=reflen)
 
