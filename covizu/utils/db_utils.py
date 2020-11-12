@@ -471,44 +471,28 @@ def dump_lineages(db='data/gsaid.db', by_lineage=False):
     return result
 
 
-def dump_raw_by_lineage(db='data/gsaid.db', to_file=True):
+def dump_raw_by_lineage(db='data/gsaid.db', to_file=True, callback=None):
     """
     Creates a generator that yields handles to named temporary files
     containing the unaligned genomes for each Pangolin lineage
     :param db:  str, path to sqlite3 database
     :yield:  tuples, Pangolin lineage and path to temporary FASTA file
     """
+    # grab all unaligned sequences first
     cursor, conn = open_connection(db)
-    lineages = dump_lineages(db)  # returns one lineage assignment per accn
 
-    # invert dict
-    by_lineage = {}
-    for accn, ldata in lineages.items():
-        lineage = ldata['lineage']
-        if lineage not in by_lineage:
-            by_lineage.update({lineage: []})
-        by_lineage[lineage].append(accn)
+    # returns a list of tuples
+    lineages = cursor.execute("select DISTINCT(lineage) from LINEAGE;").fetchall()
 
-    # yield FASTAs of unaligned sequences per lineage
-    for lineage, accns in by_lineage.items():
-        # retrieve unaligned genomes from db
-        seqs = {}
-        warning = []
-        for accn in accns:
-            raw = cursor.execute(
-                "select header, unaligned from RAWSEQ where accession=='{}';".format(accn)
-            ).fetchall()
-            if len(raw) == 0:
-                # FIXME: sometimes LINEAGES table has accessions not found in RAWSEQ
-                # this seems to occur when the submitting lab requests the original record
-                # to be removed
-                warning.append(accn)
-                continue
-            seqs.update(dict(raw))
-
-        if warning:
-            print("Warning: failed to retrieve {} of {} accessions from RAWSEQ "
-                  "table ({})".format(len(warning), len(accns), warning[0]))
+    for lineage in lineages:
+        raw = cursor.execute(
+            "select header, unaligned from rawseq where accession in (select accession from "
+            "(select lineage, accession from lineage group by accession "
+            "having max(probability) and max(pangoLEARN_version)) "
+            "where lineage=='{}');".format(lineage[0])
+        ).fetchall()
+        seqs = dict(raw)
+        callback('lineage {} has {} sequences'.format(lineage[0], len(seqs)))
 
         # sort by collection date (ISO format)
         intermed = [(h.split('|')[-1], h) for h, s in seqs.items()]
@@ -524,7 +508,7 @@ def dump_raw_by_lineage(db='data/gsaid.db', to_file=True):
             for _, h in intermed:
                 handle.write('>{}\n{}\n'.format(h, seqs[h]))
             handle.seek(0)
-        yield lineage, handle
+        yield lineage[0], handle
 
     conn.close()
 

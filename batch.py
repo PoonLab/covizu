@@ -6,9 +6,8 @@ from covizu import minimap2, clustering, treetime, beadplot
 from covizu.utils import db_utils, seq_utils
 from covizu.utils.progress_utils import Callback
 
-from tempfile import NamedTemporaryFile
 import json
-import itertools
+import sys
 
 
 def parse_args():
@@ -74,7 +73,7 @@ if __name__ == "__main__":
     # Generate time-scaled tree of Pangolin lineages
     cb.callback("Retrieving lineage genomes")
     fasta = treetime.retrieve_genomes(args.db, nthread=args.mmthreads, ref_file=args.ref,
-                                      misstol=args.misstol)
+                                      misstol=args.misstol, callback=cb.callback)
 
     cb.callback("Reconstructing tree with {}".format(args.ft2bin))
     nwk = treetime.fasttree(fasta, binpath=args.ft2bin)
@@ -108,6 +107,8 @@ if __name__ == "__main__":
     cb.callback("Neighbor-joining reconstruction")
     result = []
     for lineage, features in data.items():
+        if len(features) == 0:
+            continue
         cb.callback('start {}, {} entries'.format(lineage, len(features)))
 
         # bootstrap sampling and NJ tree reconstruction
