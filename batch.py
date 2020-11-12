@@ -85,9 +85,9 @@ if __name__ == "__main__":
     with open(args.ref) as handle:
         _, refseq = seq_utils.convert_fasta(handle)[0]
     reflen = len(refseq)
-
     mask = seq_utils.load_vcf(args.vcf)
     data = {}
+
     for lineage, fasta_file in db_utils.dump_raw_by_lineage(args.db, callback=cb.callback):
         mm2 = minimap2.minimap2(infile=fasta_file, nthread=args.mmthreads, ref=args.ref)
         gen = minimap2.encode_diffs(mm2, reflen=reflen)
@@ -100,6 +100,7 @@ if __name__ == "__main__":
                 continue
             features.append(row)
 
+        cb.callback("{} sequences of lineage {} passed filters".format(len(features), lineage))
         # remove problematic sites from feature vectors
         features = seq_utils.filter_problematic(features, mask=mask)
         data.update({lineage: features})
@@ -109,6 +110,7 @@ if __name__ == "__main__":
     result = []
     for lineage, features in data.items():
         if len(features) == 0:
+            cb.callback("skipping empty lineage {}".format(lineage))
             continue
         cb.callback('start {}, {} entries'.format(lineage, len(features)))
 

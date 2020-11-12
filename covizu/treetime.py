@@ -199,6 +199,7 @@ def retrieve_genomes(db="data/gsaid.db", stream=False, nthread=1, ref_file='data
     for lineage, fasta_file in dump_raw_by_lineage(db, callback=callback):
         mm2 = minimap2(infile=fasta_file, nthread=nthread, stream=stream, ref=ref_file)
         gen = encode_diffs(mm2, reflen=reflen)
+        qname = None
         for row in filter_outliers(gen):
             # exclude genomes too divergent from expectation
             if total_missing(row) > misstol:
@@ -207,6 +208,11 @@ def retrieve_genomes(db="data/gsaid.db", stream=False, nthread=1, ref_file='data
             qname, _, _ = row
             _, coldate = parse_label(qname)
             break
+
+        if qname is None:
+            # none of the genomes were selected
+            callback("no genome passed filters for lineage {}".format(lineage))
+            continue
 
         if callback:
             callback("selected genome {} for lineage {}".format(qname, lineage))
