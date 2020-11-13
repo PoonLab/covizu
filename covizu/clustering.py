@@ -178,7 +178,7 @@ def bootstrap(sym_diffs, n, m, binpath='rapidnj', callback=None):
 
             sym_diff = line.strip().split(',')
             if len(sym_diff) == 1 and sym_diff[0] == '':
-                d = 0
+                d = 0  # split on blank line returns ['']
             else:
                 d = sum(weights.get(int(y), 0) for y in sym_diff)
 
