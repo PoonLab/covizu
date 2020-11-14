@@ -18,9 +18,9 @@ var yValue = function(d) { return d.y; },
 
 var vis = d3.select("div#svg-timetree")
   .append("svg")
-  .attr("width", width + margin.left + margin.right)
-  .attr("height", height + margin.top + margin.bottom)
-  .append("g");
+  .attr("width", width + margin.left + margin.right);
+  //.attr("height", height + margin.top + margin.bottom);
+  //.append("g");
 
 var axis = d3.select("div#svg-timetreeaxis")
   .append("svg")
@@ -98,6 +98,12 @@ function drawtree(timetree) {
 
   var df = fortify(timetree),
     edgeset = edges(df, rectangular=true);
+
+  // rescale SVG for size of tree
+  var ntips = df.map(x => x.children.length === 0).reduce((x,y) => x+y);
+  height = ntips*11 + margin.top + margin.bottom;
+  vis.attr("height", height);
+  yScale = d3.scaleLinear().range([height, 30]);
 
   // adjust d3 scales to data frame
   xScale.domain([
@@ -222,33 +228,33 @@ function draw_clusters(tips) {
     .call(d3.axisTop(xScale)
       .ticks(3)
       .tickFormat(d => xaxis_to_date(d)));
-  
+
   function mouseover(d) {
 
     d3.select("[cidx=cidx-" + d.cluster_idx + "]")
       .attr("txt_hover", "yes");
-  
+
     cTooltip.transition()       // Show tooltip
             .duration(50)
             .style("opacity", 0.9);
-      
+
     let ctooltipText = `<b>Mean pairwise distance:</b> ${d.pdist}<br><b>Mean root distance:</b> ${d.rdist}<br><br>`;
-    ctooltipText += region_to_string(d.allregions); 
+    ctooltipText += region_to_string(d.allregions);
     ctooltipText += `<br><b>Number of variants:</b> ${d.varcount}<br>`;
     ctooltipText += `<br><b>Collection dates:</b><br>${formatDate(d.first_date)} / ${formatDate(d.last_date)}<br>`;
-      
+
     cTooltip.html(ctooltipText)
-            .style("left", (d3.event.pageX + 10) + "px")    // Tooltip appears 10 pixels left of the cursor    
+            .style("left", (d3.event.pageX + 10) + "px")    // Tooltip appears 10 pixels left of the cursor
             .style("top", function(){
             // Position tooltip based on the y-position of the cluster
               let tooltipHeight = cTooltip.node().getBoundingClientRect().height;
               if (d3.event.pageY + tooltipHeight > 1200) {
                 return d3.event.pageY - tooltipHeight + "px";
-              } else { 
+              } else {
                 return d3.event.pageY + "px";
               }
             });
-    
+
   }
 
   vis.selectAll("rect")
@@ -293,7 +299,7 @@ function draw_clusters(tips) {
                 current_point: search_stats.get().start_idx[this.id],
                 bead_indexer: 0,
             });
-            update_search_stats(stats); 
+            update_search_stats(stats);
       }
 
       // reset all rectangles to high transparency
@@ -309,7 +315,7 @@ function draw_clusters(tips) {
 
       gentable(d);
       draw_region_distribution(d.allregions);
-      
+
       // FIXME: this is the same div used for making barplot SVG
       $("#text-node").text(`Number of cases: ${d.count}\nNumber of variants: ${d.varcount}\n`);
 

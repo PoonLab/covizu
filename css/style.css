@@ -258,7 +258,6 @@ rightbar table {
 th, td {
     text-align: left;
     padding: 0 1em 0.5ex 0;
-    width: 33%;
 }
 
 /* Add zebra stripping for rows */

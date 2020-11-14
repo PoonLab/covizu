@@ -174,11 +174,12 @@
     "Dominican Republic": "North America",
     "Myanmar": "Asia",
     "Madagascar": "Africa",
-    "South_Africa": "Africa",
-    "New_Zealand": "Oceania",
-    "South_Korea": "Asia",
-    "Hong_Kong": "China",
-    "Saudi_Arabia": "Asia",
-    "United_Arab_Emirates": "Asia",
-    "Northern_Ireland": "Europe"
+    "Romania ": "Europe",
+    "Gibraltar": "Europe",
+    "Palestine": "Asia",
+    "Guadeloupe": "North America",
+    "CotedIvoire": "Africa",
+    "Saint Martin": "North America",
+    "env": "United States",
+    "NorthernIreland": "Europe"
 }

@@ -54,8 +54,8 @@
             </tr>
             <tr></tr>
             <tr style="vertical-align: top; z-index: 1">
-                <td><div id="svg-timetreeaxis" style="position: fixed; top: 58px; z-index: 13"></div>
-                    <div id="svg-timetree"></div></td>
+                <td style="width: 250px; max-width: 250px;"><div id="svg-timetreeaxis" style="position: fixed; top: 58px; z-index: 13"></div>
+                    <div id="svg-timetree" style="width: 250px; max-width: 250px;"></div></td>
                 <td><div id="svg-clusteraxis" style="position: fixed; top: 58px; z-index: 14"></div>
                     <div id="svg-cluster"></div></td>
                 <td>
@@ -139,7 +139,7 @@
           tips = map_clusters_to_tips(df, clusters);
           draw_clusters(tips);
 
-          var rect = d3.selectAll("#svg-timetree > svg > g > rect"),
+          var rect = d3.selectAll("#svg-timetree > svg > rect"),
               node = rect.nodes()[rect.size()-1];
 
           // initial display

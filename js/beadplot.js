@@ -155,6 +155,9 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
     var country = variant.map(x => x.country),
         isodates = unique(coldates);
 
+    // remove underscores in country names
+    country = country.map(x => x.replaceAll("_", " "));
+
     vdata = {
       'accession': accn,
       'label': label,
@@ -174,6 +177,7 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
       isodate = isodates[i];
       samples = variant.filter(x => x.coldate === isodate);
       country = samples.map(x => x.country);
+      country = country.map(x => x.replaceAll("_", " "));
       regions = country.map(x => countries[x]);
 
       // warn developers if no region for country
@@ -376,7 +380,6 @@ function clear_selection() {
  * @param {Number} cid:  integer index of cluster to draw as beadplot
  */
 function beadplot(cid) {
-
   var variants = beaddata[cid].variants,
       edgelist = beaddata[cid].edgelist,
       points = beaddata[cid].points;
@@ -393,11 +396,13 @@ function beadplot(cid) {
       .style("opacity", 0);
 
   // update vertical range for consistent spacing between variants
-  heightB = max_y * 10;
+  heightB = max_y * 10 + 40;
   $("#svg-cluster > svg").attr("height", heightB + marginB.top + marginB.bottom);
   yScaleB = d3.scaleLinear().range([40, heightB]);
   xScaleB.domain([mindate - 0.5*spandate, maxdate]);
   yScaleB.domain([min_y, max_y]);
+
+  // update horizontal range
 
   // clear SVG
   visB.selectAll('*').remove();
