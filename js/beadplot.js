@@ -190,6 +190,7 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
 
       pdata.push({
         cidx,
+        'variant': accn,
         'x': new Date(isodate),
         'y': y,
         'count': samples.length,
@@ -217,13 +218,29 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
  */
 function parse_edgelist(cluster, variants, points) {
   // map earliest collection date of child node to vertical edges
-  var edge, parent, child, dist,
+  var edge, parent, child, dist, childpoints,
       edgelist = [];
+
+  // generate maps of variants and points keyed by accession
+  var lookup_variant = {};
+  variants.forEach(function(row) {
+    lookup_variant[row.accession] = row;
+  });
+
+  var lookup_points = {}
+  points.forEach(function(pt) {
+    if (lookup_points[points.variant] === undefined) {
+      lookup_points[points.variant] = [];
+    }
+    lookup_points[points.variant].push(pt);
+  })
 
   for (var e = 0; e < cluster.edges.length; e++) {
     edge = cluster.edges[e];
-    parent = variants.filter(x => x.accession === edge[0])[0];
-    child = variants.filter(x => x.accession === edge[1])[0];
+    //parent = variants.filter(x => x.accession === edge[0])[0];
+    parent = lookup_variant[edge[0]];
+    //child = variants.filter(x => x.accession === edge[1])[0];
+    child = lookup_variant[edge[1]];
 
     if (parent === undefined || child === undefined) {
       // TODO: handle edge to unsampled node
@@ -241,12 +258,17 @@ function parse_edgelist(cluster, variants, points) {
       'dist': dist
     });
 
-    // Assign parent and genomic distance of each variant
+    /*
+    // Assign parent and genomic distance of each node in child variant
     let childvariants = variants.filter(x => x.y1 === child.y1);
     for (let v = 0; v < childvariants.length; v++) {
       childvariants[v].parent = parent.label;
       childvariants[v].dist = dist;
     }
+    */
+
+    child.parent = parent.label;
+    child.dist = dist;
 
     // Assign the parent and genomic distance of each point
     let childpoints = points.filter(x => x.y === child.y1);
@@ -254,6 +276,8 @@ function parse_edgelist(cluster, variants, points) {
       childpoints[c].parent = parent.label;
       childpoints[c].dist = dist;
     }
+
+
 
     // update variant time range
     if (parent.x1 > child.x1) {
