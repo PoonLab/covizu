@@ -238,9 +238,9 @@ function get_autocomplete_source_fn(accn_to_cid) {
 }
 
 function search(beaddata) {
-	var query = $('#search-input').val();
+  var query = $('#search-input').val();
 
-  // FIX ME: Accn search returning 0 beads
+  // FIXME: Accn search returning 0 beads
   //const points = find_beads_points(beaddata)
     //.filter(point => point.labels.some(label => label.includes(query)));
   // TODO: Make select_bead_by_* use find_beads_points result
