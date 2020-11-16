@@ -63,13 +63,12 @@ function select_beads_by_comparators(clusters, points) {
 
 	  var first_cluster_idx;
 	  d3.select(rects.nodes().pop()).attr("class", "clicked");
-
 	  d3.select(rects.nodes().pop()).each(function(d) {
-  	  first_cluster_idx = d.cluster_idx;
+      first_cluster_idx = d.cluster_idx;
   	  create_clusterH(d, this);
 	  });
-
-	  beadplot(first_cluster_idx);
+    first_cluster_idx = typeof first_cluster_idx == "undefined" ? Math.floor(Math.random() * 239) : first_cluster_idx
+    beadplot(first_cluster_idx);
 
 	  var itter = rects.nodes().splice(0, rects.nodes().length-1);
 
