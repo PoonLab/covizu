@@ -188,7 +188,7 @@
           var query = $('#search-input').val();
 
           if (query !== "") {
-            // empty search input, revert selections
+            // revert selections
             d3.selectAll("rect.clicked").attr('class', "default");
             d3.selectAll("rect.clickedH").remove();
           }
@@ -199,7 +199,7 @@
 
           // Map cluster index to id
           var map_to_id = [], key;
-          var rect = d3.selectAll('#svg-timetree > svg > g > rect')
+          var rect = d3.selectAll('#svg-timetree > svg > rect')
                   .nodes()
                   .sort((x, y) => d3.ascending(
                           parseInt(x.id.substring(3)),

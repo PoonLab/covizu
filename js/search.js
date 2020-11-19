@@ -6,7 +6,7 @@ var selected = [];
 */
 function prepare_search_stats(initial_stats) {
   let stats = {
-    ...initial_stats,
+    ...initial_stats,  // ... = spread syntax, cast iterable as multiple arguments
   };
 
   return {
@@ -31,7 +31,7 @@ const search_stats = prepare_search_stats({
   total_points: NaN,
   points: [],
   bead_indexer: 0,
-  start_idx: [],
+  start_idx: []
 });
 
 function update_search_stats(stats) {
@@ -49,13 +49,10 @@ function find_beads_points(beadsdata){
  *
  * @param cluster_func:  function that takes a cluster datum and returns true
  *                       when the cluster must be selected. False otherwise.
- * @param point_func:    function that takes a points datum and returns true
- *                       when the point must be selected. False otherwise.
  */
-function select_beads_by_comparators(rects, points_ui) {
-  var cluster, itter, selected_obj;
+function select_clusters(rects) {
+  var cluster, itter;
 
-  selected = [];  // reset global container
   d3.selectAll("circle").dispatch("mouseout");  // deactivate cluster highlights
 
   if (d3.selectAll(".clicked").empty()) {
@@ -75,7 +72,7 @@ function select_beads_by_comparators(rects, points_ui) {
         .attr("class","not_SelectedCluster");
   }
   else {
-    //
+    // FIXME: needs explanatory comment
     d3.select("#svg-timetree")
         .selectAll("rect:not(.clickedH)")
         .attr("class","not_SelectedCluster");
@@ -86,7 +83,14 @@ function select_beads_by_comparators(rects, points_ui) {
   for (const node of itter) {
     d3.select(node).attr("class", "SelectedCluster");
   }
+}
 
+
+/**
+ * Highlight beads in current beadplot.
+ * @param points_ui:  d3.Selector object
+ */
+function select_beads(points_ui) {
   //
   selected = points_ui.nodes();
 
@@ -102,6 +106,7 @@ function select_beads_by_comparators(rects, points_ui) {
     create_selection(selected_obj);
   }
 
+  // re-focus beadplot to first matching bead
   if (selected.length > 0) {
     selected[0].scrollIntoView({block: "center"});
   }
@@ -113,7 +118,7 @@ function select_beads_by_comparators(rects, points_ui) {
  * and highlight samples in currently displayed bead plot.
  * When user switches bead plots, update highlighted samples.
  *
- * @param substr
+ * @param {string} substr:  sub-string to search
  */
 function select_beads_by_substring(substr) {
   var rects, points_ui;
@@ -126,12 +131,12 @@ function select_beads_by_substring(substr) {
 
   rects = d3.selectAll("#svg-timetree > svg > rect:not(.clickedH)")
     .filter(function(d) { return d.searchtext.match(substr) !== null });
+  select_clusters(rects);
 
+  // preceding function switches view to beadplot with matching samples, if any
   points_ui = d3.selectAll("#svg-cluster > svg > g > circle")
     .filter(function(d) { return d.labels.some(x => x.includes(substr))});
-
-  select_beads_by_comparators(rects, points_ui);
-
+  select_beads(points_ui);
 }
 
 
