@@ -35,7 +35,7 @@ const search_stats = prepare_search_stats({
 });
 
 function update_search_stats(stats) {
-  $('#search_stats').text(`${stats.current_point} of ${stats.total_points} points`);
+  $('#search_stats').text(`${stats.current_point+1} of ${stats.total_points} points`);
 }
 
 function find_beads_points(beadsdata){
@@ -258,6 +258,8 @@ function get_autocomplete_source_fn(accn_to_cid) {
 	}
 }
 
+
+// FIXME: no argument needed here
 function search(beaddata) {
 	var query = $('#search-input').val();
 
