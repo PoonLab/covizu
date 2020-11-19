@@ -297,7 +297,8 @@ function draw_clusters(tips) {
         $('#search-input').val('');
       }
 
-      search(beaddata);
+      search();
+
       // Reset search stats
       if ($('#search-input').val() !== "") {
 	      var stats = search_stats.update({

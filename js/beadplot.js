@@ -375,18 +375,24 @@ function create_selection(selected_obj) {
   d3.select("div#svg-cluster")
     .selectAll("circle:not(.SelectedBead):not(.selectionH)")
     .attr("class", "not_SelectedBead");
-  selected_obj.attr("class","SelectedBead");
-  d3.selectAll("circle.SelectedBead").each(function(r) {
-    visB.append("circle").lower()
-    .attr('class', "selectionH")
-    .attr("cx", xScaleB(xValueB(r)))
-    .attr("cy", yScaleB(yValueB(r)))
-    .attr("r", 4*Math.sqrt(r.count)+4)
-    .attr("fill", "none")
-    .attr("stroke", "grey")
-    .attr("fill-opacity", 1)
-    .attr("stroke-width", 5);
-  });
+
+  selected_obj.attr("class", "SelectedBead");
+}
+
+
+function draw_halo(bead) {
+  // remove other halos
+  d3.selectAll(".selectionH").remove();
+
+  visB.append("circle").lower()
+      .attr('class', "selectionH")
+      .attr("cx", xScaleB(xValueB(bead)))
+      .attr("cy", yScaleB(yValueB(bead)))
+      .attr("r", 4 * Math.sqrt(bead.count) + 4)
+      .attr("fill", "none")
+      .attr("stroke", "grey")
+      .attr("fill-opacity", 1)
+      .attr("stroke-width", 5);
 }
 
 

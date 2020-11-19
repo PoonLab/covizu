@@ -239,7 +239,7 @@
             start_idx: start_idx,
           });
           update_search_stats(stats);
-          search(beaddata);
+          search();
           enable_buttons();
         }
       });
@@ -266,7 +266,7 @@
       // Clear search
       $('#clear_button').click(function(){
         clear_selection();
-        search(beaddata);
+        search();
         $('#end-date').val('');
         $('#start-date').val('');
         disable_buttons();
@@ -315,7 +315,7 @@
             update_search_stats(stats);
 
             // Select bead hits in next cluster
-            var selected_points = d3.selectAll(".SelectedBead");
+            selected_points = d3.selectAll(".SelectedBead");
           }
 
           // Scroll to the next bead
@@ -323,6 +323,8 @@
           working_bead.scrollIntoView({block: "center"});
 
           var selected_bead = d3.select(working_bead).datum();
+
+          draw_halo(selected_bead);
           gentable(selected_bead);
           draw_region_distribution(table(selected_bead.region));
           gen_details_table(selected_bead);
@@ -384,6 +386,7 @@
           working_bead.scrollIntoView({block: "center"});
 
           var selected_bead = d3.select(working_bead).datum();
+          draw_halo(selected_bead);
           gentable(selected_bead);
           draw_region_distribution(table(selected_bead.region));
           gen_details_table(selected_bead);

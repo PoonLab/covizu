@@ -109,6 +109,8 @@ function select_beads(points_ui) {
   // re-focus beadplot to first matching bead
   if (selected.length > 0) {
     selected[0].scrollIntoView({block: "center"});
+    selected_obj = d3.select(selected[0]);
+    draw_halo(selected_obj.datum());
   }
 }
 
@@ -260,7 +262,7 @@ function get_autocomplete_source_fn(accn_to_cid) {
 
 
 // FIXME: no argument needed here
-function search(beaddata) {
+function search() {
 	var query = $('#search-input').val();
 
   // FIX ME: Accn search returning 0 beads
