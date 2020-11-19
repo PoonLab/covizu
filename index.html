@@ -274,12 +274,12 @@
 
       // Iterate results
       $('#next_button').click(function() {
-        // Find current cluster
+        // retrieve current rect element
         var current_cluster = d3.selectAll(".clicked").node();
         var current_index = current_cluster.id;
 
         if (search_stats.get().current_point+1 < search_stats.get().total_points) {
-          // Find index of current bead
+          // increment bead index and current point display
           var stats = search_stats.update({
             current_point: search_stats.get().start_idx[current_index] +
                     search_stats.get().bead_indexer + 1,
@@ -296,7 +296,8 @@
 
             // Select cluster hits
             var selected_clusters = d3.selectAll(".SelectedCluster, .clicked").nodes();
-            selected_clusters.sort((x, y) => d3.ascending(parseInt(x.id.substring(3)), parseInt(y.id.substring(3))));
+            selected_clusters.sort((x, y) => d3.ascending(parseInt(x.id.substring(3)),
+                    parseInt(y.id.substring(3))));
 
             // Find current cluster
             var matched = selected_clusters.findIndex(function(d, i) {
@@ -306,7 +307,7 @@
 
             // Move to next cluster and reset bead indexer
             var next_cluster = selected_clusters[matched - 1];
-                  d3.select(next_cluster).dispatch('click');
+            d3.select(next_cluster).dispatch('click');
             stats = search_stats.update({
                     current_point: search_stats.get().start_idx[next_cluster.id] + search_stats.get().bead_indexer + 1,
                     bead_indexer: search_stats.get().bead_indexer + 1,

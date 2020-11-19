@@ -389,11 +389,20 @@ function create_selection(selected_obj) {
   });
 }
 
+
+/**
+ * Reset beadplot display to default settings.
+ */
 function clear_selection() {
+  // clear search field
   $('#search-input').val('');
-  d3.select("#svg-cluster").selectAll("line").attr("stroke-opacity", 1);
-  d3.selectAll("circle:not(.selectionH)").attr("class", "default");
-  d3.select('#svg-timetree').selectAll("rect:not(.clicked):not(.clickedH)").attr("class", "default");
+
+  d3.select("#svg-cluster").selectAll("line")
+      .attr("stroke-opacity", 1);
+  d3.selectAll("circle:not(.selectionH)")
+      .attr("class", "default");
+  d3.select('#svg-timetree').selectAll("rect:not(.clicked):not(.clickedH)")
+      .attr("class", "default");
   d3.selectAll("circle.selectionH").remove();
 }
 
@@ -601,8 +610,8 @@ function beadplot(cid) {
       .on("mouseout", function(d) {
           d3.select(this).attr("stroke-width", 1)
               .attr("r", 4*Math.sqrt(d.count));
-          bTooltip.transition()     // Hide tooltip
-              .duration(50)
+          bTooltip//.transition()     // Hide tooltip
+              //.duration(50)
               .style("opacity", 0);
       })
       .on("click", function(d) {
