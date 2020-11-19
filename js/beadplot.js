@@ -2,7 +2,7 @@
  *  Configure SVG to display beadplots
  */
 var marginB = {top: 50, right: 10, bottom: 50, left: 10},
-    widthB = 550 - marginB.left - marginB.right,
+    widthB = 700 - marginB.left - marginB.right,
     heightB = 1000 - marginB.top - marginB.bottom;
 
 // set up plotting scales
@@ -423,8 +423,10 @@ function beadplot(cid) {
   heightB = max_y * 10 + 40;
   $("#svg-cluster > svg").attr("height", heightB + marginB.top + marginB.bottom);
   yScaleB = d3.scaleLinear().range([40, heightB]);
-  xScaleB.domain([mindate - 0.5*spandate, maxdate]);
   yScaleB.domain([min_y, max_y]);
+
+  // allocate space for text labels on left
+  xScaleB.domain([mindate - 0.25*spandate, maxdate]);
 
   // update horizontal range
 

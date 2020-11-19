@@ -47,59 +47,66 @@ function find_beads_points(beadsdata){
  * and highlight points in currently displayed bead plot.
  * When user switches bead plots, update highlighted points.
  *
- * @param clusters function that takes a cluster datum and returns true
- *                 when the cluster must be selected. False otherwise.
- * @param points function that takes a points datum and returns true
- *               when the point must be selected. False otherwise.
+ * @param cluster_func:  function that takes a cluster datum and returns true
+ *                       when the cluster must be selected. False otherwise.
+ * @param point_func:    function that takes a points datum and returns true
+ *                       when the point must be selected. False otherwise.
  */
-function select_beads_by_comparators(clusters, points) {
-  selected = [];
-	d3.selectAll("circle").dispatch('mouseout');
+function select_beads_by_comparators(rects, points_ui) {
+  var cluster, itter, selected_obj;
 
-	var rects = d3.selectAll("#svg-timetree > svg > g > rect:not(.clickedH)").filter(clusters);
+  selected = [];  // reset global container
+  d3.selectAll("circle").dispatch("mouseout");  // deactivate cluster highlights
 
-	// jump to the first hit if new search
-	if (d3.selectAll('.clicked').empty()){
+  if (d3.selectAll(".clicked").empty()) {
+    // new search, jump to first matching cluster
+    cluster = d3.select(rects.nodes().pop());  // last element in array
+    cluster.attr("class", "clicked");
+    draw_cluster_box(cluster);
 
-	  var first_cluster_idx;
-	  d3.select(rects.nodes().pop()).attr("class", "clicked");
+    // switch to beadplot for this cluster
+    beadplot(cluster.datum().cluster_idx);
 
-	  d3.select(rects.nodes().pop()).each(function(d) {
-  	  first_cluster_idx = d.cluster_idx;
-  	  create_clusterH(d, this);
-	  });
+    // remove all other elements from array
+    itter = rects.nodes().splice(0, rects.nodes().length-1);
 
-	  beadplot(first_cluster_idx);
+    d3.select("#svg-timetree")
+        .selectAll("rect:not(.clicked):not(.clickedH)")
+        .attr("class","not_SelectedCluster");
+  }
+  else {
+    //
+    d3.select("#svg-timetree")
+        .selectAll("rect:not(.clickedH)")
+        .attr("class","not_SelectedCluster");
+    itter = rects.nodes();
+  }
 
-	  var itter = rects.nodes().splice(0, rects.nodes().length-1);
+  // FIXME: other matching clusters not getting highlighted, due to click below?
+  for (const node of itter) {
+    d3.select(node).attr("class", "SelectedCluster");
+  }
 
-	  d3.select("#svg-timetree").selectAll("rect:not(.clicked):not(.clickedH)").attr("class","not_SelectedCluster");
+  //
+  selected = points_ui.nodes();
 
-	} else{
+  //
+  d3.selectAll("circle:not(.selectionH)")
+      .attr("class", "not_SelectedBead");
+  //
+  d3.select("div#svg-cluster")
+      .selectAll("line")
+      .attr("stroke-opacity", 0.3);
+  for (const node of selected) {
+    selected_obj = d3.select(node);
+    create_selection(selected_obj);
+  }
 
-	  d3.select("#svg-timetree").selectAll("rect:not(.clickedH)").attr("class","not_SelectedCluster");
-
-	  var itter = rects.nodes();
-	}
-
-	// FIXME: other matching clusters not getting highlighted, due to click below?
-	for (const node of itter) {
-		d3.select(node).attr("class","SelectedCluster");
-	}
-
-	var points_ui = d3.selectAll("#svg-cluster > svg > g > circle").filter(points);
-	selected = points_ui.nodes();
-	d3.selectAll("circle:not(.selectionH)").attr("class", "not_SelectedBead");
-	d3.select("div#svg-cluster").selectAll("line").attr("stroke-opacity", 0.3);
-	for (const node of points_ui.nodes()) {
-		//d3.select(node).dispatch('mouseover');
-		var selected_obj = d3.select(node);
-		create_selection(selected_obj);
-	}
-	if (points_ui.nodes().length !== 0) {
-	  points_ui.nodes()[0].scrollIntoView({block: "center"});
-	}
+  if (selected.length > 0) {
+    selected[0].scrollIntoView({block: "center"});
+  }
 }
+
 
 /**
  * Highlight clusters containing samples that match substring,
@@ -109,16 +116,24 @@ function select_beads_by_comparators(clusters, points) {
  * @param substr
  */
 function select_beads_by_substring(substr) {
+  var rects, points_ui;
+
   if (substr === "") {
     // user submitted empty string
     clear_selection();
     return;
   }
 
-  const clusters = (datum) => datum.searchtext.match(substr) !== null;
-  const points = (datum) => datum.labels.some(x => x.includes(substr));
-  select_beads_by_comparators(clusters, points);
+  rects = d3.selectAll("#svg-timetree > svg > rect:not(.clickedH)")
+    .filter(function(d) { return d.searchtext.match(substr) !== null });
+
+  points_ui = d3.selectAll("#svg-cluster > svg > g > circle")
+    .filter(function(d) { return d.labels.some(x => x.includes(substr))});
+
+  select_beads_by_comparators(rects, points_ui);
+
 }
+
 
 /**
  * Highlight clusters containing the points.
@@ -138,6 +153,7 @@ function select_by_points(points){
   const points_fn = (point) => point && point.labels.some(label => labels.has(label));
   select_beads_by_comparators(clusters_fn, points_fn);
 }
+
 
 /**
  * Highlight and jump to node in beadplot by sample accession number.
@@ -159,7 +175,7 @@ function select_bead_by_accession(accn, reset_clusters_tree = true) {
       .attr("class", "clicked");
 
     d3.select(rect.nodes().pop()).each(function(d) {
-      create_clusterH(d, this);
+      draw_cluster_box(d, this);
     });
 
     beadplot(cid);

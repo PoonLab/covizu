@@ -28,25 +28,31 @@ var axis = d3.select("div#svg-timetreeaxis")
   .attr("height", 25)
   .append("g");
 
-function create_clusterH(obj, obj_2) {
 
+/**
+ * Draw an open rectangle around the filled rectangle representing
+ * a cluster/lineage in the time-scaled tree.
+ * @param rect:  d3.Selection object
+ */
+function draw_cluster_box(rect) {
+  var d = rect.datum();
+  // draw a box around the cluster rectangle
   vis.append("rect")
     .attr('class', "clickedH")
-    .attr("x", xMap1(obj)-2)
-    .attr("y", yMap(obj)-2)
-    .attr("width", xWide(obj)+4)
+    .attr("x", xMap1(d)-2)
+    .attr("y", yMap(d)-2)
+    .attr("width", xWide(d)+4)
     .attr("height", 14)
     .attr("fill", "white")
     .attr("stroke", "black")
     .attr("fill-opacity", 1)
     .attr("stroke-width", 2);
 
-  d3.select(obj_2).raise();
-
+  // move the box to the background by promoting other objects
+  rect.raise();
   d3.select("#svg-timetree")
       .selectAll("line")
       .raise();
-
   d3.select("#svg-timetree")
       .selectAll("text")
       .raise();
@@ -159,7 +165,7 @@ function map_clusters_to_tips(df, clusters) {
     }
 
     var root_idx = tip_labels.indexOf(root),  // row index in data frame
-        root_xcoord = tips[root_idx].x,
+        root_xcoord = tips[root_idx].x,  // left side of cluster starts at end of tip
         dt;
 
     // find most recent sample collection date
@@ -198,20 +204,22 @@ function map_clusters_to_tips(df, clusters) {
 }
 
 
+
+
+
 /**
  * Add subtree objects to time-scaled tree.
  * @param {Array} tips, clusters that have been mapped to tips of tree
  */
 function draw_clusters(tips) {
-  // draw x-axis
   var xaxis_to_date = function(x) {
-
     var origin = tips[0],
       coldate = new Date(origin.coldate),
       dx = x - origin.x;  // year units
     coldate.setDate(coldate.getDate() + 365.25*dx);
     return (coldate.toISOString().split('T')[0]);
   };
+
   var date_to_xaxis = function(isodate) {
     const origin = new Date(xaxis_to_date(0));
     var coldate = new Date(isodate);
@@ -230,7 +238,6 @@ function draw_clusters(tips) {
       .tickFormat(d => xaxis_to_date(d)));
 
   function mouseover(d) {
-
     d3.select("[cidx=cidx-" + d.cluster_idx + "]")
       .attr("txt_hover", "yes");
 
@@ -254,7 +261,6 @@ function draw_clusters(tips) {
                 return d3.event.pageY + "px";
               }
             });
-
   }
 
   vis.selectAll("rect")
@@ -283,7 +289,6 @@ function draw_clusters(tips) {
           .style("opacity", 0);
     })
     .on("click", function(d) {
-
       d3.selectAll("rect.clickedH").remove();
 
       beadplot(d.cluster_idx);
@@ -295,11 +300,11 @@ function draw_clusters(tips) {
       search(beaddata);
       // Reset search stats
       if ($('#search-input').val() !== "") {
-	var stats = search_stats.update({
+	      var stats = search_stats.update({
                 current_point: search_stats.get().start_idx[this.id],
                 bead_indexer: 0,
-            });
-            update_search_stats(stats);
+        });
+        update_search_stats(stats);
       }
 
       // reset all rectangles to high transparency
@@ -309,7 +314,7 @@ function draw_clusters(tips) {
 
       d3.select(this).attr("class", "clicked");
 
-      create_clusterH(d, this);
+      draw_cluster_box(d3.select(this));
 
       $("#barplot").text(null);
 
