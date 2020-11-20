@@ -271,12 +271,19 @@ function parse_edgelist(cluster, variants, points) {
     child.dist = dist;
 
     // Assign the parent and genomic distance of each point
+    for (let c = 0; c < points.length; c++) {
+      if (points[c].y === child.y1) {
+        points[c].parent = parent.label;
+        points[c].dist = dist;
+      }
+    }
+    /*
     let childpoints = points.filter(x => x.y === child.y1);
     for (let c = 0; c < childpoints.length; c++) {
       childpoints[c].parent = parent.label;
       childpoints[c].dist = dist;
     }
-
+    */
 
 
     // update variant time range
