@@ -77,6 +77,7 @@ circle.default{
 
 .SelectedBead{
   fill-opacity: 1;
+  stroke: black;
 }
 
 rect.default{
@@ -104,6 +105,15 @@ rect:hover{
   fill-opacity: 1;
 }
 
+rect[txt_hover="yes"]{
+  fill-opacity: 1 !important;
+}
+
+rect.SelectedCluster[txt_hover="yes"]{
+  stroke: gray;
+  stroke-width: 2;
+}
+
 .container {
     padding-top: 30px;
 }
@@ -112,7 +122,7 @@ rect:hover{
     display: inline-block;
 }
 
-#search-input{
+#search-input {
   width: 250px;
 }
 
@@ -129,6 +139,14 @@ rect:hover{
 
 #navigation {
   display: inline-block;
+}
+
+#search_stats {
+  color: #000;
+}
+
+.disabled_stats{
+  color: #ccc !important;
 }
 
 /*
@@ -240,7 +258,6 @@ rightbar table {
 th, td {
     text-align: left;
     padding: 0 1em 0.5ex 0;
-    width: 33%;
 }
 
 /* Add zebra stripping for rows */
