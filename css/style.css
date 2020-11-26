@@ -246,6 +246,7 @@ rightbar {
     right: 0;
     /* z-index: 20;*/
     /* overflow-x: hidden; */
+    overflow-y: auto;
     padding-bottom: 2px;
 }
 
