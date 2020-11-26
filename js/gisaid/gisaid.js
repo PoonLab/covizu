@@ -9,19 +9,19 @@ var gisaid = gisaid || (function () {
 	}
 	
 	var appendCssLink = function() {
+		var head  = document.getElementsByTagName('head')[0];
+		var body  = document.getElementsByTagName('body')[0];
+		var link  = document.createElement('link');
 
-        var head  = document.getElementsByTagName('head')[0];
-        var body  = document.getElementsByTagName('body')[0];  
-        var link  = document.createElement('link'); 
-        link.rel  = 'stylesheet';       
-        link.type = 'text/css'; 
-        link.href = this.path + '/gisaid.css';
-        
-        if(head) {
-        	head.appendChild(link);
-        } else {
-	        body.appendChild(link);
-        }
+		link.rel  = 'stylesheet';
+		link.type = 'text/css';
+		link.href = this.path + '/gisaid.css';
+
+		if(head) {
+			head.appendChild(link);
+		} else {
+			body.appendChild(link);
+		}
 	}
 	
 	var createPopupObject = function() {
@@ -29,32 +29,34 @@ var gisaid = gisaid || (function () {
 		fetch(this.path + '/popup.html')
 		  .then(response => response.text())
 		  .then(popupInnerHTML => { 
-			window.popupDivElement = document.createElement("div");
-			window.popupDivElement.classList.add("gisaid-popup");	
-			window.popupDivElement.innerHTML = popupInnerHTML;
-			window.popupDivElement.hide = function() {
-				this.style.visibility = "hidden";
-				this.style.pointerEvents = "none";				
-			}
-			window.popupDivElement.show = function() {
-				this.style.visibility = "visible";
-				this.style.pointerEvents = "all";				
-			}
-		});
+				window.popupDivElement = document.createElement("div");
+				window.popupDivElement.classList.add("gisaid-popup");
+				window.popupDivElement.innerHTML = popupInnerHTML;
+				window.popupDivElement.hide = function() {
+					this.style.visibility = "hidden";
+					this.style.pointerEvents = "none";
+				}
+				window.popupDivElement.show = function() {
+					this.style.visibility = "visible";
+					this.style.pointerEvents = "all";
+				}
+			});
 	}
 	
 	var generateAckLinkFromAccessionId = function(accessionId) {
-		
 		let accessionIdNumber = accessionId.split("_")[2];
 		
-		return "https://www.epicov.org/acknowledgement/" + accessionIdNumber.charAt(2) + accessionIdNumber.charAt(3) + "/" + accessionIdNumber.charAt(4) + accessionIdNumber.charAt(5) + "/" + accessionId + ".json"
+		return "https://www.epicov.org/acknowledgement/" + accessionIdNumber.charAt(2)
+				+ accessionIdNumber.charAt(3) + "/" + accessionIdNumber.charAt(4)
+				+ accessionIdNumber.charAt(5) + "/" + accessionId + ".json"
 	}
 	
 	var hidePopup = function(wrappedElement) {
-
-		if(wrappedElement.parentNode.firstChild && ((wrappedElement.parentNode.firstChild.classList + "").indexOf("gisaid-popup") > -1)) {
-			wrappedElement.parentNode.firstChild.style.pointerEvents = 'none';
-			wrappedElement.parentNode.firstChild.style.visibility = 'hidden';
+		let popupContainer = wrappedElement.parentNode.querySelector(".gisaid-popup");
+		if(popupContainer) {
+			console.log("[log] Hiding popup");
+			popupContainer.style.pointerEvents = 'none';
+			popupContainer.style.visibility = 'hidden';
 		} else {
 			setTimeout(function() {
 				hidePopup(wrappedElement);				
@@ -96,6 +98,7 @@ var gisaid = gisaid || (function () {
 			
 			popupInstance.style.visibility = "visible";
 			popupInstance.style.pointerEvents = "all";
+			
 		}
 	
 		if(!this.ackCache[ackLink]) {
@@ -114,13 +117,22 @@ var gisaid = gisaid || (function () {
 				popupInstance.addEventListener("touchend",function(event) {
 					hidePopup(event.target.parentNode.querySelector("div.gisaid-sequence"));		
 				},true);
-				wrappedElement.parentNode.insertBefore(popupInstance, wrappedElement.parentNode.firstChild);
+
+				if(!wrappedElement.parentNode.querySelector(".gisaid-popup")) {
+					console.log("[log] Fetch: No popup there!")
+					wrappedElement.parentNode.insertBefore(popupInstance, wrappedElement.parentNode.firstChild);
+				} else {
+					console.log("[log] Fetch: popup already there!");
+				}
+				
 				positionPopup();
 			  });
 		} else {
 			// get cached ack data
 			var ackData = this.ackCache[ackLink];
-			if((wrappedElement.parentNode.firstChild.classList + "").indexOf("gisaid-popup") == -1) {
+			//(wrappedElement.parentNode.firstChild.classList + "").indexOf("gisaid-popup") == -1
+			if(!wrappedElement.parentNode.querySelector(".gisaid-popup")) {
+				console.log("[log] Cache popup not there!");
 				popupInstance = window.popupDivElement.cloneNode(true);
 				popupInstance.style.fontSize = "inherit";			
 				Object.keys(ackData).forEach(function(key,i) {
@@ -131,6 +143,7 @@ var gisaid = gisaid || (function () {
 				},true);
 				wrappedElement.parentNode.insertBefore(popupInstance, wrappedElement.parentNode.firstChild);
 			} else {
+				console.log("[log] Cache popup already there!");
 				popupInstance = wrappedElement.parentNode.firstChild;
 			}
 			positionPopup();						  
@@ -138,7 +151,7 @@ var gisaid = gisaid || (function () {
 	}
 	
 	var getAckData = function(accessionId,cb) {
-		if(accessionId.indexOf("EPI_ISL_") == 0) {
+		if(accessionId.indexOf("EPI_ISL_") === 0) {
 			let ackLink = generateAckLinkFromAccessionId(accessionId);		
 			if(!this.ackCache[ackLink]) {	
 				fetch(ackLink)
@@ -156,31 +169,41 @@ var gisaid = gisaid || (function () {
 	}
 	 	
    	var addPopups = function() {
-	   	[].forEach.call(document.querySelectorAll('body *[epi_isl_id]'), function(currentNode) {
-		   	if (currentNode.getAttribute("epi_isl_id") !== "") {
-		   		var gisaidContainer = document.createElement("div");
-		    	gisaidContainer.classList.add("gisaid-container");
+	   	
+	   	[].forEach.call(document.querySelectorAll('body *[epi_isl_id]'),
+					function(currentNode) {
 
-					var morphStyle = window.getComputedStyle(currentNode, null).getPropertyValue("display")
+	   		if (currentNode.getAttribute("epi_isl_id") !== "") {
+	   			var gisaidContainer = document.createElement("div");
+					gisaidContainer.classList.add("gisaid-container");
+
+					var morphStyle = window.getComputedStyle(currentNode, null)
+																 .getPropertyValue("display");
 
 					if (morphStyle.indexOf("inline") > -1) {
 						gisaidContainer.style.display = "inline-block";
-					} else if(morphStyle.indexOf("block") == 0) {
+					}
+					else if(morphStyle.indexOf("block") === 0) {
 						gisaidContainer.style.display = "block";
 					}
 
 					var gisaidSequence  = document.createElement("div");
+
 					gisaidSequence.classList.add("gisaid-sequence");
-					gisaidSequence.addEventListener("click",function(e) { gisaid.renderPopup(this) } );
-					gisaidSequence.addEventListener("mouseout",function(e)  { gisaid.hidePopup(this) } );
+					gisaidSequence.addEventListener("mouseover",function(e) {
+						gisaid.renderPopup(this)
+					} );
+					gisaidSequence.addEventListener("mouseout",function(e)  {
+						gisaid.hidePopup(this)
+					} );
 
 					var clonedNode = currentNode.cloneNode(true);
+
 					gisaidSequence.appendChild(clonedNode);
 					gisaidContainer.appendChild(gisaidSequence);
 
 					currentNode.parentNode.replaceChild(gisaidContainer, currentNode);
 				}
-
 		}); 	   	
 	}
 	
@@ -200,11 +223,7 @@ var gisaid = gisaid || (function () {
 		},
 		getAcknowledgementData:function(epiIslId, cb) {
 			getAckData(epiIslId,function(ackData) {
-				if (cb === null) {
-					return(ackData);
-				} else {
-					cb(ackData);
-				}
+				cb(ackData);
 			});
 		}	
 	}

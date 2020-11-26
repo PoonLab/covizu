@@ -240,19 +240,18 @@ details + dl {
 
 /* right hand sidebar */
 rightbar {
-    list-style-type: none;
-    margin: 0;
-    padding: 0;
-    width: 250px;
-    top: 0px;
-    background-color: white;
-    position: fixed;
-    height: 100%;
-    overflow: visible;
-    right: 0;
-    /* z-index: 20;*/
-    /* overflow-x: hidden; */
-    padding-bottom: 2px;
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  width: 250px;
+  top: 0;
+  background-color: white;
+  position: fixed;
+  height: 100%;
+  overflow-x: visible;
+  /* overflow-y: auto; */
+  right: 0;
+  padding-bottom: 2px;
 }
 
 rightbar::-webkit-scrollbar {
@@ -296,7 +295,6 @@ rightbar::-webkit-scrollbar {
 rightbar table {
     table-layout: fixed;
     width: 106%;
-  overflow: visible;
     overflow-wrap: anywhere;
     font: 0.775em/1.2 Lato, sans-serif;
 }

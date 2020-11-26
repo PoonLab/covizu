@@ -580,9 +580,6 @@ function beadplot(cid) {
         bTooltip.transition()     // Hide tooltip
             .duration(50)
             .style("opacity", 0);
-      })
-      .on("click", function(d) {
-        $("#text-node").text(`Parent: ${d.parent}\nChild: ${d.child}\nGenomic distance: ${d.dist}`);
       });
 
   // draw "beads" to represent samples per collection date
