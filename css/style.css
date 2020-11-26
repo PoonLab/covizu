@@ -105,6 +105,12 @@ div.tooltip{
   pointer-events: none;
 }
 
+div.hint {
+  font-size: 0.8em;
+  color: #5e5e5e;
+  padding: 3px 0 12px 0;  /* top right bottom left */
+}
+
 circle.default{
   fill-opacity: 1;
   stroke: black;
@@ -242,11 +248,10 @@ rightbar {
     background-color: white;
     position: fixed;
     height: 100%;
-    /* overflow: auto; */
+    overflow: visible;
     right: 0;
     /* z-index: 20;*/
     /* overflow-x: hidden; */
-    overflow-y: auto;
     padding-bottom: 2px;
 }
 

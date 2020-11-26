@@ -742,7 +742,7 @@ function gen_details_table(obj) {
       .enter()
       .append('tr')
       .on("mouseover", function () {
-        d3.select(this).style("background-color", "grey");  // Highlight on mouseover
+        d3.select(this).style("background-color", "#e2e2e2");  // Highlight on mouseover
       })
       .on("mouseout", function () {            // Remove highlighting on mouseout
         d3.select(this).style("background-color", null);
