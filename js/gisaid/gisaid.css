@@ -1,0 +1,60 @@
+div.gisaid-container {
+	box-sizing: border-box;
+	position:relative;
+	margin: 0;
+	padding: 0;
+	display: inline-block;
+	overflow: visible;
+}
+
+div.gisaid-sequence {
+	box-sizing: border-box;
+	display:inline-block;
+	font-size:inherit;
+}
+
+div.gisaid-sequence:hover {
+	box-sizing: border-box;
+	cursor: help;
+	color:#3f8883;	
+}
+
+div.gisaid-popup {
+	box-sizing: border-box;
+	position:absolute;
+	z-index:1000;
+	border:1px solid rgba(0,0,0,0.4);
+	border-radius:2px;
+	box-shadow:2px 2px 8px rgba(0,0,0,0.25);
+	background:rgba(255,255,255,1.0);
+	padding:10px;
+	font-size:10px;
+	margin-top:20px;
+	width:45vw;
+	overflow-y: visible;
+	color:rgba(0,0,0,1.0);
+	background:rgba(192,225,225,1.0);
+}
+
+div.gisaid-popup > .gisaid-sequence-header {
+	box-sizing: border-box;
+	display:block;
+	font-size: inherit;
+	line-height:inherit;
+	font-weight:bold;
+	padding:2px;
+	width:calc(100% + 22px);
+	margin-left:-11px;
+	margin-top:-11px;
+	border:1px solid rgba(0,0,0,0.4);
+	border-bottom:0px solid rgba(0,0,0,0.4);
+	border-radius:2px;
+	border-bottom-left-radius:0px;
+	border-bottom-right-radius:0px;
+	background-color:rgba(255,255,255,0.8);
+	margin-bottom:10px;
+	box-shadow:0px 0px 4px rgba(0,0,0,0.25);
+	word-break: break-all; 
+	padding-left:10px;
+	padding-right:10px;
+}
