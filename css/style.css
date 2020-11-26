@@ -242,10 +242,10 @@ rightbar {
     background-color: white;
     position: fixed;
     height: 100%;
-    overflow: auto;
+    /* overflow: auto; */
     right: 0;
     /* z-index: 20;*/
-    overflow-x: hidden;
+    /* overflow-x: hidden; */
     padding-bottom: 2px;
 }
 
@@ -290,6 +290,7 @@ rightbar::-webkit-scrollbar {
 rightbar table {
     table-layout: fixed;
     width: 106%;
+  overflow: visible;
     overflow-wrap: anywhere;
     font: 0.775em/1.2 Lato, sans-serif;
 }
