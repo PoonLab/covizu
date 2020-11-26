@@ -1,5 +1,5 @@
 /* load fonts */
-@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&display=swap');
 
 /* animate GitHub badge */
 /* https://github.com/tholman/github-corners */
@@ -31,12 +31,51 @@ h1, h2, h3, h4 {
   margin-bottom: 0px;
 }
 
+h1 {
+  font-weight: 900;
+}
+
+h3 {
+  font-weight: 300
+}
+
 svg text {
   font: 1em/1.2 Lato, sans-serif;
 }
 
 div .breaker {
   white-space: pre;
+}
+
+div.gisaid {
+  white-space: nowrap;
+  font-size: 1.1em;
+  font-weight: 700;
+  color: #446d64;
+  display:flex;
+  flex-direction:row;
+  align-items: center;
+  margin: 5px 0 5px 0;
+}
+
+footer {
+  width: 100%;
+  margin: 5px auto 10px auto;
+  text-align: center;
+  position: fixed;
+  bottom: 10px;
+  right: 12px;
+  z-index: 150;
+  background-color: rgba(255,255,255,0.7);
+}
+
+button.ack {
+  /* https://stackoverflow.com/questions/1367409/how-to-make-button-look-like-a-link */
+  background: none!important;
+  border: none;
+  padding: 0!important;
+  cursor: pointer;
+  font-size: 1em;
 }
 
 .treeaxis line, path {
@@ -203,10 +242,10 @@ rightbar {
     background-color: white;
     position: fixed;
     height: 100%;
-    overflow: auto;
+    /* overflow: auto; */
     right: 0;
     /* z-index: 20;*/
-    overflow-x: hidden;
+    /* overflow-x: hidden; */
     padding-bottom: 2px;
 }
 
@@ -251,6 +290,7 @@ rightbar::-webkit-scrollbar {
 rightbar table {
     table-layout: fixed;
     width: 106%;
+  overflow: visible;
     overflow-wrap: anywhere;
     font: 0.775em/1.2 Lato, sans-serif;
 }

@@ -753,8 +753,18 @@ function gen_details_table(obj) {
       .data(function (r) { return r; })
       .enter()
       .append('td')
+      .append('span')
+      .attr("epi_isl_id", function(x) {
+        if (x.startsWith("EPI_ISL")) {
+          return x;
+        } else {
+          return "";
+        }
+      })
       .text(function (x) { return x; })
       .style("font", "0.875em/1.2 Lato, sans-serif");
+
+  gisaid.addPopups();
 }
 
 
