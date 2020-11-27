@@ -55,13 +55,13 @@
 
   <div class="leftbox">
     <div class="floattitle">Time-scaled tree</div>
-    <div id="svg-timetreeaxis" style="position: fixed; top: 58px; z-index: 13"></div>
+    <div class="floattitle" id="svg-timetreeaxis" style="position: fixed; top: 58px; z-index: 13"></div>
     <div id="svg-timetree" style="width: 250px; max-width: 250px;"></div>
   </div>
 
   <div class="middlebox">
     <div class="floattitle">Beadplot</div>
-    <div id="svg-clusteraxis" style="position: fixed; top: 58px; z-index: 14"></div>
+    <div class="floattitle" id="svg-clusteraxis" style="position: fixed; top: 58px; z-index: 14"></div>
     <div id="svg-cluster"></div>
   </div>
 
@@ -88,7 +88,10 @@
     <br />
     <details>
         <summary>Sequence details</summary>
-        <div id="seq-table"></div>
+        <div id="seqtable-hint" class="hint">
+          Hover over accession (EPI_ISL_#) to display laboratory and author info.
+        </div>
+        <div style="overflow-y: auto; max-height: 250px" id="seq-table"></div>
     </details>
   </div>
 
@@ -190,7 +193,7 @@
     req.done(function() {
       beaddata = parse_clusters(clusters);
       tips = map_clusters_to_tips(df, clusters);
-      spinner.stop();
+      //spinner.stop();
       draw_clusters(tips);
 
       var rect = d3.selectAll("#svg-timetree > svg > rect"),

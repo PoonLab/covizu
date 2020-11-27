@@ -36,14 +36,17 @@ h1 {
 }
 
 h3 {
-  font-weight: 300
+  font-weight: 300;
+  color: #5e5e5e;
 }
 
 svg text {
   font: 1em/1.2 Lato, sans-serif;
 }
 
-div .breaker {
+
+/* ------------------------------ DIV -------------------------------- */
+div.breaker {
   white-space: pre;
 }
 
@@ -51,12 +54,78 @@ div.gisaid {
   white-space: nowrap;
   font-size: 1.1em;
   font-weight: 700;
-  color: #446d64;
+  color: #000;
   display:flex;
   flex-direction:row;
   align-items: center;
   margin: 5px 0 5px 0;
 }
+
+div.tooltip{
+  position: absolute;
+  text-align: left;
+  padding: 12px;
+  font: 12px sans-serif;
+  background: lightgrey;
+  border: 2px solid darkgrey;
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+div.hint {
+  font-size: 0.8em;
+  color: #5e5e5e;
+  padding: 3px 0 12px 0;  /* top right bottom left */
+}
+
+div.floattitle {
+  position: fixed;
+  top: 40px;
+  z-index:11;
+  width: 100%;
+  background-color: rgba(255,255,255,0.9);
+}
+
+div.leftbox {
+  position: fixed;
+  overflow: auto;
+  top: 50px;
+  left: 0px;
+  width: 250px;
+  height: 100%;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+div.leftbox::-webkit-scrollbar {
+  display: none;
+}
+
+div.middlebox {
+  box-sizing: border-box;
+  position: fixed;
+  overflow: auto;
+  top: 50px;
+  left: 250px;
+  width: calc(100%-500px);
+  height: 100%;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+div.middlebox::-webkit-scrollbar {
+  display: none;
+}
+
+div.rightbox {
+  box-sizing: border-box;
+  position: fixed;
+  overflow: visible;
+  top: 50px;
+  right: 0;
+  width: 260px;
+  height: 100%;
+}
+
 
 footer {
   width: 100%;
@@ -67,6 +136,7 @@ footer {
   right: 12px;
   z-index: 150;
   background-color: rgba(255,255,255,0.7);
+  font-size: 0.8em;
 }
 
 button.ack {
@@ -94,22 +164,6 @@ button.ack {
   margin: 1em auto;
 }
 
-div.tooltip{
-  position: absolute;
-  text-align: left;
-  padding: 12px;
-  font: 12px sans-serif;
-  background: lightgrey;
-  border: 2px solid darkgrey;
-  border-radius: 8px;
-  pointer-events: none;
-}
-
-div.hint {
-  font-size: 0.8em;
-  color: #5e5e5e;
-  padding: 3px 0 12px 0;  /* top right bottom left */
-}
 
 circle.default{
   fill-opacity: 1;
@@ -157,43 +211,6 @@ rect[txt_hover="yes"]{
 rect.SelectedCluster[txt_hover="yes"]{
   stroke: gray;
   stroke-width: 2;
-}
-
-div.floattitle {
-  position: fixed;
-  top: 40px;
-  z-index:11;
-  background-color: rgba(255,255,255,0.9);
-}
-
-div.leftbox {
-  box-sizing: border-box;
-  position: fixed;
-  overflow: auto;
-  top: 50px;
-  left: 0px;
-  width: 250px;
-  height: 100%;
-}
-
-div.middlebox {
-  box-sizing: border-box;
-  position: fixed;
-  overflow: auto;
-  top: 50px;
-  left: 250px;
-  width: calc(100%-500px);
-  height: 100%;
-}
-
-div.rightbox {
-  box-sizing: border-box;
-  position: fixed;
-  overflow: auto;
-  top: 50px;
-  right: 0;
-  width: 250px;
-  height: 100%;
 }
 
 #search-bar {
@@ -304,7 +321,7 @@ details + dl {
     /* background-color: #fffa; */
 }
 
-rightbar table {
+table {
     table-layout: fixed;
     width: 106%;
     overflow-wrap: anywhere;

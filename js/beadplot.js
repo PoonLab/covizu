@@ -444,7 +444,7 @@ function beadplot(cid) {
   // update vertical range for consistent spacing between variants
   heightB = max_y * 10 + 40;
   $("#svg-cluster > svg").attr("height", heightB + marginB.top + marginB.bottom);
-  yScaleB = d3.scaleLinear().range([40, heightB]);
+  yScaleB = d3.scaleLinear().range([50, heightB]);
   yScaleB.domain([min_y, max_y]);
 
   // allocate space for text labels on left
@@ -677,6 +677,8 @@ function region_to_string(my_regions) {
  * @param obj: JS object or an array of JS Objects
  */
 function gen_details_table(obj) {
+  let bTooltip = d3.select("#tooltipContainer")
+      .style("opacity", 0);
   var details = [];
 
   // Check for a list of samples
@@ -751,17 +753,37 @@ function gen_details_table(obj) {
       .enter()
       .append('td')
       .append('span')
-      .attr("epi_isl_id", function(x) {
+      .on("mouseover", function(x) {
+        let gttx = d3.event.pageX,
+            gtty = d3.event.pageY;
+        console.log(gttx);
+        console.log(gtty);
+
         if (x.startsWith("EPI_ISL")) {
-          return x;
-        } else {
-          return "";
+          gisaid.getAcknowledgementData(x, function(gd) {
+            bTooltip.transition()
+                .duration(50)
+                .style("opacity", 0.9);
+
+            let tooltipText = "";
+            tooltipText = `<b>Originating lab:</b> ${gd.covv_orig_lab}<br/>`;
+            tooltipText += `<b>Submitting lab:</b> ${gd.covv_subm_lab}<br/>`;
+            tooltipText += `<b>Authors:</b> ${gd.covv_authors}`;
+
+            // Tooltip appears 10 pixels left of the cursor
+            bTooltip.html(tooltipText)
+                .style("left", (gttx + 10) + "px")
+                .style("top", (gtty + "px"));
+          });
         }
+      })
+      .on("mouseout", function() {
+        bTooltip.transition()
+            .duration(50)
+            .style("opacity", 0);
       })
       .text(function (x) { return x; })
       .style("font", "0.875em/1.2 Lato, sans-serif");
-
-  gisaid.addPopups();
 }
 
 

@@ -10,7 +10,7 @@ var xValue = function(d) { return d.x; },
   xWide = function(d) { return xScale(d.x2 - d.x1)};
 
 var yValue = function(d) { return d.y; },
-  yScale = d3.scaleLinear().range([height, 30]),  // inversion
+  yScale = d3.scaleLinear().range([height, 40]),  // inversion
   yMap1 = function(d) { return yScale(d.y1); },
   yMap2 = function(d) { return yScale(d.y2); },
   yMap = function(d) { return yScale(yValue(d)+0.4); };
@@ -109,7 +109,7 @@ function drawtree(timetree) {
   var ntips = df.map(x => x.children.length === 0).reduce((x,y) => x+y);
   height = ntips*11 + margin.top + margin.bottom;
   vis.attr("height", height);
-  yScale = d3.scaleLinear().range([height, 30]);
+  yScale = d3.scaleLinear().range([height, 35]);
 
   // adjust d3 scales to data frame
   xScale.domain([
