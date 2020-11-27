@@ -29,6 +29,9 @@ var axis = d3.select("div#svg-timetreeaxis")
   .append("g");
 
 
+let cTooltip = d3.select("#tooltipContainer")
+    .style("opacity", 0);
+
 /**
  * Draw an open rectangle around the filled rectangle representing
  * a cluster/lineage in the time-scaled tree.
@@ -226,10 +229,6 @@ function draw_clusters(tips) {
     return ((coldate - origin) / 3.154e10);
   };
 
-  // Create a div for the tooltip
-  let cTooltip = d3.select("#tooltipContainer")
-      .style("opacity", 0);
-
   axis.append("g")
     .attr("class", "treeaxis")
     .attr("transform", "translate(0,20)")
@@ -245,22 +244,22 @@ function draw_clusters(tips) {
             .duration(50)
             .style("opacity", 0.9);
 
-    let ctooltipText = `<b>Mean pairwise distance:</b> ${d.pdist}<br><b>Mean root distance:</b> ${d.rdist}<br><br>`;
+    let ctooltipText = `<b>Mean pairwise distance:</b> ${d.pdist}<br/><b>Mean root distance:</b> ${d.rdist}<br>`;
     ctooltipText += region_to_string(d.allregions);
-    ctooltipText += `<br><b>Number of variants:</b> ${d.varcount}<br>`;
-    ctooltipText += `<br><b>Collection dates:</b><br>${formatDate(d.first_date)} / ${formatDate(d.last_date)}<br>`;
+    ctooltipText += `<b>Number of variants:</b> ${d.varcount}<br>`;
+    ctooltipText += `<b>Collection dates:</b><br>${formatDate(d.first_date)} / ${formatDate(d.last_date)}`;
 
+    // Tooltip appears 10 pixels left of the cursor
+    // Position tooltip based on the y-position of the cluster
     cTooltip.html(ctooltipText)
-            .style("left", (d3.event.pageX + 10) + "px")    // Tooltip appears 10 pixels left of the cursor
-            .style("top", function(){
-            // Position tooltip based on the y-position of the cluster
-              let tooltipHeight = cTooltip.node().getBoundingClientRect().height;
-              if (d3.event.pageY + tooltipHeight > 1200) {
-                return d3.event.pageY - tooltipHeight + "px";
-              } else {
-                return d3.event.pageY + "px";
-              }
-            });
+        .style("left", (d3.event.pageX + 10) + "px")
+        .style("top", function(){
+          if (d3.event.pageY > window.innerHeight/2) {
+            return d3.event.pageY - cTooltip.node().getBoundingClientRect().height + "px";
+          } else {
+            return d3.event.pageY + "px";
+          }
+        });
   }
 
   vis.selectAll("rect")
