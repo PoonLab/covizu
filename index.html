@@ -59,62 +59,10 @@
     <div id="svg-timetree" style="width: 250px; max-width: 250px;"></div>
   </div>
 
-<<<<<<< HEAD
   <div class="middlebox">
     <div class="floattitle">Beadplot</div>
     <div id="svg-clusteraxis" style="position: fixed; top: 58px; z-index: 14"></div>
     <div id="svg-cluster"></div>
-=======
-  <span class="container">
-    <table style="position: absolute; top: 50px">
-      <tr>
-        <td><div style="position: fixed; top: 40px; z-index:11">Time-scaled tree</div></td>
-        <td style="position: fixed; top: 40px; z-index:12"><div>Beadplot</div></td>
-      </tr>
-      <tr></tr>
-      <tr style="vertical-align: top; z-index: 1">
-        <td style="width: 250px; max-width: 250px;">
-          <div id="svg-timetreeaxis" style="position: fixed; top: 58px; z-index: 13"></div>
-          <div id="svg-timetree" style="width: 250px; max-width: 250px;"></div>
-        </td>
-        <td>
-          <div id="svg-clusteraxis" style="position: fixed; top: 58px; z-index: 14"></div>
-          <div id="svg-cluster"></div>
-        </td>
-        <td style="width:250px">
-          <rightbar style='padding-right: 5%; padding-left: 10px'>
-            <h1>CoVizu</h1>
-            <h3>Near real-time visualization of SARS-CoV-2 (hCoV-19) genomic variation</h3>
-            <span style="width:250px">
-              <div class="gisaid">Enabled by data from&nbsp;<a href="https://gisaid.org" target=“_new”>
-                  <img src="https://www.gisaid.org/fileadmin/gisaid/img/schild.png"
-                       height="24px"/>
-                </a>
-              </div>
-            </span>
-            <p>
-              <div id="div-last-update"></div>
-              <div id="div-number-genomes"></div>
-            </p>
-            <div class="breaker" id="text-node"></div>
-            <div class="breaker" id="barplot"></div>
-            <details>
-                <summary>Country distribution</summary>
-                <div id="country-table"></div>
-            </details>
-            <br />
-            <details>
-                <summary>Sequence details</summary>
-                <div id="seqtable-hint" class="hint">
-                  Click on accession (EPI_ISL_#) to display laboratory and author info.
-                </div>
-                <div id="seq-table"></div>
-            </details>
-          </rightbar>
-        </td>
-      </tr>
-    </table>
->>>>>>> master
   </div>
 
   <div class="rightbox">
@@ -189,7 +137,6 @@
   <script src="js/utils.js"></script>
   <script src="js/phylo.js"></script>
   <script src="js/search.js"></script>
-<<<<<<< HEAD
   <script src="js/gisaid/gisaid.js?random=1"></script>
 
   <script>
@@ -200,25 +147,6 @@
     $( "#ack-open" ).click(function() {
       $( "#dialog" ).dialog( "open" );
     });
-=======
-  <script src='https://cdnjs.cloudflare.com/ajax/libs/spin.js/2.0.1/spin.min.js'></script>
-
-  <script src="js/gisaid/gisaid.js?random=1"></script>
-
-  <script>
-    // Spiny loader
-    var spinner_opts = {
-      lines: 9, // The number of lines to draw
-      length: 9, // The length of each line
-      width: 5, // The line thickness
-      radius: 14, // The radius of the inner circle
-      color: '#EE3124', // #rgb or #rrggbb or array of colors
-      speed: 1.9, // Rounds per second
-      trail: 40, // Afterglow percentage
-      className: 'spinner', // The CSS class to assign to the spinner
-    };
-    var spinner = new Spinner(spinner_opts).spin(document.getElementById('svg-cluster'));
->>>>>>> master
 
     // load database statistics
     var dbstats, req;
