@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8"/>
     <title>CoVizu</title>
+
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <link rel="stylesheet" href="css/style.css">
+
     <script src="js/jquery.js"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <script src="js/d3.js"></script>
 </head>
 
 <body>
@@ -38,7 +41,7 @@
       <button type="button" id="clear_button">Clear</button>
     </div>
   </div>
-
+<!--
   <div style="width: 814px;
               height: 80px;
               position:fixed;
@@ -48,57 +51,49 @@
               filter:alpha(opacity=90);
               top:0px;
               left:0px"></div>
+-->
 
-  <span class="container">
-    <table style="position: absolute; top: 50px">
-      <tr>
-        <td><div style="position: fixed; top: 40px; z-index:11">Time-scaled tree</div></td>
-        <td style="position: fixed; top: 40px; z-index:12"><div>Beadplot</div></td>
-      </tr>
-      <tr></tr>
-      <tr style="vertical-align: top; z-index: 1">
-        <td style="width: 250px; max-width: 250px;">
-          <div id="svg-timetreeaxis" style="position: fixed; top: 58px; z-index: 13"></div>
-          <div id="svg-timetree" style="width: 250px; max-width: 250px;"></div>
-        </td>
-        <td>
-          <div id="svg-clusteraxis" style="position: fixed; top: 58px; z-index: 14"></div>
-          <div id="svg-cluster"></div>
-        </td>
-        <td style="width:250px">
-          <rightbar style='padding-right: 5%; padding-left: 10px'>
-            <h1>CoVizu</h1>
-            <h3>Near real-time visualization of SARS-CoV-2 (hCoV-19) genomic variation</h3>
-            <span style="width:250px">
-              <div class="gisaid">Enabled by data from&nbsp;<a href="https://gisaid.org">
-                  <img src="https://www.gisaid.org/fileadmin/gisaid/img/schild.png"
-                       height="24px"/>
-                </a>
-              </div>
-            </span>
-            <p>
-              <div id="div-last-update"></div>
-              <div id="div-number-genomes"></div>
-            </p>
-            <div class="breaker" id="text-node"></div>
-            <div class="breaker" id="barplot"></div>
-            <details>
-                <summary>Country distribution</summary>
-                <div id="country-table"></div>
-            </details>
-            <br />
-            <details>
-                <summary>Sequence details</summary>
-                <div id="seq-table"></div>
-            </details>
-          </rightbar>
-        </td>
-      </tr>
-    </table>
+  <div class="leftbox">
+    <div class="floattitle">Time-scaled tree</div>
+    <div id="svg-timetreeaxis" style="position: fixed; top: 58px; z-index: 13"></div>
+    <div id="svg-timetree" style="width: 250px; max-width: 250px;"></div>
   </div>
 
-  <div class="tooltip" id="tooltipContainer">
+  <div class="middlebox">
+    <div class="floattitle">Beadplot</div>
+    <div id="svg-clusteraxis" style="position: fixed; top: 58px; z-index: 14"></div>
+    <div id="svg-cluster"></div>
   </div>
+
+  <div class="rightbox">
+    <h1>CoVizu</h1>
+    <h3>Near real-time visualization of SARS-CoV-2 (hCoV-19) genomic variation</h3>
+    <span style="width:250px">
+      <div class="gisaid">Enabled by data from&nbsp;<a href="https://gisaid.org">
+          <img src="https://www.gisaid.org/fileadmin/gisaid/img/schild.png"
+               height="24px"/>
+        </a>
+      </div>
+    </span>
+    <p>
+      <div id="div-last-update"></div>
+      <div id="div-number-genomes"></div>
+    </p>
+    <div class="breaker" id="text-node"></div>
+    <div class="breaker" id="barplot"></div>
+    <details>
+        <summary>Country distribution</summary>
+        <div id="country-table"></div>
+    </details>
+    <br />
+    <details>
+        <summary>Sequence details</summary>
+        <div id="seq-table"></div>
+    </details>
+  </div>
+
+  <div class="tooltip" id="tooltipContainer"></div>
+
   <div id="dialog" title="Acknowledgements">
     <p>
       We would like to thank the GISAID Initiative and are grateful to all of the data contributors,
@@ -137,26 +132,22 @@
 
   </footer>
 
-  <script>
-  $( "#dialog" ).dialog({
-    autoOpen: false,
-    width: 600
-  });
-  $( "#ack-open" ).click(function() {
-    $( "#dialog" ).dialog( "open" );
-  });
-  </script>
-
-  <script src="js/d3.js"></script>
-  <script src="js/utils.js"></script>
   <script src="js/beadplot.js"></script>
-  <script src="js/phylo.js"></script>
   <script src="js/drawtree.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/phylo.js"></script>
   <script src="js/search.js"></script>
-
   <script src="js/gisaid/gisaid.js?random=1"></script>
 
   <script>
+    $( "#dialog" ).dialog({
+      autoOpen: false,
+      width: 600
+    });
+    $( "#ack-open" ).click(function() {
+      $( "#dialog" ).dialog( "open" );
+    });
+
     // load database statistics
     var dbstats, req;
     req = $.getJSON("data/dbstats.json", function(data) {
