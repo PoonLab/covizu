@@ -13,7 +13,7 @@
 </head>
 
 <body>
-  <a href="https://github.com/PoonLab/covizu" class="github-corner" aria-label="View source on GitHub">
+  <a href="https://github.com/PoonLab/covizu" target=“_new” class="github-corner" aria-label="View source on GitHub">
     <!-- https://github.com/tholman/github-corners -->
     <svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0; z-index: 21" aria-hidden="true">
       <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
@@ -59,10 +59,62 @@
     <div id="svg-timetree" style="width: 250px; max-width: 250px;"></div>
   </div>
 
+<<<<<<< HEAD
   <div class="middlebox">
     <div class="floattitle">Beadplot</div>
     <div id="svg-clusteraxis" style="position: fixed; top: 58px; z-index: 14"></div>
     <div id="svg-cluster"></div>
+=======
+  <span class="container">
+    <table style="position: absolute; top: 50px">
+      <tr>
+        <td><div style="position: fixed; top: 40px; z-index:11">Time-scaled tree</div></td>
+        <td style="position: fixed; top: 40px; z-index:12"><div>Beadplot</div></td>
+      </tr>
+      <tr></tr>
+      <tr style="vertical-align: top; z-index: 1">
+        <td style="width: 250px; max-width: 250px;">
+          <div id="svg-timetreeaxis" style="position: fixed; top: 58px; z-index: 13"></div>
+          <div id="svg-timetree" style="width: 250px; max-width: 250px;"></div>
+        </td>
+        <td>
+          <div id="svg-clusteraxis" style="position: fixed; top: 58px; z-index: 14"></div>
+          <div id="svg-cluster"></div>
+        </td>
+        <td style="width:250px">
+          <rightbar style='padding-right: 5%; padding-left: 10px'>
+            <h1>CoVizu</h1>
+            <h3>Near real-time visualization of SARS-CoV-2 (hCoV-19) genomic variation</h3>
+            <span style="width:250px">
+              <div class="gisaid">Enabled by data from&nbsp;<a href="https://gisaid.org" target=“_new”>
+                  <img src="https://www.gisaid.org/fileadmin/gisaid/img/schild.png"
+                       height="24px"/>
+                </a>
+              </div>
+            </span>
+            <p>
+              <div id="div-last-update"></div>
+              <div id="div-number-genomes"></div>
+            </p>
+            <div class="breaker" id="text-node"></div>
+            <div class="breaker" id="barplot"></div>
+            <details>
+                <summary>Country distribution</summary>
+                <div id="country-table"></div>
+            </details>
+            <br />
+            <details>
+                <summary>Sequence details</summary>
+                <div id="seqtable-hint" class="hint">
+                  Click on accession (EPI_ISL_#) to display laboratory and author info.
+                </div>
+                <div id="seq-table"></div>
+            </details>
+          </rightbar>
+        </td>
+      </tr>
+    </table>
+>>>>>>> master
   </div>
 
   <div class="rightbox">
@@ -105,8 +157,8 @@
       Elbe, S., and Buckland-Merrett, G. (2017)
       Data, disease and diplomacy: GISAID’s innovative contribution to global health.
       <i>Global Challenges</i>, 1:33-46.<br/>
-      DOI: <a href="https://doi.org/10.1002/gch2.1018">10.1002/gch2.1018</a>&nbsp;&nbsp;
-      PMCID: <a href="https://pubmed.ncbi.nlm.nih.gov/31565258/">31565258</a>
+      DOI: <a href="https://doi.org/10.1002/gch2.1018" target=“_new”>10.1002/gch2.1018</a>&nbsp;&nbsp;
+      PMCID: <a href="https://pubmed.ncbi.nlm.nih.gov/31565258/" target=“_new”>31565258</a>
     </p>
     <p>
       Note: When using results from these analyses in your manuscript, ensure that you also
@@ -118,15 +170,15 @@
     <p>
       Also, cite the following reference:
       Shu, Y., McCauley, J. (2017) GISAID: From vision to reality. <i>EuroSurveillance</i>, 22(13)<br/>
-      DOI: <a href="https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2017.22.13.30494">10.2807/1560-7917.ES.2017.22.13.30494</a>&nbsp;&nbsp;
-      PMCID: <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5388101/">PMC5388101</a>
+      DOI: <a href="https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2017.22.13.30494" target=“_new”>10.2807/1560-7917.ES.2017.22.13.30494</a>&nbsp;&nbsp;
+      PMCID: <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5388101/" target=“_new”>PMC5388101</a>
     </p>
   </div>
 
 
   <footer class="footer">
     GISAID data provided on this website are subject to GISAID’s
-    <a href="https://www.gisaid.org/DAA/">Terms and Conditions</a>
+    <a href="https://www.gisaid.org/DAA/" target=“_new”>Terms and Conditions</a>
     &emsp;&emsp;
     <button class="ack" id="ack-open" onclick="console.log('click');">Acknowledgements</button>
 
@@ -137,6 +189,7 @@
   <script src="js/utils.js"></script>
   <script src="js/phylo.js"></script>
   <script src="js/search.js"></script>
+<<<<<<< HEAD
   <script src="js/gisaid/gisaid.js?random=1"></script>
 
   <script>
@@ -147,6 +200,25 @@
     $( "#ack-open" ).click(function() {
       $( "#dialog" ).dialog( "open" );
     });
+=======
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/spin.js/2.0.1/spin.min.js'></script>
+
+  <script src="js/gisaid/gisaid.js?random=1"></script>
+
+  <script>
+    // Spiny loader
+    var spinner_opts = {
+      lines: 9, // The number of lines to draw
+      length: 9, // The length of each line
+      width: 5, // The line thickness
+      radius: 14, // The radius of the inner circle
+      color: '#EE3124', // #rgb or #rrggbb or array of colors
+      speed: 1.9, // Rounds per second
+      trail: 40, // Afterglow percentage
+      className: 'spinner', // The CSS class to assign to the spinner
+    };
+    var spinner = new Spinner(spinner_opts).spin(document.getElementById('svg-cluster'));
+>>>>>>> master
 
     // load database statistics
     var dbstats, req;
@@ -190,6 +262,7 @@
     req.done(function() {
       beaddata = parse_clusters(clusters);
       tips = map_clusters_to_tips(df, clusters);
+      spinner.stop();
       draw_clusters(tips);
 
       var rect = d3.selectAll("#svg-timetree > svg > rect"),

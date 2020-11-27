@@ -323,7 +323,7 @@ function draw_clusters(tips) {
       draw_region_distribution(d.allregions);
 
       // FIXME: this is the same div used for making barplot SVG
-      $("#text-node").text(`Number of cases: ${d.count}\nNumber of variants: ${d.varcount}\n`);
+      $("#text-node").html(`Number of cases: ${d.count}<br/>Number of variants: ${d.varcount}<br/>`);
 
     });
 

@@ -105,6 +105,12 @@ div.tooltip{
   pointer-events: none;
 }
 
+div.hint {
+  font-size: 0.8em;
+  color: #5e5e5e;
+  padding: 3px 0 12px 0;  /* top right bottom left */
+}
+
 circle.default{
   fill-opacity: 1;
   stroke: black;
@@ -301,7 +307,6 @@ details + dl {
 rightbar table {
     table-layout: fixed;
     width: 106%;
-  overflow: visible;
     overflow-wrap: anywhere;
     font: 0.775em/1.2 Lato, sans-serif;
 }

@@ -580,9 +580,6 @@ function beadplot(cid) {
         bTooltip.transition()     // Hide tooltip
             .duration(50)
             .style("opacity", 0);
-      })
-      .on("click", function(d) {
-        $("#text-node").text(`Parent: ${d.parent}\nChild: ${d.child}\nGenomic distance: ${d.dist}`);
       });
 
   // draw "beads" to represent samples per collection date
@@ -742,7 +739,7 @@ function gen_details_table(obj) {
       .enter()
       .append('tr')
       .on("mouseover", function () {
-        d3.select(this).style("background-color", "grey");  // Highlight on mouseover
+        d3.select(this).style("background-color", "#e2e2e2");  // Highlight on mouseover
       })
       .on("mouseout", function () {            // Remove highlighting on mouseout
         d3.select(this).style("background-color", null);
