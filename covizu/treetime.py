@@ -195,7 +195,7 @@ def retrieve_genomes(by_lineage, ref_file='data/MT291829.fa'):
     seqs = []
 
     # retrieve unaligned genomes from database
-    for lineage, records in by_lineage:
+    for lineage, records in by_lineage.items():
         intermed = [(record['covv_collection_date'], record['diffs']) for record in records]
         intermed.sort(reverse=True)  # descending order
         coldate, diffs = intermed[0]

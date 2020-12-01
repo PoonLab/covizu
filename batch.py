@@ -66,17 +66,17 @@ if __name__ == "__main__":
     args = parse_args()
     cb = Callback()
 
+    # Process feed data
     cb.callback("Processing GISAID feed data")
     loader = gisaid_utils.load_gisaid(args.infile, minlen=args.minlen, mindate=args.mindate)
     batcher = gisaid_utils.batch_fasta(loader, size=args.batchsize)
     aligned = gisaid_utils.extract_features(batcher, ref_file=args.ref, binpath=args.binpath,
-                                            nthread=args.nthread, minlen=args.minlen)
+                                            nthread=args.mmthreads, minlen=args.minlen)
     by_lineage = gisaid_utils.sort_by_lineage(aligned)
 
     # Generate time-scaled tree of Pangolin lineages
     cb.callback("Retrieving lineage genomes")
-    fasta = treetime.retrieve_genomes(by_lineage, nthread=args.mmthreads, ref_file=args.ref,
-                                      misstol=args.misstol, callback=cb.callback)
+    fasta = treetime.retrieve_genomes(by_lineage, ref_file=args.ref)
 
     cb.callback("Reconstructing tree with {}".format(args.ft2bin))
     nwk = treetime.fasttree(fasta, binpath=args.ft2bin)
@@ -87,35 +87,9 @@ if __name__ == "__main__":
     treetime.parse_nexus(nexus_file, fasta, date_tol=args.datetol)  # -> treetime.nwk
 
     # Retrieve raw genomes from DB, align and extract features
-    cb.callback("Retrieving raw genomes from database")
-
-    with open(args.ref) as handle:
-        _, refseq = seq_utils.convert_fasta(handle)[0]
-    reflen = len(refseq)
-    mask = seq_utils.load_vcf(args.vcf)
-    data = {}
-
-    for lineage, fasta_file in db_utils.dump_raw_by_lineage(args.db, callback=cb.callback):
-        mm2 = minimap2.minimap2(infile=fasta_file, nthread=args.mmthreads, ref=args.ref)
-        gen = minimap2.encode_diffs(mm2, reflen=reflen)
-
-        features = []
-        # excludes genomes too divergent from expectation
-        for row in seq_utils.filter_outliers(gen):
-            if seq_utils.total_missing(row) > args.misstol:
-                # too many uncalled bases
-                continue
-            features.append(row)
-
-        cb.callback("{} sequences of lineage {} passed filters".format(len(features), lineage))
-        # remove problematic sites from feature vectors
-        features = seq_utils.filter_problematic(features, mask=mask)
-        data.update({lineage: features})
-
-    # Neighbor-joining reconstruction
     cb.callback("Neighbor-joining reconstruction")
     result = []
-    for lineage, features in data.items():
+    for lineage, features in by_lineage.items():
         if len(features) == 0:
             cb.callback("skipping empty lineage {}".format(lineage))
             continue
