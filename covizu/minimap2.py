@@ -56,7 +56,7 @@ def minimap2(infile, ref, stream=False, path='minimap2', nthread=3, minlen=29000
             [path, '-t', str(nthread), '-a', '--eqx', ref, '-'], encoding='utf8',
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
         )
-        output, outerr = p.communicate(infile.read())
+        output, outerr = p.communicate(infile)
         output = output.split('\n')
     else:
         # input read from file
