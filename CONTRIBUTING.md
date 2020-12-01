@@ -14,7 +14,7 @@ However, we have also run the system on desktop computers running macOS 10.13.
 * GNU [sed](https://www.gnu.org/software/sed/) stream editor
 * [FastTree2](http://www.microbesonline.org/fasttree/) version 2.1.10+, compiled for [double precision](http://www.microbesonline.org/fasttree/#BranchLen)
 * [TreeTime](https://github.com/neherlab/treetime) version 0.7.5+
-
+* [RapidNJ](https://birc.au.dk/software/rapidnj/)
 
 ## Coding style
 
