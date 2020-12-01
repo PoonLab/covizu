@@ -71,7 +71,7 @@ def minimap2(infile, ref, stream=False, path='minimap2', nthread=3, minlen=29000
             # split on \n leaves empty line; @ prefix header lines
             continue
         qname, flag, rname, rpos, _, cigar, _, _, _, seq = \
-            line.strip().split()[:10]
+            line.strip('\n').split('\t')[:10]
 
         if rname == '*' or ((int(flag) & 0x800) != 0):
             # did not map, or supplementary alignment

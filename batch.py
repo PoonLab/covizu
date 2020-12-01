@@ -3,7 +3,7 @@ import os
 
 import covizu
 from covizu import minimap2, clustering, treetime, beadplot
-from covizu.utils import db_utils, seq_utils
+from covizu.utils import gisaid_utils, db_utils, seq_utils
 from covizu.utils.progress_utils import Callback
 
 import json
@@ -21,9 +21,9 @@ def parse_args():
     parser.add_argument("--ref", type=str,
                         default=os.path.join(covizu.__path__[0], "data/NC_045512.fa"),
                         help="input, path to FASTA file with reference genome"),
-    parser.add_argument('--misstol', type=int, default=300,
+    parser.add_argument('--misstol', type=int, default=450,
                         help="option, maximum tolerated number of missing bases per "
-                             "genome (default 300).")
+                             "genome (default 450).")
 
     parser.add_argument("--vcf", type=str,
                         default=os.path.join(covizu.__path__[0], "data/problematic_sites_sarsCov2.vcf"),
@@ -66,9 +66,16 @@ if __name__ == "__main__":
     args = parse_args()
     cb = Callback()
 
+    cb.callback("Processing GISAID feed data")
+    loader = gisaid_utils.load_gisaid(args.infile, minlen=args.minlen, mindate=args.mindate)
+    batcher = gisaid_utils.batch_fasta(loader, size=args.batchsize)
+    aligned = gisaid_utils.extract_features(batcher, ref_file=args.ref, binpath=args.binpath,
+                                            nthread=args.nthread, minlen=args.minlen)
+    by_lineage = gisaid_utils.sort_by_lineage(aligned)
+
     # Generate time-scaled tree of Pangolin lineages
     cb.callback("Retrieving lineage genomes")
-    fasta = treetime.retrieve_genomes(args.db, nthread=args.mmthreads, ref_file=args.ref,
+    fasta = treetime.retrieve_genomes(by_lineage, nthread=args.mmthreads, ref_file=args.ref,
                                       misstol=args.misstol, callback=cb.callback)
 
     cb.callback("Reconstructing tree with {}".format(args.ft2bin))
