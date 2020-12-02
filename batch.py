@@ -1,13 +1,11 @@
 import argparse
 import os
+import json
 
 import covizu
-from covizu import minimap2, clustering, treetime, beadplot
-from covizu.utils import gisaid_utils, db_utils, seq_utils
+from covizu import clustering, treetime, beadplot
+from covizu.utils import gisaid_utils
 from covizu.utils.progress_utils import Callback
-
-import json
-import sys
 
 
 def parse_args():
@@ -72,38 +70,46 @@ def parse_args():
     return parser.parse_args()
 
 
-if __name__ == "__main__":
-    args = parse_args()
-    cb = Callback()
-
-    # Process feed data
-    cb.callback("Processing GISAID feed data")
+def process_feed(args, callback=None):
+    """ Process feed data """
+    if callback:
+        callback("Processing GISAID feed data")
     loader = gisaid_utils.load_gisaid(args.infile, minlen=args.minlen, mindate=args.mindate)
     batcher = gisaid_utils.batch_fasta(loader, size=args.batchsize)
     aligned = gisaid_utils.extract_features(batcher, ref_file=args.ref, binpath=args.mmbin,
                                             nthread=args.mmthreads, minlen=args.minlen)
-    by_lineage = gisaid_utils.sort_by_lineage(aligned, callback=cb.callback)
+    return gisaid_utils.sort_by_lineage(aligned, callback=cb.callback)
 
-    # Generate time-scaled tree of Pangolin lineages
-    cb.callback("Retrieving lineage genomes")
+
+def build_tree(by_lineage, args, callback=None):
+    """ Generate time-scaled tree of Pangolin lineages """
+    if callback:
+        callback("Retrieving lineage genomes")
     fasta = treetime.retrieve_genomes(by_lineage, ref_file=args.ref)
 
-    cb.callback("Reconstructing tree with {}".format(args.ft2bin))
+    if callback:
+        callback("Reconstructing tree with {}".format(args.ft2bin))
     nwk = treetime.fasttree(fasta, binpath=args.ft2bin)
 
-    cb.callback("Reconstructing time-scaled tree with {}".format(args.ttbin))
+    if callback:
+        callback("Reconstructing time-scaled tree with {}".format(args.ttbin))
     nexus_file = treetime.treetime(nwk, fasta, outdir=args.outdir, binpath=args.ttbin,
                                    clock=args.clock, verbosity=0)
-    treetime.parse_nexus(nexus_file, fasta, date_tol=args.datetol)  # -> treetime.nwk
 
-    # Retrieve raw genomes from DB, align and extract features
-    cb.callback("Neighbor-joining reconstruction")
+    # writes output to treetime.nwk at `nexus_file` path
+    treetime.parse_nexus(nexus_file, fasta, date_tol=args.datetol)
+
+
+def make_beadplots(by_lineage, args, callback=None):
+    """ Compute distance matrices and reconstruct NJ trees """
     result = []
     for lineage, features in by_lineage.items():
         if len(features) == 0:
-            cb.callback("skipping empty lineage {}".format(lineage))
+            if callback:
+                callback("skipping empty lineage {}".format(lineage))
             continue
-        cb.callback('start {}, {} entries'.format(lineage, len(features)))
+        if callback:
+            callback('start {}, {} entries'.format(lineage, len(features)))
 
         # bootstrap sampling and NJ tree reconstruction
         trees, labels = clustering.build_trees(
@@ -118,11 +124,10 @@ if __name__ == "__main__":
             intermed.sort()
             variant = intermed[0][1]
             beaddict['nodes'].update({variant: []})
+
             for coldate, accn, label1 in intermed:
                 beaddict['nodes'][variant].append({
-                    'accession': accn,
-                    'label1': label1,
-                    'country': label1.split('/')[1],
+                    'accession': accn, 'label1': label1, 'country': label1.split('/')[1],
                     'coldate': coldate
                 })
             result.append(beaddict)
@@ -139,5 +144,16 @@ if __name__ == "__main__":
         beaddict = beadplot.serialize_tree(ctree)
         beaddict.update({'lineage': lineage})
         result.append(beaddict)
+
+    return result
+
+
+if __name__ == "__main__":
+    args = parse_args()
+    cb = Callback()
+
+    by_lineage = process_feed(args, cb.callback)
+    build_tree(by_lineage, args, cb.callback)
+    result = make_beadplots(by_lineage, args, cb.callback)
 
     args.outfile.write(json.dumps(result, indent=2))

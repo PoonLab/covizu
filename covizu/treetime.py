@@ -196,16 +196,16 @@ def retrieve_genomes(by_lineage, ref_file='data/MT291829.fa'):
 
     # retrieve unaligned genomes from database
     for lineage, records in by_lineage.items():
-        intermed = [(record['covv_collection_date'], record['diffs']) for record in records]
+        intermed = [(r['covv_collection_date'], r['diffs'], r['missing']) for r in records]
         intermed.sort(reverse=True)  # descending order
-        coldate, diffs = intermed[0]
+        coldate, diffs, missing = intermed[0]
 
         # update lists
         lineages.append(lineage)
         coldates.append(coldate)
 
         # reconstruct aligned sequence from feature vector
-        seq = apply_features(diffs, refseq=refseq)
+        seq = apply_features(diffs, missing=missing, refseq=refseq)
         seqs.append(seq)
 
     # generate new headers in {name}|{accession}|{date} format expected by treetime()
