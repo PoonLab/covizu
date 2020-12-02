@@ -13,18 +13,28 @@ import sys
 def parse_args():
     parser = argparse.ArgumentParser(description="CoVizu analysis pipeline automation")
 
-    parser.add_argument("--db", type=str, default='data/gsaid.db',
-                        help="input, path to sqlite3 database")
-    parser.add_argument('-mmt', "--mmthreads", type=int, default=1,
-                        help="option, number of threads for minimap2.")
+    parser.add_argument("infile", type=str, default='data/provision.json.xz',
+                        help="input, path to xz-compressed JSON")
+
+    parser.add_argument('--minlen', type=int, default=29000, help='option, minimum genome length (nt)')
+    parser.add_argument('--mindate', type=str, default='2019-12-01', 
+                        help='option, earliest possible sample collection date (ISO format, default '
+                              '2019-12-01')
+   
+    parser.add_argument('--batchsize', type=int, default=500, 
+                        help='option, number of records to batch process with minimap2')
 
     parser.add_argument("--ref", type=str,
                         default=os.path.join(covizu.__path__[0], "data/NC_045512.fa"),
-                        help="input, path to FASTA file with reference genome"),
+                        help="option, path to FASTA file with reference genome")
+    parser.add_argument('--mmbin', type=str, default='minimap2',
+                        help="option, path to minimap2 binary executable")
+    parser.add_argument('-mmt', "--mmthreads", type=int, default=1,
+                        help="option, number of threads for minimap2.")
+
     parser.add_argument('--misstol', type=int, default=450,
                         help="option, maximum tolerated number of missing bases per "
                              "genome (default 450).")
-
     parser.add_argument("--vcf", type=str,
                         default=os.path.join(covizu.__path__[0], "data/problematic_sites_sarsCov2.vcf"),
                         help="Path to VCF file of problematic sites in SARS-COV-2 genome. "
@@ -70,9 +80,9 @@ if __name__ == "__main__":
     cb.callback("Processing GISAID feed data")
     loader = gisaid_utils.load_gisaid(args.infile, minlen=args.minlen, mindate=args.mindate)
     batcher = gisaid_utils.batch_fasta(loader, size=args.batchsize)
-    aligned = gisaid_utils.extract_features(batcher, ref_file=args.ref, binpath=args.binpath,
+    aligned = gisaid_utils.extract_features(batcher, ref_file=args.ref, binpath=args.mmbin,
                                             nthread=args.mmthreads, minlen=args.minlen)
-    by_lineage = gisaid_utils.sort_by_lineage(aligned)
+    by_lineage = gisaid_utils.sort_by_lineage(aligned, callback=cb.callback)
 
     # Generate time-scaled tree of Pangolin lineages
     cb.callback("Retrieving lineage genomes")

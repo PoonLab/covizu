@@ -159,7 +159,7 @@ def filter_problematic(records, origin='2019-12-01', rate=0.0655, cutoff=0.005,
         print("         {} genomes with excess divergence".format(n_outlier))
 
 
-def sort_by_lineage(records):
+def sort_by_lineage(records, callback=None):
     """
     Resolve stream into a dictionary keyed by Pangolin lineage
 
@@ -167,7 +167,9 @@ def sort_by_lineage(records):
     :return:  dict, lists of records keyed by lineage
     """
     result = {}
-    for record in records:
+    for i, record in enumerate(records):
+        if callback and i % 1000 == 0:
+            callback('aligned {} records'.format(i))
         lineage = record['covv_lineage']
         if lineage not in result:
             result.update({lineage: []})
