@@ -26,6 +26,7 @@ def load_gisaid(path, minlen=29000, mindate='2019-12-01'):
             record = json.loads(line)
             if record['covv_lineage'] is None:
                 # exclude unassigned genome
+                # FIXME: should report this somewhere
                 continue
 
             qname = record['covv_virus_name'].strip()

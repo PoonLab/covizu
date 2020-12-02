@@ -94,10 +94,11 @@ def get_sym_diffs(records, use_file=True):
     # compress genomes with identical feature vectors
     fvecs = {}
     for record in records:
+        label = '|'.join([record['covv_virus_name'], record['covv_accession_id'], record['covv_collection_date']])
         key = tuple(record['diffs'])
         if key not in fvecs:
             fvecs.update({key: []})
-        fvecs[key].append(record['covv_virus_name'])
+        fvecs[key].append(label)
 
     # generate union of all features
     union = {}
