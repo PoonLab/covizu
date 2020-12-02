@@ -83,8 +83,6 @@ def process_feed(args, callback=None):
 
 def build_tree(by_lineage, args, callback=None):
     """ Generate time-scaled tree of Pangolin lineages """
-    if callback:
-        callback("Retrieving lineage genomes")
     fasta = treetime.retrieve_genomes(by_lineage, ref_file=args.ref)
 
     if callback:

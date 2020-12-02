@@ -24,6 +24,9 @@ def load_gisaid(path, minlen=29000, mindate='2019-12-01'):
     with lzma.open(path, 'rb') as handle:
         for line in handle:
             record = json.loads(line)
+            if record['covv_lineage'] is None:
+                # exclude unassigned genome
+                continue
 
             qname = record['covv_virus_name'].strip()
             if qname.split('/')[1][0].islower():
@@ -218,7 +221,6 @@ if __name__ == '__main__':
     records = filter_problematic(aligned, vcf_file=args.vcf_file, callback=cb.callback)
 
     for i, record in enumerate(records):
-        if i % 1000 == 0:
-            cb.callback('aligned {} records'.format(i))
+        if i % 10000 == 0:
+            cb.callback('processed {} records'.format(i))
         args.outfile.write(json.dumps(record)+'\n')
-
