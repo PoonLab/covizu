@@ -12,7 +12,7 @@ from Bio import Phylo
 from Bio.Phylo.BaseTree import Clade
 
 from io import StringIO
-from multiprocessing import Pool
+from multiprocessing import Pool, Manager
 
 import sys
 import os
@@ -80,7 +80,7 @@ def sample_with_replacement(population, k):
     return [pop[int(n * random.random())] for _ in range(k)]
 
 
-def build_trees(records, nboot=100, binpath='rapidnj', callback=None):
+def build_trees(records, nboot=100, binpath='rapidnj', threads=1, callback=None):
     """
     Calculate symmetric differences of feature vectors.
     Use nonparametric bootstrap sampling of the feature set union to convert symmetric
@@ -90,6 +90,7 @@ def build_trees(records, nboot=100, binpath='rapidnj', callback=None):
     :param records:  list, dict for each record
     :param nboot:  int, number of bootstrap samples
     :param binpath:  str, path to RapidNJ binary executable file
+    :param threads:  int, number of threads for bootstrap
     :param callback:  optional, function for progress monitoring
     :return:  list, list; Phylo.BaseTree objects and labels associated with tips
     """
@@ -117,43 +118,51 @@ def build_trees(records, nboot=100, binpath='rapidnj', callback=None):
         # recode feature vectors as integers (0-index)
         indexed.append(set(union[feat] for feat in fvec))
 
-    # calculate symmetric differences
-    if callback:
-        callback("Calculating symmetric differences")
-
     # generate distance matrices from bootstrap samples
-    trees = []
-    n = len(indexed)
-    for bn in range(nboot):
-        if callback:
-            callback('bootstrap {}'.format(bn))
-        sample = [int(len(union) * random.random()) for _ in range(len(union))]
-        weights = dict([(y, sample.count(y)) for y in sample])
-
-        outfile = tempfile.NamedTemporaryFile('w', prefix="cvz_boot_")
-        outfile.write('{0:>5}\n'.format(n))
-        for i in range(n):
-            if callback and i % 10 == 0:
-                callback('{}/{}'.format(i, n))
-            outfile.write('{}'.format(i))
-            for j in range(n):
-                d = 0
-                if i != j:
-                    sd = tuple(indexed[i] ^ indexed[j])
-                    d = sum(weights.get(y, 0) for y in sd)
-                outfile.write(' {0:>2}'.format(d))
-            outfile.write('\n')
-        outfile.flush()
-
-        # call RapidNJ on temp file
-        cmd = [binpath, outfile.name, '-i', 'pd', '--no-negative-length']
-        stdout = subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
-        handle = StringIO(stdout.decode('utf-8'))
-        trees.append(Phylo.read(handle, 'newick'))
-
-        outfile.close()  # delete temp file
+    if callback:
+        callback("Reconstructing trees ({} threads)".format(threads))
+    if threads == 1:
+        trees = [bootstrap(union, indexed, binpath) for _ in range(nboot)]
+    else:
+        with Pool(threads) as pool:
+            results = [pool.apply_async(bootstrap, [union, indexed, binpath]) for _ in range(nboot)]
+            trees = [r.get() for r in results]
 
     return trees, labels
+
+
+def bootstrap(union, indexed, binpath='rapidnj'):
+    sample = [int(len(union) * random.random()) for _ in range(len(union))]
+    weights = dict([(y, sample.count(y)) for y in sample])
+
+    d = {}
+    n = len(indexed)
+    for i in range(n - 1):
+        for j in range(i + 1, n):
+            sd = tuple(indexed[i] ^ indexed[j])
+            d[(i, j)] = sum(weights.get(y, 0) for y in sd)
+
+    # export to file
+    outfile = tempfile.NamedTemporaryFile('w', prefix="cvz_boot_")
+    outfile.write('{0:>5}\n'.format(n))
+    for i in range(n):
+        outfile.write('{}'.format(i))
+        for j in range(n):
+            if i == j:
+                outfile.write(' {0:>2}'.format(0))
+            else:
+                key = (i, j) if i < j else (j, i)
+                outfile.write(' {0:>2}'.format(d[key]))
+        outfile.write('\n')
+    outfile.flush()
+
+    # call RapidNJ on temp file
+    cmd = [binpath, outfile.name, '-i', 'pd', '--no-negative-length']
+    stdout = subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
+    handle = StringIO(stdout.decode('utf-8'))
+    outfile.close()
+
+    return Phylo.read(handle, 'newick')
 
 
 def label_nodes(tree, tip_index):
