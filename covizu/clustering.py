@@ -12,7 +12,7 @@ from Bio import Phylo
 from Bio.Phylo.BaseTree import Clade
 
 from io import StringIO
-from multiprocessing import Pool
+from multiprocessing import Pool, Manager
 
 import sys
 import os
