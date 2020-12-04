@@ -30,9 +30,9 @@ def parse_args():
     parser.add_argument('-mmt', "--mmthreads", type=int, default=1,
                         help="option, number of threads for minimap2.")
 
-    parser.add_argument('--misstol', type=int, default=450,
+    parser.add_argument('--misstol', type=int, default=300,
                         help="option, maximum tolerated number of missing bases per "
-                             "genome (default 450).")
+                             "genome (default 300).")
     parser.add_argument("--vcf", type=str,
                         default=os.path.join(covizu.__path__[0], "data/problematic_sites_sarsCov2.vcf"),
                         help="Path to VCF file of problematic sites in SARS-COV-2 genome. "

@@ -103,7 +103,7 @@ def extract_features(batcher, ref_file, binpath='minimap2', nthread=3, minlen=29
 
 def filter_problematic(records, origin='2019-12-01', rate=0.0655, cutoff=0.005,
                        maxtime=1e3, vcf_file='data/problematic_sites_sarsCov2.vcf',
-                       misstol=450, callback=None):
+                       misstol=300, callback=None):
     """
     Apply problematic sites annotation from de Maio et al.,
     https://virological.org/t/issues-with-sars-cov-2-sequencing-data/473
