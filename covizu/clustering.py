@@ -1,5 +1,6 @@
 import random
 import json
+from mpi4py import MPI
 
 from covizu.utils import db_utils, seq_utils
 from covizu.utils.progress_utils import Callback
@@ -21,6 +22,9 @@ from covizu.utils.seq_utils import load_vcf, filter_problematic
 
 
 sys.setrecursionlimit(20000)  # fix for issue #127, default limit 1000
+comm = MPI.COMM_WORLD
+my_rank = comm.Get_rank()
+nprocs = comm.Get_size()
 
 
 def import_json(path, vcf_file, max_missing=600, callback=None):
@@ -120,11 +124,22 @@ def build_trees(records, nboot=100, binpath='rapidnj', threads=1, callback=None)
     if callback:
         callback("Reconstructing trees ({} threads)".format(threads))
     if threads == 1:
-        trees = [bootstrap(union, indexed, binpath) for _ in range(nboot)]
+        # serial mode
+        trees = [bootstrap(union, indexed, binpath, callback=callback) for _ in range(nboot)]
     else:
+        """
         with Pool(threads) as pool:
             results = [pool.apply_async(bootstrap, [union, indexed, binpath]) for _ in range(nboot)]
             trees = [r.get() for r in results]
+        """
+        trees = []
+        for bn in range(nboot):
+            if bn % nprocs != my_rank:
+                continue
+            phy = bootstrap(union, indexed, binpath, callback=callback)
+            trees.append(phy)
+        comm.Barrier()
+        trees = comm.gather(trees, root=0)
 
     return trees, labels
 
@@ -145,16 +160,20 @@ def bootstrap(union, indexed, binpath='rapidnj', callback=None):
     weights = dict([(y, sample.count(y)) for y in sample])
     n = len(indexed)
 
+    if callback:
+        callback("Writing distance matrix to temporary file")
+
     outfile = tempfile.NamedTemporaryFile('w', prefix="cvz_boot_")
     outfile.write('{0:>5}\n'.format(n))
     for i in range(n):
+        if callback and i % 100 == 0:
+            callback("  row {} of {}".format(i, n))
         outfile.write('{}'.format(i))
         for j in range(n):
             if i == j:
                 outfile.write(' {0:>2}'.format(0))
             else:
-                # symmetric difference
-                sd = tuple(indexed[i] ^ indexed[j])
+                sd = indexed[i] ^ indexed[j]  # symmetric difference
                 d = sum(weights.get(y, 0) for y in sd)
                 outfile.write(' {0:>2}'.format(d))
         outfile.write('\n')
