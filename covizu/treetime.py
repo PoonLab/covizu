@@ -177,18 +177,17 @@ def parse_nexus(nexus_file, fasta, date_tol):
                 format='newick')
 
 
-def retrieve_genomes(db="data/gsaid.db", stream=False, nthread=1, ref_file='data/MT291829.fa',
-                     misstol=300, callback=None):
+def retrieve_genomes(by_lineage, ref_file='data/MT291829.fa'):
     """
-    Query database for Pangolin lineages and then retrieve the earliest
-    sampled genome sequence for each.  Export as FASTA for TreeTime analysis.
-    :param db:  str, path to sqlite3 database
+    Identify earliest sampled genome sequence for each Pangolin lineage.
+    Export as FASTA for TreeTime analysis.
+
+    :param by_lineage:  dict, return value from gisaid_utils::sort_by_lineage
     :return:  list, (header, sequence) tuples
     """
     # load and parse reference genome
     with open(ref_file) as handle:
         _, refseq = convert_fasta(handle)[0]
-    reflen = len(refseq)
 
     # allocate lists
     coldates = []
@@ -196,37 +195,18 @@ def retrieve_genomes(db="data/gsaid.db", stream=False, nthread=1, ref_file='data
     seqs = []
 
     # retrieve unaligned genomes from database
-    for lineage, fasta_file in dump_raw_by_lineage(db, callback=callback):
-        mm2 = minimap2(infile=fasta_file, nthread=nthread, stream=stream, ref=ref_file)
-        gen = encode_diffs(mm2, reflen=reflen)
-        qname = None
-        for row in filter_outliers(gen):
-            # exclude genomes too divergent from expectation
-            if total_missing(row) > misstol:
-                continue
-            # take the earliest valid genome
-            qname, _, _ = row
-            _, coldate = parse_label(qname)
-            break
-
-        if qname is None:
-            # none of the genomes were selected
-            callback("no genome passed filters for lineage {}".format(lineage))
-            continue
-
-        if callback:
-            callback("selected genome {} for lineage {}".format(qname, lineage))
+    for lineage, records in by_lineage.items():
+        intermed = [(r['covv_collection_date'], r['diffs'], r['missing']) for r in records]
+        intermed.sort(reverse=True)  # descending order
+        coldate, diffs, missing = intermed[0]
 
         # update lists
         lineages.append(lineage)
         coldates.append(coldate)
 
         # reconstruct aligned sequence from feature vector
-        seq = apply_features(row, refseq=refseq)
+        seq = apply_features(diffs, missing=missing, refseq=refseq)
         seqs.append(seq)
-
-        # clean up temporary files
-        os.remove(fasta_file.name)
 
     # generate new headers in {name}|{accession}|{date} format expected by treetime()
     headers = map(lambda xy: '|{}|{}'.format(*xy), zip(lineages, coldates))

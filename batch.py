@@ -1,30 +1,38 @@
 import argparse
 import os
+import json
 
 import covizu
-from covizu import minimap2, clustering, treetime, beadplot
-from covizu.utils import db_utils, seq_utils
+from covizu import clustering, treetime, beadplot
+from covizu.utils import gisaid_utils
 from covizu.utils.progress_utils import Callback
-
-import json
-import sys
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="CoVizu analysis pipeline automation")
 
-    parser.add_argument("--db", type=str, default='data/gsaid.db',
-                        help="input, path to sqlite3 database")
-    parser.add_argument('-mmt', "--mmthreads", type=int, default=1,
-                        help="option, number of threads for minimap2.")
+    parser.add_argument("infile", type=str, default='data/provision.json.xz',
+                        help="input, path to xz-compressed JSON")
+
+    parser.add_argument('--minlen', type=int, default=29000, help='option, minimum genome length (nt)')
+    parser.add_argument('--mindate', type=str, default='2019-12-01', 
+                        help='option, earliest possible sample collection date (ISO format, default '
+                              '2019-12-01')
+   
+    parser.add_argument('--batchsize', type=int, default=500, 
+                        help='option, number of records to batch process with minimap2')
 
     parser.add_argument("--ref", type=str,
                         default=os.path.join(covizu.__path__[0], "data/NC_045512.fa"),
-                        help="input, path to FASTA file with reference genome"),
+                        help="option, path to FASTA file with reference genome")
+    parser.add_argument('--mmbin', type=str, default='minimap2',
+                        help="option, path to minimap2 binary executable")
+    parser.add_argument('-mmt', "--mmthreads", type=int, default=1,
+                        help="option, number of threads for minimap2.")
+
     parser.add_argument('--misstol', type=int, default=300,
                         help="option, maximum tolerated number of missing bases per "
                              "genome (default 300).")
-
     parser.add_argument("--vcf", type=str,
                         default=os.path.join(covizu.__path__[0], "data/problematic_sites_sarsCov2.vcf"),
                         help="Path to VCF file of problematic sites in SARS-COV-2 genome. "
@@ -62,57 +70,44 @@ def parse_args():
     return parser.parse_args()
 
 
-if __name__ == "__main__":
-    args = parse_args()
-    cb = Callback()
+def process_feed(args, callback=None):
+    """ Process feed data """
+    if callback:
+        callback("Processing GISAID feed data")
+    loader = gisaid_utils.load_gisaid(args.infile, minlen=args.minlen, mindate=args.mindate)
+    batcher = gisaid_utils.batch_fasta(loader, size=args.batchsize)
+    aligned = gisaid_utils.extract_features(batcher, ref_file=args.ref, binpath=args.mmbin,
+                                            nthread=args.mmthreads, minlen=args.minlen)
+    return gisaid_utils.sort_by_lineage(aligned, callback=cb.callback)
 
-    # Generate time-scaled tree of Pangolin lineages
-    cb.callback("Retrieving lineage genomes")
-    fasta = treetime.retrieve_genomes(args.db, nthread=args.mmthreads, ref_file=args.ref,
-                                      misstol=args.misstol, callback=cb.callback)
 
-    cb.callback("Reconstructing tree with {}".format(args.ft2bin))
+def build_tree(by_lineage, args, callback=None):
+    """ Generate time-scaled tree of Pangolin lineages """
+    fasta = treetime.retrieve_genomes(by_lineage, ref_file=args.ref)
+
+    if callback:
+        callback("Reconstructing tree with {}".format(args.ft2bin))
     nwk = treetime.fasttree(fasta, binpath=args.ft2bin)
 
-    cb.callback("Reconstructing time-scaled tree with {}".format(args.ttbin))
+    if callback:
+        callback("Reconstructing time-scaled tree with {}".format(args.ttbin))
     nexus_file = treetime.treetime(nwk, fasta, outdir=args.outdir, binpath=args.ttbin,
                                    clock=args.clock, verbosity=0)
-    treetime.parse_nexus(nexus_file, fasta, date_tol=args.datetol)  # -> treetime.nwk
 
-    # Retrieve raw genomes from DB, align and extract features
-    cb.callback("Retrieving raw genomes from database")
+    # writes output to treetime.nwk at `nexus_file` path
+    treetime.parse_nexus(nexus_file, fasta, date_tol=args.datetol)
 
-    with open(args.ref) as handle:
-        _, refseq = seq_utils.convert_fasta(handle)[0]
-    reflen = len(refseq)
-    mask = seq_utils.load_vcf(args.vcf)
-    data = {}
 
-    for lineage, fasta_file in db_utils.dump_raw_by_lineage(args.db, callback=cb.callback):
-        mm2 = minimap2.minimap2(infile=fasta_file, nthread=args.mmthreads, ref=args.ref)
-        gen = minimap2.encode_diffs(mm2, reflen=reflen)
-
-        features = []
-        # excludes genomes too divergent from expectation
-        for row in seq_utils.filter_outliers(gen):
-            if seq_utils.total_missing(row) > args.misstol:
-                # too many uncalled bases
-                continue
-            features.append(row)
-
-        cb.callback("{} sequences of lineage {} passed filters".format(len(features), lineage))
-        # remove problematic sites from feature vectors
-        features = seq_utils.filter_problematic(features, mask=mask)
-        data.update({lineage: features})
-
-    # Neighbor-joining reconstruction
-    cb.callback("Neighbor-joining reconstruction")
+def make_beadplots(by_lineage, args, callback=None):
+    """ Compute distance matrices and reconstruct NJ trees """
     result = []
-    for lineage, features in data.items():
+    for lineage, features in by_lineage.items():
         if len(features) == 0:
-            cb.callback("skipping empty lineage {}".format(lineage))
+            if callback:
+                callback("skipping empty lineage {}".format(lineage))
             continue
-        cb.callback('start {}, {} entries'.format(lineage, len(features)))
+        if callback:
+            callback('start {}, {} entries'.format(lineage, len(features)))
 
         # bootstrap sampling and NJ tree reconstruction
         trees, labels = clustering.build_trees(
@@ -127,11 +122,10 @@ if __name__ == "__main__":
             intermed.sort()
             variant = intermed[0][1]
             beaddict['nodes'].update({variant: []})
+
             for coldate, accn, label1 in intermed:
                 beaddict['nodes'][variant].append({
-                    'accession': accn,
-                    'label1': label1,
-                    'country': label1.split('/')[1],
+                    'accession': accn, 'label1': label1, 'country': label1.split('/')[1],
                     'coldate': coldate
                 })
             result.append(beaddict)
@@ -148,5 +142,16 @@ if __name__ == "__main__":
         beaddict = beadplot.serialize_tree(ctree)
         beaddict.update({'lineage': lineage})
         result.append(beaddict)
+
+    return result
+
+
+if __name__ == "__main__":
+    args = parse_args()
+    cb = Callback()
+
+    by_lineage = process_feed(args, cb.callback)
+    build_tree(by_lineage, args, cb.callback)
+    result = make_beadplots(by_lineage, args, cb.callback)
 
     args.outfile.write(json.dumps(result, indent=2))
