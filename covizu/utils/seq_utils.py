@@ -91,7 +91,7 @@ def total_missing(row):
     return res
 
 
-def apply_features(row, refseq):
+def apply_features(diffs, missing, refseq):
     """
     Reconstitute genome sequence from feature vector (genetic differences) and
     missing data vector.
@@ -101,7 +101,6 @@ def apply_features(row, refseq):
     :return:  str, aligned genome
     """
     result = list(refseq)  # strings are not mutable
-    _, diffs, missing = row
 
     # apply missing intervals
     for left, right in missing:

@@ -131,12 +131,12 @@ div.rightbox {
 
 
 footer {
-  width: 100%;
+  width: 50%;
   margin: 5px auto 10px auto;
   text-align: center;
   position: fixed;
   bottom: 10px;
-  right: 12px;
+  right: 30%;
   z-index: 150;
   background-color: rgba(255,255,255,0.7);
   font-size: 0.8em;
