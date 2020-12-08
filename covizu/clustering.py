@@ -247,7 +247,7 @@ if __name__ == "__main__":
     args = parse_args()
     cb = Callback()
 
-    # import lineage data frmo file
+    # import lineage data from file
     cb.callback('loading JSON')
     with open(args.json) as handle:
         by_lineage = json.load(handle)

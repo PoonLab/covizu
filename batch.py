@@ -110,15 +110,11 @@ def build_tree(by_lineage, args, callback=None):
 
 def beadplot_serial(lineage, features, args, callback=None):
     """ Compute distance matrices and reconstruct NJ trees """
-    if len(features) == 0:
-        if callback:
-            callback("skipping empty lineage {}".format(lineage))
-        continue
     if callback:
         callback('start {}, {} entries'.format(lineage, len(features)))
 
     # bootstrap sampling and NJ tree reconstruction, serial mode
-    trees, labels = clustering.build_trees(features, callback=cb.callback)
+    trees, labels = clustering.build_trees(features, args, callback=cb.callback)
     if trees is None:
         # lineage only has one variant, no meaningful tree
         beaddict = {'lineage': lineage, 'nodes': {}, 'edges': []}
@@ -134,8 +130,7 @@ def beadplot_serial(lineage, features, args, callback=None):
                 'accession': accn, 'label1': label1, 'country': label1.split('/')[1],
                 'coldate': coldate
             })
-        result.append(beaddict)
-        continue
+        return beaddict
 
     # generate majority consensus tree
     ctree = clustering.consensus(trees, cutoff=args.cutoff)
@@ -175,6 +170,8 @@ def make_beadplots(by_lineage, args):
     for lineage, features in by_lineage.items():
         if len(features) < args.mincount:
             # serial processing
+            if len(features) == 0:
+                continue
             beaddict = beadplot_serial(lineage, features, args)
         else:
             # call out to MPI
