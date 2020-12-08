@@ -1,6 +1,8 @@
 import argparse
 import os
 import json
+import subprocess
+import Phylo
 
 import covizu
 from covizu import clustering, treetime, beadplot
@@ -13,6 +15,9 @@ def parse_args():
 
     parser.add_argument("infile", type=str, default='data/provision.json.xz',
                         help="input, path to xz-compressed JSON")
+
+    parser.add_argument("--bylineage", type=str, default='data/by_lineage.json',
+                        help="option, path to write JSON of features by lineage")
 
     parser.add_argument('--minlen', type=int, default=29000, help='option, minimum genome length (nt)')
     parser.add_argument('--mindate', type=str, default='2019-12-01', 
@@ -42,7 +47,7 @@ def parse_args():
                         help='option, path to fasttree2 binary executable')
 
     parser.add_argument('--outdir', default='data/',
-                        help='optional, directory to write TreeTime output files')
+                        help='option, directory to write TreeTime output files')
     parser.add_argument('--ttbin', default='treetime',
                         help='option, path to treetime binary executable')
     parser.add_argument('--clock', type=float, default=8e-4,
@@ -50,12 +55,17 @@ def parse_args():
                              'constraining Treetime analysis (default 8e-4).')
 
     parser.add_argument('--datetol', type=float, default=0.1,
-                        help='optional, exclude tips from time-scaled tree '
+                        help='option, exclude tips from time-scaled tree '
                              'with high discordance between estimated and '
                              'known sample collection dates (year units,'
                              'default: 0.1)')
 
-    parser.add_argument('-njt', "--njthreads", type=int, default=1,
+    parser.add_argument('--mincount', type=int, default=5000,
+                        help='option, minimum number of variants in lineage '
+                             'above which MPI processing will be used.')
+    parser.add_argument('--machinefile', type=str, default='mfile',
+                        help='option, path to machine file for MPI.')
+    parser.add_argument('-njt', "--njthreads", type=int, default=25,
                         help="option, number of threads for NJ reconstruction")
     parser.add_argument("-n", "--nboot", type=int, default=100,
                         help="Number of bootstrap samples, default 100.")
@@ -98,51 +108,57 @@ def build_tree(by_lineage, args, callback=None):
     treetime.parse_nexus(nexus_file, fasta, date_tol=args.datetol)
 
 
-def make_beadplots(by_lineage, args, callback=None):
+def make_beadplots(lineage, features, args, callback=None):
     """ Compute distance matrices and reconstruct NJ trees """
-    result = []
-    for lineage, features in by_lineage.items():
-        if len(features) == 0:
-            if callback:
-                callback("skipping empty lineage {}".format(lineage))
-            continue
+    if len(features) == 0:
         if callback:
-            callback('start {}, {} entries'.format(lineage, len(features)))
+            callback("skipping empty lineage {}".format(lineage))
+        continue
+    if callback:
+        callback('start {}, {} entries'.format(lineage, len(features)))
 
-        # bootstrap sampling and NJ tree reconstruction
-        trees, labels = clustering.build_trees(
-            features, nboot=args.nboot, threads=args.njthreads, callback=cb.callback
-        )
-        if trees is None:
-            # lineage only has one variant, no meaningful tree
-            beaddict = {'lineage': lineage, 'nodes': {}, 'edges': []}
+    # bootstrap sampling and NJ tree reconstruction, serial mode
+    trees, labels = clustering.build_trees(features, callback=cb.callback)
+    if trees is None:
+        # lineage only has one variant, no meaningful tree
+        beaddict = {'lineage': lineage, 'nodes': {}, 'edges': []}
 
-            # use earliest sample as variant label
-            intermed = [label.split('|')[::-1] for label in labels[0]]
-            intermed.sort()
-            variant = intermed[0][1]
-            beaddict['nodes'].update({variant: []})
+        # use earliest sample as variant label
+        intermed = [label.split('|')[::-1] for label in labels[0]]
+        intermed.sort()
+        variant = intermed[0][1]
+        beaddict['nodes'].update({variant: []})
 
-            for coldate, accn, label1 in intermed:
-                beaddict['nodes'][variant].append({
-                    'accession': accn, 'label1': label1, 'country': label1.split('/')[1],
-                    'coldate': coldate
-                })
-            result.append(beaddict)
-            continue
-
-        # generate majority consensus tree
-        ctree = clustering.consensus(trees, cutoff=args.cutoff)
-
-        # collapse polytomies and label internal nodes
-        label_dict = dict([(str(idx), lst) for idx, lst in enumerate(labels)])
-        ctree = beadplot.annotate_tree(ctree, label_dict)
-
-        # convert to JSON format
-        beaddict = beadplot.serialize_tree(ctree)
-        beaddict.update({'lineage': lineage})
+        for coldate, accn, label1 in intermed:
+            beaddict['nodes'][variant].append({
+                'accession': accn, 'label1': label1, 'country': label1.split('/')[1],
+                'coldate': coldate
+            })
         result.append(beaddict)
+        continue
 
+    # generate majority consensus tree
+    ctree = clustering.consensus(trees, cutoff=args.cutoff)
+
+    # collapse polytomies and label internal nodes
+    label_dict = dict([(str(idx), lst) for idx, lst in enumerate(labels)])
+    ctree = beadplot.annotate_tree(ctree, label_dict)
+
+    # convert to JSON format
+    beaddict = beadplot.serialize_tree(ctree)
+    beaddict.update({'lineage': lineage})
+    return beaddict
+
+
+def import_labels(handle):
+    """ Load map of genome labels to tip indices from CSV file """
+    result = {}
+    _ = next(handle)  # skip header line
+    for line in handle:
+        qname, idx = line.strip('\n').split(',')
+        if idx not in result:
+            result.update({idx: []})
+        result[idx].append(qname)
     return result
 
 
@@ -151,7 +167,40 @@ if __name__ == "__main__":
     cb = Callback()
 
     by_lineage = process_feed(args, cb.callback)
-    build_tree(by_lineage, args, cb.callback)
-    result = make_beadplots(by_lineage, args, cb.callback)
+    with open(args.bylineage, 'w') as handle:
+        # export to file to process large lineages with MPI
+        json.dump(by_lineage, handle)
 
+    build_tree(by_lineage, args, cb.callback)
+
+    result = []
+    for lineage, features in by_lineage.items():
+        if len(features) < args.mincount:
+            # serial processing
+            beaddict = make_beadplots(lineage, features, args, callback=cb.callback)
+        else:
+            # call out to MPI
+            subprocess.check_call(
+                ["mpirun", "--machinefile", "python3", "covizu/clustering.py",
+                 args.bylineage, lineage, "--outdir", "data", "--threads", args.njthreads]
+            )
+
+            # import trees
+            with open('data/{}.boot.nwk'.format(lineage)) as outfile:
+                trees = Phylo.read(outfile, 'newick')
+
+            # import label map
+            with open('data/{}.labels.csv'.format(lineage)) as handle:
+                label_dict = import_labels(handle)
+
+            # generate beadplot data
+            ctree = clustering.consensus(trees, cutoff=args.cutoff)
+            ctree = beadplot.annotate_tree(ctree, label_dict)
+            ctree = beadplot.annotate_tree(ctree, label_dict)
+            beaddict = beadplot.serialize_tree(ctree)
+
+        beaddict.update({'lineage': lineage})
+        result.append(beaddict)
+    
+    # serialize results to JSON
     args.outfile.write(json.dumps(result, indent=2))
