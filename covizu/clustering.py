@@ -225,7 +225,12 @@ def parse_args():
 
 
 if __name__ == "__main__":
-    from mpi4py import MPI
+    try:
+        from mpi4py import MPI
+    except ModuleNotFoundError:
+        print("Script requires mpi4py - https://pypi.org/project/mpi4py/")
+        sys.exit()
+
     comm = MPI.COMM_WORLD
     my_rank = comm.Get_rank()
     nprocs = comm.Get_size()

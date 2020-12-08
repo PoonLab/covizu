@@ -108,7 +108,7 @@ def build_tree(by_lineage, args, callback=None):
     treetime.parse_nexus(nexus_file, fasta, date_tol=args.datetol)
 
 
-def make_beadplots(lineage, features, args, callback=None):
+def beadplot_serial(lineage, features, args, callback=None):
     """ Compute distance matrices and reconstruct NJ trees """
     if len(features) == 0:
         if callback:
@@ -162,22 +162,19 @@ def import_labels(handle):
     return result
 
 
-if __name__ == "__main__":
-    args = parse_args()
-    cb = Callback()
+def make_beadplots(by_lineage, args):
+    """
+    Main loop
 
-    by_lineage = process_feed(args, cb.callback)
-    with open(args.bylineage, 'w') as handle:
-        # export to file to process large lineages with MPI
-        json.dump(by_lineage, handle)
-
-    build_tree(by_lineage, args, cb.callback)
-
+    :param by_lineage:  dict, feature vectors stratified by lineage
+    :param args:  Namespace, from argparse.ArgumentParser()
+    :return:  list, beadplot data by lineage
+    """
     result = []
     for lineage, features in by_lineage.items():
         if len(features) < args.mincount:
             # serial processing
-            beaddict = make_beadplots(lineage, features, args, callback=cb.callback)
+            beaddict = beadplot_serial(lineage, features, args, callback=cb.callback)
         else:
             # call out to MPI
             subprocess.check_call(
@@ -201,6 +198,21 @@ if __name__ == "__main__":
 
         beaddict.update({'lineage': lineage})
         result.append(beaddict)
-    
+
+    return result
+
+
+if __name__ == "__main__":
+    args = parse_args()
+    cb = Callback()
+
+    by_lineage = process_feed(args, cb.callback)
+    with open(args.bylineage, 'w') as handle:
+        # export to file to process large lineages with MPI
+        json.dump(by_lineage, handle)
+
+    build_tree(by_lineage, args, cb.callback)
+    result = make_beadplots(by_lineage, args)
+
     # serialize results to JSON
     args.outfile.write(json.dumps(result, indent=2))
