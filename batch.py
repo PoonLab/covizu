@@ -63,7 +63,7 @@ def parse_args():
     parser.add_argument('--mincount', type=int, default=5000,
                         help='option, minimum number of variants in lineage '
                              'above which MPI processing will be used.')
-    parser.add_argument('--machinefile', type=str, default='mfile',
+    parser.add_argument('--machine_file', type=str, default='mfile',
                         help='option, path to machine file for MPI.')
     parser.add_argument('-njt', "--njthreads", type=int, default=25,
                         help="option, number of threads for NJ reconstruction")
@@ -110,15 +110,11 @@ def build_tree(by_lineage, args, callback=None):
 
 def beadplot_serial(lineage, features, args, callback=None):
     """ Compute distance matrices and reconstruct NJ trees """
-    if len(features) == 0:
-        if callback:
-            callback("skipping empty lineage {}".format(lineage))
-        continue
     if callback:
         callback('start {}, {} entries'.format(lineage, len(features)))
 
     # bootstrap sampling and NJ tree reconstruction, serial mode
-    trees, labels = clustering.build_trees(features, callback=cb.callback)
+    trees, labels = clustering.build_trees(features, args, callback=cb.callback)
     if trees is None:
         # lineage only has one variant, no meaningful tree
         beaddict = {'lineage': lineage, 'nodes': {}, 'edges': []}
@@ -134,8 +130,7 @@ def beadplot_serial(lineage, features, args, callback=None):
                 'accession': accn, 'label1': label1, 'country': label1.split('/')[1],
                 'coldate': coldate
             })
-        result.append(beaddict)
-        continue
+        return beaddict
 
     # generate majority consensus tree
     ctree = clustering.consensus(trees, cutoff=args.cutoff)
@@ -164,7 +159,8 @@ def import_labels(handle):
 
 def make_beadplots(by_lineage, args):
     """
-    Main loop
+    Wrapper for beadplot_serial - divert to clustering.py in MPI mode if
+    lineage has too many genomes.
 
     :param by_lineage:  dict, feature vectors stratified by lineage
     :param args:  Namespace, from argparse.ArgumentParser()
@@ -174,12 +170,14 @@ def make_beadplots(by_lineage, args):
     for lineage, features in by_lineage.items():
         if len(features) < args.mincount:
             # serial processing
-            beaddict = beadplot_serial(lineage, features, args, callback=cb.callback)
+            if len(features) == 0:
+                continue
+            beaddict = beadplot_serial(lineage, features, args)
         else:
             # call out to MPI
             subprocess.check_call(
-                ["mpirun", "--machinefile", "python3", "covizu/clustering.py",
-                 args.bylineage, lineage, "--outdir", "data", "--threads", args.njthreads]
+                ["mpirun", "--machinefile", args.machine_file, "python3", "covizu/clustering.py",
+                args.bylineage, "--nboot", args.nboot, "--outdir", "data"]
             )
 
             # import trees
@@ -192,7 +190,6 @@ def make_beadplots(by_lineage, args):
 
             # generate beadplot data
             ctree = clustering.consensus(trees, cutoff=args.cutoff)
-            ctree = beadplot.annotate_tree(ctree, label_dict)
             ctree = beadplot.annotate_tree(ctree, label_dict)
             beaddict = beadplot.serialize_tree(ctree)
 
