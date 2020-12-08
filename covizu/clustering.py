@@ -273,11 +273,7 @@ if __name__ == "__main__":
                     handle.write('{},{}\n'.format(nm, i))
 
         # export trees
-        outfile = os.path.join(
-            args.outdir, '{}.{}.nwk'.format(
-                args.lineage, 'cons' if args.cons else 'boot'
-            )
-        )
+        outfile = os.path.join(args.outdir, '{}.nwk'.format(args.lineage))
         if trees is None:
             # lineage only has one variant, no meaningful tree
             with open(outfile, 'w') as handle:
