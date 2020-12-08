@@ -63,7 +63,7 @@ def parse_args():
     parser.add_argument('--mincount', type=int, default=5000,
                         help='option, minimum number of variants in lineage '
                              'above which MPI processing will be used.')
-    parser.add_argument('--machinefile', type=str, default='mfile',
+    parser.add_argument('--machine_file', type=str, default='mfile',
                         help='option, path to machine file for MPI.')
     parser.add_argument('-njt', "--njthreads", type=int, default=25,
                         help="option, number of threads for NJ reconstruction")
@@ -164,7 +164,8 @@ def import_labels(handle):
 
 def make_beadplots(by_lineage, args):
     """
-    Main loop
+    Wrapper for beadplot_serial - divert to clustering.py in MPI mode if
+    lineage has too many genomes.
 
     :param by_lineage:  dict, feature vectors stratified by lineage
     :param args:  Namespace, from argparse.ArgumentParser()
@@ -174,12 +175,12 @@ def make_beadplots(by_lineage, args):
     for lineage, features in by_lineage.items():
         if len(features) < args.mincount:
             # serial processing
-            beaddict = beadplot_serial(lineage, features, args, callback=cb.callback)
+            beaddict = beadplot_serial(lineage, features, args)
         else:
             # call out to MPI
             subprocess.check_call(
-                ["mpirun", "--machinefile", "python3", "covizu/clustering.py",
-                 args.bylineage, lineage, "--outdir", "data", "--threads", args.njthreads]
+                ["mpirun", "--machinefile", args.machine_file, "python3", "covizu/clustering.py",
+                args.bylineage, "--nboot", args.nboot, "--outdir", "data"]
             )
 
             # import trees
@@ -192,7 +193,6 @@ def make_beadplots(by_lineage, args):
 
             # generate beadplot data
             ctree = clustering.consensus(trees, cutoff=args.cutoff)
-            ctree = beadplot.annotate_tree(ctree, label_dict)
             ctree = beadplot.annotate_tree(ctree, label_dict)
             beaddict = beadplot.serialize_tree(ctree)
 

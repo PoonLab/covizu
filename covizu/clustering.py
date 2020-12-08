@@ -29,9 +29,6 @@ def recode_features(records, callback=None):
     Pass results to bootstrap() to reconstruct trees by neighbor-joining method.
 
     :param records:  list, dict for each record
-    :param nboot:  int, number of bootstrap samples
-    :param binpath:  str, path to RapidNJ binary executable file
-    :param threads:  int, number of threads for bootstrap
     :param callback:  optional, function for progress monitoring
     :return:  list, list; Phylo.BaseTree objects and labels associated with tips
     """
@@ -73,6 +70,7 @@ def bootstrap(union, indexed, binpath='rapidnj', callback=None):
     :param indexed:  list, feature vectors encoded as integers
     :param binpath:  str, path to RapidNJ binary executable
     :param callback:  function, optional for progress monitoring
+    :return:  Bio.Phylo.BaseTree object
     """
     sample = [int(len(union) * random.random()) for _ in range(len(union))]
     weights = dict([(y, sample.count(y)) for y in sample])
@@ -195,8 +193,14 @@ def consensus(trees, cutoff=0.5, callback=None):
     return orphans.popitem()[1]
 
 
-def build_trees(records, callback=None):
-    """ Serial mode """
+def build_trees(records, args, callback=None):
+    """
+    Serial mode, called from batch.py
+
+    :param records:  list, feature vectors as dicts
+    :param args:  Namespace, from argparse.ArgumentParser
+    :param callback:  function, optional for progress monitoring
+    """
     union, labels, indexed = recode_features(records, callback=callback)
     trees = [bootstrap(union, indexed, args.binpath, callback=callback)
              for _ in range(args.nboot)]
@@ -218,8 +222,6 @@ def parse_args():
                              "Defaults to current working directory.")
     parser.add_argument("-n", "--nboot", type=int, default=100,
                         help="Number of bootstrap samples, default 100.")
-    parser.add_argument("-t", "--threads", type=int, default=2,
-                        help="Number of threads to run, default 2.")
     parser.add_argument("--binpath", type=str, default='rapidnj',
                         help="Path to RapidNJ binary executable.")
 
@@ -227,6 +229,10 @@ def parse_args():
 
 
 if __name__ == "__main__":
+    """
+    Called by batch.py via subprocess to handle lineages with excessive
+    numbers of genomes, to process via MPI
+    """
     try:
         from mpi4py import MPI
     except ModuleNotFoundError:
@@ -241,6 +247,7 @@ if __name__ == "__main__":
     args = parse_args()
     cb = Callback()
 
+    # import lineage data frmo file
     cb.callback('loading JSON')
     with open(args.json) as handle:
         by_lineage = json.load(handle)
@@ -250,7 +257,7 @@ if __name__ == "__main__":
         cb.callback("ERROR: JSON did not contain lineage {}".format(args.lineage))
         sys.exit()
 
-    # generate distance matrices from bootstrap samples
+    # generate distance matrices from bootstrap samples [[ MPI ]]
     union, labels, indexed = recode_features(records, callback=cb.callback)
     trees = []
     for bn in range(args.nboot):
@@ -261,6 +268,7 @@ if __name__ == "__main__":
     comm.Barrier()
     result = comm.gather(trees, root=0)
 
+    # head node only
     if my_rank == 0:
         trees = [phy for batch in result for phy in batch]  # flatten nested lists
 
