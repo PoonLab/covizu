@@ -2,7 +2,7 @@ import argparse
 import os
 import json
 import subprocess
-import Phylo
+from Bio import Phylo
 
 import covizu
 from covizu import clustering, treetime, beadplot
