@@ -40,7 +40,7 @@ def recode_features(records, callback=None):
     for record in records:
         label = '|'.join([record['covv_virus_name'], record['covv_accession_id'],
                           record['covv_collection_date']])
-        key = tuple(record['diffs'])
+        key = tuple([tuple(x) for x in record['diffs']])
         if key not in fvecs:
             fvecs.update({key: []})
         fvecs[key].append(label)
@@ -240,7 +240,7 @@ if __name__ == "__main__":
     cb = Callback()
 
     cb.callback('loading JSON')
-    with open(args.infile) as handle:
+    with open(args.json) as handle:
         by_lineage = json.load(handle)
 
     records = by_lineage.get(args.lineage, None)
