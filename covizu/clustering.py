@@ -220,6 +220,8 @@ def parse_args():
                         help="Number of bootstrap samples, default 100.")
     parser.add_argument("-t", "--threads", type=int, default=2,
                         help="Number of threads to run, default 2.")
+    parser.add_argument("--binpath", type=str, default='rapidnj',
+                        help="Path to RapidNJ binary executable.")
 
     return parser.parse_args()
 
