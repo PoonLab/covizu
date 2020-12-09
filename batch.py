@@ -65,8 +65,6 @@ def parse_args():
                              'above which MPI processing will be used.')
     parser.add_argument('--machine_file', type=str, default='mfile',
                         help='option, path to machine file for MPI.')
-    parser.add_argument('-njt', "--njthreads", type=int, default=25,
-                        help="option, number of threads for NJ reconstruction")
     parser.add_argument("-n", "--nboot", type=int, default=100,
                         help="Number of bootstrap samples, default 100.")
 
