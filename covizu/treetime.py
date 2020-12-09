@@ -96,7 +96,8 @@ def treetime(nwk, fasta, outdir, binpath='treetime', clock=None, verbosity=1):
 
     call = [binpath, '--tree', nwkfile.name,
             '--aln', alnfile.name, '--dates', datefile.name,
-            '--outdir', outdir, '--verbose', str(verbosity)]
+            '--outdir', outdir, '--verbose', str(verbosity),
+            '--plot-rtt', 'none']  # see issue #66
     if clock:
         call.extend(['--clock-rate', str(clock)])
     check_call(call)

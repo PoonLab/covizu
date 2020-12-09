@@ -437,10 +437,6 @@ function beadplot(cid) {
       min_y = d3.min(variants, yValue1B),
       max_y = d3.max(variants, yValue1B);
 
-  // Create a div for the tooltip
-  let bTooltip = d3.select("#tooltipContainer")
-      .style("opacity", 0);
-
   // update vertical range for consistent spacing between variants
   heightB = max_y * 10 + 40;
   $("#svg-cluster > svg").attr("height", heightB + marginB.top + marginB.bottom);
@@ -484,23 +480,29 @@ function beadplot(cid) {
           d3.select(this)
             .attr("stroke-width", 5);
 
-          bTooltip.transition()       // Show tooltip
+          cTooltip.transition()       // Show tooltip
               .duration(50)
               .style("opacity", 0.9);
 
           let tooltipText = "";
           if (d.parent || d.dist) {
-            tooltipText += `<b>Parent:</b> ${d.parent}<br><b>Genomic distance:</b> ${d.dist}<br><br>`;
+            tooltipText += `<b>Parent:</b> ${d.parent}<br/><b>Genomic distance:</b> ${Math.round(d.dist*100)/100}<br/>`;
           }
 
           tooltipText += region_to_string(table(d.region));
-          tooltipText += `<br><b>Unique collection dates:</b> ${d.numBeads}<br>`;
-          tooltipText += `<br><b>Collection dates:</b><br>${formatDate(d.x1)} / ${formatDate(d.x2)}<br>`;
+          tooltipText += `<b>Unique collection dates:</b> ${d.numBeads}<br/>`;
+          tooltipText += `<b>Collection dates:</b><br>${formatDate(d.x1)} / ${formatDate(d.x2)}`;
 
           // Tooltip appears 10 pixels left of the cursor
-          bTooltip.html(tooltipText)
+          cTooltip.html(tooltipText)
               .style("left", (d3.event.pageX + 10) + "px")
-              .style("top", (d3.event.pageY + "px"));
+              .style("top", function() {
+                if (d3.event.pageY > window.innerHeight/2) {
+                  return (d3.event.pageY - cTooltip.node().getBoundingClientRect().height) + "px";
+                } else {
+                  return d3.event.pageY + "px";
+                }
+              });
         }
       })
       .on("mouseout", function() {
@@ -513,7 +515,7 @@ function beadplot(cid) {
                 return 3;
               }
             });
-        bTooltip.transition()     // Hide tooltip
+        cTooltip.transition()     // Hide tooltip
             .duration(50)
             .style("opacity", 0);
       })
@@ -559,25 +561,28 @@ function beadplot(cid) {
       .on("mouseover", function(d) {
         d3.select(this).attr("stroke-width", 3);
 
-        bTooltip.transition()       // Show tooltip
+        cTooltip.transition()       // Show tooltip
             .duration(50)
             .style("opacity", 0.9);
 
         let tooltipText = `<b>Parent:</b> ${d.parent}<br><b>Child:</b> ${d.child}<br>`;
-        tooltipText += `<b>Genomic distance:</b> ${d.dist}<br><br>`;
-
+        tooltipText += `<b>Genomic distance:</b> ${Math.round(d.dist*100)/100}<br>`;
         tooltipText += `<b>Collection date:</b> ${formatDate(d.x2)}`;
 
-        // Tooltip appears 10 pixels left of the cursor
-        bTooltip.html(tooltipText)
+        cTooltip.html(tooltipText)
             .style("left", (d3.event.pageX + 10) + "px")
-            .style("top", (d3.event.pageY + "px"));
-
+            .style("top", function() {
+              if (d3.event.pageY > window.innerHeight/2) {
+                return (d3.event.pageY - cTooltip.node().getBoundingClientRect().height) + "px";
+              } else {
+                return d3.event.pageY + "px";
+              }
+            });
       })
       .on("mouseout", function() {
         d3.select(this).attr("stroke-width", 1);
 
-        bTooltip.transition()     // Hide tooltip
+        cTooltip.transition()     // Hide tooltip
             .duration(50)
             .style("opacity", 0);
       });
@@ -600,27 +605,32 @@ function beadplot(cid) {
         d3.select(this).attr("stroke-width", 2)
             .attr("r", 4*Math.sqrt(d.count)+3);
 
-        bTooltip.transition()       // Show tooltip
+        cTooltip.transition()
             .duration(50)
             .style("opacity", 0.9);
 
         let tooltipText = "";
         if (d.parent || d.dist) {
-          tooltipText += `<b>Parent:</b> ${d.parent}<br><b>Genomic distance:</b> ${d.dist}<br><br>`;
+          tooltipText += `<b>Parent:</b> ${d.parent}<br/><b>Genomic distance:</b> ${Math.round(d.dist*100)/100}<br/>`;
         }
-
         tooltipText += region_to_string(table(d.region));
-        tooltipText += `<br><b>Collection date:</b> ${formatDate(d.x)}<br>`;
+        tooltipText += `<b>Collection date:</b> ${formatDate(d.x)}`;
 
         // Tooltip appears 10 pixels left of the cursor
-        bTooltip.html(tooltipText)
+        cTooltip.html(tooltipText)
             .style("left", (d3.event.pageX + 10) + "px")
-            .style("top", (d3.event.pageY + "px"));
+            .style("top", function() {
+              if (d3.event.pageY > window.innerHeight/2) {
+                return (d3.event.pageY - cTooltip.node().getBoundingClientRect().height) + "px";
+              } else {
+                return d3.event.pageY + "px";
+              }
+            });
       })
       .on("mouseout", function(d) {
           d3.select(this).attr("stroke-width", 1)
               .attr("r", 4*Math.sqrt(d.count));
-          bTooltip//.transition()     // Hide tooltip
+          cTooltip//.transition()     // Hide tooltip
               //.duration(50)
               .style("opacity", 0);
       })
@@ -677,8 +687,6 @@ function region_to_string(my_regions) {
  * @param obj: JS object or an array of JS Objects
  */
 function gen_details_table(obj) {
-  let bTooltip = d3.select("#tooltipContainer")
-      .style("opacity", 0);
   var details = [];
 
   // Check for a list of samples
@@ -756,12 +764,10 @@ function gen_details_table(obj) {
       .on("mouseover", function(x) {
         let gttx = d3.event.pageX,
             gtty = d3.event.pageY;
-        console.log(gttx);
-        console.log(gtty);
 
         if (x.startsWith("EPI_ISL")) {
           gisaid.getAcknowledgementData(x, function(gd) {
-            bTooltip.transition()
+            cTooltip.transition()
                 .duration(50)
                 .style("opacity", 0.9);
 
@@ -771,14 +777,20 @@ function gen_details_table(obj) {
             tooltipText += `<b>Authors:</b> ${gd.covv_authors}`;
 
             // Tooltip appears 10 pixels left of the cursor
-            bTooltip.html(tooltipText)
-                .style("left", (gttx + 10) + "px")
-                .style("top", (gtty + "px"));
+            cTooltip.html(tooltipText)
+                .style("left", (gttx - cTooltip.node().getBoundingClientRect().width - 20) + "px")
+                .style("top", function() {
+                  if (gtty > window.innerHeight/2) {
+                    return (gtty - cTooltip.node().getBoundingClientRect().height) + "px";
+                  } else {
+                    return gtty + "px";
+                  }
+                });
           });
         }
       })
       .on("mouseout", function() {
-        bTooltip.transition()
+        cTooltip.transition()
             .duration(50)
             .style("opacity", 0);
       })

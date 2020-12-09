@@ -62,12 +62,15 @@ div.gisaid {
 }
 
 div.tooltip{
-  position: absolute;
+  box-sizing: border-box;
+  position: relative;
+  width: 200px;
+  max-width: 300px;
   text-align: left;
   padding: 12px;
   font: 12px sans-serif;
-  background: lightgrey;
-  border: 2px solid darkgrey;
+  background: #fffaff;
+  border: 2px solid #4f2683;
   border-radius: 8px;
   pointer-events: none;
 }
