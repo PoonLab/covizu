@@ -182,8 +182,8 @@ def make_beadplots(by_lineage, args, callback=None):
             )
 
             # import trees
-            with open('data/{}.nwk'.format(lineage)) as outfile:
-                trees = Phylo.parse(outfile, 'newick')
+            outfile = open('data/{}.nwk'.format(lineage))
+            trees = Phylo.parse(outfile, 'newick')  # note this returns a generator
 
             # import label map
             with open('data/{}.labels.csv'.format(lineage)) as handle:
@@ -191,6 +191,8 @@ def make_beadplots(by_lineage, args, callback=None):
 
             # generate beadplot data
             ctree = clustering.consensus(trees, cutoff=args.cutoff)
+            outfile.close()  # done with Phylo.parse generator
+
             ctree = beadplot.annotate_tree(ctree, label_dict)
             beaddict = beadplot.serialize_tree(ctree)
 
