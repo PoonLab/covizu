@@ -59,7 +59,7 @@ def recode_features(records, callback=None):
     return union, labels, indexed
 
 
-def bootstrap(union, indexed, binpath='rapidnj', callback=None):
+def bootstrap(union, indexed, binpath='rapidnj', callback=None, callfreq=1000):
     """
     Sample features from set union at random with replacement.  We use the
     result to weight the symmetric differences when calculating pairwise
@@ -70,6 +70,8 @@ def bootstrap(union, indexed, binpath='rapidnj', callback=None):
     :param indexed:  list, feature vectors encoded as integers
     :param binpath:  str, path to RapidNJ binary executable
     :param callback:  function, optional for progress monitoring
+    :param callfreq:  int, sampling interval for callback
+
     :return:  Bio.Phylo.BaseTree object
     """
     sample = [int(len(union) * random.random()) for _ in range(len(union))]
@@ -82,7 +84,7 @@ def bootstrap(union, indexed, binpath='rapidnj', callback=None):
     outfile = tempfile.NamedTemporaryFile('w', prefix="cvz_boot_")
     outfile.write('{0:>5}\n'.format(n))
     for i in range(n):
-        if callback and i % 100 == 0:
+        if callback and i % callfreq == 0:
             callback("  row {} of {}".format(i, n))
         outfile.write('{}'.format(i))
         for j in range(n):
@@ -261,11 +263,10 @@ if __name__ == "__main__":
     union, labels, indexed = recode_features(records, callback=cb.callback)
     trees = []
     for bn in range(args.nboot):
-        if bn % nprocs != my_rank:
-            continue
-        phy = bootstrap(union, indexed, args.binpath, callback=cb.callback)
-        trees.append(phy)
-    comm.Barrier()
+        if bn % nprocs == my_rank:
+            phy = bootstrap(union, indexed, args.binpath, callback=cb.callback)
+            trees.append(phy)
+        comm.Barrier()  # wait for other processes
     result = comm.gather(trees, root=0)
 
     # head node only

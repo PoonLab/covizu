@@ -91,7 +91,7 @@ def process_feed(args, callback=None):
     return gisaid_utils.sort_by_lineage(aligned, callback=cb.callback)
 
 
-def build_tree(by_lineage, args, callback=None):
+def build_timetree(by_lineage, args, callback=None):
     """ Generate time-scaled tree of Pangolin lineages """
     fasta = treetime.retrieve_genomes(by_lineage, ref_file=args.ref)
 
@@ -203,6 +203,7 @@ def make_beadplots(by_lineage, args, callback=None):
 
 
 if __name__ == "__main__":
+    # TODO: check that user has loaded openmpi module
     args = parse_args()
     cb = Callback()
 
@@ -211,7 +212,7 @@ if __name__ == "__main__":
         # export to file to process large lineages with MPI
         json.dump(by_lineage, handle)
 
-    build_tree(by_lineage, args, cb.callback)
+    build_timetree(by_lineage, args, cb.callback)
     result = make_beadplots(by_lineage, args, cb.callback)
 
     # serialize results to JSON
