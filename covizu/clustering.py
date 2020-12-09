@@ -249,7 +249,7 @@ if __name__ == "__main__":
 
     # command-line execution
     args = parse_args()
-    cb = Callback(t0=args.t0)
+    cb = Callback(t0=args.timestamp)
 
     # import lineage data from file
     cb.callback('loading JSON')
