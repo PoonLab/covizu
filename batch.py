@@ -177,7 +177,8 @@ def make_beadplots(by_lineage, args, callback=None):
             # call out to MPI
             subprocess.check_call(
                 ["mpirun", "--machinefile", args.machine_file, "python3", "covizu/clustering.py",
-                args.bylineage, "--nboot", str(args.nboot), "--outdir", "data"]
+                 args.bylineage, lineage,  # positional arguments <JSON file>, <str>
+                 "--nboot", str(args.nboot), "--outdir", "data"]
             )
 
             # import trees
