@@ -154,7 +154,7 @@ def import_labels(handle):
     return result
 
 
-def make_beadplots(by_lineage, args, callback=None):
+def make_beadplots(by_lineage, args, callback=None, t0=None):
     """
     Wrapper for beadplot_serial - divert to clustering.py in MPI mode if
     lineage has too many genomes.
@@ -181,8 +181,8 @@ def make_beadplots(by_lineage, args, callback=None):
                  args.bylineage, lineage,  # positional arguments <JSON file>, <str>
                  "--nboot", str(args.nboot), "--outdir", "data"
             ]
-            if callback:
-                cmd.extend(["--timestamp", str(callback.t0.timestamp())])
+            if t0:
+                cmd.extend(["--timestamp", str(t0.timestamp())])
             subprocess.check_call(cmd)
 
             # import trees
