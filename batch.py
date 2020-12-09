@@ -110,11 +110,8 @@ def build_tree(by_lineage, args, callback=None):
 
 def beadplot_serial(lineage, features, args, callback=None):
     """ Compute distance matrices and reconstruct NJ trees """
-    if callback:
-        callback('start {}, {} entries'.format(lineage, len(features)))
-
     # bootstrap sampling and NJ tree reconstruction, serial mode
-    trees, labels = clustering.build_trees(features, args, callback=cb.callback)
+    trees, labels = clustering.build_trees(features, args, callback=callback)
     if trees is None:
         # lineage only has one variant, no meaningful tree
         beaddict = {'lineage': lineage, 'nodes': {}, 'edges': []}
@@ -157,7 +154,7 @@ def import_labels(handle):
     return result
 
 
-def make_beadplots(by_lineage, args):
+def make_beadplots(by_lineage, args, callback=None):
     """
     Wrapper for beadplot_serial - divert to clustering.py in MPI mode if
     lineage has too many genomes.
@@ -168,16 +165,19 @@ def make_beadplots(by_lineage, args):
     """
     result = []
     for lineage, features in by_lineage.items():
+        if callback:
+            callback('start {}, {} entries'.format(lineage, len(features)))
+
         if len(features) < args.mincount:
             # serial processing
             if len(features) == 0:
-                continue
+                continue  # empty lineage, skip (should never happen)
             beaddict = beadplot_serial(lineage, features, args)
         else:
             # call out to MPI
             subprocess.check_call(
                 ["mpirun", "--machinefile", args.machine_file, "python3", "covizu/clustering.py",
-                args.bylineage, "--nboot", args.nboot, "--outdir", "data"]
+                args.bylineage, "--nboot", str(args.nboot), "--outdir", "data"]
             )
 
             # import trees
@@ -209,7 +209,7 @@ if __name__ == "__main__":
         json.dump(by_lineage, handle)
 
     build_tree(by_lineage, args, cb.callback)
-    result = make_beadplots(by_lineage, args)
+    result = make_beadplots(by_lineage, args, cb.callback)
 
     # serialize results to JSON
     args.outfile.write(json.dumps(result, indent=2))
