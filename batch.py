@@ -183,7 +183,7 @@ def make_beadplots(by_lineage, args, callback=None):
 
             # import trees
             with open('data/{}.nwk'.format(lineage)) as outfile:
-                trees = Phylo.read(outfile, 'newick')
+                trees = Phylo.parse(outfile, 'newick')
 
             # import label map
             with open('data/{}.labels.csv'.format(lineage)) as handle:
