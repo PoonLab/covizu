@@ -161,6 +161,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None):
 
     :param by_lineage:  dict, feature vectors stratified by lineage
     :param args:  Namespace, from argparse.ArgumentParser()
+    :param t0:  float, datetime.timestamp.
     :return:  list, beadplot data by lineage
     """
     result = []
@@ -182,7 +183,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None):
                  "--nboot", str(args.nboot), "--outdir", "data"
             ]
             if t0:
-                cmd.extend(["--timestamp", str(t0.timestamp())])
+                cmd.extend(["--timestamp", str(t0)])
             subprocess.check_call(cmd)
 
             # import trees
