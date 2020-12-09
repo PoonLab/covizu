@@ -226,6 +226,8 @@ def parse_args():
                         help="Number of bootstrap samples, default 100.")
     parser.add_argument("--binpath", type=str, default='rapidnj',
                         help="Path to RapidNJ binary executable.")
+    parser.add_argument("--timestamp", type=float, default=None,
+                        help="option, timestamp to set callback function")
 
     return parser.parse_args()
 
@@ -247,7 +249,7 @@ if __name__ == "__main__":
 
     # command-line execution
     args = parse_args()
-    cb = Callback()
+    cb = Callback(t0=args.t0)
 
     # import lineage data from file
     cb.callback('loading JSON')
@@ -266,7 +268,7 @@ if __name__ == "__main__":
         if bn % nprocs == my_rank:
             phy = bootstrap(union, indexed, args.binpath, callback=cb.callback)
             trees.append(phy)
-        comm.Barrier()  # wait for other processes
+    comm.Barrier()  # wait for other processes to finish
     result = comm.gather(trees, root=0)
 
     # head node only

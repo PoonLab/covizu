@@ -175,11 +175,15 @@ def make_beadplots(by_lineage, args, callback=None):
             beaddict = beadplot_serial(lineage, features, args)
         else:
             # call out to MPI
-            subprocess.check_call(
-                ["mpirun", "--machinefile", args.machine_file, "python3", "covizu/clustering.py",
+            cmd = [
+                "mpirun", "--machinefile", args.machine_file,
+                "python3", "covizu/clustering.py",
                  args.bylineage, lineage,  # positional arguments <JSON file>, <str>
-                 "--nboot", str(args.nboot), "--outdir", "data"]
-            )
+                 "--nboot", str(args.nboot), "--outdir", "data"
+            ]
+            if callback:
+                cmd.extend(["--timestamp", str(callback.t0.timestamp())])
+            subprocess.check_call(cmd)
 
             # import trees
             outfile = open('data/{}.nwk'.format(lineage))
