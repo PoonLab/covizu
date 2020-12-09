@@ -217,7 +217,7 @@ if __name__ == "__main__":
         json.dump(by_lineage, handle)
 
     build_timetree(by_lineage, args, cb.callback)
-    result = make_beadplots(by_lineage, args, cb.callback)
+    result = make_beadplots(by_lineage, args, cb.callback, t0=cb.t0.timestamp())
 
     # serialize results to JSON
     args.outfile.write(json.dumps(result, indent=2))
