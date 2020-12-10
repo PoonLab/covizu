@@ -195,7 +195,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None):
                 label_dict = import_labels(handle)
 
             # generate beadplot data
-            ctree = clustering.consensus(trees, cutoff=args.cutoff)
+            ctree = clustering.consensus(trees, cutoff=args.cutoff, callback=callback)
             outfile.close()  # done with Phylo.parse generator
 
             ctree = beadplot.annotate_tree(ctree, label_dict)

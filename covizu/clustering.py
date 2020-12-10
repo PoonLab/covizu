@@ -132,55 +132,56 @@ def consensus(trees, cutoff=0.5, callback=None):
     frequencies above the cutoff to resolve a star tree.
     :param trees:  iterable containing Phylo.BaseTree objects
     :param cutoff:  float, bootstrap threshold (default 0.5)
+    :param callback:  function, optional callback
     :return:  Phylo.BaseTree
     """
     if type(trees) is not list:
         # resolve generator object
         trees = list(trees)
 
-    count = len(trees)
+    ntrees = len(trees)
 
     # store terminal labels and branch lengths
     tip_index = {}
     for i, tip in enumerate(trees[0].get_terminals()):
         tip_index.update({tip.name: i})
+    ntips = len(tip_index)
 
     if callback:
         callback("Recording splits and branch lengths")
     splits = {}
-    terminals = dict([(tn, []) for tn in tip_index.keys()])
+    terminals = dict([(tn, 0) for tn in tip_index.keys()])
     for phy in trees:
         # record terminal branch lengths
         for tip in phy.get_terminals():
-            terminals[tip.name].append(tip.branch_length)
+            terminals[tip.name] += tip.branch_length
 
         # record splits in tree
         phy = label_nodes(phy, tip_index)
         for node in phy.get_nonterminals():
             key = tuple(node.tip_index)
             if key not in splits:
-                splits.update({key: []})
-            splits[key].append(node.branch_length)
+                splits.update({key: {'sum': 0., 'count': 0}})
 
-    # filter splits by frequency threshold
-    intermed = [(len(k), k, v) for k, v in splits.items() if len(v)/count >= cutoff]
-    intermed.sort()
+            if node.branch_length is not None:
+                # None interpreted as zero length (e.g., root branch)
+                splits[key]['sum'] += node.branch_length
+            splits[key]['count'] += 1
+
+    # filter splits by frequency (support) threshold
+    intermed = [(len(k), k, v) for k, v in splits.items() if v['count']/ntrees >= cutoff]
+    intermed.sort()  # sort by level (tips to root)
 
     # construct consensus tree
     if callback:
         callback("Building consensus tree")
-    orphans = dict(
-        [(tip_index[tname], Clade(name=tname, branch_length=sum(tdata)/len(tdata)))
-        for tname, tdata in terminals.items()]
-    )
+    orphans = dict([(tip_index[tname], Clade(name=tname, branch_length=totlen/ntips))
+                    for tname, totlen in terminals.items()])
 
     for _, key, val in intermed:
         # average branch lengths across relevant trees
-        if all([v is None for v in splits[key]]):
-            bl = None
-        else:
-            bl = sum(splits[key]) / len(splits[key])
-        support = len(val) / count
+        bl = val['sum'] / val['count']
+        support = val['count'] / ntrees
         node = Clade(branch_length=bl, confidence=support)
 
         for child in key:
@@ -253,7 +254,7 @@ if __name__ == "__main__":
 
     # command-line execution
     args = parse_args()
-    cb = Callback(t0=args.timestamp)
+    cb = Callback(t0=args.timestamp, my_rank=my_rank, nprocs=nprocs)
 
     # import lineage data from file
     cb.callback('loading JSON')
