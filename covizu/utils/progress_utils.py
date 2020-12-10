@@ -12,8 +12,7 @@ class Callback:
         self.last_msg_length = 0
 
         # progress monitoring in MPI context
-        self.my_rank = my_rank
-        self.nprocs = nprocs
+        self.mpi_state = '' if nprocs is None else '[{}/{}]'.format(my_rank, nprocs)
         self.flags = {'INFO': info, 'WARN': warn, 'ERROR': error}
 
     def callback(self, msg, level="INFO", replace=False):
@@ -22,10 +21,10 @@ class Callback:
         if replace:
             sys.stdout.write('\b'*self.last_msg_length)
         self.last_msg_length = sys.stdout.write(
-            '{} [{}] {}'.format(
+            '{} [{}]{} {}'.format(
                 ' ' if level not in self.flags else self.flags[level],
                 datetime.now() - self.t0,
-                msg
+                self.mpi_state, msg
             )
         )
         if not replace:

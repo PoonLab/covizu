@@ -208,9 +208,15 @@ def make_beadplots(by_lineage, args, callback=None, t0=None):
 
 
 if __name__ == "__main__":
-    # TODO: check that user has loaded openmpi module
     args = parse_args()
     cb = Callback()
+
+    # check that user has loaded openmpi module
+    try:
+        subprocess.check_call(['mpirun'])
+    except FileNotFoundError:
+        cb.callback("mpirun not loaded, attempting to load", level='WARN')
+        subprocess.check_call(['module', 'load', 'openmpi/gnu'])
 
     by_lineage = process_feed(args, cb.callback)
     with open(args.bylineage, 'w') as handle:

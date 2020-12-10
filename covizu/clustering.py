@@ -204,8 +204,12 @@ def build_trees(records, args, callback=None):
     :param callback:  function, optional for progress monitoring
     """
     union, labels, indexed = recode_features(records, callback=callback)
-    trees = [bootstrap(union, indexed, args.binpath, callback=callback)
-             for _ in range(args.nboot)]
+    if len(indexed) == 1:
+        # only one variant, no meaningful tree
+        trees = [Phylo.read(StringIO("{}:0;".format(labels[0][0])), 'newick')]
+    else:
+        trees = [bootstrap(union, indexed, args.binpath, callback=callback)
+                 for _ in range(args.nboot)]
     return trees, labels
 
 
@@ -263,31 +267,34 @@ if __name__ == "__main__":
 
     # generate distance matrices from bootstrap samples [[ MPI ]]
     union, labels, indexed = recode_features(records, callback=cb.callback)
-    trees = []
-    for bn in range(args.nboot):
-        if bn % nprocs == my_rank:
-            phy = bootstrap(union, indexed, args.binpath, callback=cb.callback)
-            trees.append(phy)
-    comm.Barrier()  # wait for other processes to finish
-    result = comm.gather(trees, root=0)
 
-    # head node only
+    # export map of sequence labels to tip indices
     if my_rank == 0:
-        trees = [phy for batch in result for phy in batch]  # flatten nested lists
-
-        # export map of sequence labels to tip indices
-        outfile = os.path.join(args.outdir, "{}.labels.csv".format(args.lineage))
-        with open(outfile, 'w') as handle:
+        csvfile = os.path.join(args.outdir, "{}.labels.csv".format(args.lineage))
+        with open(csvfile, 'w') as handle:
             handle.write("name,index\n")
             for i, names in enumerate(labels):
                 for nm in names:
                     handle.write('{},{}\n'.format(nm, i))
 
-        # export trees
-        outfile = os.path.join(args.outdir, '{}.nwk'.format(args.lineage))
-        if trees is None:
-            # lineage only has one variant, no meaningful tree
+    outfile = os.path.join(args.outdir, '{}.nwk'.format(args.lineage))
+
+    if len(indexed) == 1:
+        # lineage only has one variant, no meaningful tree
+        if my_rank == 0:
             with open(outfile, 'w') as handle:
                 handle.write('({}:0);\n'.format(labels[0][0]))
-        else:
+    else:
+        # MPI processing
+        trees = []
+        for bn in range(args.nboot):
+            if bn % nprocs == my_rank:
+                phy = bootstrap(union, indexed, args.binpath, callback=cb.callback)
+                trees.append(phy)
+        comm.Barrier()  # wait for other processes to finish
+        result = comm.gather(trees, root=0)
+
+        # only head node exports trees
+        if my_rank == 0:
+            trees = [phy for batch in result for phy in batch]  # flatten nested lists
             Phylo.write(trees, file=outfile, format='newick')

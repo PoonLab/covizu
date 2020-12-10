@@ -158,9 +158,9 @@ def filter_problematic(records, origin='2019-12-01', rate=0.0655, cutoff=0.005,
         yield record
 
     if callback:
-        print("filtered {} problematic features".format(n_sites))
-        print("         {} genomes with excess missing sites".format(n_ambig))
-        print("         {} genomes with excess divergence".format(n_outlier))
+        callback("filtered {} problematic features".format(n_sites))
+        callback("         {} genomes with excess missing sites".format(n_ambig))
+        callback("         {} genomes with excess divergence".format(n_outlier))
 
 
 def sort_by_lineage(records, callback=None):
