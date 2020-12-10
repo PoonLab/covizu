@@ -213,7 +213,7 @@ if __name__ == "__main__":
 
     # check that user has loaded openmpi module
     try:
-        subprocess.check_call(['mpirun'])
+        subprocess.check_call(['mpirun', '-np', '2', 'ls'], stdout=subprocess.DEVNULL)
     except FileNotFoundError:
         cb.callback("mpirun not loaded, attempting to load", level='WARN')
         subprocess.check_call(['module', 'load', 'openmpi/gnu'])
