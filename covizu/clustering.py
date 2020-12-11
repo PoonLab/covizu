@@ -155,9 +155,9 @@ def consensus(trees, cutoff=0.5, callback=None):
             terminals[tip.name] += tip.branch_length
 
         # record splits in tree
-        tree = label_nodes(tree, tip_index)
+        tree = label_nodes(tree, tip_index)  # aggregates tip indices down tree
         for node in tree.get_nonterminals():
-            key = tuple(node.tip_index)
+            key = ','.join(map(str, node.tip_index))
             if key not in splits:
                 splits.update({key: {'sum': 0., 'count': 0}})
 
@@ -167,20 +167,24 @@ def consensus(trees, cutoff=0.5, callback=None):
             splits[key]['count'] += 1
         try:
             tree = next(trees)
+            callback("..completed ".format(ntrees), level="DEBUG")
+            ntrees += 1
         except StopIteration:
             callback("... done", level='DEBUG')
             break
 
     # filter splits by frequency (support) threshold
-    intermed = [(len(k), k, v) for k, v in splits.items() if v['count']/ntrees >= cutoff]
+    intermed = [(k.count(',')+1, k, v) for k, v in splits.items() if v['count']/ntrees >= cutoff]
     intermed.sort()  # sort by level (tips to root)
     del splits  # free some memory
 
     # construct consensus tree
     if callback:
         callback("Building consensus tree")
-    orphans = dict([(tip_index[tname], Clade(name=tname, branch_length=totlen/ntips))
-                    for tname, totlen in terminals.items()])
+    orphans = dict([
+        (tip_index[tname], Clade(name=tname, branch_length=totlen/ntips))
+        for tname, totlen in terminals.items()
+    ])
 
     for _, key, val in intermed:
         # average branch lengths across relevant trees
@@ -188,7 +192,7 @@ def consensus(trees, cutoff=0.5, callback=None):
         support = val['count'] / ntrees
         node = Clade(branch_length=bl, confidence=support)
 
-        for child in key:
+        for child in map(int, key.split(',')):
             branch = orphans.pop(child, None)
             if branch:
                 node.clades.append(branch)
