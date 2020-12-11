@@ -16,7 +16,7 @@ def parse_args():
 
     parser.add_argument("infile", type=str, default='data/provision.json.xz',
                         help="input, path to xz-compressed JSON")
-    parser.add_argument("outfile", type=argparse.FileType('w'),
+    parser.add_argument("--outfile", type=argparse.FileType('w'),
                         default='data/clusters.{}.json'.format(datetime.now().isoformat().split('.')[0]),
                         help="output, dest for JSON beadplot file")
 
@@ -89,7 +89,7 @@ def process_feed(args, callback=None):
     batcher = gisaid_utils.batch_fasta(loader, size=args.batchsize)
     aligned = gisaid_utils.extract_features(batcher, ref_file=args.ref, binpath=args.mmbin,
                                             nthread=args.mmthreads, minlen=args.minlen)
-    filtered = gisaid_utils.filter_problematic(aligned, callback=callback)
+    filtered = gisaid_utils.filter_problematic(aligned, vcf_file=args.vcf, callback=callback)
     return gisaid_utils.sort_by_lineage(filtered, callback=callback)
 
 
