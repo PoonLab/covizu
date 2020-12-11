@@ -135,15 +135,12 @@ def consensus(trees, cutoff=0.5, callback=None):
     :param callback:  function, optional callback
     :return:  Phylo.BaseTree
     """
-    if type(trees) is not list:
-        # resolve generator object
-        trees = list(trees)
-
-    ntrees = len(trees)
+    ntrees = 1
+    tree = next(trees)
 
     # store terminal labels and branch lengths
     tip_index = {}
-    for i, tip in enumerate(trees[0].get_terminals()):
+    for i, tip in enumerate(tree.get_terminals()):
         tip_index.update({tip.name: i})
     ntips = len(tip_index)
 
@@ -151,14 +148,15 @@ def consensus(trees, cutoff=0.5, callback=None):
         callback("Recording splits and branch lengths")
     splits = {}
     terminals = dict([(tn, 0) for tn in tip_index.keys()])
-    for phy in trees:
+
+    while True:
         # record terminal branch lengths
-        for tip in phy.get_terminals():
+        for tip in tree.get_terminals():
             terminals[tip.name] += tip.branch_length
 
         # record splits in tree
-        phy = label_nodes(phy, tip_index)
-        for node in phy.get_nonterminals():
+        tree = label_nodes(tree, tip_index)
+        for node in tree.get_nonterminals():
             key = tuple(node.tip_index)
             if key not in splits:
                 splits.update({key: {'sum': 0., 'count': 0}})
@@ -167,10 +165,16 @@ def consensus(trees, cutoff=0.5, callback=None):
                 # None interpreted as zero length (e.g., root branch)
                 splits[key]['sum'] += node.branch_length
             splits[key]['count'] += 1
+        try:
+            tree = next(trees)
+        except StopIteration:
+            callback("... done", level='DEBUG')
+            break
 
     # filter splits by frequency (support) threshold
     intermed = [(len(k), k, v) for k, v in splits.items() if v['count']/ntrees >= cutoff]
     intermed.sort()  # sort by level (tips to root)
+    del splits  # free some memory
 
     # construct consensus tree
     if callback:
