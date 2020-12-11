@@ -167,10 +167,12 @@ def consensus(trees, cutoff=0.5, callback=None):
             splits[key]['count'] += 1
         try:
             tree = next(trees)
-            callback(".. {} completed ".format(ntrees), level="DEBUG")
+            if callback:
+                callback(".. {} completed ".format(ntrees), level="DEBUG")
             ntrees += 1
         except StopIteration:
-            callback("... done", level='DEBUG')
+            if callback:
+                callback("... done", level='DEBUG')
             break
 
     # filter splits by frequency (support) threshold
