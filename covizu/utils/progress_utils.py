@@ -21,7 +21,6 @@ class Callback:
 
     def callback(self, msg, level="INFO", replace=False):
         # TODO: colored text with "\x1b[1;31;40m {}\x1b[0m"
-        # TODO: option to overwrite last line?
         if replace:
             sys.stdout.write('\b'*self.last_msg_length)
         self.last_msg_length = sys.stdout.write(
@@ -33,3 +32,4 @@ class Callback:
         )
         if not replace:
             sys.stdout.write('\n')
+        sys.stdout.flush()

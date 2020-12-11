@@ -211,7 +211,7 @@ def build_trees(records, args, callback=None):
     union, labels, indexed = recode_features(records, callback=callback)
     if len(indexed) == 1:
         # only one variant, no meaningful tree
-        trees = [Phylo.read(StringIO("{}:0;".format(labels[0][0])), 'newick')]
+        return None, labels
     else:
         trees = [bootstrap(union, indexed, args.binpath, callback=callback)
                  for _ in range(args.nboot)]
