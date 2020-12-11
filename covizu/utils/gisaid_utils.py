@@ -4,11 +4,29 @@ from datetime import date
 import argparse
 import os
 import sys
+import subprocess
+from datetime import datetime
+import getpass
 
 import covizu
 from covizu.minimap2 import minimap2, encode_diffs
 from covizu.utils.seq_utils import *
 from covizu.utils.progress_utils import Callback
+
+
+def download_feed(url, user, password):
+    """
+    Download xz file from GISAID.  Note this requires confidential URL, user and password
+    information that we are not distributing with the source code.
+    :param url:  str, address to retrieve xz-compressed provisioning file
+    :param user:  str, GISAID username
+    :param password:  str, access credentials
+    :return:  str, path to time-stamped download file
+    """
+    timestamp = datetime.now().isoformat().split('.')[0]
+    outfile = "data/provision.{}.json.xz".format(timestamp)
+    subprocess.check_call(["wget", "--user", user, "--password", password, "-O", outfile, url])
+    return outfile
 
 
 def load_gisaid(path, minlen=29000, mindate='2019-12-01'):
@@ -184,8 +202,12 @@ def sort_by_lineage(records, callback=None):
 def parse_args():
     """ Command line help text"""
     parser = argparse.ArgumentParser("")
-    parser.add_argument('infile', type=str, help="input, path to xz-compressed JSON")
     parser.add_argument('outfile', type=argparse.FileType('w'), help="output, path to write JSON")
+
+    parser.add_argument('--infile', type=str, default=None,
+                        help="input, path to xz-compressed JSON")
+    parser.add_argument('--url', type=str, help="URL to download provision file")
+    parser.add_argument('--user', type=str, help="GISAID username")
 
     parser.add_argument('--minlen', type=int, default=29000, help='option, minimum genome length')
     parser.add_argument('--mindate', type=str, default='2019-12-01',
@@ -215,13 +237,19 @@ if __name__ == '__main__':
     args = parse_args()
     cb = Callback()
 
+    cb.callback("Processing GISAID feed data")
+
+    # download xz file if not specified by user
+    if args.infile is None:
+        password = getpass.getpass()
+        args.infile = download_feed(args.url, args.user, password)
+
     loader = load_gisaid(args.infile, minlen=args.minlen, mindate=args.mindate)
     batcher = batch_fasta(loader, size=args.batchsize)
     aligned = extract_features(batcher, ref_file=args.ref, binpath=args.binpath,
-                               nthread=args.nthread, minlen=args.minlen)
-    records = filter_problematic(aligned, vcf_file=args.vcf_file, callback=cb.callback)
+                               nthread=args.mmthreads, minlen=args.minlen)
+    filtered = filter_problematic(aligned, vcf_file=args.vcf_file, callback=cb.callback)
+    by_lineage = sort_by_lineage(filtered, callback=cb.callback)
 
-    for i, record in enumerate(records):
-        if i % 10000 == 0:
-            cb.callback('processed {} records'.format(i))
-        args.outfile.write(json.dumps(record)+'\n')
+    # serialize to JSON file
+    json.dump(by_lineage, args.outfile)

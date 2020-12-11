@@ -1,23 +1,16 @@
 import random
 import json
-
-from covizu.utils import db_utils, seq_utils
-from covizu.utils.progress_utils import Callback
-
 import argparse
 import tempfile
 import subprocess
+from io import StringIO
+import sys
+import os
 
 from Bio import Phylo
 from Bio.Phylo.BaseTree import Clade
 
-from io import StringIO
-from multiprocessing import Pool, Manager
-
-import sys
-import os
-
-from covizu.utils.seq_utils import load_vcf, filter_problematic
+from covizu.utils.progress_utils import Callback
 
 
 sys.setrecursionlimit(20000)  # fix for issue #127, default limit 1000
@@ -81,6 +74,7 @@ def bootstrap(union, indexed, binpath='rapidnj', callback=None, callfreq=1000):
     if callback:
         callback("Writing distance matrix to temporary file")
 
+    # TODO: this is the slowest step - port to C? cache results to traverse half matrix?
     outfile = tempfile.NamedTemporaryFile('w', prefix="cvz_boot_")
     outfile.write('{0:>5}\n'.format(n))
     for i in range(n):

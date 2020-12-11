@@ -3,6 +3,7 @@ import os
 import json
 import subprocess
 from Bio import Phylo
+from datetime import datetime
 
 import covizu
 from covizu import clustering, treetime, beadplot
@@ -15,6 +16,9 @@ def parse_args():
 
     parser.add_argument("infile", type=str, default='data/provision.json.xz',
                         help="input, path to xz-compressed JSON")
+    parser.add_argument("outfile", type=argparse.FileType('w'),
+                        default='data/clusters.{}.json'.format(datetime.now().isoformat().split('.')[0]),
+                        help="output, dest for JSON beadplot file")
 
     parser.add_argument("--bylineage", type=str, default='data/by_lineage.json',
                         help="option, path to write JSON of features by lineage")
@@ -74,9 +78,6 @@ def parse_args():
                         help="Bootstrap cutoff for consensus tree (default 0.5). "
                              "Only used if --cons is specified.")
 
-    parser.add_argument("outfile", type=argparse.FileType('w'), default='data/clusters.json',
-                        help="output, dest for JSON beadplot file")
-
     return parser.parse_args()
 
 
@@ -88,7 +89,8 @@ def process_feed(args, callback=None):
     batcher = gisaid_utils.batch_fasta(loader, size=args.batchsize)
     aligned = gisaid_utils.extract_features(batcher, ref_file=args.ref, binpath=args.mmbin,
                                             nthread=args.mmthreads, minlen=args.minlen)
-    return gisaid_utils.sort_by_lineage(aligned, callback=cb.callback)
+    filtered = gisaid_utils.filter_problematic(aligned, callback=callback)
+    return gisaid_utils.sort_by_lineage(filtered, callback=callback)
 
 
 def build_timetree(by_lineage, args, callback=None):
