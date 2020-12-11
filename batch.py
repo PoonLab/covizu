@@ -130,7 +130,7 @@ def beadplot_serial(lineage, features, args, callback=None):
         return beaddict
 
     # generate majority consensus tree
-    ctree = clustering.consensus(trees, cutoff=args.cutoff)
+    ctree = clustering.consensus(iter(trees), cutoff=args.cutoff)
 
     # collapse polytomies and label internal nodes
     label_dict = dict([(str(idx), lst) for idx, lst in enumerate(labels)])
