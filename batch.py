@@ -136,7 +136,7 @@ def beadplot_serial(lineage, features, args, callback=None):
 
     # collapse polytomies and label internal nodes
     label_dict = dict([(str(idx), lst) for idx, lst in enumerate(labels)])
-    ctree = beadplot.annotate_tree(ctree, label_dict)
+    ctree = beadplot.annotate_tree(ctree, label_dict, callback=callback)
 
     # convert to JSON format
     beaddict = beadplot.serialize_tree(ctree)
