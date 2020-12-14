@@ -37,7 +37,7 @@ def parse_args():
                         help='option, earliest possible sample collection date (ISO format, default '
                               '2019-12-01')
    
-    parser.add_argument('--batchsize', type=int, default=500, 
+    parser.add_argument('--batchsize', type=int, default=500,
                         help='option, number of records to batch process with minimap2')
 
     parser.add_argument("--ref", type=str,
@@ -75,7 +75,7 @@ def parse_args():
 
     parser.add_argument('--binpath', type=str, default='rapidnj',
                         help='option, path to RapidNJ binary executable')
-    parser.add_argument('--mincount', type=int, default=5000,
+    parser.add_argument('--mincount', type=int, default=500,
                         help='option, minimum number of variants in lineage '
                              'above which MPI processing will be used.')
     parser.add_argument('--machine_file', type=str, default='mfile',
@@ -116,7 +116,7 @@ def build_timetree(by_lineage, args, callback=None):
                                    clock=args.clock, verbosity=0)
 
     # writes output to treetime.nwk at `nexus_file` path
-    treetime.parse_nexus(nexus_file, fasta, date_tol=args.datetol)
+    return treetime.parse_nexus(nexus_file, fasta, date_tol=args.datetol)
 
 
 def beadplot_serial(lineage, features, args, callback=None):
@@ -239,7 +239,13 @@ if __name__ == "__main__":
         # export to file to process large lineages with MPI
         json.dump(by_lineage, handle)
 
-    build_timetree(by_lineage, args, cb.callback)
+    timetree = build_timetree(by_lineage, args, cb.callback)
+
+    # FIXME: this is fragile, fails if user specifies custom output file name
+    nwk_file = args.outfile.name.replace('clusters.', 'timetree.').replace('.json', '.nwk')
+    with open(nwk_file, 'w'):
+        Phylo.write(timetree, file=nwk_file, format='newick')
+
     result = make_beadplots(by_lineage, args, cb.callback, t0=cb.t0.timestamp())
 
     # serialize results to JSON

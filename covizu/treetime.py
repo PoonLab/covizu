@@ -124,13 +124,14 @@ def date2float(isodate):
     return dt.year + td/365.25
 
 
-def parse_nexus(nexus_file, fasta, date_tol):
+def parse_nexus(nexus_file, fasta, date_tol, callback=None):
     """
     Converting Treetime NEXUS output into Newick
 
-    @param nexus_file:  str, path to write Newick tree string
+    @param nexus_file:  str, path to TreeTime NEXUS output
     @param fasta:  dict, {header: seq} from filter_fasta()
     @param date_tol:  float, tolerance in tip date discordance
+    @param callback:  function, optional callback
     """
     coldates = {}
     for h, _ in fasta.items():
@@ -148,10 +149,10 @@ def parse_nexus(nexus_file, fasta, date_tol):
                 node_name, branch_length, date_est = m.groups()
                 coldate = coldates.get(node_name, None)
                 if coldate and abs(float(date_est) - coldate) > date_tol:
-                    sys.stdout.write('removing {}:  {:0.3f} < {}\n'.format(
-                        node_name, coldate, date_est
-                    ))
-                    sys.stdout.flush()
+                    if callback:
+                        callback('removing {}:  {:0.3f} < {}\n'.format(
+                            node_name, coldate, date_est
+                        ), level='INFO')
                     remove.append(node_name)
 
     # second pass to excise all comment fields
@@ -174,8 +175,7 @@ def parse_nexus(nexus_file, fasta, date_tol):
             node.confidence = None
         node.comment = None
 
-    Phylo.write(phy, file=nexus_file.replace('.nexus', '.nwk'),
-                format='newick')
+    return phy
 
 
 def retrieve_genomes(by_lineage, ref_file='data/MT291829.fa'):
@@ -241,6 +241,9 @@ def parse_args():
                         help='optional, path to fasttree2 binary executable')
     parser.add_argument('--ttbin', default='treetime',
                         help='optional, path to treetime binary executable')
+
+    parser.add_argument('--outfile', default='data/timetree.nwk',
+                        help='output, path to write Newick tree string')
     return parser.parse_args()
 
 
@@ -258,4 +261,5 @@ if __name__ == '__main__':
     nexus_file = treetime(nwk, fasta, outdir=args.outdir, binpath=args.ttbin,
                           clock=args.clock)
 
-    parse_nexus(nexus_file, fasta, date_tol=args.datetol)
+    timetree = parse_nexus(nexus_file, fasta, date_tol=args.datetol)
+    Phylo.write(timetree, file=args.outfile, format='newick')
