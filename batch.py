@@ -45,7 +45,7 @@ def parse_args():
                         help="option, path to FASTA file with reference genome")
     parser.add_argument('--mmbin', type=str, default='minimap2',
                         help="option, path to minimap2 binary executable")
-    parser.add_argument('-mmt', "--mmthreads", type=int, default=1,
+    parser.add_argument('-mmt', "--mmthreads", type=int, default=8,
                         help="option, number of threads for minimap2.")
 
     parser.add_argument('--misstol', type=int, default=300,
@@ -222,17 +222,17 @@ if __name__ == "__main__":
     args = parse_args()
     cb = Callback()
 
-    # download xz file if not specified by user
-    if args.infile is None:
-        cb.callback("No input specified, downloading data from GISAID feed...")
-        args.infile = gisaid_utils.download_feed(args.url, args.user, args.password)
-
     # check that user has loaded openmpi module
     try:
         subprocess.check_call(['mpirun', '-np', '2', 'ls'], stdout=subprocess.DEVNULL)
     except FileNotFoundError:
         cb.callback("mpirun not loaded - run `module load openmpi/gnu`", level='ERROR')
         sys.exit()
+
+    # download xz file if not specified by user
+    if args.infile is None:
+        cb.callback("No input specified, downloading data from GISAID feed...")
+        args.infile = gisaid_utils.download_feed(args.url, args.user, args.password)
 
     by_lineage = process_feed(args, cb.callback)
     with open(args.bylineage, 'w') as handle:
