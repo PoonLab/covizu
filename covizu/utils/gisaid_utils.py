@@ -20,9 +20,11 @@ def download_feed(url, user, password):
     information that we are not distributing with the source code.
     :param url:  str, address to retrieve xz-compressed provisioning file
     :param user:  str, GISAID username
-    :param password:  str, access credentials
+    :param password:  str, access credentials - if None, query user
     :return:  str, path to time-stamped download file
     """
+    if password is None:
+        password = getpass.getpass()
     timestamp = datetime.now().isoformat().split('.')[0]
     outfile = "data/provision.{}.json.xz".format(timestamp)
     subprocess.check_call(["wget", "--user", user, "--password", password, "-O", outfile, url])
@@ -208,6 +210,7 @@ def parse_args():
                         help="input, path to xz-compressed JSON")
     parser.add_argument('--url', type=str, help="URL to download provision file")
     parser.add_argument('--user', type=str, help="GISAID username")
+    parser.add_argument('--password', type=str, default=None, help="GISAID password")
 
     parser.add_argument('--minlen', type=int, default=29000, help='option, minimum genome length')
     parser.add_argument('--mindate', type=str, default='2019-12-01',
@@ -241,8 +244,7 @@ if __name__ == '__main__':
 
     # download xz file if not specified by user
     if args.infile is None:
-        password = getpass.getpass()
-        args.infile = download_feed(args.url, args.user, password)
+        args.infile = download_feed(args.url, args.user, args.password)
 
     loader = load_gisaid(args.infile, minlen=args.minlen, mindate=args.mindate)
     batcher = batch_fasta(loader, size=args.batchsize)

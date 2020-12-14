@@ -4,6 +4,7 @@ import json
 import subprocess
 from Bio import Phylo
 from datetime import datetime
+import getpass
 
 import covizu
 from covizu import clustering, treetime, beadplot
@@ -14,8 +15,13 @@ from covizu.utils.progress_utils import Callback
 def parse_args():
     parser = argparse.ArgumentParser(description="CoVizu analysis pipeline automation")
 
-    parser.add_argument("infile", type=str, default='data/provision.json.xz',
-                        help="input, path to xz-compressed JSON")
+    parser.add_argument('--url', type=str, help="URL to download provision file")
+    parser.add_argument('--user', type=str, help="GISAID username")
+    parser.add_argument('--password', type=str, default=None, help="GISAID password")
+
+    parser.add_argument("--infile", type=str, default=None,
+                        help="input, path to xz-compressed JSON; if not specified, "
+                             "download xz file from GISAID provision feed.")
     parser.add_argument("--outfile", type=argparse.FileType('w'),
                         default='data/clusters.{}.json'.format(datetime.now().isoformat().split('.')[0]),
                         help="output, dest for JSON beadplot file")
@@ -212,6 +218,10 @@ def make_beadplots(by_lineage, args, callback=None, t0=None):
 if __name__ == "__main__":
     args = parse_args()
     cb = Callback()
+
+    # download xz file if not specified by user
+    if args.infile is None:
+        args.infile = gisaid_utils.download_feed(args.url, args.user, args.password)
 
     # check that user has loaded openmpi module
     try:

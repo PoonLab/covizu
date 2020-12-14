@@ -218,10 +218,10 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="Generate inputs for TreeTime analysis."
     )
-    parser.add_argument('--db', type=str, default='data/gsaid.db',
-                        help='input, sqlite3 database')
+    parser.add_argument('json', type=str, help='input, JSON produced by gisaid_utils.py')
+
     parser.add_argument('--ref', type=argparse.FileType('r'),
-                        default=open(os.path.join(covizu.__path__[0]), "data/MT291829.fa"),
+                        default=open(os.path.join(covizu.__path__[0]), "data/NC_045512.fa"),
                         help="input, FASTA file with reference genome")
     parser.add_argument('--misstol', type=int, default=300,
                         help="optional, maximum tolerated number of missing bases per "
@@ -229,12 +229,12 @@ def parse_args():
     parser.add_argument('--clock', type=float, default=8e-4,
                         help='optional, specify molecular clock rate for '
                              'constraining Treetime analysis (default 8e-4).')
-    # FIXME: I think the next argument is deprecated
     parser.add_argument('--datetol', type=float, default=0.1,
                         help='optional, exclude tips from time-scaled tree '
                              'with high discordance between estimated and '
                              'known sample collection dates (year units,'
                              'default: 0.1)')
+
     parser.add_argument('--outdir', default='data/',
                         help='optional, directory to write TreeTime output files')
     parser.add_argument('--ft2bin', default='fasttree2',
@@ -258,5 +258,4 @@ if __name__ == '__main__':
     nexus_file = treetime(nwk, fasta, outdir=args.outdir, binpath=args.ttbin,
                           clock=args.clock)
 
-    cb.callback("")
     parse_nexus(nexus_file, fasta, date_tol=args.datetol)
