@@ -1,10 +1,10 @@
 import argparse
 import os
+import sys
 import json
 import subprocess
 from Bio import Phylo
 from datetime import datetime
-import getpass
 
 import covizu
 from covizu import clustering, treetime, beadplot
@@ -224,14 +224,15 @@ if __name__ == "__main__":
 
     # download xz file if not specified by user
     if args.infile is None:
+        cb.callback("No input specified, downloading data from GISAID feed...")
         args.infile = gisaid_utils.download_feed(args.url, args.user, args.password)
 
     # check that user has loaded openmpi module
     try:
         subprocess.check_call(['mpirun', '-np', '2', 'ls'], stdout=subprocess.DEVNULL)
     except FileNotFoundError:
-        cb.callback("mpirun not loaded, attempting to load", level='WARN')
-        subprocess.check_call(['module', 'load', 'openmpi/gnu'])
+        cb.callback("mpirun not loaded - run `module load openmpi/gnu`", level='ERROR')
+        sys.exit()
 
     by_lineage = process_feed(args, cb.callback)
     with open(args.bylineage, 'w') as handle:

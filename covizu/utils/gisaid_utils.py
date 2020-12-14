@@ -230,8 +230,8 @@ def parse_args():
                         default=os.path.join(covizu.__path__[0], "data/NC_045512.fa"))
     parser.add_argument('--binpath', type=str, default='minimap2',
                         help="option, path to minimap2 binary executable file")
-    parser.add_argument('--nthread', type=int, default=2,
-                        help='option, number of threads to run minimap2')
+    parser.add_argument('--nthread', type=int, default=8,
+                        help='option, number of threads to run minimap2. Defaults to 8.')
 
     parser.add_argument("--vcf_file", type=str,
                         default=os.path.join(covizu.__path__[0], "data/problematic_sites_sarsCov2.vcf"),
