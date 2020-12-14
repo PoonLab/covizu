@@ -254,7 +254,7 @@ if __name__ == '__main__':
     loader = load_gisaid(args.infile, minlen=args.minlen, mindate=args.mindate)
     batcher = batch_fasta(loader, size=args.batchsize)
     aligned = extract_features(batcher, ref_file=args.ref, binpath=args.binpath,
-                               nthread=args.mmthreads, minlen=args.minlen)
+                               nthread=args.nthread, minlen=args.minlen)
     filtered = filter_problematic(aligned, vcf_file=args.vcf_file, callback=cb.callback)
     by_lineage = sort_by_lineage(filtered, callback=cb.callback)
 

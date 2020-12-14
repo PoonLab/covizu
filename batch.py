@@ -15,9 +15,12 @@ from covizu.utils.progress_utils import Callback
 def parse_args():
     parser = argparse.ArgumentParser(description="CoVizu analysis pipeline automation")
 
-    parser.add_argument('--url', type=str, help="URL to download provision file")
-    parser.add_argument('--user', type=str, help="GISAID username")
-    parser.add_argument('--password', type=str, default=None, help="GISAID password")
+    parser.add_argument('--url', type=str, default=os.environ["GISAID_URL"],
+                        help="URL to download provision file, defaults to environment variable.")
+    parser.add_argument('--user', type=str, default=os.environ["GISAID_USER"],
+                        help="GISAID username, defaults to environment variable.")
+    parser.add_argument('--password', type=str, default=os.environ["GISAID_PSWD"],
+                        help="GISAID password, defaults to environment variable.")
 
     parser.add_argument("--infile", type=str, default=None,
                         help="input, path to xz-compressed JSON; if not specified, "
