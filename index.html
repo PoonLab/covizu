@@ -30,6 +30,7 @@
       <button type="button" id="previous_button">Previous</button>
       <button type="button" id="next_button">Next</button>
       <button type="button" id="clear_button">Clear</button>
+      <span onclick="$('#splash').dialog('open');" style="cursor: help">&#128304;</span>
     </div>
   </div>
 
@@ -46,23 +47,26 @@
   </div>
 
   <div class="leftbox">
-    <div class="floattitle">Time-scaled tree</div>
+    <div class="floattitle">
+      Time-scaled tree<span onclick="$('#splash').dialog('open');" style="cursor: help">&#128304;</span>
+    </div>
     <div class="floattitle" id="svg-timetreeaxis" style="position: fixed; top: 58px; z-index: 13"></div>
     <div id="svg-timetree" style="width: 250px; max-width: 250px;"></div>
   </div>
 
   <div class="middlebox">
-    <div class="floattitle">Beadplot</div>
+    <div class="floattitle">
+      Beadplot<span onclick="$('#splash').dialog('open');" style="cursor: help">&#128304;</span>
+    </div>
     <div class="floattitle" id="svg-clusteraxis" style="position: fixed; top: 58px; z-index: 14"></div>
     <div id="svg-cluster"></div>
   </div>
 
   <div class="rightbox">
-
     <div style="padding-right: 6px;">
       <h3>Near real-time visualization of SARS-CoV-2 (hCoV-19) genomic variation</h3>
     </div>
-    <span style="width:250px">
+    <span style="width: 250px">
       <div class="gisaid">Enabled by data from&nbsp;<a href="https://gisaid.org" target="_new">
           <img src="https://www.gisaid.org/fileadmin/gisaid/img/schild.png"
                height="24px"/>
@@ -91,6 +95,39 @@
   </div>
 
   <div class="tooltip" id="tooltipContainer"></div>
+
+  <div id="splash" title="Welcome">
+    <p>
+      <b>CoVizu</b> is an <a href="https://github.com/PoonLab/CoVizu" target="_new">open source project</a>
+      endeavouring to visualize the global diversity of SARS-CoV-2 genomes, which are provided by
+      the <a href="https://gisaid.org" target="_new">GISAID Initiative</a>.
+    </p>
+    <p>
+      This web page provides two interactive visualizations of these data.
+      On the left, it displays a <a href="https://en.wikipedia.org/wiki/Phylogenetic_tree" target="_new">
+      phylogenetic tree</a> summarizing the evolutionary relationships among different
+      <a href="https://cov-lineages.org" target="_new">SARS-CoV-2 lineages</a> (groupings of viruses with
+      similar genomes, useful for linking outbreaks in different places; <a href="https://www.nature.com/articles/s41564-020-0770-5" target="_new">Rambaut
+      <i>et al.</i> 2020</a>).
+      You can navigate between different lineages by clicking on their respective boxes.
+    </p>
+    <p>
+      Selecting a lineage displays a "beadplot" visualization in the centre of the page.
+      Each horizontal line represents one or more samples of SARS-CoV-2 that share the same genome
+      sequence.
+      Beads along the line represent the dates that this variant was sampled.
+    </p>
+    <p>
+      For more help, click on the <a style="text-decoration: none;" href="https://en.wikipedia.org/wiki/Shoshinsha_mark">&#128304;</a>icons.
+    </p>
+  </div>
+
+  <div id="help-timetree" title="Time-scaled tree help">
+    <p>
+      A phylogenetic tree is a hypothesis about how populations are related by their common ancestors.
+      For tracking viruses, trees are used to reconstruct
+    </p>
+  </div>
 
   <div id="dialog" title="Acknowledgements">
     <p>
@@ -138,10 +175,31 @@
   <script src="js/gisaid/gisaid.js?random=1"></script>
 
   <script>
+    $( "#splash" ).dialog({
+      autoOpen: true,
+      width: 600,
+      buttons: {
+        "Okay!": function() {
+          $( this ).dialog( "close" );
+        }
+      }
+    });
+
+    $( "#help-timetree" ).dialog({
+      autoOpen: false,
+      width: 600,
+      buttons: {
+        "Got it": function() {
+          $( this ).dialog( "close" );
+        }
+      }
+    });
+
     $( "#dialog" ).dialog({
       autoOpen: false,
       width: 600
     });
+
     $( "#ack-open" ).click(function() {
       $( "#dialog" ).dialog( "open" );
     });

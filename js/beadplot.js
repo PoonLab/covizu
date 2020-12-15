@@ -539,7 +539,7 @@ function beadplot(cid) {
       .attr("y", function(d) { return(yScaleB(d.y1)); })
       .text(function(d) { return(d.label); });
 
-  // draw vertical line segments that represent edges in minimum spanning tree
+  // draw vertical line segments that represent edges in NJ tree
   visB.selectAll("lines")
       .data(edgelist)
       .enter().append("line")

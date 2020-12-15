@@ -45,6 +45,11 @@ svg text {
   font: 1em/1.2 Lato, sans-serif;
 }
 
+a, a:focus {
+  color: inherit;
+  border: inherit;
+  outline: none;
+}
 
 /* ------------------------------ DIV -------------------------------- */
 div.breaker {
@@ -94,7 +99,7 @@ div.leftbox {
   position: fixed;
   overflow: auto;
   top: 50px;
-  left: 0px;
+  left: 10px;
   width: 250px;
   height: 100%;
   -ms-overflow-style: none;
@@ -110,7 +115,7 @@ div.middlebox {
   position: fixed;
   overflow: auto;
   top: 50px;
-  left: 250px;
+  left: 260px;
   width: calc(100%-500px);
   height: 100%;
   -ms-overflow-style: none;
@@ -281,7 +286,7 @@ details + dl {
 .box a{
    display:block;
    text-decoration: none;
-    color: currentcolor
+   color: currentcolor;
 }
 .box {
     position: absolute;
