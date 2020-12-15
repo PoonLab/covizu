@@ -178,7 +178,7 @@ def consensus(trees, cutoff=0.5, callback=None):
     if callback:
         callback("Building consensus tree")
     orphans = dict([
-        (tip_index[tname], Clade(name=tname, branch_length=totlen/ntips))
+        (tip_index[tname], Clade(name=tname, branch_length=totlen/ntrees))
         for tname, totlen in terminals.items()
     ])
 

@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="covizu",
-    version="0.2.0",
+    version="0.3",
     description="Visualization of SARS-CoV-2 diversity",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -26,4 +26,3 @@ setuptools.setup(
         'data/NC_045512.fa'
     ]}
 )
-

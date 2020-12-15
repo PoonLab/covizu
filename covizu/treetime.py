@@ -252,7 +252,7 @@ if __name__ == '__main__':
     cb = Callback()
 
     cb.callback("Retrieving genomes")
-    fasta = retrieve_genomes(args.db, ref_file=args.ref, misstol=args.misstol)
+    fasta = retrieve_genomes(args.db, ref_file=args.ref)
 
     cb.callback("Reconstructing tree with {}".format(args.ft2bin))
     nwk = fasttree(fasta, binpath=args.ft2bin)
