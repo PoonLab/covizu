@@ -153,12 +153,18 @@ def beadplot_serial(lineage, features, args, callback=None):
     return beaddict
 
 
-def import_labels(handle):
+def import_labels(handle, callback=None):
     """ Load map of genome labels to tip indices from CSV file """
     result = {}
     _ = next(handle)  # skip header line
     for line in handle:
-        qname, idx = line.strip('\n').split(',')
+        try:
+            qname, idx = line.strip('\n').split(',')
+        except ValueError:
+            if callback:
+                callback("import_labels() failed to parse line {}".format(line), level="ERROR")
+            raise  # issue #206, sequence label contains delimiter
+
         if idx not in result:
             result.update({idx: []})
         result[idx].append(qname)
