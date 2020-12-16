@@ -827,7 +827,7 @@ function gentable(obj) {
   rows.enter()
     .append("tr")
     .on("mouseover", function(){
-      d3.select(this).style("background-color", "grey");}) //mouseover highlight
+      d3.select(this).style("background-color", "#e2e2e2");}) //mouseover highlight
     .on("mouseout", function(){
       d3.select(this).style("background-color", null);})  //mouseout unhighlight
     .selectAll("td")

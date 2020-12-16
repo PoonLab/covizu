@@ -95,15 +95,6 @@
         <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="seq-table"></div>
       </div>
     </div>
-    <!--
-    <details id="details-country" open onclick="$('#details-sequence').removeAttr('open');">
-      <summary>Country distribution</summary>
-    </details>
-    <br />
-    <details id="details-sequence" onclick="$('#details-country').removeAttr('open');">
-      <summary>Sequence details</summary>
-    </details>
-    -->
   </div>
 
   <div class="tooltip" id="tooltipContainer"></div>
@@ -136,9 +127,10 @@
 
   <div id="help-timetree" title="Time-scaled tree help">
     <p>
-      A phylogenetic tree is a hypothesis about how populations are related by their common ancestors.
-      The tree displayed here summarizes the evolutionary relationships among the
-      <a href="https://cov-lineages.org" target="_new">SARS-CoV-2 lineages</a>.
+      A phylogenetic tree is a model of how different populations are related by common ancestors.
+      The tree displayed here summarizes the common ancestry of different
+      <a href="https://cov-lineages.org" target="_new">SARS-CoV-2 lineages</a>, which are
+      pre-defined groupings of viruses based on genome similarity.
     </p>
   </div>
 
@@ -216,12 +208,20 @@
     $( "#splash" ).dialog({
       autoOpen: true,
       width: 600,
-      buttons: {
-        "Okay!": function() {
+      buttons: [{
+        id: "splash-button",
+        text: "Okay!",
+        disabled: true,
+        click: function() {
           $( this ).dialog( "close" );
         }
-      }
+      }]
     });
+
+    $("#splash-button").parents(".ui-dialog-buttonpane")
+            .append("<div style=\"color: #4F2683\" id='splash-extra'><b>Loading JSON data from server...</b>" +
+                    "<img style=\"vertical-align: middle\" width=\"33px\" src=\"img/Loading_icon_cropped.gif\"/>" +
+                    "</div>");
 
     $( "#help-timetree" ).dialog({
       autoOpen: false,
@@ -294,14 +294,19 @@
       countries = data;
     });
 
-    // load cluster data from server
+
     var clusters, beaddata, tips,
         accn_to_cid;
 
+    // load cluster data from server
     req = $.getJSON("data/clusters.json", function(data) {
       clusters = data;
     });
+
     req.done(function() {
+      $("#splash-button").button("enable");
+      $("#splash-extra").html("");  // remove loading animation
+
       beaddata = parse_clusters(clusters);
       tips = map_clusters_to_tips(df, clusters);
       //spinner.stop();
