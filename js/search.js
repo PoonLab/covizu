@@ -197,7 +197,7 @@ function select_bead_by_accession(accn, reset_clusters_tree = true) {
     // Update information panel
     const datum = bead.datum();
     gentable(datum);
-    draw_region_distribution(table(datum.region));
+    draw_region_distribution(tabulate(datum.region));
     gen_details_table(datum);
 
   }

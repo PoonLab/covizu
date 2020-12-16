@@ -112,7 +112,7 @@ function drawtree(timetree) {
   var ntips = df.map(x => x.children.length === 0).reduce((x,y) => x+y);
   height = ntips*11 + margin.top + margin.bottom;
   vis.attr("height", height);
-  yScale = d3.scaleLinear().range([height, 35]);
+  yScale = d3.scaleLinear().range([height, 35]);  // add room for time axis
 
   // adjust d3 scales to data frame
   xScale.domain([

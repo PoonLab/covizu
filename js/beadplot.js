@@ -85,14 +85,17 @@ function mode(arr) {
 
 
 /**
- * Entabulate values in array.
- * @param {Array} arr:  Array of values to entabulate
- * @returns {{}} Associative list of value: count pairs
+ * Tabulate values in array.
+ * @param {Array} arr:  Array of values to tabulate
+ * @returns {{}} Associative list of unique value: count pairs
  */
-function table(arr) {
+function tabulate(arr) {
   var val, counts = {};
   for (var i=0; i<arr.length; i++) {
     val = arr[i];
+    if (val === null) {
+      continue;
+    }
     if (counts[val] === undefined) {
       counts[val] = 0;
     }
@@ -362,7 +365,7 @@ function parse_clusters(clusters) {
     // collect all region Arrays for all samples, all variants
     regions = points.map(x => x.region).flat();
     cluster['region'] = mode(regions);
-    cluster['allregions'] = table(regions);
+    cluster['allregions'] = tabulate(regions);
 
     // concatenate all sample labels within cluster for searching
     labels = points.map(x => x.labels).flat();
@@ -489,7 +492,7 @@ function beadplot(cid) {
             tooltipText += `<b>Parent:</b> ${d.parent}<br/><b>Genomic distance:</b> ${Math.round(d.dist*100)/100}<br/>`;
           }
 
-          tooltipText += region_to_string(table(d.region));
+          tooltipText += region_to_string(tabulate(d.region));
           tooltipText += `<b>Unique collection dates:</b> ${d.numBeads}<br/>`;
           tooltipText += `<b>Collection dates:</b><br>${formatDate(d.x1)} / ${formatDate(d.x2)}`;
 
@@ -522,7 +525,7 @@ function beadplot(cid) {
       .on("click", function(d) {
         if (d.label !== null) {
           gentable(d);
-          draw_region_distribution(table(d.region));
+          draw_region_distribution(tabulate(d.region));
           let var_samples = points.filter(x => x.y === d.y1);
           gen_details_table(var_samples);
         }
@@ -613,7 +616,7 @@ function beadplot(cid) {
         if (d.parent || d.dist) {
           tooltipText += `<b>Parent:</b> ${d.parent}<br/><b>Genomic distance:</b> ${Math.round(d.dist*100)/100}<br/>`;
         }
-        tooltipText += region_to_string(table(d.region));
+        tooltipText += region_to_string(tabulate(d.region));
         tooltipText += `<b>Collection date:</b> ${formatDate(d.x)}`;
 
         // Tooltip appears 10 pixels left of the cursor
@@ -644,7 +647,7 @@ function beadplot(cid) {
         d3.select("#svg-timetree").selectAll("line").attr("stroke-opacity", 1);
 
         gentable(d);
-        draw_region_distribution(table(d.region));
+        draw_region_distribution(tabulate(d.region));
         gen_details_table(d);
       });
 
@@ -804,7 +807,7 @@ function gen_details_table(obj) {
  * @param {Object} obj:  JS Object with country attribute
  */
 function gentable(obj) {
-  var my_countries = Object.entries(table(obj.country)),
+  var my_countries = Object.entries(tabulate(obj.country)),
       row, region;
 
   // annotate with region (continent)

@@ -249,4 +249,10 @@ if __name__ == "__main__":
     result = make_beadplots(by_lineage, args, cb.callback, t0=cb.t0.timestamp())
 
     # serialize results to JSON
-    args.outfile.write(json.dumps(result, indent=2))
+    args.outfile.write(json.dumps(result))
+
+    # transfer output files to webserver
+    subprocess.check_call(['scp', nwk_file, 'filogeneti.ca:/var/www/html/covizu/data/timetree.nwk'])
+    subprocess.check_call(['scp', args.outfile.name, 'filogeneti.ca:/var/www/html/covizu/data/clusters.json'])
+
+    cb.callback("All done!")

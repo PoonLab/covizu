@@ -30,11 +30,11 @@
       <button type="button" id="previous_button">Previous</button>
       <button type="button" id="next_button">Next</button>
       <button type="button" id="clear_button">Clear</button>
-      <span onclick="$('#splash').dialog('open');" style="cursor: help">&#128304;</span>
+      <span onclick="$('#help-search').dialog('open');" style="cursor: help">&#128304;</span>
     </div>
   </div>
 
-  <div style="position: fixed; top: 0; right: 0; z-index: 10; width: 260px">
+  <div style="position: fixed; top: 0; right: 0; z-index: 10; width: 270px">
     <a href="https://github.com/PoonLab/covizu" target=“_new” class="github-corner" aria-label="View source on GitHub">
       <!-- https://github.com/tholman/github-corners -->
       <svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0; z-index: 21" aria-hidden="true">
@@ -48,7 +48,7 @@
 
   <div class="leftbox">
     <div class="floattitle">
-      Time-scaled tree<span onclick="$('#splash').dialog('open');" style="cursor: help">&#128304;</span>
+      Time-scaled tree<span onclick="$('#help-timetree').dialog('open');" style="cursor: help">&#128304;</span>
     </div>
     <div class="floattitle" id="svg-timetreeaxis" style="position: fixed; top: 58px; z-index: 13"></div>
     <div id="svg-timetree" style="width: 250px; max-width: 250px;"></div>
@@ -56,7 +56,7 @@
 
   <div class="middlebox">
     <div class="floattitle">
-      Beadplot<span onclick="$('#splash').dialog('open');" style="cursor: help">&#128304;</span>
+      Beadplot<span onclick="$('#help-beadplot').dialog('open');" style="cursor: help">&#128304;</span>
     </div>
     <div class="floattitle" id="svg-clusteraxis" style="position: fixed; top: 58px; z-index: 14"></div>
     <div id="svg-cluster"></div>
@@ -79,19 +79,31 @@
     </p>
     <!--<div class="breaker" id="text-node"></div>-->
 
-    <details>
-      <div class="breaker" id="barplot"></div>
-      <summary>Country distribution</summary>
-      <div id="country-table"></div>
-    </details>
-    <br />
-    <details open>
-        <summary>Sequence details</summary>
+    <div id="tabs">
+      <ul>
+        <li><a href="#tabs-1">Countries</a></li>
+        <li><a href="#tabs-2">Samples</a></li>
+      </ul>
+      <div id="tabs-1">
+        <div class="breaker" id="barplot"></div>
+        <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="country-table"></div>
+      </div>
+      <div id="tabs-2">
         <div id="seqtable-hint" class="hint">
           Hover over accession (EPI_ISL_#) to display laboratory and author info.
         </div>
-        <div style="overflow-y: auto; max-height: 250px" id="seq-table"></div>
+        <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="seq-table"></div>
+      </div>
+    </div>
+    <!--
+    <details id="details-country" open onclick="$('#details-sequence').removeAttr('open');">
+      <summary>Country distribution</summary>
     </details>
+    <br />
+    <details id="details-sequence" onclick="$('#details-country').removeAttr('open');">
+      <summary>Sequence details</summary>
+    </details>
+    -->
   </div>
 
   <div class="tooltip" id="tooltipContainer"></div>
@@ -125,7 +137,29 @@
   <div id="help-timetree" title="Time-scaled tree help">
     <p>
       A phylogenetic tree is a hypothesis about how populations are related by their common ancestors.
-      For tracking viruses, trees are used to reconstruct
+      The tree displayed here summarizes the evolutionary relationships among the
+      <a href="https://cov-lineages.org" target="_new">SARS-CoV-2 lineages</a>.
+    </p>
+  </div>
+
+  <div id="help-beadplot" title="Beadplot help">
+    <p>
+      A phylogenetic tree is a hypothesis about how populations are related by their common ancestors.
+      The tree displayed here summarizes the evolutionary relationships among the
+      <a href="https://cov-lineages.org" target="_new">SARS-CoV-2 lineages</a>.
+    </p>
+  </div>
+
+  <div id="help-search" title="Search help">
+    <p>
+      Since there is an overwhelming number of sampled infections that we are trying to visualize
+      here, we have built a basic search interface that you can interact with using the inputs
+      at the top of this web page.
+    </p>
+    <p>
+      You can use the text box to find a specific sample by GISAID accession number,
+      or a set of samples by substring matching.  If you start to enter an accession number, the
+      text box will display a number of possibilities (autocompletion).
     </p>
   </div>
 
@@ -175,6 +209,10 @@
   <script src="js/gisaid/gisaid.js?random=1"></script>
 
   <script>
+    $( function() {
+      $( "#tabs" ).tabs();
+    } );
+
     $( "#splash" ).dialog({
       autoOpen: true,
       width: 600,
@@ -186,6 +224,26 @@
     });
 
     $( "#help-timetree" ).dialog({
+      autoOpen: false,
+      width: 600,
+      buttons: {
+        "Got it": function() {
+          $( this ).dialog( "close" );
+        }
+      }
+    });
+
+    $( "#help-beadplot" ).dialog({
+      autoOpen: false,
+      width: 600,
+      buttons: {
+        "Got it": function() {
+          $( this ).dialog( "close" );
+        }
+      }
+    });
+
+    $( "#help-search" ).dialog({
       autoOpen: false,
       width: 600,
       buttons: {
@@ -435,7 +493,7 @@
 
           draw_halo(selected_bead);
           gentable(selected_bead);
-          draw_region_distribution(table(selected_bead.region));
+          draw_region_distribution(tabulate(selected_bead.region));
           gen_details_table(selected_bead);
         }
 
@@ -497,7 +555,7 @@
           var selected_bead = d3.select(working_bead).datum();
           draw_halo(selected_bead);
           gentable(selected_bead);
-          draw_region_distribution(table(selected_bead.region));
+          draw_region_distribution(tabulate(selected_bead.region));
           gen_details_table(selected_bead);
         }
 
