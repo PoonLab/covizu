@@ -51,11 +51,12 @@ def load_gisaid(path, minlen=29000, mindate='2019-12-01'):
                 # FIXME: should report this somewhere
                 continue
 
-            qname = record['covv_virus_name'].strip()
+            qname = record['covv_virus_name'].strip().replace(',', '_')  # issue #206
             if qname.split('/')[1][0].islower():
                 # reject non-human isolates
                 # FIXME: request host field
                 continue
+
             record['covv_virus_name'] = qname  # in case we removed whitespace
 
             seq = record['sequence'].replace('\n', '')
