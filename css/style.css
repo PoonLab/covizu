@@ -101,7 +101,7 @@ div.leftbox {
   top: 50px;
   left: 10px;
   width: 250px;
-  height: 100%;
+  height: calc(100% - 50px);
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
