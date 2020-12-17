@@ -131,7 +131,7 @@ function drawtree(timetree) {
     .attr("y1", yMap1)
     .attr("x2", xMap2)
     .attr("y2", yMap2)
-    .attr("stroke-width", 2)
+    .attr("stroke-width", 1.5)
     .attr("stroke", "#777");
 
   return(df);
@@ -156,24 +156,20 @@ function map_clusters_to_tips(df, clusters) {
     }
 
     // find variant in cluster that matches a tip label
-    /*
-    var labels = Object.keys(cluster['nodes']),
-        root = tip_labels.filter(value => -1 !== labels.indexOf(value))[0];
-     */
     var labels = Object.keys(cluster["nodes"]),
-        root = tip_labels.filter(value => cluster['lineage'] === value)[0];
+        root = tip_labels.filter(value => value === cluster['lineage'])[0];
     if (root === undefined) {
       console.log("Failed to match cluster of index ", cidx, " to a tip in the tree");
       continue;
     }
 
     var root_idx = tip_labels.indexOf(root),  // row index in data frame
-        root_xcoord = tips[root_idx].x,  // left side of cluster starts at end of tip
-        dt;
+        root_xcoord = tips[root_idx].x;  // left side of cluster starts at end of tip
 
     // find most recent sample collection date
     var coldates = Array(),
-      label, variant;
+        label, variant;
+
     for (var i=0; i<labels.length; i++) {
       label = labels[i];
       variant = cluster['nodes'][label];
@@ -198,16 +194,31 @@ function map_clusters_to_tips(df, clusters) {
     tips[root_idx].pdist = cluster.pdist;
     tips[root_idx].rdist = cluster.rdist;
 
-    tips[root_idx].coldate = first_date;
-    tips[root_idx].x1 = root_xcoord;
-    dt = (last_date - first_date) / 3.154e10;
-    tips[root_idx].x2 = root_xcoord + dt;
+    //tips[root_idx].x1 = root_xcoord;
+    //dt = (last_date - first_date) / 3.154e10;
+    //tips[root_idx].x2 = root_xcoord + dt;
+    tips[root_idx].coldate = last_date;
+    tips[root_idx].x1 = root_xcoord - ((last_date - first_date) / 3.154e10);
+    tips[root_idx].x2 = root_xcoord;
   }
   return tips;
 }
 
 
-
+/**
+ * Convert x-coordinate of tree scale to Date scale by referring to a
+ * tip in the tree.  Code from:
+ * https://stackoverflow.com/questions/563406/add-days-to-javascript-date
+ *
+ * @param x:  float, distance from root in tree (years)
+ * @param tip:  Object, representing a reference tip in the tree
+ * @returns {string}  new date in ISO format (yyyy-mm-dd)
+ */
+function xaxis_to_date(x, tip) {
+  var coldate = new Date(tip.coldate);  // collection date of reference tip
+  coldate.setDate(coldate.getDate() + 365.25*(x - tip.x));
+  return (coldate.toISOString().split('T')[0]);
+}
 
 
 /**
@@ -215,26 +226,14 @@ function map_clusters_to_tips(df, clusters) {
  * @param {Array} tips, clusters that have been mapped to tips of tree
  */
 function draw_clusters(tips) {
-  var xaxis_to_date = function(x) {
-    var origin = tips[0],
-      coldate = new Date(origin.coldate),
-      dx = x - origin.x;  // year units
-    coldate.setDate(coldate.getDate() + 365.25*dx);
-    return (coldate.toISOString().split('T')[0]);
-  };
-
-  var date_to_xaxis = function(isodate) {
-    const origin = new Date(xaxis_to_date(0));
-    var coldate = new Date(isodate);
-    return ((coldate - origin) / 3.154e10);
-  };
-
   axis.append("g")
     .attr("class", "treeaxis")
     .attr("transform", "translate(0,20)")
     .call(d3.axisTop(xScale)
       .ticks(3)
-      .tickFormat(d => xaxis_to_date(d)));
+      .tickFormat(function(d) {
+        return xaxis_to_date(d, tips[0])
+      }));
 
   function mouseover(d) {
     d3.select("[cidx=cidx-" + d.cluster_idx + "]")
@@ -337,6 +336,7 @@ function draw_clusters(tips) {
       .style("font-size", "10px")
       .attr("text-anchor", "start")
       .attr("alignment-baseline", "middle")
+      .attr("cursor", "default")
       .attr("x", function(d) {
         return(xScale(d.x));
       })

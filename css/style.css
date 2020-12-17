@@ -135,17 +135,25 @@ div.rightbox {
   height: 100%;
 }
 
-.ui-tabs {
-  font: 0.8em, Lato, sans-serif;
-  padding: 0;
-}
-
 .ui-tabs .ui-tabs-nav {
   padding: 0;
 }
-
+.ui-tabs .ui-tabs-nav li.ui-tabs-active {
+  background: white;
+  border-top-color: #c5c5c5;
+  border-left-color: #c5c5c5;
+  border-right-color: #c5c5c5;
+}
+.ui-tabs .ui-tabs-nav li.ui-tabs-active .ui-tabs-anchor {
+  color: black;
+  background: white;
+}
+.ui-tabs .ui-state-default a, .ui-state-default a:link, .ui-state-default a:visited {
+  color: grey;
+  background: #e9e9e9;
+}
 .ui-tabs .ui-tabs-panel {
-	padding: 3px;
+  padding: 3px;
 }
 
 footer {
