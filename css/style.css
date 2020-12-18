@@ -156,6 +156,11 @@ div.rightbox {
   padding: 3px;
 }
 
+.hint {
+  border-bottom: 1px dotted #000;
+  cursor: help;
+}
+
 footer {
   width: 50%;
   margin: 5px auto 10px auto;

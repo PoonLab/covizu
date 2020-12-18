@@ -38,9 +38,6 @@ function update_search_stats(stats) {
   $('#search_stats').text(`${stats.current_point+1} of ${stats.total_points} points`);
 }
 
-function find_beads_points(beadsdata){
-  return beadsdata.map(bead => bead.points).flat()
-}
 
 /**
  * Highlight clusters for which the cluster function returns true
@@ -123,21 +120,41 @@ function select_beads(points_ui) {
  * @param {string} substr:  sub-string to search
  */
 function select_beads_by_substring(substr) {
-  var rects, points_ui;
+  var rects, points_ui, start_date, end_date,
+    start = $("#start-date").val(),
+    end = $("#end-date").val();
 
   if (substr === "") {
     // user submitted empty string
     clear_selection();
     return;
   }
+  if (start == "") {
+    start_date = new Date("2019-01-01");
+  } else {
+    start_date = new Date(start);  // from ISO string
+  }
+  if (end == "") {
+    end_date = new Date();  // today
+  } else {
+    end_date = new Date(end);
+  }
 
   rects = d3.selectAll("#svg-timetree > svg > rect:not(.clickedH)")
-    .filter(function(d) { return d.searchtext.match(substr) !== null });
+    .filter(function(d) {
+      return (d.searchtext.match(substr) !== null
+          //&& d.first_date <= end_date && d.last_date >= start_date
+      )
+    });
   select_clusters(rects);
 
   // preceding function switches view to beadplot with matching samples, if any
   points_ui = d3.selectAll("#svg-cluster > svg > g > circle")
-    .filter(function(d) { return d.labels.some(x => x.includes(substr))});
+    .filter(function(d) {
+      return (d.labels.some(x => x.includes(substr))
+          //&& d.x >= start_date && d.x <= end_date
+      )
+    });
   select_beads(points_ui);
 }
 
@@ -280,7 +297,25 @@ function search() {
   //update_search_stats(stats);
 }
 
-function search_by_dates(beaddata, start, end){
+
+function find_beads_points(beadsdata){
+  return beadsdata.map(bead => bead.points).flat()
+}
+
+
+function search_by_dates(start, end) {
+  console.log(start);
+  console.log(end);
+  var rects = d3.selectAll("#svg-timetree > svg > rect:not(.clickedH)")
+    .filter(function(d) { return d.first_date <= end && d.last_date >= start });
+  select_clusters(rects);
+
+  // preceding function switches view to beadplot with matching samples, if any
+  var points_ui = d3.selectAll("#svg-cluster > svg > g > circle")
+    .filter(function(d) { return d.x >= start && d.x <= end });
+  select_beads(points_ui);
+
+  /*
   const points = find_beads_points(beaddata)
     .filter(point => point.x >= start && point.x <= end);
 
@@ -295,4 +330,5 @@ function search_by_dates(beaddata, start, end){
     bead_indexer: 0,
   });
   update_search_stats(stats);
+   */
 }
