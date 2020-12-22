@@ -248,17 +248,23 @@ if __name__ == "__main__":
     timetree = build_timetree(by_lineage, args, cb.callback)
 
     # FIXME: this is fragile, fails if user specifies custom output file name
-    nwk_file = args.outfile.name.replace('clusters.', 'timetree.').replace('.json', '.nwk')
-    with open(nwk_file, 'w'):
-        Phylo.write(timetree, file=nwk_file, format='newick')
+    timestamp = os.path.basename(args.outfile.name).split('.')[1]
+    nwk_file = 'timetree.{}.nwk'.format(timestamp)
+    with open(nwk_file, 'w') as handle:
+        Phylo.write(timetree, file=handle, format='newick')
 
     result = make_beadplots(by_lineage, args, cb.callback, t0=cb.t0.timestamp())
+    args.outfile.write(json.dumps(result))  # serialize results to JSON
 
-    # serialize results to JSON
-    args.outfile.write(json.dumps(result))
+    # write data stats
+    dbstat_file = 'dbstats.{}.json'.format(timestamp)
+    with open(dbstat_file, 'w') as handle:
+        nseqs = sum([len(rows) for rows in by_lineage.values()])
+        json.dump({'lastupdate': timestamp.split('T')[0], 'noseqs': nseqs})
 
     # transfer output files to webserver
     subprocess.check_call(['scp', nwk_file, 'filogeneti.ca:/var/www/html/covizu/data/timetree.nwk'])
     subprocess.check_call(['scp', args.outfile.name, 'filogeneti.ca:/var/www/html/covizu/data/clusters.json'])
+    subprocess.check_call(['scp', dbstat_file, 'filogeneti.ca:/var/www/html/covizu/data/dbstats.json'])
 
     cb.callback("All done!")
