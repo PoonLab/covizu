@@ -248,8 +248,9 @@ if __name__ == "__main__":
     timetree = build_timetree(by_lineage, args, cb.callback)
 
     # FIXME: this is fragile, fails if user specifies custom output file name
-    timestamp = os.path.basename(args.outfile.name).split('.')[1]
-    nwk_file = 'timetree.{}.nwk'.format(timestamp)
+    head, tail = os.path.split(args.outfile.name)
+    timestamp = tail.split('.')[1]
+    nwk_file = os.path.join(head, 'timetree.{}.nwk'.format(timestamp))
     with open(nwk_file, 'w') as handle:
         Phylo.write(timetree, file=handle, format='newick')
 
@@ -257,14 +258,16 @@ if __name__ == "__main__":
     args.outfile.write(json.dumps(result))  # serialize results to JSON
 
     # write data stats
-    dbstat_file = 'dbstats.{}.json'.format(timestamp)
+    dbstat_file = os.path.join(head, 'dbstats.{}.json'.format(timestamp))
     with open(dbstat_file, 'w') as handle:
         nseqs = sum([len(rows) for rows in by_lineage.values()])
-        json.dump({'lastupdate': timestamp.split('T')[0], 'noseqs': nseqs})
+        val = {'lastupdate': timestamp.split('T')[0], 'noseqs': nseqs}
+        json.dump(val, handle)
 
     # transfer output files to webserver
-    subprocess.check_call(['scp', nwk_file, 'filogeneti.ca:/var/www/html/covizu/data/timetree.nwk'])
-    subprocess.check_call(['scp', args.outfile.name, 'filogeneti.ca:/var/www/html/covizu/data/clusters.json'])
-    subprocess.check_call(['scp', dbstat_file, 'filogeneti.ca:/var/www/html/covizu/data/dbstats.json'])
+    server_root = 'filogeneti.ca:/var/www/html/covizu/data'
+    subprocess.check_call(['scp', nwk_file, '{}/timetree.nwk'.format(server_root)])
+    subprocess.check_call(['scp', args.outfile.name, '{}/clusters.json'.format(server_root)])
+    subprocess.check_call(['scp', dbstat_file, '{}/dbstats.json'.format(server_root)])
 
     cb.callback("All done!")
