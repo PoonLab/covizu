@@ -36,6 +36,10 @@ def parse_args():
     parser.add_argument('--mindate', type=str, default='2019-12-01', 
                         help='option, earliest possible sample collection date (ISO format, default '
                               '2019-12-01')
+    parser.add_argument('--cutoff', type=float, default=0.001,
+                        help='option, filtering outlying genomes whose distance exceeds the upper '
+                             'quantile of Poisson distribution (molecular clock).  Default 0.001 '
+                             'corresponds to 99.9% cutoff.')
    
     parser.add_argument('--batchsize', type=int, default=500,
                         help='option, number of records to batch process with minimap2')
@@ -98,7 +102,8 @@ def process_feed(args, callback=None):
     batcher = gisaid_utils.batch_fasta(loader, size=args.batchsize)
     aligned = gisaid_utils.extract_features(batcher, ref_file=args.ref, binpath=args.mmbin,
                                             nthread=args.mmthreads, minlen=args.minlen)
-    filtered = gisaid_utils.filter_problematic(aligned, vcf_file=args.vcf, callback=callback)
+    filtered = gisaid_utils.filter_problematic(aligned, vcf_file=args.vcf, cutoff=args.cutoff,
+                                               callback=callback)
     return gisaid_utils.sort_by_lineage(filtered, callback=callback)
 
 
