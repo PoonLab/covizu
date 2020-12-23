@@ -36,6 +36,10 @@ def parse_args():
     parser.add_argument('--mindate', type=str, default='2019-12-01', 
                         help='option, earliest possible sample collection date (ISO format, default '
                               '2019-12-01')
+    parser.add_argument('--cutoff', type=float, default=0.001,
+                        help='option, filtering outlying genomes whose distance exceeds the upper '
+                             'quantile of Poisson distribution (molecular clock).  Default 0.001 '
+                             'corresponds to 99.9% cutoff.')
    
     parser.add_argument('--batchsize', type=int, default=500,
                         help='option, number of records to batch process with minimap2')
@@ -98,7 +102,8 @@ def process_feed(args, callback=None):
     batcher = gisaid_utils.batch_fasta(loader, size=args.batchsize)
     aligned = gisaid_utils.extract_features(batcher, ref_file=args.ref, binpath=args.mmbin,
                                             nthread=args.mmthreads, minlen=args.minlen)
-    filtered = gisaid_utils.filter_problematic(aligned, vcf_file=args.vcf, callback=callback)
+    filtered = gisaid_utils.filter_problematic(aligned, vcf_file=args.vcf, cutoff=args.cutoff,
+                                               callback=callback)
     return gisaid_utils.sort_by_lineage(filtered, callback=callback)
 
 
@@ -248,17 +253,26 @@ if __name__ == "__main__":
     timetree = build_timetree(by_lineage, args, cb.callback)
 
     # FIXME: this is fragile, fails if user specifies custom output file name
-    nwk_file = args.outfile.name.replace('clusters.', 'timetree.').replace('.json', '.nwk')
-    with open(nwk_file, 'w'):
-        Phylo.write(timetree, file=nwk_file, format='newick')
+    head, tail = os.path.split(args.outfile.name)
+    timestamp = tail.split('.')[1]
+    nwk_file = os.path.join(head, 'timetree.{}.nwk'.format(timestamp))
+    with open(nwk_file, 'w') as handle:
+        Phylo.write(timetree, file=handle, format='newick')
 
     result = make_beadplots(by_lineage, args, cb.callback, t0=cb.t0.timestamp())
+    args.outfile.write(json.dumps(result))  # serialize results to JSON
 
-    # serialize results to JSON
-    args.outfile.write(json.dumps(result))
+    # write data stats
+    dbstat_file = os.path.join(head, 'dbstats.{}.json'.format(timestamp))
+    with open(dbstat_file, 'w') as handle:
+        nseqs = sum([len(rows) for rows in by_lineage.values()])
+        val = {'lastupdate': timestamp.split('T')[0], 'noseqs': nseqs}
+        json.dump(val, handle)
 
     # transfer output files to webserver
-    subprocess.check_call(['scp', nwk_file, 'filogeneti.ca:/var/www/html/covizu/data/timetree.nwk'])
-    subprocess.check_call(['scp', args.outfile.name, 'filogeneti.ca:/var/www/html/covizu/data/clusters.json'])
+    server_root = 'filogeneti.ca:/var/www/html/covizu/data'
+    subprocess.check_call(['scp', nwk_file, '{}/timetree.nwk'.format(server_root)])
+    subprocess.check_call(['scp', args.outfile.name, '{}/clusters.json'.format(server_root)])
+    subprocess.check_call(['scp', dbstat_file, '{}/dbstats.json'.format(server_root)])
 
     cb.callback("All done!")
