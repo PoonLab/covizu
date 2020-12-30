@@ -50,7 +50,6 @@ def minimap2(infile, ref, stream=False, path='minimap2', nthread=3, minlen=29000
              sequence
     """
     if stream:
-        # FIXME: still debugging, see issue #
         # input from StringIO in memory
         p = subprocess.Popen(
             [path, '-t', str(nthread), '-a', '--eqx', ref, '-'], encoding='utf8',
@@ -130,8 +129,8 @@ def stream_fasta(iter, reflen=0):
     :param iter:  generator from minimap2()
     :param reflen:  int, length of reference genome to pad sequences;
                     defaults to no padding.
+    :yield:  tuple, header and aligned sequence
     """
-    sequence_handle = []
     for qname, rpos, cigar, seq in iter:
         tokens = re.findall(r'  (\d+)([MIDNSHPX=])', cigar, re.VERBOSE)
         aligned = '-' * rpos
@@ -148,8 +147,7 @@ def stream_fasta(iter, reflen=0):
 
         # pad on right
         aligned += '-'*(reflen-len(aligned))
-        sequence_handle.append([qname, aligned])
-    return sequence_handle
+        yield qname, aligned
 
 
 def encode_diffs(iter, reflen, alphabet='ACGT'):
