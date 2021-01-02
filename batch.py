@@ -36,7 +36,7 @@ def parse_args():
     parser.add_argument('--mindate', type=str, default='2019-12-01', 
                         help='option, earliest possible sample collection date (ISO format, default '
                               '2019-12-01')
-    parser.add_argument('--cutoff', type=float, default=0.001,
+    parser.add_argument('--poisson-cutoff', type=float, default=0.001,
                         help='option, filtering outlying genomes whose distance exceeds the upper '
                              'quantile of Poisson distribution (molecular clock).  Default 0.001 '
                              'corresponds to 99.9% cutoff.')
@@ -87,7 +87,7 @@ def parse_args():
     parser.add_argument("-n", "--nboot", type=int, default=100,
                         help="Number of bootstrap samples, default 100.")
 
-    parser.add_argument("--cutoff", type=float, default=0.5,
+    parser.add_argument("--boot-cutoff", type=float, default=0.5,
                         help="Bootstrap cutoff for consensus tree (default 0.5). "
                              "Only used if --cons is specified.")
 
@@ -102,7 +102,7 @@ def process_feed(args, callback=None):
     batcher = gisaid_utils.batch_fasta(loader, size=args.batchsize)
     aligned = gisaid_utils.extract_features(batcher, ref_file=args.ref, binpath=args.mmbin,
                                             nthread=args.mmthreads, minlen=args.minlen)
-    filtered = gisaid_utils.filter_problematic(aligned, vcf_file=args.vcf, cutoff=args.cutoff,
+    filtered = gisaid_utils.filter_problematic(aligned, vcf_file=args.vcf, cutoff=args.poisson_cutoff,
                                                callback=callback)
     return gisaid_utils.sort_by_lineage(filtered, callback=callback)
 
@@ -146,7 +146,7 @@ def beadplot_serial(lineage, features, args, callback=None):
         return beaddict
 
     # generate majority consensus tree
-    ctree = clustering.consensus(iter(trees), cutoff=args.cutoff)
+    ctree = clustering.consensus(iter(trees), cutoff=args.boot_cutoff)
 
     # collapse polytomies and label internal nodes
     label_dict = dict([(str(idx), lst) for idx, lst in enumerate(labels)])
@@ -217,7 +217,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None):
                 label_dict = import_labels(handle)
 
             # generate beadplot data
-            ctree = clustering.consensus(trees, cutoff=args.cutoff, callback=callback)
+            ctree = clustering.consensus(trees, cutoff=args.boot_cutoff, callback=callback)
             outfile.close()  # done with Phylo.parse generator
 
             ctree = beadplot.annotate_tree(ctree, label_dict)
