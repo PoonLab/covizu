@@ -52,8 +52,9 @@ def load_gisaid(path, minlen=29000, mindate='2019-12-01'):
                 continue
 
             qname = record['covv_virus_name'].strip().replace(',', '_')  # issue #206
-            if qname.split('/')[1][0].islower():
-                # reject non-human isolates
+            country = qname.split('/')[1]
+            if country == '' or country[0].islower():
+                # reject mangled labels and non-human isolates
                 # FIXME: request host field
                 continue
 
