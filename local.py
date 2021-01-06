@@ -8,9 +8,7 @@ from datetime import datetime, date
 from csv import DictReader
 
 import covizu
-from covizu.minimap2 import minimap2, encode_diffs
-from covizu import clustering, treetime, beadplot
-from covizu.utils import gisaid_utils, seq_utils
+from covizu.utils import seq_utils
 from covizu.utils.progress_utils import Callback
 from batch import *
 
@@ -125,11 +123,21 @@ def stream_local(path, lineage_file, minlen=29000, mindate='2019-12-01', callbac
         if dt < mindate or dt > date.today():
             continue  # reject records with non-sensical collection date
 
+        lineage = lineages.get(header, None)
+        if lineage is None:
+            if callback:
+                callback(
+                    "Failed to retrieve lineage assignment for {}".format(header),
+                    level='ERROR'
+                )
+            sys.exit()
+
         record = {
             'covv_virus_name': label,
+            'covv_accession_id': accn,
             'sequence': seq,
             'covv_collection_date': coldate,
-            'covv_lineage': lineages.get(label, None)
+            'covv_lineage': lineage
         }
         yield record
 
@@ -139,7 +147,8 @@ def process_local(args, callback=None):
     with open(args.ref) as handle:
         reflen = len(seq_utils.convert_fasta(handle)[0][1])
 
-    loader = stream_local(args.infile, args.lineages, minlen=args.minlen, mindate=args.mindate)
+    loader = stream_local(args.infile, args.lineages, minlen=args.minlen,
+                          mindate=args.mindate, callback=callback)
     batcher = gisaid_utils.batch_fasta(loader, size=args.batchsize)
     aligned = gisaid_utils.extract_features(batcher, ref_file=args.ref, binpath=args.mmbin,
                                             nthread=args.mmthreads, minlen=args.minlen)
