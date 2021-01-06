@@ -4,19 +4,6 @@
 Development of CoVizu is primarily being carried out on workstations and servers running Ubuntu 16.04+. 
 However, we have also run the system on desktop computers running macOS 10.13.
 
-## Dependencies
-
-* [Python](https://www.python.org/) 3.6 or higher, and the following modules:
-  * [BioPython](https://biopython.org/) version 1.7+
-  * [mpi4py](https://pypi.org/project/mpi4py/)
-* [minimap2](https://github.com/lh3/minimap2) version 2.1+ 
-* [FastTree2](http://www.microbesonline.org/fasttree/) version 2.1.10+, compiled for [double precision](http://www.microbesonline.org/fasttree/#BranchLen)
-* [TreeTime](https://github.com/neherlab/treetime) version 0.7.5+
-* [RapidNJ](https://birc.au.dk/software/rapidnj/)
-
-If running locally (without dedicated GISAID feed):
-* [Pangolin](https://github.com/cov-lineages/pangolin/)
-
 
 ## Coding style
 
@@ -35,7 +22,7 @@ If running locally (without dedicated GISAID feed):
 * Every function should open with a [docstring](https://www.python.org/dev/peps/pep-0257).  If the function is very brief with a small number of self-explanatory arguments, then a one-line docstring is fine.  Otherwise, use a multi-line docstring.  Use `:param varname: description` entries to document arguments. Use `:return: type, description` entries to document return values.   
 
 
-## Commiting your code
+## Committing your code
 
 Do not push commits to the `master` branch.  All development should be tracked in the `dev` branch and then merged into `master` after it has been tested.  
 
