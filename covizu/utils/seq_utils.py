@@ -215,7 +215,10 @@ def load_vcf(vcf_file="data/problematic_sites_sarsCov2.vcf"):
     for line in vcf.readlines():
         if line.startswith('#'):
             continue
-        _, pos, _, ref, alt, _, filt, info = line.strip().split()
+        try:
+            _, pos, _, ref, alt, _, filt, info = line.strip().split('\t')
+        except ValueError:
+            raise
         if filt == 'mask':
             mask.update({int(pos)-1: {  # convert to 0-index
                 'ref': ref, 'alt': alt, 'info': info}

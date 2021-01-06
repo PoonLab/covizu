@@ -24,7 +24,7 @@ class Pangolin:
         """ Assign genome to one or more lineages """
         # convert sequence into list
         seqlist = [nt if nt in 'ACGT-' else 'N' for i, nt in enumerate(seq) if i in self.indices]
-        df = pd.DataFrame(seqlist, columns=self.indices)
+        df = pd.DataFrame([seqlist], columns=self.indices)
 
         # add extra rows to ensure all categories are represented
         for nt in self.categories:
