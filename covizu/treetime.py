@@ -4,16 +4,13 @@ import json
 from tempfile import NamedTemporaryFile
 import os
 from io import StringIO
-import sys
 import re
 
 from Bio import Phylo
 
 import covizu
 from covizu.utils.seq_utils import *
-from covizu.utils.db_utils import dump_raw_by_lineage, retrieve_seqs
 from covizu.utils.progress_utils import Callback
-from covizu.minimap2 import minimap2, encode_diffs
 
 
 def filter_fasta(fasta_file, json_file, cutoff=10):
@@ -178,7 +175,7 @@ def parse_nexus(nexus_file, fasta, date_tol, callback=None):
     return phy
 
 
-def retrieve_genomes(by_lineage, ref_file='data/MT291829.fa'):
+def retrieve_genomes(by_lineage, ref_file):
     """
     Identify earliest sampled genome sequence for each Pangolin lineage.
     Export as FASTA for TreeTime analysis.
