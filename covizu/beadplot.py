@@ -165,7 +165,8 @@ def serialize_tree(tree):
         if node is tree.root:
             continue  # no edge
         parent = parents[node]
-        obj['edges'].append([variant_d[parent], variant, node.branch_length])
+        obj['edges'].append([variant_d[parent], variant, node.branch_length,
+                             node.confidence])
 
     return obj
 

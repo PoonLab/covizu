@@ -110,17 +110,22 @@ def stream_local(path, lineage_file, minlen=29000, mindate='2019-12-01', callbac
         lineages.update({row['taxon']: row['lineage']})
 
     handle = open(path)
+    short = 0
+    baddate = 0
     for header, seq in seq_utils.iter_fasta(handle):
         if len(seq) < minlen:
+            short += 1
             continue  # sequence is too short
 
         # hCoV-19/Canada/Qc-L00240569/2020|EPI_ISL_465679|2020-03-27
         label, accn, coldate = header.split('|')
 
         if coldate.count('-') != 2:
+            baddate += 1
             continue  # incomplete collection date
         dt = seq_utils.fromisoformat(coldate)
         if dt < mindate or dt > date.today():
+            baddate += 1
             continue  # reject records with non-sensical collection date
 
         lineage = lineages.get(header, None)
@@ -140,6 +145,9 @@ def stream_local(path, lineage_file, minlen=29000, mindate='2019-12-01', callbac
             'covv_lineage': lineage
         }
         yield record
+
+    if callback:
+        callback("Rejected {} short genomes and {} records with bad dates".format(short, baddate))
 
 
 def process_local(args, callback=None):

@@ -221,7 +221,7 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
  */
 function parse_edgelist(cluster, variants, points) {
   // map earliest collection date of child node to vertical edges
-  var edge, parent, child, dist, childpoints,
+  var edge, parent, child, dist, support,
       edgelist = [];
 
   // generate maps of variants and points keyed by accession
@@ -251,6 +251,12 @@ function parse_edgelist(cluster, variants, points) {
     }
 
     dist = parseFloat(edge[2]);
+    if (edge[3] === null) {
+      support = undefined;
+    } else {
+      support = parseFloat(edge[3]);
+    }
+
     edgelist.push({
       'y1': parent.y1,
       'y2': child.y1,
@@ -258,17 +264,9 @@ function parse_edgelist(cluster, variants, points) {
       'x2': child.x1,
       'parent': parent.label,
       'child': child.label,
-      'dist': dist
+      'dist': dist,
+      'support': support
     });
-
-    /*
-    // Assign parent and genomic distance of each node in child variant
-    let childvariants = variants.filter(x => x.y1 === child.y1);
-    for (let v = 0; v < childvariants.length; v++) {
-      childvariants[v].parent = parent.label;
-      childvariants[v].dist = dist;
-    }
-    */
 
     child.parent = parent.label;
     child.dist = dist;
@@ -280,14 +278,6 @@ function parse_edgelist(cluster, variants, points) {
         points[c].dist = dist;
       }
     }
-    /*
-    let childpoints = points.filter(x => x.y === child.y1);
-    for (let c = 0; c < childpoints.length; c++) {
-      childpoints[c].parent = parent.label;
-      childpoints[c].dist = dist;
-    }
-    */
-
 
     // update variant time range
     if (parent.x1 > child.x1) {
@@ -568,8 +558,9 @@ function beadplot(cid) {
             .duration(50)
             .style("opacity", 0.9);
 
-        let tooltipText = `<b>Parent:</b> ${d.parent}<br><b>Child:</b> ${d.child}<br>`;
-        tooltipText += `<b>Genomic distance:</b> ${Math.round(d.dist*100)/100}<br>`;
+        let tooltipText = `<b>Parent:</b> ${d.parent}<br/><b>Child:</b> ${d.child}<br/>`;
+        tooltipText += `<b>Genomic distance:</b> ${Math.round(d.dist*100)/100}<br/>`;
+        tooltipText += `<b>Support:</b> ${d.support}<br/>`
         tooltipText += `<b>Collection date:</b> ${formatDate(d.x2)}`;
 
         cTooltip.html(tooltipText)

@@ -97,6 +97,9 @@ def batch_fasta(gen, size=100):
             stdin = ''
             batch = []
 
+    if batch:
+        yield stdin, batch
+
 
 def extract_features(batcher, ref_file, binpath='minimap2', nthread=3, minlen=29000):
     """
