@@ -112,6 +112,7 @@ def stream_local(path, lineage_file, minlen=29000, mindate='2019-12-01', callbac
     handle = open(path)
     short = 0
     baddate = 0
+    nonhuman = 0
     for header, seq in seq_utils.iter_fasta(handle):
         if len(seq) < minlen:
             short += 1
@@ -119,6 +120,10 @@ def stream_local(path, lineage_file, minlen=29000, mindate='2019-12-01', callbac
 
         # hCoV-19/Canada/Qc-L00240569/2020|EPI_ISL_465679|2020-03-27
         label, accn, coldate = header.split('|')
+        country = label.split('/')[1]
+        if country == '' or country[0].islower():
+            nonhuman += 1
+            continue
 
         if coldate.count('-') != 2:
             baddate += 1
@@ -147,7 +152,9 @@ def stream_local(path, lineage_file, minlen=29000, mindate='2019-12-01', callbac
         yield record
 
     if callback:
-        callback("Rejected {} short genomes and {} records with bad dates".format(short, baddate))
+        callback("Rejected {} short genomes\n"
+                 "         {} records with bad dates\n"
+                 "         {} non-human genomes".format(short, baddate, nonhuman))
 
 
 def process_local(args, callback=None):

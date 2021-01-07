@@ -134,7 +134,7 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
     }
     vdata = {
       'accession': accn,
-      'label': null,
+      'label': accn,
       'x1': new Date(mindate),  // cluster min date
       'x2': new Date(maxdate),  // cluster max date
       'y1': y,
@@ -144,7 +144,8 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
       'region': null,
       'numBeads': 0,
       'parent': null,
-      'dist': 0
+      'dist': 0,
+      'unsampled': true
     };
   }
   else {
@@ -173,7 +174,8 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
       'region': country.map(x => countries[x]),
       'numBeads': isodates.length,
       'parent': null,
-      'dist': 0
+      'dist': 0,
+      'unsampled': false
     };
 
     for (var i=0; i<isodates.length; i++) {
@@ -455,14 +457,14 @@ function beadplot(cid) {
       .attr("y1", yMap1B)
       .attr("y2", yMap2B)
       .attr("stroke-width", function(d) {
-        if (d.label === null) {
+        if (d.unsampled) {
           return 1;
         } else {
           return 3;
         }
       })
       .attr("stroke", function(d) {
-        if (d.label === null) {
+        if (d.unsampled) {
           return "#ccc";
         } else {
           return "#777";
@@ -473,36 +475,41 @@ function beadplot(cid) {
           d3.select(this)
             .attr("stroke-width", 5);
 
-          cTooltip.transition()       // Show tooltip
-              .duration(50)
-              .style("opacity", 0.9);
-
           let tooltipText = "";
           if (d.parent || d.dist) {
             tooltipText += `<b>Parent:</b> ${d.parent}<br/><b>Genomic distance:</b> ${Math.round(d.dist*100)/100}<br/>`;
           }
+          if (!d.unsampled) {
+            tooltipText += region_to_string(tabulate(d.region));
+            tooltipText += `<b>Unique collection dates:</b> ${d.numBeads}<br/>`;
+            tooltipText += `<b>Collection dates:</b><br>${formatDate(d.x1)} / ${formatDate(d.x2)}`;
+          }
 
-          tooltipText += region_to_string(tabulate(d.region));
-          tooltipText += `<b>Unique collection dates:</b> ${d.numBeads}<br/>`;
-          tooltipText += `<b>Collection dates:</b><br>${formatDate(d.x1)} / ${formatDate(d.x2)}`;
+          if (tooltipText.length > 0) {
+            // Show tooltip
+            cTooltip.transition()
+                .duration(50)
+                .style("opacity", 0.9);
 
-          // Tooltip appears 10 pixels left of the cursor
-          cTooltip.html(tooltipText)
-              .style("left", (d3.event.pageX + 10) + "px")
-              .style("top", function() {
-                if (d3.event.pageY > window.innerHeight/2) {
-                  return (d3.event.pageY - cTooltip.node().getBoundingClientRect().height) + "px";
-                } else {
-                  return d3.event.pageY + "px";
-                }
-              });
+            // Tooltip appears 10 pixels left of the cursor
+            cTooltip.html(tooltipText)
+                .style("left", (d3.event.pageX + 10) + "px")
+                .style("top", function() {
+                  if (d3.event.pageY > window.innerHeight/2) {
+                    return (d3.event.pageY - cTooltip.node().getBoundingClientRect().height) + "px";
+                  } else {
+                    return d3.event.pageY + "px";
+                  }
+                });
+          }
+
         }
       })
       .on("mouseout", function() {
         d3.select(this)
             .attr("stroke-width", function(d) {
               // reset line width
-              if (d.label === null) {
+              if (d.unsampled) {
                 return 1;
               } else {
                 return 3;
@@ -552,9 +559,11 @@ function beadplot(cid) {
         }
       })
       .on("mouseover", function(d) {
-        d3.select(this).attr("stroke-width", 3);
+        var edge = d3.select(this);
+        edge.attr("stroke-width", 3);
 
-        cTooltip.transition()       // Show tooltip
+        // Show tooltip
+        cTooltip.transition()
             .duration(50)
             .style("opacity", 0.9);
 
