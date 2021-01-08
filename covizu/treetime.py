@@ -5,6 +5,7 @@ from tempfile import NamedTemporaryFile
 import os
 from io import StringIO
 import re
+import statistics  # Python 3.4+
 
 from Bio import Phylo
 
@@ -113,7 +114,7 @@ def treetime(nwk, fasta, outdir, binpath='treetime', clock=None, verbosity=1):
 
 
 def date2float(isodate):
-    """ Convert ISO date string to float """
+    """ Convert ISO date string to float (years) """
     year, month, day = map(int, isodate.split('-'))
     dt = date(year, month, day)
     origin = date(dt.year, 1, 1)
@@ -121,13 +122,12 @@ def date2float(isodate):
     return dt.year + td/365.25
 
 
-def parse_nexus(nexus_file, fasta, date_tol, callback=None):
+def parse_nexus(nexus_file, fasta, callback=None):
     """
     Converting Treetime NEXUS output into Newick
 
     @param nexus_file:  str, path to TreeTime NEXUS output
-    @param fasta:  dict, {header: seq} from filter_fasta()
-    @param date_tol:  float, tolerance in tip date discordance
+    @param fasta:  dict, {header: seq} from retrieve_genomes()
     @param callback:  function, optional callback
     """
     coldates = {}
@@ -140,17 +140,16 @@ def parse_nexus(nexus_file, fasta, date_tol, callback=None):
 
     # extract date estimates and internal node names
     remove = []
+    residuals = {}
     with open(nexus_file) as handle:
         for line in handle:
             for m in pat.finditer(line):
                 node_name, branch_length, date_est = m.groups()
                 coldate = coldates.get(node_name, None)
-                if coldate and abs(float(date_est) - coldate) > date_tol:
-                    if callback:
-                        callback('removing {}:  {:0.3f} < {}\n'.format(
-                            node_name, coldate, date_est
-                        ), level='INFO')
-                    remove.append(node_name)
+                if coldate:
+                    # if estimated date is well below actual date, lineage has
+                    # more substitutions than expected under molecular clock
+                    residuals.update({node_name: coldate-float(date_est)})
 
     # second pass to excise all comment fields
     pat = re.compile('\[&U\]|\[&mutations="[^"]*",date=[0-9]+\.[0-9]+\]')
@@ -163,7 +162,12 @@ def parse_nexus(nexus_file, fasta, date_tol, callback=None):
     for node_name in remove:
         phy.prune(node_name)
 
+    # normalize residuals and append to tip labels
+    rv = residuals.values()
     for node in phy.get_terminals():
+        node.name = '{}__{}'.format(
+            node.name, (residuals[node.name]-statistics.mean(rv))/statistics.stdev(rv)
+        )
         node.comment = None
 
     for node in phy.get_nonterminals():
@@ -177,7 +181,7 @@ def parse_nexus(nexus_file, fasta, date_tol, callback=None):
 
 def retrieve_genomes(by_lineage, ref_file):
     """
-    Identify earliest sampled genome sequence for each Pangolin lineage.
+    Identify most recent sampled genome sequence for each Pangolin lineage.
     Export as FASTA for TreeTime analysis.
 
     :param by_lineage:  dict, return value from gisaid_utils::sort_by_lineage
@@ -226,11 +230,6 @@ def parse_args():
     parser.add_argument('--clock', type=float, default=8e-4,
                         help='optional, specify molecular clock rate for '
                              'constraining Treetime analysis (default 8e-4).')
-    parser.add_argument('--datetol', type=float, default=0.1,
-                        help='optional, exclude tips from time-scaled tree '
-                             'with high discordance between estimated and '
-                             'known sample collection dates (year units,'
-                             'default: 0.1)')
 
     parser.add_argument('--outdir', default='data/',
                         help='optional, directory to write TreeTime output files')
@@ -258,5 +257,5 @@ if __name__ == '__main__':
     nexus_file = treetime(nwk, fasta, outdir=args.outdir, binpath=args.ttbin,
                           clock=args.clock)
 
-    timetree = parse_nexus(nexus_file, fasta, date_tol=args.datetol)
+    timetree = parse_nexus(nexus_file, fasta)
     Phylo.write(timetree, file=args.outfile, format='newick')

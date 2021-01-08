@@ -15,11 +15,11 @@ from covizu.utils.progress_utils import Callback
 def parse_args():
     parser = argparse.ArgumentParser(description="CoVizu analysis pipeline automation")
 
-    parser.add_argument('--url', type=str, default=os.environ["GISAID_URL"],
+    parser.add_argument('--url', type=str, default=os.environ.get("GISAID_URL", None),
                         help="URL to download provision file, defaults to environment variable.")
-    parser.add_argument('--user', type=str, default=os.environ["GISAID_USER"],
+    parser.add_argument('--user', type=str, default=os.environ.get("GISAID_USER", None),
                         help="GISAID username, defaults to environment variable.")
-    parser.add_argument('--password', type=str, default=os.environ["GISAID_PSWD"],
+    parser.add_argument('--password', type=str, default=os.environ.get("GISAID_PSWD", None),
                         help="GISAID password, defaults to environment variable.")
 
     parser.add_argument("--infile", type=str, default=None,
@@ -39,7 +39,7 @@ def parse_args():
     parser.add_argument('--poisson-cutoff', type=float, default=0.001,
                         help='option, filtering outlying genomes whose distance exceeds the upper '
                              'quantile of Poisson distribution (molecular clock).  Default 0.001 '
-                             'corresponds to 99.9% cutoff.')
+                             'corresponds to 99.9%% cutoff.')
    
     parser.add_argument('--batchsize', type=int, default=500,
                         help='option, number of records to batch process with minimap2')
@@ -121,7 +121,7 @@ def build_timetree(by_lineage, args, callback=None):
                                    clock=args.clock, verbosity=0)
 
     # writes output to treetime.nwk at `nexus_file` path
-    return treetime.parse_nexus(nexus_file, fasta, date_tol=args.datetol)
+    return treetime.parse_nexus(nexus_file, fasta)
 
 
 def beadplot_serial(lineage, features, args, callback=None):
@@ -258,6 +258,8 @@ if __name__ == "__main__":
     nwk_file = os.path.join(head, 'timetree.{}.nwk'.format(timestamp))
     with open(nwk_file, 'w') as handle:
         Phylo.write(timetree, file=handle, format='newick')
+
+    sys.exit()
 
     result = make_beadplots(by_lineage, args, cb.callback, t0=cb.t0.timestamp())
     args.outfile.write(json.dumps(result))  # serialize results to JSON
