@@ -155,13 +155,13 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
         isodate, samples, regions;
 
     coldates.sort();
-
+    //Retrieving countries from variants?
     var country = variant.map(x => x.country),
         isodates = unique(coldates);
 
     // remove underscores in country names
-    country = country.map(x => x.replaceAll("_", " "));
-
+    country = country.map(x => x.replace(/_/g," "));
+    
     vdata = {
       'accession': accn,
       'label': label,
@@ -182,7 +182,7 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
       isodate = isodates[i];
       samples = variant.filter(x => x.coldate === isodate);
       country = samples.map(x => x.country);
-      country = country.map(x => x.replaceAll("_", " "));
+      country = country.map(x => x.replace(/_/g," "));
       regions = country.map(x => countries[x]);
 
       // warn developers if no region for country
