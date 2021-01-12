@@ -271,9 +271,6 @@ function draw_clusters(tips) {
     .attr("y", yMap)
     .attr("width", xWide)
     .attr("height", 10)
-    .attr("fill", function(d) {
-      return(country_pal[d.region]);
-    })
     .attr("class", "default")
     .attr("cidx", function(d) { return "cidx-" + d.cluster_idx; })
     .attr("id", function(d, i) { return "id-" + i; })
@@ -325,6 +322,8 @@ function draw_clusters(tips) {
 
     });
 
+  changeTreeColour();
+
   d3.select("#svg-timetree")
   .selectAll("line")
   .raise();
@@ -354,3 +353,33 @@ function draw_clusters(tips) {
         d3.select("[cidx=cidx-" + d.cluster_idx + "]").dispatch('click');
       });
 }
+
+
+/**
+ * Colour rect elements of tree to represent lineage attributes
+ */
+function changeTreeColour() {
+  vis.selectAll("rect")
+      .transition()
+      .duration(300)
+      .style("fill", function(d) {
+        let opt = $("#select-tree-colours").val();
+        if (opt === "Region") {
+         return(country_pal[d.region]);
+        }
+        else if (opt === "No. samples") {
+          return("red");  // placeholder values
+        }
+        else if (opt === "Collection date") {
+          return("green");
+        }
+        else {  // Divergence
+          return("blue");
+        }
+      })
+}
+
+// bind to element
+$("#select-tree-colours").change(function() {
+  changeTreeColour();
+});

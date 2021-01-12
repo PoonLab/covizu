@@ -130,7 +130,16 @@ class QPois:
     rate <L> and varying time <t>, s.t. \exp(-Lt)\sum_{i=0}^{k} (Lt)^i/i! = Q.
     """
     def __init__(self, quantile, rate, maxtime, origin='2019-12-01'):
-        self.q = quantile
+        """
+        :param quantile:  float, cut distribution at q and 1-q
+        :param rate:  float, molecular clock rate (genome / day)
+        :param maxtime:  int, maximum number of days to cache
+        :param origin:  str, x-intercept of trend in ISO format
+        """
+        if quantile <= 0 or quantile >= 1:
+            print("ERROR: QPois quantile argument must be on closed interval (0,1).")
+        self.upperq = quantile if quantile > 0.5 else (1-quantile)
+        self.lowerq = 1-self.upperq  # TODO: store timepoints for lower quantiles
         self.rate = rate
         self.maxtime = maxtime
         self.origin = fromisoformat(origin)
@@ -139,7 +148,7 @@ class QPois:
 
     def objfunc(self, x, k):
         """ Use root-finding to find transition point for Poisson CDF """
-        return self.q - poisson.cdf(k=k, mu=self.rate*x)
+        return self.upperq - poisson.cdf(k=k, mu=self.rate*x)
 
     def compute_timepoints(self, maxk=100):
         """ Store transition points until time exceeds maxtime """
@@ -149,7 +158,7 @@ class QPois:
             res = root(self.objfunc, x0=t, args=(k, ))
             if not res.success:
                 print("Error in QPois: failed to locate root, q={} k={} rate={}".format(
-                    self.q, k, self.rate))
+                    self.upperq, k, self.rate))
                 print(res)
                 break
             t = res.x[0]

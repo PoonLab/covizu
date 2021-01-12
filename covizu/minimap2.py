@@ -248,7 +248,7 @@ if __name__ == '__main__':
         args.outfile = sys.stdout
 
     # check input headers for spaces
-    if not args.stream and not args.force_headers:
+    if not args.force_headers:
         for line in args.infile:
             if line.startswith('>') and ' ' in line:
                 print("WARNING: at least one FASTA header contains a space")
