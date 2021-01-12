@@ -136,7 +136,7 @@ def parse_nexus(nexus_file, fasta, callback=None):
         coldates.update({accn: date2float(coldate)})
 
     # extract comment fields and store date estimates
-    pat = re.compile('([^)(,:]+):([0-9]+\.[0-9]+)\[[^d]+date=([0-9]+\.[0-9]+)\]')
+    pat = re.compile('([^)(,:]+):(-*[0-9]+\.[0-9]+)\[[^d]+date=([0-9]+\.[0-9]+)\]')
 
     # extract date estimates and internal node names
     remove = []
@@ -145,7 +145,7 @@ def parse_nexus(nexus_file, fasta, callback=None):
         for line in handle:
             for m in pat.finditer(line):
                 node_name, branch_length, date_est = m.groups()
-                coldate = coldates.get(node_name, None)
+                coldate = coldates.get(node_name, None)  # internal nodes have no collection date
                 if coldate:
                     # if estimated date is well below actual date, lineage has
                     # more substitutions than expected under molecular clock
@@ -163,11 +163,13 @@ def parse_nexus(nexus_file, fasta, callback=None):
         phy.prune(node_name)
 
     # normalize residuals and append to tip labels
-    rv = residuals.values()
+    rvals = residuals.values()
+    rmean = statistics.mean(rvals)
+    rstdev = statistics.stdev(rvals)
+    for tip, resid in residuals.items():
+        residuals[tip] = (resid-rmean) / rstdev
+
     for node in phy.get_terminals():
-        node.name = '{}__{}'.format(
-            node.name, (residuals[node.name]-statistics.mean(rv))/statistics.stdev(rv)
-        )
         node.comment = None
 
     for node in phy.get_nonterminals():
@@ -176,7 +178,7 @@ def parse_nexus(nexus_file, fasta, callback=None):
             node.confidence = None
         node.comment = None
 
-    return phy
+    return phy, residuals
 
 
 def retrieve_genomes(by_lineage, ref_file):
@@ -257,5 +259,5 @@ if __name__ == '__main__':
     nexus_file = treetime(nwk, fasta, outdir=args.outdir, binpath=args.ttbin,
                           clock=args.clock)
 
-    timetree = parse_nexus(nexus_file, fasta)
+    timetree, residuals = parse_nexus(nexus_file, fasta)
     Phylo.write(timetree, file=args.outfile, format='newick')

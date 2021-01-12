@@ -244,7 +244,7 @@ def filter_problematic(obj, mask, callback=None):
         if type(row) is dict:
             qname, diffs, missing = row['qname'], row['diffs'], row['missing']
         else:
-            qname, diffs, missing = row
+            qname, diffs, missing = row  # unpack tuple
 
         filtered = []
         for typ, pos, alt in diffs:
