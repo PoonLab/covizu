@@ -146,12 +146,9 @@ class QPois:
 
         self.timepoints_upper, self.timepoints_lower = self.compute_timepoints()
 
-    def objfuncUpper(self, x, k):
+    def objfunc(self, x, k, q):
         """ Use root-finding to find transition point for Poisson CDF """
-        return self.upperq - poisson.cdf(k=k, mu=self.rate*x)
-
-    def objfuncLower(self, x, k):
-        return  self.lowerq - poisson.cdf(k=k, mu=self.rate*x)
+        return q - poisson.cdf(k=k, mu=self.rate*x)
 
     def compute_timepoints(self, maxk=100):
         """ Store transition points until time exceeds maxtime """
@@ -160,8 +157,8 @@ class QPois:
         tu = 0
         tl = 0
         for k in range(maxk):
-            res_upper = root(self.objfuncUpper, x0=tu, args=(k, ))
-            res_lower = root(self.objfuncLower, x0=tl, args=(k, ))
+            res_upper = root(self.objfunc, x0=tu, args=(k, self.upperq, ))
+            res_lower = root(self.objfunc, x0=tl, args=(k, self.lowerq, ))
             if not res_upper.success:
                 print("Error in QPois: failed to locate root, q={} k={} rate={}".format(
                     self.upperq, k, self.rate))
@@ -183,20 +180,17 @@ class QPois:
                 timepoints_lower.append(tl)
         return timepoints_upper, timepoints_lower
 
-    def lookup_upper(self, time):
+    def lookup(self, time, timepoints):
         """ Retrieve quantile count, given time """
-        return bisect.bisect(self.timepoints_upper, time)
-
-    def lookup_lower(self, time):
-        return bisect.bisect(self.timepoints_lower, time)
+        return bisect.bisect(timepoints, time)
 
     def is_outlier(self, coldate, ndiffs):
         if type(coldate) is str:
             coldate = fromisoformat(coldate)
         dt = (coldate - self.origin).days
-        qmax = self.lookup_upper(dt)
-        qmin = self.lookup_lower(dt)
-        if ndiffs > qmax and ndiffs < qmin:
+        qmax = self.lookup(dt, self.timepoints_upper)
+        qmin = self.lookup(dt, self.timepoints_lower)
+        if ndiffs > qmax or ndiffs <= qmin:
             return True
         return False
 
