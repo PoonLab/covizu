@@ -144,39 +144,59 @@ class QPois:
         self.maxtime = maxtime
         self.origin = fromisoformat(origin)
 
-        self.timepoints = self.compute_timepoints()
+        self.timepoints_upper, self.timepoints_lower = self.compute_timepoints()
 
-    def objfunc(self, x, k):
+    def objfuncUpper(self, x, k):
         """ Use root-finding to find transition point for Poisson CDF """
         return self.upperq - poisson.cdf(k=k, mu=self.rate*x)
 
+    def objfuncLower(self, x, k):
+        return  self.lowerq - poisson.cdf(k=k, mu=self.rate*x)
+
     def compute_timepoints(self, maxk=100):
         """ Store transition points until time exceeds maxtime """
-        timepoints = []
-        t = 0
+        timepoints_upper = []
+        timepoints_lower = []
+        tu = 0
+        tl = 0
         for k in range(maxk):
-            res = root(self.objfunc, x0=t, args=(k, ))
-            if not res.success:
+            res_upper = root(self.objfuncUpper, x0=tu, args=(k, ))
+            res_lower = root(self.objfuncLower, x0=tl, args=(k, ))
+            if not res_upper.success:
                 print("Error in QPois: failed to locate root, q={} k={} rate={}".format(
                     self.upperq, k, self.rate))
-                print(res)
+                print(res_upper)
                 break
-            t = res.x[0]
-            if t > self.maxtime:
+            if not res_lower.success:
+                print("Error in QPois: failed to locate root, q={} k={} rate={}".format(
+                    self.lowerq, k, self.rate))
+                print(res_lower)
                 break
-            timepoints.append(t)
-        return timepoints
+            tu = res_upper.x[0]
+            tl = res_lower.x[0]
+            if tu > self.maxtime:
+                break
+            timepoints_upper.append(tu)
+            if tl < 0:
+                break
+            if tl <= self.maxtime:
+                timepoints_lower.append(tl)
+        return timepoints_upper, timepoints_lower
 
-    def lookup(self, time):
+    def lookup_upper(self, time):
         """ Retrieve quantile count, given time """
-        return bisect.bisect(self.timepoints, time)
+        return bisect.bisect(self.timepoints_upper, time)
+
+    def lookup_lower(self, time):
+        return bisect.bisect(self.timepoints_lower, time)
 
     def is_outlier(self, coldate, ndiffs):
         if type(coldate) is str:
             coldate = fromisoformat(coldate)
         dt = (coldate - self.origin).days
-        qmax = self.lookup(dt)
-        if ndiffs > qmax:
+        qmax = self.lookup_upper(dt)
+        qmin = self.lookup_lower(dt)
+        if ndiffs > qmax and ndiffs < qmin:
             return True
         return False
 
