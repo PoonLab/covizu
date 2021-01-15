@@ -457,7 +457,7 @@ function beadplot(cid) {
     
         xScaleB = d3.scaleLinear().range([0, currentWidth]);
         // allocate space for text labels on left
-        xScaleB.domain([mindate - 0.25 * spandate, maxdate]);
+        xScaleB.domain([mindate - 150*(spandate/currentWidth), maxdate]);
     
         // update horizontal range
     
