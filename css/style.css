@@ -1,3 +1,7 @@
+* {
+  margin: 0;
+}
+
 /* load fonts */
 @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&display=swap');
 
@@ -21,8 +25,6 @@
 }
 
 body {
-  width: 97%;
-  margin: 1em auto;
   font: .9em/1.2 Lato, sans-serif;
 }
 
@@ -69,7 +71,7 @@ div.gisaid {
 
 div.tooltip{
   box-sizing: border-box;
-  position: relative;
+  position: absolute;
   width: 200px;
   max-width: 300px;
   text-align: left;
@@ -88,15 +90,51 @@ div.hint {
 }
 
 div.floattitle {
-  position: fixed;
-  top: 40px;
+  top: 20px;
   z-index:11;
   width: 100%;
   background-color: rgba(255,255,255,0.9);
 }
 
+div.app {
+  display: flex;
+  justify-content: space-between;
+}
+
+div.app-left {
+  flex: 1;
+}
+
+div.app-right {
+  display: flex;
+  flex-direction: row;
+  margin-left: 10px;
+}
+
+div.tree-beadplot {
+  display: flex;
+  flex-direction: row;
+}
+
+.tree-container {
+  width: 250px;
+}
+
+.tree-beadplot-content {
+  height: 85vh;
+  overflow-y: scroll;
+}
+
+.tree-beadplot-content::-webkit-scrollbar {
+  display: none;
+}
+
+.tree-beadplot-content {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
 div.leftbox {
-  position: fixed;
   overflow: auto;
   top: 50px;
   left: 10px;
@@ -104,6 +142,7 @@ div.leftbox {
   height: calc(100% - 50px);
   -ms-overflow-style: none;
   scrollbar-width: none;
+  margin: 10px;
 }
 
 div.leftbox::-webkit-scrollbar {
@@ -111,8 +150,8 @@ div.leftbox::-webkit-scrollbar {
 }
 
 div.middlebox {
+  flex-grow: 1;
   box-sizing: border-box;
-  position: fixed;
   overflow: auto;
   top: 50px;
   left: 260px;
@@ -120,6 +159,7 @@ div.middlebox {
   height: 100%;
   -ms-overflow-style: none;
   scrollbar-width: none;
+  margin: 10px;
 }
 div.middlebox::-webkit-scrollbar {
   display: none;
@@ -127,12 +167,19 @@ div.middlebox::-webkit-scrollbar {
 
 div.rightbox {
   box-sizing: border-box;
-  position: fixed;
+  position: absolute;
   overflow: visible;
-  top: 50px;
+  top: 15px;
   right: 10px;
   width: 260px;
   height: 100%;
+}
+
+div.sticky {
+  position: -webkit-sticky; /* for Safari */
+  position: sticky;
+  top: 0;
+  align-self: flex-start; 
 }
 
 .ui-tabs .ui-tabs-nav {
@@ -322,7 +369,8 @@ details + dl {
 }
 
 .bar {
-  position:fixed;
+  /* margin: 10px; */
+  padding: 10px;
   z-index:10;
 }
 .bar form {
@@ -339,18 +387,15 @@ details + dl {
 }
 
 #svg-timetreeaxis {
-    position: fixed;
     top: 58px;
     /* background-color: #fffa; */
 }
 
 #svg-clusteraxis {
-    position: fixed;
     top: 58px;
     /* background-color: #fffa; */
 }
 .toplabel {
-    position: fixed;
     top: 40px;
     /* background-color: #fffa; */
 }
