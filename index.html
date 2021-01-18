@@ -489,18 +489,30 @@
       $('#start-date').datepicker({
         dateFormat,
         onSelect: function(date_text){
-          //const start = new Date(date_text);
-          //search_by_dates(beaddata, start, search_stats.get().end);
-          //enable_buttons();
+          const start = new Date(date_text);
+          const stats = search_stats.update({
+            start,
+          });
+          update_search_stats(stats);
+          if (start && stats.end) {
+            search_by_dates(beaddata, start, stats.end);
+            run_search();
+          }  
         }
       });
 
       $('#end-date').datepicker({
         dateFormat,
         onSelect: function(date_text){
-          //const end = new Date(date_text);
-          //search_by_dates(search_stats.get().start, end);
-          //enable_buttons();
+          const end = new Date(date_text);
+          search_by_dates(search_stats.get().start, end);
+          const stats = search_stats.update({
+            end,
+          });
+          if (stats.start && end) {
+            search_by_dates(beaddata, stats.start, end);
+            run_search();
+          }
         }
       });
 
