@@ -14,41 +14,6 @@ from covizu.utils.seq_utils import *
 from covizu.utils.progress_utils import Callback
 
 
-def filter_fasta(fasta_file, json_file, cutoff=10):
-    """
-    Filter the variants FASTA file for genomes representing clusters
-    identified by hierarchical clustering (hclust.R).  Add variants
-    that are observed N > [cutoff] times in the data.
-
-    :param fasta_file:  path to FASTA file containing cluster sequences
-    :param json_file:  path to JSON file with cluster information
-    :return:  dict, filtered header-sequence pairs
-    """
-    result = {}
-    fasta = dict([(h.split('|')[1], {'sequence': s, 'label': h}) for
-                  h, s in iter_fasta(fasta_file)])
-    clusters = json.load(json_file)
-    for cluster in clusters:
-        # record variant in cluster that is closest to root
-        if type(cluster['nodes']) is list:
-            # omit problematic cluster of one
-            print(cluster['nodes'])
-            continue
-
-        # first entry is representative variant
-        accn = list(cluster['nodes'].keys())[0]
-        result.update({fasta[accn]['label']: fasta[accn]['sequence']})
-
-        # extract other variants in cluster that have high counts
-        major = [label for label, samples in
-                 cluster['nodes'].items() if
-                 len(samples) > cutoff and label != accn]
-        for label in major:
-            result.update({fasta[label]['label']: fasta[label]['sequence']})
-
-    return result
-
-
 def fasttree(fasta, binpath='fasttree2', seed=1):
     """
     Wrapper for FastTree2, passing FASTA as stdin and capturing the
@@ -147,9 +112,9 @@ def parse_nexus(nexus_file, fasta, callback=None):
                 node_name, branch_length, date_est = m.groups()
                 coldate = coldates.get(node_name, None)  # internal nodes have no collection date
                 if coldate:
-                    # if estimated date is well below actual date, lineage has
-                    # more substitutions than expected under molecular clock
-                    residuals.update({node_name: coldate-float(date_est)})
+                    # if estimated date is more recent (higher) than actual date,
+                    # lineage has more substitutions than expected under molecular clock
+                    residuals.update({node_name: float(date_est) - coldate})
 
     # second pass to excise all comment fields
     pat = re.compile('\[&U\]|\[&mutations="[^"]*",date=[0-9]+\.[0-9]+\]')

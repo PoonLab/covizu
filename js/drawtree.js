@@ -363,7 +363,21 @@ function draw_clusters(tips) {
 /**
  * Colour rect elements of tree to represent lineage attributes
  */
+
+
 function changeTreeColour() {
+  var sample_pal = d3.scaleSequential(d3.interpolatePuBu)
+    .domain(d3.extent(tips, function(d) {
+      return d.nsamples;
+    })),
+    coldate_pal = d3.scaleSequential(d3.interpolateCividis)
+    .domain(d3.extent(tips, function(d) {
+      return d.last_date;
+    })),
+    diverge_pal = d3.scaleSequential(d3.interpolatePlasma)
+    .domain(d3.extent(tips, function(d) {
+      return d.residual;
+    }));
   vis.selectAll("rect")
       .transition()
       .duration(300)
@@ -374,13 +388,13 @@ function changeTreeColour() {
            return(country_pal[d.region]);
           }
           else if (opt === "No. samples") {
-            return();  // placeholder values
+            return(sample_pal(d.nsamples));  // placeholder values
           }
           else if (opt === "Collection date") {
-            return("green");
+            return(coldate_pal(d.last_date));
           }
           else {  // Divergence
-            return("blue");
+            return(diverge_pal(d.residual));
           }
         }
       })
