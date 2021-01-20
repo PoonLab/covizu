@@ -641,10 +641,7 @@ function beadplot(cid) {
 
         clear_selection();
 
-        var cur_obj = d3.select(this);
-        create_selection(cur_obj);
-
-        d3.select("#svg-timetree").selectAll("line").attr("stroke-opacity", 1);
+	draw_halo(d);
 
         gentable(d);
         draw_region_distribution(tabulate(d.region));
