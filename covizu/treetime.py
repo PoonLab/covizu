@@ -223,8 +223,15 @@ def parse_args():
     )
     parser.add_argument('json', type=str, help='input, JSON produced by gisaid_utils.py')
 
-    parser.add_argument('--ref', type=argparse.FileType('r'),
-                        default=open(os.path.join(covizu.__path__[0]), "data/NC_045512.fa"),
+    # issue #230
+    path = covizu.__path__[0]
+    if '.egg' in path:
+        import pkg_resources
+        ref_file = pkg_resources.resource_filename('covizu', 'data/NC_045512.fa')
+    else:
+        ref_file = os.path.join(path, "data", "NC_045512.fa")
+
+    parser.add_argument('--ref', type=str, default=ref_file,
                         help="input, FASTA file with reference genome")
     parser.add_argument('--misstol', type=int, default=300,
                         help="optional, maximum tolerated number of missing bases per "
@@ -250,12 +257,14 @@ if __name__ == '__main__':
     cb = Callback()
 
     cb.callback("Retrieving genomes")
-    fasta = retrieve_genomes(args.db, ref_file=args.ref)
+    with open(args.json) as handle:
+        by_lineage = json.load(handle)
+    fasta = retrieve_genomes(by_lineage, ref_file=args.ref)
 
     cb.callback("Reconstructing tree with {}".format(args.ft2bin))
     nwk = fasttree(fasta, binpath=args.ft2bin)
 
-    cb.callback("Reconstructing time-scaled tree with {}").format(args.ttbin)
+    cb.callback("Reconstructing time-scaled tree with {}".format(args.ttbin))
     nexus_file = treetime(nwk, fasta, outdir=args.outdir, binpath=args.ttbin,
                           clock=args.clock)
 

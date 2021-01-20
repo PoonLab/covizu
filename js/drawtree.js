@@ -147,7 +147,8 @@ function drawtree(timetree) {
 function map_clusters_to_tips(df, clusters) {
   // extract accession numbers from phylogeny data frame
   var tips = df.filter(x => x.children.length===0),
-    tip_labels = tips.map(x => x.thisLabel);  // accessions
+      tip_labels = tips.map(x => x.thisLabel),  // accessions
+      tip_stats;
 
   for (const cidx in clusters) {
     var cluster = clusters[cidx];
@@ -194,12 +195,16 @@ function map_clusters_to_tips(df, clusters) {
     tips[root_idx].pdist = cluster.pdist;
     tips[root_idx].rdist = cluster.rdist;
 
-    //tips[root_idx].x1 = root_xcoord;
-    //dt = (last_date - first_date) / 3.154e10;
-    //tips[root_idx].x2 = root_xcoord + dt;
     tips[root_idx].coldate = last_date;
     tips[root_idx].x1 = root_xcoord - ((last_date - first_date) / 3.154e10);
     tips[root_idx].x2 = root_xcoord;
+
+    // map dbstats for lineage to tip
+    tip_stats = dbstats["lineages"][cluster["lineage"]];
+    tips[root_idx].max_ndiffs = tip_stats.max_ndiffs;
+    tips[root_idx].mean_ndiffs = tip_stats.mean_ndiffs;
+    tips[root_idx].nsamples = tip_stats.nsamples;
+    tips[root_idx].residual = tip_stats.residual;
   }
   return tips;
 }
@@ -328,7 +333,7 @@ function draw_clusters(tips) {
   .selectAll("line")
   .raise();
 
-      // TODO: label tips of time-scaled tree (but with what?)
+  // TODO: label tips of time-scaled tree (but with what?)
   vis.selectAll("text")
       .data(tips)
       .enter().append("text")
@@ -363,18 +368,20 @@ function changeTreeColour() {
       .transition()
       .duration(300)
       .style("fill", function(d) {
-        let opt = $("#select-tree-colours").val();
-        if (opt === "Region") {
-         return(country_pal[d.region]);
-        }
-        else if (opt === "No. samples") {
-          return("red");  // placeholder values
-        }
-        else if (opt === "Collection date") {
-          return("green");
-        }
-        else {  // Divergence
-          return("blue");
+        if (d !== undefined) {
+          let opt = $("#select-tree-colours").val();
+          if (opt === "Region") {
+           return(country_pal[d.region]);
+          }
+          else if (opt === "No. samples") {
+            return();  // placeholder values
+          }
+          else if (opt === "Collection date") {
+            return("green");
+          }
+          else {  // Divergence
+            return("blue");
+          }
         }
       })
 }
