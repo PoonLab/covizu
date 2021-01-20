@@ -7,20 +7,20 @@ class TestQPois(unittest.TestCase):
         self.qp = QPois(quantile=1-0.005, rate=0.0655, maxtime=1e3, origin='2019-12-01')
 
     def testIsOutlier(self):
-        coldate = '2020-03-10'
-        ndiffs = 10
+        coldate = '2021-01-18'
+        ndiffs = 30
         result = self.qp.is_outlier(coldate, ndiffs)
         self.assertEqual(result, False)
 
     def testIsOutlierManyDiff(self):
-        coldate = '2020-03-10'
-        ndiffs = 500
+        coldate = '2021-01-18'
+        ndiffs = 42
         result = self.qp.is_outlier(coldate, ndiffs)
         self.assertEqual(result, True)
 
     def testIsOutlierFewDiff(self):
-        coldate = '2020-03-10'
-        ndiffs = 1
+        coldate = '2021-01-18'
+        ndiffs = 14
         result = self.qp.is_outlier(coldate, ndiffs)
         self.assertEqual(result, True)
 

@@ -162,12 +162,10 @@ class QPois:
             if not res_upper.success:
                 print("Error in QPois: failed to locate root, q={} k={} rate={}".format(
                     self.upperq, k, self.rate))
-                print(res_upper)
                 break
             if not res_lower.success:
                 print("Error in QPois: failed to locate root, q={} k={} rate={}".format(
                     self.lowerq, k, self.rate))
-                print(res_lower)
                 break
             tu = res_upper.x[0]
             tl = res_lower.x[0]
