@@ -89,7 +89,7 @@ div.hint {
 
 div.floattitle {
   position: fixed;
-  top: 40px;
+  top: 80px;
   z-index:11;
   width: 100%;
   background-color: rgba(255,255,255,0.9);
@@ -98,7 +98,7 @@ div.floattitle {
 div.leftbox {
   position: fixed;
   overflow: auto;
-  top: 50px;
+  top: 100px;
   left: 10px;
   width: 250px;
   height: calc(100% - 50px);
@@ -114,7 +114,7 @@ div.middlebox {
   box-sizing: border-box;
   position: fixed;
   overflow: auto;
-  top: 50px;
+  top: 100px;
   left: 260px;
   width: calc(100%-500px);
   height: 100%;
@@ -133,6 +133,28 @@ div.rightbox {
   right: 10px;
   width: 260px;
   height: 100%;
+}
+
+div.legend {
+  font-size: 0.8em;
+}
+
+.legend-swatch {
+  width: 10px;
+  height: 10px;
+  margin: 0 0.5em 0 0;
+}
+.legend-item {
+  break-inside: avoid;
+  display: flex;
+  align-items: center;
+  padding-bottom: 1px;
+}
+.legend-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100% - 10px - 0.5em);
 }
 
 .ui-tabs .ui-tabs-nav {
