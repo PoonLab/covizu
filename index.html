@@ -1,47 +1,56 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
 <head>
-    <meta charset="UTF-8"/>
-    <title>CoVizu</title>
+  <meta charset="UTF-8"/>
+  <title>CoVizu</title>
 
-    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
-    <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <link rel="stylesheet" href="css/style.css">
 
-    <script src="js/jquery.js"></script>
-    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
-    <script src="js/d3.js"></script>
+  <script src="js/jquery.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+  <script src="js/d3.js"></script>
+  <script src="js/d3-scale.js"></script>
 </head>
 
 <body>
   <div class="bar" style="position: fixed; top: 10px; left: 10px; z-index:10" >
-    <div id="search-bar">
-      <input type="search" id="search-input"
-               placeholder="e.g., EPI_ISL_434070 or Canada">
-      <input id="start-date" class="dates"
-                placeholder="Start">
-      to
-      <input id="end-date" class="dates"
-                placeholder="End">
-    </div>
-
-    <div id="navigation">
-      <span id="search_stats"></span>
-      <button type="button" id="search-button">Search</button>
-      <button type="button" id="previous_button">Previous</button>
-      <button type="button" id="next_button">Next</button>
-      <button type="button" id="clear_button">Clear</button>
-
-      <span onclick="$('#help-search').dialog('open');" style="cursor: help">&#128304;</span>
-
-      <span class="or"></span>
-      <label for="select-tree-colours">Colour by:</label>
+    <span style="display: inline-block; width: 250px; vertical-align: top">
+      <label for="select-tree-colours">Colour tree by:</label>
       <select name="tree-colours" id="select-tree-colours">
         <option>Region</option>
         <option>No. samples</option>
         <option>Collection date</option>
         <option>Divergence</option>
       </select>
-    </div>
+      <div class="legend" id="div-region-legend"></div>
+      <div class="legend" id="svg-sample-legend"></div>
+      <div class="legend" id="svg-coldate-legend"></div>
+      <div class="legend" id="svg-diverge-legend"></div>
+    </span>
+
+    <span style="display: inline-block; vertical-align: top">
+      <div id="search-bar">
+        <input type="search" id="search-input"
+                 placeholder="e.g., EPI_ISL_434070 or Canada">
+        <input id="start-date" class="dates"
+                  placeholder="Start">
+        to
+        <input id="end-date" class="dates"
+                  placeholder="End">
+        <span onclick="$('#help-search').dialog('open');" style="cursor: help">&#128304;</span>
+      </div>
+      <br/>
+      <div id="navigation" style="padding-top: 5px">
+        <button type="button" id="search-button">Search</button>
+        <button type="button" id="clear_button">Clear</button>
+        <button type="button" id="previous_button">Previous</button>
+        <button type="button" id="next_button">Next</button>
+        <span id="search_stats">0 of 0 points</span>
+
+      </div>
+    </span>
+
   </div>
 
   <div style="position: fixed; top: 0; right: 0; z-index: 10; width: 270px">
@@ -60,7 +69,7 @@
     <div class="floattitle">
       Time-scaled tree<span onclick="$('#help-timetree').dialog('open');" style="cursor: help">&#128304;</span>
     </div>
-    <div class="floattitle" id="svg-timetreeaxis" style="position: fixed; top: 58px; z-index: 13"></div>
+    <div class="floattitle" id="svg-timetreeaxis" style="position: fixed; top: 100px; z-index: 13"></div>
     <div id="svg-timetree" style="width: 250px; max-width: 250px;"></div>
   </div>
 
@@ -68,7 +77,7 @@
     <div class="floattitle">
       Beadplot<span onclick="$('#help-beadplot').dialog('open');" style="cursor: help">&#128304;</span>
     </div>
-    <div class="floattitle" id="svg-clusteraxis" style="position: fixed; top: 58px; z-index: 14"></div>
+    <div class="floattitle" id="svg-clusteraxis" style="position: fixed; top: 100px; z-index: 14"></div>
     <div id="svg-cluster"></div>
   </div>
 

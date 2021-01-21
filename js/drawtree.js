@@ -2,6 +2,9 @@ var margin = {top: 10, right: 20, bottom: 10, left: 0},
   width = 250 - margin.left - margin.right,
   height = 1200 - margin.top - margin.bottom;
 
+// to store colour palettes
+var sample_pal, coldate_pal, diverge_pal;
+
 // set up plotting scales
 var xValue = function(d) { return d.x; },
   xScale = d3.scaleLinear().range([0, width]),
@@ -27,7 +30,6 @@ var axis = d3.select("div#svg-timetreeaxis")
   .attr("width", width + margin.left + margin.right)
   .attr("height", 25)
   .append("g");
-
 
 let cTooltip = d3.select("#tooltipContainer")
     .style("opacity", 0);
@@ -327,13 +329,20 @@ function draw_clusters(tips) {
 
     });
 
+  // generate colour palettes
+  sample_pal = d3.scaleSequential(d3.interpolatePuBu)
+      .domain(d3.extent(tips, function(d) { return d.nsamples; }));
+  coldate_pal = d3.scaleSequential(d3.interpolateCividis)
+      .domain(d3.extent(tips, function(d) { return d.last_date; }));
+  diverge_pal = d3.scaleSequential(d3.interpolatePlasma)
+      .domain(d3.extent(tips, function(d) { return d.residual; }));
+  generate_legends();
   changeTreeColour();
 
   d3.select("#svg-timetree")
   .selectAll("line")
   .raise();
 
-  // TODO: label tips of time-scaled tree (but with what?)
   vis.selectAll("text")
       .data(tips)
       .enter().append("text")
@@ -363,21 +372,13 @@ function draw_clusters(tips) {
 /**
  * Colour rect elements of tree to represent lineage attributes
  */
-
-
 function changeTreeColour() {
-  var sample_pal = d3.scaleSequential(d3.interpolatePuBu)
-    .domain(d3.extent(tips, function(d) {
-      return d.nsamples;
-    })),
-    coldate_pal = d3.scaleSequential(d3.interpolateCividis)
-    .domain(d3.extent(tips, function(d) {
-      return d.last_date;
-    })),
-    diverge_pal = d3.scaleSequential(d3.interpolatePlasma)
-    .domain(d3.extent(tips, function(d) {
-      return d.residual;
-    }));
+  // hide legends, not knowing which one is showing
+  $("#div-region-legend").hide();
+  $("div#svg-sample-legend").hide();
+  $("div#svg-coldate-legend").hide();
+  $("div#svg-diverge-legend").hide();
+
   vis.selectAll("rect")
       .transition()
       .duration(300)
@@ -385,15 +386,19 @@ function changeTreeColour() {
         if (d !== undefined) {
           let opt = $("#select-tree-colours").val();
           if (opt === "Region") {
-           return(country_pal[d.region]);
+            $("#div-region-legend").show();
+            return(country_pal[d.region]);
           }
           else if (opt === "No. samples") {
+            $("div#svg-sample-legend").show();
             return(sample_pal(d.nsamples));  // placeholder values
           }
           else if (opt === "Collection date") {
+            $("div#svg-coldate-legend").show();
             return(coldate_pal(d.last_date));
           }
           else {  // Divergence
+            $("div#svg-diverge-legend").show();
             return(diverge_pal(d.residual));
           }
         }
@@ -404,3 +409,192 @@ function changeTreeColour() {
 $("#select-tree-colours").change(function() {
   changeTreeColour();
 });
+
+
+// from https://observablehq.com/@d3/color-legend
+function legend({
+  color,
+  title,
+  tickSize = 6,
+  width = 320,
+  height = 44 + tickSize,
+  marginTop = 18,
+  marginRight = 0,
+  marginBottom = 16 + tickSize,
+  marginLeft = 0,
+  ticks = width / 64,
+  tickFormat,
+  tickValues
+} = {}) {
+  const svg = d3.create("svg")
+      .attr("width", width)
+      .attr("height", height)
+      .attr("viewBox", [0, 0, width, height])
+      .style("overflow", "visible")
+      .style("display", "block");
+
+  let tickAdjust = g => g.selectAll(".tick line").attr("y1", marginTop + marginBottom - height);
+  let x;
+
+  // Continuous
+  if (color.interpolate) {
+    const n = Math.min(color.domain().length, color.range().length);
+
+    x = color.copy().rangeRound(d3.quantize(d3.interpolate(marginLeft, width - marginRight), n));
+
+    svg.append("image")
+        .attr("x", marginLeft)
+        .attr("y", marginTop)
+        .attr("width", width - marginLeft - marginRight)
+        .attr("height", height - marginTop - marginBottom)
+        .attr("preserveAspectRatio", "none")
+        .attr("xlink:href", ramp(color.copy().domain(d3.quantize(d3.interpolate(0, 1), n))).toDataURL());
+  }
+
+  // Sequential
+  else if (color.interpolator) {
+    x = Object.assign(color.copy()
+        .interpolator(d3.interpolateRound(marginLeft, width - marginRight)),
+        {range() { return [marginLeft, width - marginRight]; }});
+
+    svg.append("image")
+        .attr("x", marginLeft)
+        .attr("y", marginTop)
+        .attr("width", width - marginLeft - marginRight)
+        .attr("height", height - marginTop - marginBottom)
+        .attr("preserveAspectRatio", "none")
+        .attr("xlink:href", ramp(color.interpolator()).toDataURL());
+
+    // scaleSequentialQuantile doesn’t implement ticks or tickFormat.
+    if (!x.ticks) {
+      if (tickValues === undefined) {
+        const n = Math.round(ticks + 1);
+        tickValues = d3.range(n).map(i => d3.quantile(color.domain(), i / (n - 1)));
+      }
+      if (typeof tickFormat !== "function") {
+        tickFormat = d3.format(tickFormat === undefined ? ",f" : tickFormat);
+      }
+    }
+  }
+
+  // Threshold
+  else if (color.invertExtent) {
+    const thresholds
+        = color.thresholds ? color.thresholds() // scaleQuantize
+        : color.quantiles ? color.quantiles() // scaleQuantile
+        : color.domain(); // scaleThreshold
+
+    const thresholdFormat
+        = tickFormat === undefined ? d => d
+        : typeof tickFormat === "string" ? d3.format(tickFormat)
+        : tickFormat;
+
+    x = d3.scaleLinear()
+        .domain([-1, color.range().length - 1])
+        .rangeRound([marginLeft, width - marginRight]);
+
+    svg.append("g")
+      .selectAll("rect")
+      .data(color.range())
+      .join("rect")
+        .attr("x", (d, i) => x(i - 1))
+        .attr("y", marginTop)
+        .attr("width", (d, i) => x(i) - x(i - 1))
+        .attr("height", height - marginTop - marginBottom)
+        .attr("fill", d => d);
+
+    tickValues = d3.range(thresholds.length);
+    tickFormat = i => thresholdFormat(thresholds[i], i);
+  }
+
+  // Ordinal
+  else {
+    x = d3.scaleBand()
+        .domain(color.domain())
+        .rangeRound([marginLeft, width - marginRight]);
+
+    svg.append("g")
+      .selectAll("rect")
+      .data(color.domain())
+      .join("rect")
+        .attr("x", x)
+        .attr("y", marginTop)
+        .attr("width", Math.max(0, x.bandwidth() - 1))
+        .attr("height", height - marginTop - marginBottom)
+        .attr("fill", color);
+
+    tickAdjust = () => {};
+  }
+
+  svg.append("g")
+      .attr("transform", `translate(0,${height - marginBottom})`)
+      .call(d3.axisBottom(x)
+        .ticks(ticks, typeof tickFormat === "string" ? tickFormat : undefined)
+        .tickFormat(typeof tickFormat === "function" ? tickFormat : undefined)
+        .tickSize(tickSize)
+        .tickValues(tickValues))
+      .call(tickAdjust)
+      .call(g => g.select(".domain").remove())
+      .call(g => g.append("text")
+        .attr("x", marginLeft)
+        .attr("y", marginTop + marginBottom - height - 6)
+        .attr("fill", "currentColor")
+        .attr("text-anchor", "start")
+        .attr("font-weight", "bold")
+        .attr("class", "title")
+        .text(title));
+
+  return svg.node();
+}
+
+
+function ramp(color, n = 256) {
+  // https://stackoverflow.com/questions/60443356/legend-not-appearing-when-using-document-createelementcanvas
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext("2d");
+  d3.select(canvas).attr("width", n)
+    .attr("height", 1);
+  for (let i = 0; i < n; ++i) {
+    context.fillStyle = color(i / (n - 1));
+    context.fillRect(i, 0, 1, 1);
+  }
+  return canvas;
+}
+
+
+function generate_legends() {
+  // region legend with swatches
+  let s = `<div style="display: flex; align-items: center; margin-left: 0px; padding-top: 6px; min-height: 33px; font: 10px sans-serif;">`;
+  s += `<div style="width: 100%; columns: 60px;">`;
+  for (const [key, value] of Object.entries(country_pal)) {
+    s += `<div class="legend-item">`;
+    s += `<div class="legend-swatch" style="background:${value};"></div>`;
+    s += `<div class="legend-label" title="${key}">${key}</div>`;
+    s += `</div>`;
+  }
+  s += `</div></div>`;
+  $("#div-region-legend").html(s).hide();
+
+  // sample size legend
+  $("div#svg-sample-legend").html(legend({
+    color: sample_pal,
+    title: "Sample size",
+    width: 240
+  })).hide();
+
+  // collection date legend
+  var [millsec0, millsec1] = coldate_pal.domain(),
+      days = (millsec1 - millsec0) / 8.64e7;
+  $("div#svg-coldate-legend").html(legend({
+    color: d3.scaleSequential([-days, 0], d3.interpolateCividis),
+    title: "Last sample date (days before present)",
+    width: 240
+  })).hide();
+
+  // divergence legend
+  $("div#svg-diverge-legend").html(legend({
+    color: diverge_pal,
+    title: "Divergence (normalized residual from clock rate)",
+    width: 240
+  })).hide();
+}
