@@ -598,6 +598,7 @@ function beadplot(cid) {
       .attr("cx", xMapB)
       .attr("cy", yMapB)
       .attr("class", "default")
+      .attr("id", function(d) { return d.accessions[0]; })
       .attr("fill", function(d) {
         return(country_pal[d.region1]);
       })
