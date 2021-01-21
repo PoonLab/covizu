@@ -599,6 +599,13 @@ function beadplot(cid) {
       .attr("cy", yMapB)
       .attr("class", "default")
       .attr("id", function(d) { return d.accessions[0]; })
+      .attr("search_hit", function(d) {
+	      if (search_results.get().beads.length == 0){
+		      return null;
+	      } else {
+		return search_results.get().beads[d.accessions[0]] === undefined ? false : true;
+	      }
+      })
       .attr("fill", function(d) {
         return(country_pal[d.region1]);
       })
