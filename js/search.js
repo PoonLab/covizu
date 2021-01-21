@@ -33,11 +33,77 @@ const search_stats = prepare_search_stats({
   bead_indexer: 0,
   start_idx: []
 });
+ 
+const search_results = prepare_search_stats({
+  beads: [],
+  clusters: []
+});
 
 function update_search_stats(stats) {
   $('#search_stats').text(`${stats.current_point+1} of ${stats.total_points} points`);
 }
 
+/**
+ * This is the main search search function, 
+ * it identifies which cluster and beads contain a hit. 
+ * It returns an array that contains the total number of hits 
+ * and the number of hits in each cluster.
+ * When the user changes the search query this should be rerun.
+ *
+ * @param all_bead_data: all the bead data that should be compared against the searched quary.
+ * @param text_query: a text string that should be compared against the searchtext property.
+ * @param start_data: a date type indicating the search start date.
+ * @param end_data: a date type indicating the search end date.
+ */
+function main_search(all_bead_data, text_query, start_date, end_date) {
+  // Flatten the json data to an array with bead data only
+  flat_data = find_beads_points(all_bead_data);
+
+  // Remove once dates are implemented
+  start_date = new Date("2020-01-01");
+  end_date = new Date("2021-09-30");
+
+  //Find all the beads that are a hit
+  search_hits = flat_data.filter(function(bead) {
+	  temp = (bead.accessions.some(accession => accession.includes(text_query)) || 
+		  bead.labels.some(label => label.includes(text_query))) && 
+		  (bead.x >= start_date && bead.x <= end_date);
+	  return temp;
+  });
+
+  // Move this to some where else
+  var map_cidx_to_id = [], key;
+  var rect = d3.selectAll('#svg-timetree > svg > rect')
+	.nodes();
+  for (var i = 0; i < rect.length; i++) {
+	  key = d3.select(rect[i]).attr("cidx");
+	  map_cidx_to_id[key] = parseInt(d3.select(rect[i]).attr("id").substring(3));
+          }
+
+  // Order the search results by cluster id, y cord, x cord 
+  search_hits.sort(function(x, y) {
+	  return map_cidx_to_id['cidx-' + y.cidx] - map_cidx_to_id['cidx-' + x.cidx] || 
+		x.y - x.y || x.x - y.y;
+  }); 
+ 
+  // Unique identifiers for the beads that are a hit
+  bead_hits = search_hits.reduce(function(map, bead, i) {
+	  map[bead.accessions[0]] = i + 1; // value for the search indexing
+	  return map;
+  }, {});
+
+  // Unique identifiers for the clusters that are a hit
+  cluster_hits = search_hits.reduce(function(map, bead, i) {
+	  map[bead.cidx] = i;
+	  return map;
+  }, {});
+
+ // Update the search resutls array with the hits
+ search_results.update({
+	 beads: bead_hits,
+	 clusters: cluster_hits
+ })
+}
 
 /**
  * Highlight clusters for which the cluster function returns true
@@ -146,6 +212,7 @@ function select_beads_by_substring(substr) {
           //&& d.first_date <= end_date && d.last_date >= start_date
       )
     });
+  main_search(beaddata, substr);
   select_clusters(rects);
 
   // preceding function switches view to beadplot with matching samples, if any
