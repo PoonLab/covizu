@@ -48,7 +48,6 @@ function update_search_stats(stats) {
  * it identifies which cluster and beads contain a hit. 
  * It returns an array that contains the total number of hits 
  * and the number of hits in each cluster.
- * When the user changes the search query this should be rerun.
  *
  * @param all_bead_data: all the bead data that should be compared against the searched quary.
  * @param text_query: a text string that should be compared against the searchtext property.
@@ -73,9 +72,9 @@ function main_search(all_bead_data, text_query, start_date, end_date) {
 
   // Move this to some where else
   var map_cidx_to_id = [], key;
-  var rect = d3.selectAll('#svg-timetree > svg > rect')
-	.nodes();
-  for (var i = 0; i < rect.length; i++) {
+  var rect = d3.selectAll('#svg-timetree > svg > rect:not(.clickedH)').nodes();
+ 
+  for (var i = 0; i < rect.length - 1; i++) {
 	  key = d3.select(rect[i]).attr("cidx");
 	  map_cidx_to_id[key] = parseInt(d3.select(rect[i]).attr("id").substring(3));
           }
@@ -104,6 +103,30 @@ function main_search(all_bead_data, text_query, start_date, end_date) {
 	 clusters: cluster_hits
  })
 }
+
+
+/**
+ * This function wraps the main search function. 
+ * It reads the search arguments from the ui and ensures that the arguments required by main_search are corectly formatted.
+ * It also uses the results produced by the main_search function to populate the ui with the search results
+ * When the user changes the search query this should be rerun.
+ */
+function wrap_search() {
+  
+  start_date_text = $('#start-date').val();
+  end_date_text = $('#end-date').val();
+  query = $('#search-input').val();
+
+  start_date = new Date(start_date_text);
+  end_date = new Date(end_date_text);
+
+  main_search(beaddata, query, start_date, end_date);
+
+  d3.select("#svg-timetree").selectAll("rect:not(.clickedH)").attr('search_hit', function(d) {
+	  return search_results.get().clusters[d.cluster_idx] === undefined ? false : true;
+  });
+}
+
 
 /**
  * Highlight clusters for which the cluster function returns true
