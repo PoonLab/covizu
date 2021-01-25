@@ -132,7 +132,7 @@ def serialize_tree(tree):
     :param tree:  Phylo.BaseTree object from annotate_tree()
     :return:  dict, containing 'nodes' and 'edges'
     """
-    obj = {'nodes': {}, 'edges': []}
+    obj = {'nodes': [], 'edges': []}
     variant_d = {}
     parents = get_parents(tree)
 
@@ -149,12 +149,7 @@ def serialize_tree(tree):
             # populate list with samples
             obj['nodes'].update({variant: []})
             for coldate, accn, label1 in intermed:
-                obj['nodes'][variant].append({
-                    'accession': accn,
-                    'label1': label1,
-                    'country': label1.split('/')[1],
-                    'coldate': coldate
-                })
+                obj['nodes'][variant].append([accn, label1, coldate])
         else:
             variant = 'unsampled'+str(us_count)
             obj['nodes'].update({variant: []})
@@ -165,7 +160,7 @@ def serialize_tree(tree):
         if node is tree.root:
             continue  # no edge
         parent = parents[node]
-        obj['edges'].append([variant_d[parent], variant, node.branch_length,
+        obj['edges'].append([variant_d[parent], variant, round(node.branch_length, 2),
                              node.confidence])
 
     return obj

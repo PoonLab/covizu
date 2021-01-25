@@ -649,7 +649,7 @@ function beadplot(cid) {
 
         clear_selection();
 
-	draw_halo(d);
+      	draw_halo(d);
 
         gentable(d);
         draw_region_distribution(tabulate(d.region));

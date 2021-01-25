@@ -98,10 +98,10 @@ div.floattitle {
 div.leftbox {
   position: fixed;
   overflow: auto;
-  top: 100px;
+  top: 90px;
   left: 10px;
   width: 250px;
-  height: calc(100% - 50px);
+  height: calc(100% - 110px);
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
@@ -116,8 +116,8 @@ div.middlebox {
   overflow: auto;
   top: 100px;
   left: 260px;
-  width: calc(100%-500px);
-  height: 100%;
+  width: calc(100% - 500px);
+  height: calc(100% - 50px);
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
