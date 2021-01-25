@@ -1,9 +1,9 @@
+/* load fonts */
+@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&display=swap');
+
 * {
   margin: 0;
 }
-
-/* load fonts */
-@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&display=swap');
 
 /* animate GitHub badge */
 /* https://github.com/tholman/github-corners */
@@ -90,6 +90,7 @@ div.hint {
 }
 
 div.floattitle {
+  padding-top: 5px;
   top: 20px;
   z-index:11;
   width: 100%;
@@ -142,7 +143,7 @@ div.leftbox {
   height: calc(100% - 50px);
   -ms-overflow-style: none;
   scrollbar-width: none;
-  margin: 10px;
+  margin: 8px;
 }
 
 div.leftbox::-webkit-scrollbar {
@@ -150,16 +151,17 @@ div.leftbox::-webkit-scrollbar {
 }
 
 div.middlebox {
-  flex-grow: 1;
+  flex: 1;
   box-sizing: border-box;
   overflow: auto;
   top: 50px;
   left: 260px;
-  width: calc(100%-500px);
+  width: 500px;
+  /* width: calc(100%-500px); */
   height: 100%;
   -ms-overflow-style: none;
   scrollbar-width: none;
-  margin: 10px;
+  margin: 8px;
 }
 div.middlebox::-webkit-scrollbar {
   display: none;
@@ -209,10 +211,9 @@ div.sticky {
 }
 
 footer {
-  width: 50%;
-  margin: 5px auto 10px auto;
+  margin: 5px;
   text-align: center;
-  position: fixed;
+  /* position: fixed; */
   bottom: 10px;
   right: 30%;
   z-index: 150;
@@ -370,7 +371,7 @@ details + dl {
 
 .bar {
   /* margin: 10px; */
-  padding: 10px;
+  padding: 10px 10px 5px 10px;
   z-index:10;
 }
 .bar form {

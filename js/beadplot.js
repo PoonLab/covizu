@@ -452,12 +452,12 @@ function beadplot(cid) {
           "height",
           heightB + marginB.top + marginB.bottom
         );
-        yScaleB = d3.scaleLinear().range([50, heightB]);
+        yScaleB = d3.scaleLinear().range([20, heightB]);
         yScaleB.domain([min_y, max_y]);
     
         xScaleB = d3.scaleLinear().range([0, currentWidth]);
         // allocate space for text labels on left
-        xScaleB.domain([mindate - 150*(spandate/currentWidth), maxdate]);
+        xScaleB.domain([mindate - 210*(spandate/currentWidth), maxdate]);
     
         // update horizontal range
     
@@ -527,16 +527,26 @@ function beadplot(cid) {
               // Tooltip appears 10 pixels left of the cursor
               cTooltip
                 .html(tooltipText)
-                .style("left", d3.event.pageX + 10 + "px")
+                .style("left", function() {
+                  if (d3.event.pageX > window.innerWidth/2) {
+                    return (
+                      d3.event.pageX -
+                      cTooltip.node().getBoundingClientRect().width +
+                      "px"
+                    );
+                  } else {
+                    return d3.event.pageX + "px";
+                  }
+                })
                 .style("top", function () {
                   if (d3.event.pageY > window.innerHeight / 2) {
                     return (
                       d3.event.pageY -
-                      cTooltip.node().getBoundingClientRect().height +
+                      cTooltip.node().getBoundingClientRect().height - 15 +
                       "px"
                     );
                   } else {
-                    return d3.event.pageY + "px";
+                    return d3.event.pageY + 10 +"px";
                   }
                 });
             }
@@ -624,17 +634,27 @@ function beadplot(cid) {
     
             cTooltip
               .html(tooltipText)
-              .style("left", d3.event.pageX + 10 + "px")
+              .style("left", function() {
+                if (d3.event.pageX > window.innerWidth/2) {
+                  return (
+                    d3.event.pageX -
+                    cTooltip.node().getBoundingClientRect().width +
+                    "px"
+                  );
+                } else {
+                  return d3.event.pageX + "px";
+                }
+              })
               .style("top", function () {
                 // return d3.event.pageY + 10 + "px";
                 if (d3.event.pageY > window.innerHeight / 2) {
                   return (
                     d3.event.pageY -
-                    cTooltip.node().getBoundingClientRect().height +
+                    cTooltip.node().getBoundingClientRect().height - 15 +
                     "px"
                   );
                 } else {
-                  return d3.event.pageY + "px";
+                  return d3.event.pageY + 15 + "px";
                 }
               });
           })
@@ -686,16 +706,26 @@ function beadplot(cid) {
             // Tooltip appears 10 pixels left of the cursor
             cTooltip
               .html(tooltipText)
-              .style("left", d3.event.pageX + 10 + "px")
+              .style("left", function() {
+                if (d3.event.pageX > window.innerWidth/2) {
+                  return (
+                    d3.event.pageX -
+                    cTooltip.node().getBoundingClientRect().width +
+                    "px"
+                  );
+                } else {
+                  return d3.event.pageX + "px";
+                }
+              })
               .style("top", function () {
                 if (d3.event.pageY > window.innerHeight / 2) {
                   return (
                     d3.event.pageY -
-                    cTooltip.node().getBoundingClientRect().height +
+                    cTooltip.node().getBoundingClientRect().height - 15 +
                     "px"
                   );
                 } else {
-                  return d3.event.pageY + 10 + "px";
+                  return d3.event.pageY + 15 + "px";
                 }
               });
           })

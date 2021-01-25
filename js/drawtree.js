@@ -112,7 +112,7 @@ function drawtree(timetree) {
   var ntips = df.map(x => x.children.length === 0).reduce((x,y) => x+y);
   height = ntips*11 + margin.top + margin.bottom;
   vis.attr("height", height);
-  yScale = d3.scaleLinear().range([height, 35]);  // add room for time axis
+  yScale = d3.scaleLinear().range([height, 10]);  // add room for time axis
 
   // adjust d3 scales to data frame
   xScale.domain([
@@ -251,12 +251,12 @@ function draw_clusters(tips) {
     // Tooltip appears 10 pixels left of the cursor
     // Position tooltip based on the y-position of the cluster
     cTooltip.html(ctooltipText)
-        .style("left", (d3.event.pageX + 10) + "px")
+        .style("left", (d3.event.pageX + 15) + "px")
         .style("top", function(){
           if (d3.event.pageY > window.innerHeight/2) {
-            return d3.event.pageY - cTooltip.node().getBoundingClientRect().height + "px";
+            return d3.event.pageY - cTooltip.node().getBoundingClientRect().height - 15 + "px";
           } else {
-            return d3.event.pageY + "px";
+            return d3.event.pageY + 15 + "px";
           }
         });
   }
