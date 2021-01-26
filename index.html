@@ -483,8 +483,10 @@
           enable_buttons();
       }
 
-      // Enable and Disable "Next" and "Previous" buttons when needed
+      // Enable and Disable "Search", "Clear" "Next" and "Previous" buttons when needed
       function disable_buttons() {
+        $('#search-button').attr("disabled", true);
+        $('#clear_button').attr("disabled", true);
         $('#next_button').attr("disabled", true);
         $('#previous_button').attr("disabled", true);
         $('#search_stats').addClass("disabled_stats");
@@ -502,11 +504,24 @@
 
       disable_buttons();
 
+      // Enables "search" and "clear" buttons if the input fields are not empty
+      $('#search-input').on('change keyup', function() {
+        if ($('#search-input').val() != "") {
+          $('#search-button').removeAttr("disabled");
+          $('#clear_button').removeAttr("disabled");
+        }
+        else {
+          clear_selection();
+          $('#search_stats').text(`0 of 0 points`);
+          disable_buttons();
+        }
+      })
+
       $('#search-input').on('keydown', function(e) {
-        if (e.keyCode == 13) {
+        if (e.keyCode == 13 && $('#search-input').val() != "") {
           // type <enter> to run search
           run_search();
-	  wrap_search();
+	        wrap_search();
         }
       });
 
