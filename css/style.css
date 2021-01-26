@@ -1,6 +1,10 @@
 /* load fonts */
 @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&display=swap');
 
+* {
+  margin: 0;
+}
+
 /* animate GitHub badge */
 /* https://github.com/tholman/github-corners */
 .github-corner:hover .octo-arm {
@@ -21,8 +25,6 @@
 }
 
 body {
-  width: 97%;
-  margin: 1em auto;
   font: .9em/1.2 Lato, sans-serif;
 }
 
@@ -69,7 +71,7 @@ div.gisaid {
 
 div.tooltip{
   box-sizing: border-box;
-  position: relative;
+  position: absolute;
   width: 200px;
   max-width: 300px;
   text-align: left;
@@ -88,22 +90,60 @@ div.hint {
 }
 
 div.floattitle {
-  position: fixed;
-  top: 80px;
+  padding-top: 5px;
+  top: 20px;
   z-index:11;
   width: 100%;
   background-color: rgba(255,255,255,0.9);
 }
 
+div.app {
+  display: flex;
+  justify-content: space-between;
+}
+
+div.app-left {
+  flex: 1;
+}
+
+div.app-right {
+  display: flex;
+  flex-direction: row;
+  margin-left: 10px;
+}
+
+div.tree-beadplot {
+  display: flex;
+  flex-direction: row;
+}
+
+.tree-container {
+  width: 250px;
+}
+
+.tree-beadplot-content {
+  height: 81vh;
+  overflow-y: scroll;
+}
+
+.tree-beadplot-content::-webkit-scrollbar {
+  display: none;
+}
+
+.tree-beadplot-content {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
 div.leftbox {
-  position: fixed;
   overflow: auto;
   top: 90px;
   left: 10px;
   width: 250px;
-  height: calc(100% - 110px);
+  height: 100%;
   -ms-overflow-style: none;
   scrollbar-width: none;
+  margin: 5px 5px 0px 9px;
 }
 
 div.leftbox::-webkit-scrollbar {
@@ -111,15 +151,16 @@ div.leftbox::-webkit-scrollbar {
 }
 
 div.middlebox {
+  flex-grow: 1;
   box-sizing: border-box;
-  position: fixed;
   overflow: auto;
   top: 100px;
   left: 260px;
-  width: calc(100% - 500px);
-  height: calc(100% - 50px);
+  width: 500px;
+  height: 100%;
   -ms-overflow-style: none;
   scrollbar-width: none;
+  margin: 5px 5px 0px 9px;
 }
 div.middlebox::-webkit-scrollbar {
   display: none;
@@ -127,12 +168,29 @@ div.middlebox::-webkit-scrollbar {
 
 div.rightbox {
   box-sizing: border-box;
-  position: fixed;
+  position: absolute;
   overflow: visible;
-  top: 50px;
+  top: 15px;
   right: 10px;
   width: 260px;
   height: 100%;
+}
+
+div.sticky {
+  position: -webkit-sticky; /* for Safari */
+  position: sticky;
+  top: 0;
+  align-self: flex-start; 
+}
+
+div.legend-container {
+  width: 250px;
+  margin: 5px;
+}
+
+div.search-bar-container {
+  margin: 0 5px 5px 5px;
+  /* flex: grow; */
 }
 
 div.legend {
@@ -184,8 +242,7 @@ div.legend {
 }
 
 footer {
-  width: 50%;
-  margin: 5px auto 10px auto;
+  margin: 5px;
   text-align: center;
   position: fixed;
   bottom: 10px;
@@ -344,7 +401,8 @@ details + dl {
 }
 
 .bar {
-  position:fixed;
+  display: flex;
+  margin: 5px;
   z-index:10;
 }
 .bar form {
@@ -361,18 +419,15 @@ details + dl {
 }
 
 #svg-timetreeaxis {
-    position: fixed;
     top: 58px;
     /* background-color: #fffa; */
 }
 
 #svg-clusteraxis {
-    position: fixed;
     top: 58px;
     /* background-color: #fffa; */
 }
 .toplabel {
-    position: fixed;
     top: 40px;
     /* background-color: #fffa; */
 }
