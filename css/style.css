@@ -137,7 +137,7 @@ div.tree-beadplot {
 
 div.leftbox {
   overflow: auto;
-  top: 100px;
+  top: 90px;
   left: 10px;
   width: 250px;
   height: 100%;
@@ -244,8 +244,8 @@ div.legend {
 footer {
   margin: 5px;
   text-align: center;
-  /* position: fixed; */
-  /* bottom: 10px; */
+  position: fixed;
+  bottom: 10px;
   right: 30%;
   z-index: 150;
   background-color: rgba(255,255,255,0.7);
