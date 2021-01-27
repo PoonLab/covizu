@@ -150,13 +150,13 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
   }
   else {
     // parse samples within variant, i.e., "beads"
-    var label = variant[0].label1.replace(pat, "$1"),
-        coldates = variant.map(x => x.coldate),
+    var label = variant[0][2].replace(pat, "$1"),
+        coldates = variant.map(x => x[0]),
         isodate, samples, regions;
 
     coldates.sort();
     //Retrieving countries from variants?
-    var country = variant.map(x => x.country),
+    var country = variant.map(x => x[2].split('/')[1]),
         isodates = unique(coldates);
 
     // remove underscores in country names
@@ -300,7 +300,7 @@ function parse_edgelist(cluster, variants, points) {
  */
 function parse_clusters(clusters) {
   var cluster, variant, coldates, regions, labels,
-      mindate, maxdate,
+      accn, mindate, maxdate,
       result, vdata, pdata,
       variants,  // horizontal line segment data + labels
       edgelist,  // vertical line segment data
@@ -317,7 +317,8 @@ function parse_clusters(clusters) {
     // deal with edge case of cluster with only one variant, no edges
     if (Object.keys(cluster["nodes"]).length === 1) {
       variant = Object.values(cluster.nodes)[0];
-      result = parse_variant(variant, 0, cidx, variant[0].accession, null, null);
+      accn = Object.keys(cluster.nodes)[0];
+      result = parse_variant(variant, 0, cidx, accn, null, null);
       vdata = result['variant'];
       variants.push(vdata);
 
@@ -328,7 +329,8 @@ function parse_clusters(clusters) {
       // de-convolute edge list to get node list in preorder
       var nodelist = unique(cluster.edges.map(x => x.slice(0, 2)).flat());
 
-      coldates = nodelist.map(a => cluster.nodes[a].map(x => x.coldate)).flat();
+      // date range of cluster
+      coldates = nodelist.map(a => cluster.nodes[a].map(x => x[0])).flat();
       coldates.sort()
       mindate = coldates[0];
       maxdate = coldates[coldates.length - 1];
