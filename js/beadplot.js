@@ -161,7 +161,7 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
 
     // remove underscores in country names
     country = country.map(x => x.replace(/_/g," "));
-    
+
     vdata = {
       'accession': accn,
       'label': label,
@@ -180,8 +180,8 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
 
     for (var i=0; i<isodates.length; i++) {
       isodate = isodates[i];
-      samples = variant.filter(x => x.coldate === isodate);
-      country = samples.map(x => x.country);
+      samples = variant.filter(x => x[0] === isodate);
+      country = samples.map(x => x[2].split('/')[1]);
       country = country.map(x => x.replace(/_/g," "));
       regions = country.map(x => countries[x]);
 
@@ -199,8 +199,8 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
         'x': new Date(isodate),
         'y': y,
         'count': samples.length,
-        'accessions': samples.map(x => x.accession),
-        'labels': samples.map(x => x.label1.replace(pat, "$1")),
+        'accessions': samples.map(x => x[1]),
+        'labels': samples.map(x => x[2].replace(pat, "$1")),
         'region1': mode(regions),
         'region': regions,
         'country': country,
