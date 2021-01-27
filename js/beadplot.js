@@ -1012,3 +1012,38 @@ function draw_region_distribution(my_regions) {
         .attr("y", height + 85)
         .text("Region");
 }
+
+
+/**
+ * Recursive function to serialize tree by postorder traversal of branches.
+ * @param {str} parent:  unique node identifier
+ * @param {Array} edgelist:  list of edges from beaddata Object
+ * @returns {string}
+ */
+function serialize_branch(parent, edgelist) {
+  var children = edgelist.filter(x => x.parent === parent),
+      branch = edgelist.filter(x => x.child === parent),
+      coldate;
+
+  if (children.length === 0) {
+    // terminal node, emit string
+    // TODO: add count information (number of samples per variant)
+    coldate = branch[0].x1.toISOString().split('T')[0];
+    return branch[0].child+'|'+coldate+':'+branch[0].dist;  // node name : branch length
+  }
+  else {
+    // follow branches toward tips
+    let subtrees = children.map(x => serialize_branch(x.child, edgelist));
+    let str = "("+subtrees.join(',')+")";
+    if (branch.length > 0) {
+      str += branch[0].support+':'+branch[0].dist;  // node support
+    }
+    return str;
+  }
+}
+
+function serialize_beadplot(cidx) {
+  var edgelist = beaddata[cidx].edgelist,
+      root = edgelist[0].parent;
+  return serialize_branch(root, edgelist)+';';
+}

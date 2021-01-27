@@ -90,6 +90,7 @@ div.hint {
 }
 
 div.floattitle {
+  cursor: default;
   padding-top: 5px;
   top: 20px;
   z-index:11;

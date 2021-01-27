@@ -291,6 +291,7 @@ function draw_clusters(tips) {
           .style("opacity", 0);
     })
     .on("click", function(d) {
+      cindex = d.cluster_idx;  // store index as global variable
       d3.selectAll("rect.clickedH").remove();
 
       beadplot(d.cluster_idx);
@@ -358,7 +359,7 @@ function draw_clusters(tips) {
       })
       .text(function(d) { return(d.label1); })
       .on("mouseover", function(d) {
-	mouseover(d);
+	      mouseover(d);
       })
       .on("mouseout", function(d) {
         d3.select("[cidx=cidx-" + d.cluster_idx + "]").dispatch('mouseout');
