@@ -250,7 +250,8 @@ function draw_clusters(tips) {
             .duration(50)
             .style("opacity", 0.9);
 
-    let ctooltipText = `<b>Mean pairwise distance:</b> ${d.pdist}<br/><b>Mean root distance:</b> ${d.rdist}<br>`;
+    let ctooltipText = `<b>Mean diffs from root:</b> ${Math.round(100*d.mean_ndiffs)/100.}<br/>`;
+    ctooltipText += `<b>Deviation from clock:</b> ${Math.round(100*d.residual)/100.}<br>`;
     ctooltipText += region_to_string(d.allregions);
     ctooltipText += `<b>Number of variants:</b> ${d.varcount}<br>`;
     ctooltipText += `<b>Collection dates:</b><br>${formatDate(d.first_date)} / ${formatDate(d.last_date)}`;

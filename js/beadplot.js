@@ -382,7 +382,10 @@ function parse_clusters(clusters) {
 
     // concatenate all sample labels within cluster for searching
     labels = points.map(x => x.labels).flat();
-    cluster['searchtext'] = labels.join();
+
+    // decompose labels and only keep unique substrings
+    let uniq = new Set(labels.map(x => x.split('/')).flat());
+    cluster['searchtext'] = Array.from(uniq).join();
     cluster['label1'] = labels[0];
 
     // collect all countries
