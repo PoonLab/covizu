@@ -43,6 +43,10 @@ h3 {
   color: #5e5e5e;
 }
 
+p {
+  margin: 1em 0 1em 0;  /* top right bottom left */
+}
+
 svg text {
   font: 1em/1.2 Lato, sans-serif;
 }
