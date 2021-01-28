@@ -170,7 +170,7 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
       'y1': y,
       'y2': y,
       'count': coldates.length,
-      'country': country,
+      'country': tabulate(country),
       'region': country.map(x => countries[x]),
       'numBeads': isodates.length,
       'parent': null,
@@ -203,7 +203,7 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
         'labels': samples.map(x => x[2].replace(pat, "$1")),
         'region1': mode(regions),
         'region': regions,
-        'country': country,
+        'country': tabulate(country),
         'parent': null,
         'dist': 0
       })
@@ -294,6 +294,25 @@ function parse_edgelist(cluster, variants, points) {
 
 
 /**
+ *
+ */
+function merge_tables(tables) {
+  var total = {};
+  for (tab of tables) {
+    if (tab === null) {
+      continue;
+    }
+    for (key of Object.keys(tab)) {
+      if (total[key] === undefined) {
+        total[key] = 0;
+      }
+      total[key] += tab[key];
+    }
+  }
+  return(total);
+}
+
+/**
  * Parse node and edge data from clusters JSON to a format that is
  * easier to map to SVG.
  * @param {Object} clusters:
@@ -367,8 +386,7 @@ function parse_clusters(clusters) {
     cluster['label1'] = labels[0];
 
     // collect all countries
-    cluster['country'] = variants.map(x => x.country).flat();
-
+    cluster['country'] = merge_tables(variants.map(x => x.country));
   }
   return beaddata;
 }
@@ -539,7 +557,7 @@ function beadplot(cid) {
               .style("opacity", 0);
         })
         .on("click", function(d) {
-          if (d.label !== null) {
+          if (d.label !== null && d.country !== null) {
             gentable(d);
             draw_region_distribution(tabulate(d.region));
             let var_samples = points.filter(x => x.y === d.y1);
@@ -851,7 +869,7 @@ function gen_details_table(obj) {
  * @param {Object} obj:  JS Object with country attribute
  */
 function gentable(obj) {
-  var my_countries = Object.entries(tabulate(obj.country)),
+  var my_countries = Object.entries(obj.country),
       row, region;
 
   // annotate with region (continent)
