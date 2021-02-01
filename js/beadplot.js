@@ -609,7 +609,7 @@ function beadplot(cid) {
 
           let tooltipText = `<b>Parent:</b> ${d.parent}<br/><b>Child:</b> ${d.child}<br/>`;
           tooltipText += `<b>Genomic distance:</b> ${Math.round(d.dist*100)/100}<br/>`;
-          tooltipText += `<b>Support:</b> ${d.support}<br/>`
+          tooltipText += `<b>Support:</b> ${(d.support === undefined) ? 'n/a' : d.support}<br/>`
           tooltipText += `<b>Collection date:</b> ${formatDate(d.x2)}`;
 
           cTooltip.html(tooltipText)
