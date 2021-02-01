@@ -325,6 +325,7 @@ function draw_clusters(tips) {
 
       gentable(d);
       draw_region_distribution(d.allregions);
+      gen_details_table(beaddata[d.cluster_idx].points);  // update details table with all samples
 
       // FIXME: this is the same div used for making barplot SVG
       $("#text-node").html(`Number of cases: ${d.count}<br/>Number of variants: ${d.varcount}<br/>`);
