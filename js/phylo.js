@@ -120,7 +120,7 @@ function fortify(tree, sort=true) {
                 'thisLabel': node.label,
                 'children': node.children.map(x=>x.id),
                 'branchLength': 0.,
-                'isTip': (node.children.length==0),
+                'isTip': (node.children.length===0),
                 'x': node.x,
                 'y': node.y,
                 'angle': node.angle
@@ -134,7 +134,7 @@ function fortify(tree, sort=true) {
                 'thisLabel': node.label,
                 'children': node.children.map(x=>x.id),
                 'branchLength': node.branchLength,
-                'isTip': (node.children.length==0),
+                'isTip': (node.children.length===0),
                 'x': node.x,
                 'y': node.y,
                 'angle': node.angle

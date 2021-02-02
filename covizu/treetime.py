@@ -4,51 +4,14 @@ import json
 from tempfile import NamedTemporaryFile
 import os
 from io import StringIO
-import sys
 import re
+import statistics  # Python 3.4+
 
 from Bio import Phylo
 
 import covizu
 from covizu.utils.seq_utils import *
-from covizu.utils.db_utils import dump_raw_by_lineage, retrieve_seqs
 from covizu.utils.progress_utils import Callback
-from covizu.minimap2 import minimap2, encode_diffs
-
-
-def filter_fasta(fasta_file, json_file, cutoff=10):
-    """
-    Filter the variants FASTA file for genomes representing clusters
-    identified by hierarchical clustering (hclust.R).  Add variants
-    that are observed N > [cutoff] times in the data.
-
-    :param fasta_file:  path to FASTA file containing cluster sequences
-    :param json_file:  path to JSON file with cluster information
-    :return:  dict, filtered header-sequence pairs
-    """
-    result = {}
-    fasta = dict([(h.split('|')[1], {'sequence': s, 'label': h}) for
-                  h, s in iter_fasta(fasta_file)])
-    clusters = json.load(json_file)
-    for cluster in clusters:
-        # record variant in cluster that is closest to root
-        if type(cluster['nodes']) is list:
-            # omit problematic cluster of one
-            print(cluster['nodes'])
-            continue
-
-        # first entry is representative variant
-        accn = list(cluster['nodes'].keys())[0]
-        result.update({fasta[accn]['label']: fasta[accn]['sequence']})
-
-        # extract other variants in cluster that have high counts
-        major = [label for label, samples in
-                 cluster['nodes'].items() if
-                 len(samples) > cutoff and label != accn]
-        for label in major:
-            result.update({fasta[label]['label']: fasta[label]['sequence']})
-
-    return result
 
 
 def fasttree(fasta, binpath='fasttree2', seed=1):
@@ -116,7 +79,7 @@ def treetime(nwk, fasta, outdir, binpath='treetime', clock=None, verbosity=1):
 
 
 def date2float(isodate):
-    """ Convert ISO date string to float """
+    """ Convert ISO date string to float (years) """
     year, month, day = map(int, isodate.split('-'))
     dt = date(year, month, day)
     origin = date(dt.year, 1, 1)
@@ -124,13 +87,12 @@ def date2float(isodate):
     return dt.year + td/365.25
 
 
-def parse_nexus(nexus_file, fasta, date_tol, callback=None):
+def parse_nexus(nexus_file, fasta, callback=None):
     """
     Converting Treetime NEXUS output into Newick
 
     @param nexus_file:  str, path to TreeTime NEXUS output
-    @param fasta:  dict, {header: seq} from filter_fasta()
-    @param date_tol:  float, tolerance in tip date discordance
+    @param fasta:  dict, {header: seq} from retrieve_genomes()
     @param callback:  function, optional callback
     """
     coldates = {}
@@ -139,21 +101,20 @@ def parse_nexus(nexus_file, fasta, date_tol, callback=None):
         coldates.update({accn: date2float(coldate)})
 
     # extract comment fields and store date estimates
-    pat = re.compile('([^)(,:]+):([0-9]+\.[0-9]+)\[[^d]+date=([0-9]+\.[0-9]+)\]')
+    pat = re.compile('([^)(,:]+):(-*[0-9]+\.[0-9]+)\[[^d]+date=([0-9]+\.[0-9]+)\]')
 
     # extract date estimates and internal node names
     remove = []
+    residuals = {}
     with open(nexus_file) as handle:
         for line in handle:
             for m in pat.finditer(line):
                 node_name, branch_length, date_est = m.groups()
-                coldate = coldates.get(node_name, None)
-                if coldate and abs(float(date_est) - coldate) > date_tol:
-                    if callback:
-                        callback('removing {}:  {:0.3f} < {}\n'.format(
-                            node_name, coldate, date_est
-                        ), level='INFO')
-                    remove.append(node_name)
+                coldate = coldates.get(node_name, None)  # internal nodes have no collection date
+                if coldate:
+                    # if estimated date is more recent (higher) than actual date,
+                    # lineage has more substitutions than expected under molecular clock
+                    residuals.update({node_name: float(date_est) - coldate})
 
     # second pass to excise all comment fields
     pat = re.compile('\[&U\]|\[&mutations="[^"]*",date=[0-9]+\.[0-9]+\]')
@@ -166,6 +127,13 @@ def parse_nexus(nexus_file, fasta, date_tol, callback=None):
     for node_name in remove:
         phy.prune(node_name)
 
+    # normalize residuals and append to tip labels
+    rvals = residuals.values()
+    rmean = statistics.mean(rvals)
+    rstdev = statistics.stdev(rvals)
+    for tip, resid in residuals.items():
+        residuals[tip] = (resid-rmean) / rstdev
+
     for node in phy.get_terminals():
         node.comment = None
 
@@ -175,12 +143,12 @@ def parse_nexus(nexus_file, fasta, date_tol, callback=None):
             node.confidence = None
         node.comment = None
 
-    return phy
+    return phy, residuals
 
 
-def retrieve_genomes(by_lineage, ref_file='data/MT291829.fa'):
+def retrieve_genomes(by_lineage, ref_file):
     """
-    Identify earliest sampled genome sequence for each Pangolin lineage.
+    Identify most recent sampled genome sequence for each Pangolin lineage.
     Export as FASTA for TreeTime analysis.
 
     :param by_lineage:  dict, return value from gisaid_utils::sort_by_lineage
@@ -220,8 +188,15 @@ def parse_args():
     )
     parser.add_argument('json', type=str, help='input, JSON produced by gisaid_utils.py')
 
-    parser.add_argument('--ref', type=argparse.FileType('r'),
-                        default=open(os.path.join(covizu.__path__[0]), "data/NC_045512.fa"),
+    # issue #230
+    path = covizu.__path__[0]
+    if '.egg' in path:
+        import pkg_resources
+        ref_file = pkg_resources.resource_filename('covizu', 'data/NC_045512.fa')
+    else:
+        ref_file = os.path.join(path, "data", "NC_045512.fa")
+
+    parser.add_argument('--ref', type=str, default=ref_file,
                         help="input, FASTA file with reference genome")
     parser.add_argument('--misstol', type=int, default=300,
                         help="optional, maximum tolerated number of missing bases per "
@@ -229,11 +204,6 @@ def parse_args():
     parser.add_argument('--clock', type=float, default=8e-4,
                         help='optional, specify molecular clock rate for '
                              'constraining Treetime analysis (default 8e-4).')
-    parser.add_argument('--datetol', type=float, default=0.1,
-                        help='optional, exclude tips from time-scaled tree '
-                             'with high discordance between estimated and '
-                             'known sample collection dates (year units,'
-                             'default: 0.1)')
 
     parser.add_argument('--outdir', default='data/',
                         help='optional, directory to write TreeTime output files')
@@ -252,14 +222,16 @@ if __name__ == '__main__':
     cb = Callback()
 
     cb.callback("Retrieving genomes")
-    fasta = retrieve_genomes(args.db, ref_file=args.ref)
+    with open(args.json) as handle:
+        by_lineage = json.load(handle)
+    fasta = retrieve_genomes(by_lineage, ref_file=args.ref)
 
     cb.callback("Reconstructing tree with {}".format(args.ft2bin))
     nwk = fasttree(fasta, binpath=args.ft2bin)
 
-    cb.callback("Reconstructing time-scaled tree with {}").format(args.ttbin)
+    cb.callback("Reconstructing time-scaled tree with {}".format(args.ttbin))
     nexus_file = treetime(nwk, fasta, outdir=args.outdir, binpath=args.ttbin,
                           clock=args.clock)
 
-    timetree = parse_nexus(nexus_file, fasta, date_tol=args.datetol)
+    timetree, residuals = parse_nexus(nexus_file, fasta)
     Phylo.write(timetree, file=args.outfile, format='newick')
