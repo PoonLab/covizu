@@ -130,44 +130,65 @@ class QPois:
     rate <L> and varying time <t>, s.t. \exp(-Lt)\sum_{i=0}^{k} (Lt)^i/i! = Q.
     """
     def __init__(self, quantile, rate, maxtime, origin='2019-12-01'):
-        self.q = quantile
+        """
+        :param quantile:  float, cut distribution at q and 1-q
+        :param rate:  float, molecular clock rate (genome / day)
+        :param maxtime:  int, maximum number of days to cache
+        :param origin:  str, x-intercept of trend in ISO format
+        """
+        if quantile <= 0 or quantile >= 1:
+            print("ERROR: QPois quantile argument must be on closed interval (0,1).")
+        self.upperq = quantile if quantile > 0.5 else (1-quantile)
+        self.lowerq = 1-self.upperq  # TODO: store timepoints for lower quantiles
         self.rate = rate
         self.maxtime = maxtime
         self.origin = fromisoformat(origin)
 
-        self.timepoints = self.compute_timepoints()
+        self.timepoints_upper, self.timepoints_lower = self.compute_timepoints()
 
-    def objfunc(self, x, k):
+    def objfunc(self, x, k, q):
         """ Use root-finding to find transition point for Poisson CDF """
-        return self.q - poisson.cdf(k=k, mu=self.rate*x)
+        return q - poisson.cdf(k=k, mu=self.rate*x)
 
     def compute_timepoints(self, maxk=100):
         """ Store transition points until time exceeds maxtime """
-        timepoints = []
-        t = 0
+        timepoints_upper = []
+        timepoints_lower = []
+        tu = 0
+        tl = 0
         for k in range(maxk):
-            res = root(self.objfunc, x0=t, args=(k, ))
-            if not res.success:
+            res_upper = root(self.objfunc, x0=tu, args=(k, self.upperq, ))
+            res_lower = root(self.objfunc, x0=tl, args=(k, self.lowerq, ))
+            if not res_upper.success:
                 print("Error in QPois: failed to locate root, q={} k={} rate={}".format(
-                    self.q, k, self.rate))
-                print(res)
+                    self.upperq, k, self.rate))
                 break
-            t = res.x[0]
-            if t > self.maxtime:
+            if not res_lower.success:
+                print("Error in QPois: failed to locate root, q={} k={} rate={}".format(
+                    self.lowerq, k, self.rate))
                 break
-            timepoints.append(t)
-        return timepoints
+            tu = res_upper.x[0]
+            tl = res_lower.x[0]
+            if tu > self.maxtime:
+                break
+            timepoints_upper.append(tu)
+            if tl < 0:
+                break
+            if tl <= self.maxtime:
+                timepoints_lower.append(tl)
+        return timepoints_upper, timepoints_lower
 
-    def lookup(self, time):
+    def lookup(self, time, timepoints):
         """ Retrieve quantile count, given time """
-        return bisect.bisect(self.timepoints, time)
+        return bisect.bisect(timepoints, time)
 
     def is_outlier(self, coldate, ndiffs):
         if type(coldate) is str:
             coldate = fromisoformat(coldate)
         dt = (coldate - self.origin).days
-        qmax = self.lookup(dt)
-        if ndiffs > qmax:
+        qmax = self.lookup(dt, self.timepoints_upper)
+        qmin = self.lookup(dt, self.timepoints_lower)
+        if ndiffs > qmax or ndiffs <= qmin:
             return True
         return False
 
@@ -215,7 +236,10 @@ def load_vcf(vcf_file="data/problematic_sites_sarsCov2.vcf"):
     for line in vcf.readlines():
         if line.startswith('#'):
             continue
-        _, pos, _, ref, alt, _, filt, info = line.strip().split()
+        try:
+            _, pos, _, ref, alt, _, filt, info = line.strip().split('\t')
+        except ValueError:
+            raise
         if filt == 'mask':
             mask.update({int(pos)-1: {  # convert to 0-index
                 'ref': ref, 'alt': alt, 'info': info}
@@ -241,7 +265,7 @@ def filter_problematic(obj, mask, callback=None):
         if type(row) is dict:
             qname, diffs, missing = row['qname'], row['diffs'], row['missing']
         else:
-            qname, diffs, missing = row
+            qname, diffs, missing = row  # unpack tuple
 
         filtered = []
         for typ, pos, alt in diffs:

@@ -7,7 +7,6 @@ import json
 
 import covizu
 from covizu.utils.seq_utils import convert_fasta
-from covizu.utils.db_utils import dump_raw
 
 
 def apply_cigar(seq, rpos, cigar):
@@ -221,8 +220,6 @@ def parse_args():
     parser = argparse.ArgumentParser("Wrapper script for minimap2")
     parser.add_argument('infile', type=argparse.FileType('r'),
                         help="<input> path to query FASTA file or database (--stream)")
-    parser.add_argument('--stream', action="store_true",
-                        help="<option> if True, stream unaligned sequences from database.")
     parser.add_argument('-o', '--outfile',
                         type=argparse.FileType('w'),
                         required=False,
@@ -251,7 +248,7 @@ if __name__ == '__main__':
         args.outfile = sys.stdout
 
     # check input headers for spaces
-    if not args.stream and not args.force_headers:
+    if not args.force_headers:
         for line in args.infile:
             if line.startswith('>') and ' ' in line:
                 print("WARNING: at least one FASTA header contains a space")
@@ -260,15 +257,10 @@ if __name__ == '__main__':
                 print("Otherwise use `sed -i 's/ /_/g' <file>` to replace all spaces in place.")
                 sys.exit()
 
-    # get length of reference
-    if args.stream:
-        infile = dump_raw(db=args.infile.name)
-        mm2 = minimap2(infile, stream=True, ref=args.ref, nthread=args.thread,
-                       minlen=args.minlen)
-    else:
-        mm2 = minimap2(args.infile, ref=args.ref, nthread=args.thread,
-                       minlen=args.minlen)
+    mm2 = minimap2(args.infile, ref=args.ref, nthread=args.thread,
+                   minlen=args.minlen)
 
+    # get length of reference
     reflen = len(convert_fasta(open(args.ref))[0][1])
     if args.align:
         output_fasta(mm2, reflen=reflen, outfile=args.outfile)

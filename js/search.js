@@ -33,9 +33,141 @@ const search_stats = prepare_search_stats({
   bead_indexer: 0,
   start_idx: []
 });
+ 
+const search_results = prepare_search_stats({
+  beads: [],
+  clusters: []
+});
 
 function update_search_stats(stats) {
   $('#search_stats').text(`${stats.current_point+1} of ${stats.total_points} points`);
+}
+
+/**
+ * This is the main search search function, 
+ * it identifies which cluster and beads contain a hit. 
+ * It returns an array that contains the total number of hits 
+ * and the number of hits in each cluster.
+ *
+ * @param all_bead_data: all the bead data that should be compared against the searched quary.
+ * @param text_query: a text string that should be compared against the searchtext property.
+ * @param start_data: a date type indicating the search start date.
+ * @param end_data: a date type indicating the search end date.
+ */
+function main_search(all_bead_data, text_query, start_date, end_date) {
+  // Flatten the json data to an array with bead data only
+  flat_data = find_beads_points(all_bead_data);
+
+  // Remove once dates are implemented
+  start_date = new Date("2020-01-01");
+  end_date = new Date("2021-09-30");
+
+  //Find all the beads that are a hit
+  search_hits = flat_data.filter(function(bead) {
+	  temp = (bead.accessions.some(accession => accession.includes(text_query)) || 
+		  bead.labels.some(label => label.includes(text_query))) && 
+		  (bead.x >= start_date && bead.x <= end_date);
+	  return temp;
+  });
+
+  // TODO: Move this to some where else
+  var map_cidx_to_id = [], key;
+  var rect = d3.selectAll('#svg-timetree > svg > rect:not(.clickedH)').nodes();
+ 
+  for (var i = 0; i < rect.length - 1; i++) {
+	  key = d3.select(rect[i]).attr("cidx");
+	  map_cidx_to_id[key] = parseInt(d3.select(rect[i]).attr("id").substring(3));
+          }
+
+  // Order the search results by cluster id, y cord, x cord 
+  search_hits.sort(function(x, y) {
+	  return map_cidx_to_id['cidx-' + y.cidx] - map_cidx_to_id['cidx-' + x.cidx] || 
+		x.y - x.y || x.x - y.y;
+  }); 
+ 
+  // Unique identifiers for the beads that are a hit
+  bead_hits = search_hits.reduce(function(map, bead, i) {
+	  map[bead.accessions[0]] = i + 1; // value for the search indexing
+	  return map;
+  }, {});
+
+  // Dictionary to find the index of clusters that are a hit (i.e. first bead in cluster)
+  cluster_hits = search_hits.reduce(function(map, bead) {
+	  if (map[bead.cidx] === undefined) {
+		  map['cidx-' + bead.cidx] = bead.accessions[0];
+	  }
+	  return map;
+  }, {});
+
+  // Dictionary to find the index of cluster that are not a hit (i.e the last bead in previous cluster)
+  // TODO: make sure that this is selecting the last bead
+  cluster_hits_last_id = search_hits.reduce(function(map, bead) {
+	  map['cidx-' + bead.cidx] = bead.accessions[0];
+	  return map;
+  }, {});
+
+  not_cluster_hits = {};
+  all_keys = Object.keys(map_cidx_to_id);
+  hit_keys = Object.keys(cluster_hits);
+
+  for (var i = 0; i < all_keys.length - 1; i++) {
+	  if (hit_keys[all_keys[i]] === undefined) {
+//		  console.log(closest_match(all_keys[i], cluster_hits, map_cidx_to_id))
+	  }
+  }
+  closest_match("cidx-112", cluster_hits, map_cidx_to_id);
+
+ // Update the search resutls array with the hits
+ search_results.update({
+	 beads: bead_hits,
+	 clusters: cluster_hits
+ })
+}
+
+function closest_match(non_hit_cluster_index, all_hit_cluster_index, map_cidx_to_id) {
+  const maped_non_hit_index = map_cidx_to_id[non_hit_cluster_index];
+  var closest_diff = 10000, closest_key;
+  keys = Object.keys(all_hit_cluster_index);
+  
+  for (var i = 0; i < keys.length - 1; i++) {
+	  if (map_cidx_to_id[keys[i]] === undefined)
+	  {
+		  console.log(keys[i])
+	  } else {
+		  diff = map_cidx_to_id[keys[i]] - maped_non_hit_index;
+//		  console.log(Math.abs(diff));
+		  if (diff < 0 && closest_diff < 0) {
+			  console.log(Math.max(diff, closest_diff), closest_diff)
+			  closest_diff = diff;
+			  closest_key = keys[i];
+		  }
+	  }
+  }
+//	console.log(non_hit_cluster_index, maped_non_hit_index, closest_key, map_cidx_to_id[closest_key])
+  return closest_key;
+}
+
+/**
+ * This function wraps the main search function. 
+ * It reads the search arguments from the ui and ensures that the arguments required by main_search are corectly formatted.
+ * It also uses the results produced by the main_search function to populate the ui with the search results
+ * When the user changes the search query this should be rerun.
+ */
+function wrap_search() {
+  
+  start_date_text = $('#start-date').val();
+  end_date_text = $('#end-date').val();
+  query = $('#search-input').val();
+  
+  // TODO: exception handling
+  start_date = new Date(start_date_text);
+  end_date = new Date(end_date_text);
+
+  main_search(beaddata, query, start_date, end_date);
+
+  d3.select("#svg-timetree").selectAll("rect:not(.clickedH)").attr('search_hit', function(d) {
+	  return search_results.get().clusters[d.cluster_idx] === undefined ? false : true;
+  });
 }
 
 
@@ -146,6 +278,7 @@ function select_beads_by_substring(substr) {
           //&& d.first_date <= end_date && d.last_date >= start_date
       )
     });
+  
   select_clusters(rects);
 
   // preceding function switches view to beadplot with matching samples, if any
