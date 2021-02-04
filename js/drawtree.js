@@ -334,7 +334,7 @@ function draw_clusters(tips) {
 
   // generate colour palettes
   sample_pal = d3.scaleSequential(d3.interpolatePuBu)
-      .domain(d3.extent(tips, function(d) { return d.nsamples; }));
+      .domain(d3.extent(tips, function(d) { return Math.log10(d.nsamples); }));
   coldate_pal = d3.scaleSequential(d3.interpolateCividis)
       .domain(d3.extent(tips, function(d) { return d.last_date; }));
   diverge_pal = d3.scaleSequential(d3.interpolatePlasma)
@@ -394,7 +394,7 @@ function changeTreeColour() {
           }
           else if (opt === "No. samples") {
             $("div#svg-sample-legend").show();
-            return(sample_pal(d.nsamples));  // placeholder values
+            return(sample_pal(Math.log10(d.nsamples)));  // placeholder values
           }
           else if (opt === "Collection date") {
             $("div#svg-coldate-legend").show();
@@ -581,7 +581,7 @@ function generate_legends() {
   // sample size legend
   $("div#svg-sample-legend").html(legend({
     color: sample_pal,
-    title: "Sample size",
+    title: "Sample size (log10)",
     width: 240
   })).hide();
 
