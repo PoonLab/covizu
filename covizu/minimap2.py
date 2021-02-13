@@ -233,9 +233,16 @@ def parse_args():
                         help="<option> use -f to force this script to accept "
                              "headers with spaces, which will be truncated "
                              "by minimap2")
-    parser.add_argument('--ref', type=str,
-                        help="<input> path to target FASTA (reference)",
-                        default=os.path.join(covizu.__path__[0], "data/NC_045512.fa"))
+
+    path = covizu.__path__[0]
+    if '.egg' in path:
+        import pkg_resources
+        ref_file = pkg_resources.resource_filename('covizu', 'data/NC_045512.fa')
+    else:
+        ref_file = os.path.join(path, "data", "NC_045512.fa")
+    parser.add_argument('--ref', type=str, default=ref_file,
+                        help="<input> path to target FASTA (reference)")
+
     parser.add_argument('--minlen', help="<option> minimum sequence length, "
                                          "defaults to 29000nt.",
                         type=int, default=29000)
