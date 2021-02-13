@@ -223,21 +223,27 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
  */
 function parse_edgelist(cluster, variants, points) {
   // map earliest collection date of child node to vertical edges
-  var edge, parent, child, dist, support,
+  let edge, parent, child, dist, support,
       edgelist = [];
 
   // generate maps of variants and points keyed by accession
-  var lookup_variant = {};
+  let lookup_variant = {};
   variants.forEach(function(row) {
     lookup_variant[row.accession] = row;
   });
 
-  var lookup_points = {}
+  let lookup_points = {},
+      index_points = {};  // index by y-coordinate
+
   points.forEach(function(pt) {
-    if (lookup_points[points.variant] === undefined) {
-      lookup_points[points.variant] = [];
+    if (lookup_points[pt.variant] === undefined) {
+      lookup_points[pt.variant] = [];
     }
-    lookup_points[points.variant].push(pt);
+    lookup_points[pt.variant].push(pt);
+    if (index_points[pt.y] === undefined) {
+      index_points[pt.y] = [];
+    }
+    index_points[pt.y].push(pt);
   })
 
   for (var e = 0; e < cluster.edges.length; e++) {
@@ -274,12 +280,20 @@ function parse_edgelist(cluster, variants, points) {
     child.dist = dist;
 
     // Assign the parent and genomic distance of each point
+    if (index_points[child.y1] !== undefined) {
+      for (let pt of index_points[child.y1]) {
+        pt.parent = parent.label;
+        pt.dist = dist;
+      }
+    }
+    /*
     for (let c = 0; c < points.length; c++) {
       if (points[c].y === child.y1) {
         points[c].parent = parent.label;
         points[c].dist = dist;
       }
     }
+    */
 
     // update variant time range
     if (parent.x1 > child.x1) {
