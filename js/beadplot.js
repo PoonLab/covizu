@@ -491,6 +491,68 @@ function beadplot(cid) {
     $("#svg-cluster > svg").attr("width",currentWidth + marginB.left + marginB.right);
     $("#svg-clusteraxis > svg").attr("width", currentWidth + 20);
 
+
+    // draw vertical line segments that represent edges in NJ tree
+    visB.selectAll("lines")
+        .data(edgelist)
+        .enter().append("line")
+        .attr("class", "lines")
+        .attr("x1", xMap1B)
+        .attr("x2", xMap2B)
+        .attr("y1", yMap1B)
+        .attr("y2", yMap2B)
+        .attr("stroke-width", 1)
+        .attr("stroke", function(d) {
+          if (d.dist < 1.5) {
+            return("#aad");
+          } else if (d.dist < 2.5) {
+            return("#bbd");
+          } else {
+            return("#ccf");
+          }
+        })
+        .on("mouseover", function(d) {
+          var edge = d3.select(this);
+          edge.attr("stroke-width", 3);
+
+          // Show tooltip
+          cTooltip.transition()
+              .duration(50)
+              .style("opacity", 0.9);
+
+          let tooltipText = `<b>Parent:</b> ${d.parent}<br/><b>Child:</b> ${d.child}<br/>`;
+          tooltipText += `<b>Genomic distance:</b> ${Math.round(d.dist*100)/100}<br/>`;
+          tooltipText += `<b>Support:</b> ${(d.support === undefined) ? 'n/a' : d.support}<br/>`
+          tooltipText += `<b>Collection date:</b> ${formatDate(d.x2)}`;
+
+          cTooltip.html(tooltipText)
+              .style("left", function() {
+                if (d3.event.pageX > window.innerWidth/2) {
+                  return (
+                    d3.event.pageX -
+                    cTooltip.node().getBoundingClientRect().width +
+                    "px"
+                  );
+                } else {
+                  return d3.event.pageX + "px";
+                }
+              })
+              .style("top", function() {
+                if (d3.event.pageY > window.innerHeight/2) {
+                  return (d3.event.pageY - cTooltip.node().getBoundingClientRect().height - 15) + "px";
+                } else {
+                  return d3.event.pageY + 15 + "px";
+                }
+              });
+        })
+        .on("mouseout", function() {
+          d3.select(this).attr("stroke-width", 1);
+
+          cTooltip.transition()     // Hide tooltip
+              .duration(50)
+              .style("opacity", 0);
+        });
+
     // draw horizontal line segments that represent variants in cluster
     visB.selectAll("lines")
         .data(variants)
@@ -593,66 +655,6 @@ function beadplot(cid) {
         .attr("y", function(d) { return(yScaleB(d.y1)); })
         .text(function(d) { return(d.label); });
 
-    // draw vertical line segments that represent edges in NJ tree
-    visB.selectAll("lines")
-        .data(edgelist)
-        .enter().append("line")
-        .attr("class", "lines")
-        .attr("x1", xMap1B)
-        .attr("x2", xMap2B)
-        .attr("y1", yMap1B)
-        .attr("y2", yMap2B)
-        .attr("stroke-width", 1)
-        .attr("stroke", function(d) {
-          if (d.dist < 1.5) {
-            return("#55b7");
-          } else if (d.dist < 2.5) {
-            return("#77d7");
-          } else {
-            return("#99f7");
-          }
-        })
-        .on("mouseover", function(d) {
-          var edge = d3.select(this);
-          edge.attr("stroke-width", 3);
-
-          // Show tooltip
-          cTooltip.transition()
-              .duration(50)
-              .style("opacity", 0.9);
-
-          let tooltipText = `<b>Parent:</b> ${d.parent}<br/><b>Child:</b> ${d.child}<br/>`;
-          tooltipText += `<b>Genomic distance:</b> ${Math.round(d.dist*100)/100}<br/>`;
-          tooltipText += `<b>Support:</b> ${(d.support === undefined) ? 'n/a' : d.support}<br/>`
-          tooltipText += `<b>Collection date:</b> ${formatDate(d.x2)}`;
-
-          cTooltip.html(tooltipText)
-              .style("left", function() {
-                if (d3.event.pageX > window.innerWidth/2) {
-                  return (
-                    d3.event.pageX -
-                    cTooltip.node().getBoundingClientRect().width +
-                    "px"
-                  );
-                } else {
-                  return d3.event.pageX + "px";
-                }
-              })
-              .style("top", function() {
-                if (d3.event.pageY > window.innerHeight/2) {
-                  return (d3.event.pageY - cTooltip.node().getBoundingClientRect().height - 15) + "px";
-                } else {
-                  return d3.event.pageY + 15 + "px";
-                }
-              });
-        })
-        .on("mouseout", function() {
-          d3.select(this).attr("stroke-width", 1);
-
-          cTooltip.transition()     // Hide tooltip
-              .duration(50)
-              .style("opacity", 0);
-        });
 
     // draw "beads" to represent samples per collection date
     visB.selectAll("circle")
