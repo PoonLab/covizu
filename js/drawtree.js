@@ -324,7 +324,9 @@ function draw_clusters(tips) {
           var closest_cluster = previous_closest_match('cidx-'+d.cluster_idx, hit_ids);
           var bead_id;
  
-          if (closest_cluster == hit_ids[hit_ids.length - 1])
+          if (hit_ids[0] == hit_ids[hit_ids.length - 1] && map_cidx_to_id["cidx-"+cindex] < hit_ids[0])
+            bead_id = (search_results.get().clusters_last_bead)[id_to_cidx[closest_cluster]];
+          else if (closest_cluster == hit_ids[hit_ids.length - 1])
             bead_id = (search_results.get().clusters_first_bead)[id_to_cidx[closest_cluster]];
           else
             bead_id = (search_results.get().clusters_last_bead)[id_to_cidx[closest_cluster]];

@@ -234,7 +234,7 @@ function previous_closest_match(non_hit_cluster_index, hit_ids) {
  * This function handles search by lineage
  * @param {String} text_query 
  */
-function lineage_search(text_query) {
+function lineage_search(text_query, start_date, end_date) {
   var cidx = lineage_to_cid[text_query.toUpperCase()];
 
   // Terminates if there is no match
@@ -245,6 +245,11 @@ function lineage_search(text_query) {
 
   var cluster = select_cluster("cidx-"+cidx);
 
+  search_hits = beaddata[cidx].points.filter(function(bead) {
+	  temp = (bead.x >= start_date && bead.x <= end_date);
+	  return temp;
+  });
+
   d3.select("#svg-timetree")
     .selectAll("rect:not(.clicked):not(.clickedH)")
     .attr("class","not_SelectedCluster");
@@ -252,18 +257,48 @@ function lineage_search(text_query) {
   cluster.attr("class", "SelectedCluster clicked");
   beadplot(cluster.datum().cluster_idx);
 
-  // Generates table for all points
-  var cluster_regions = cluster.datum();
-  gentable(cluster_regions);
-  draw_region_distribution(cluster_regions.allregions);
-  gen_details_table(beaddata[cidx].points);  // update details table with all samples
+  if (search_hits.length === 0) {
+    // Generates table for all points
+    var cluster_regions = cluster.datum();
+    gentable(cluster_regions);
+    draw_region_distribution(cluster_regions.allregions);
+    gen_details_table(beaddata[cidx].points);  // update details table with all samples
+    $('#error_message').text(`No matches. Please try again.`);
+    return;
+  }
+  else {
+    var bead_hits = search_hits.reduce(function(map, bead, i) {
+      map[bead.accessions[0]] = i; // value for the search indexing
+      return map;
+    }, {});
+
+    var hit_id = [map_cidx_to_id["cidx-"+cidx]];
+    var cluster_hits = [], cluster_hits_last_id = [];
+    var bead_data = beaddata[cidx].points;
+    cluster_hits["cidx-"+cidx] = bead_data[0].accessions[0];
+    cluster_hits_last_id["cidx-"+cidx] = bead_data[bead_data.length - 1].accessions[0];
+    var working_bead = d3.selectAll('circle[id="'+cluster_hits["cidx-"+cidx]+'"]').nodes()[0];
+    working_bead.scrollIntoView({block: "center"});
+    update_table_individual_bead(d3.select(working_bead).datum());
+
+    const stats = search_results.update({
+      beads: bead_hits,
+      clusters_first_bead: cluster_hits,
+      clusters_last_bead: cluster_hits_last_id,
+      current_point: 0,
+      total_points: bead_data.length,
+      hit_ids: hit_id,
+     });
+    
+     update_search_stats(stats);
+  }
   
-  const stats = search_results.update({
-    current_point: 0,
-    total_points: 1,
-   });
+  // const stats = search_results.update({
+  //   current_point: 0,
+  //   total_points: 1,
+  //  });
   
-  update_search_stats(stats); 
+  // update_search_stats(stats); 
 }
 
 /**
@@ -336,7 +371,7 @@ function wrap_search() {
   if (isAccn(query)) 
     accession_search(query);
   else if (isLineage(query))
-    lineage_search(query);
+    lineage_search(query, start_date, end_date);
   else 
     main_search(beaddata, query, start_date, end_date);
 }
