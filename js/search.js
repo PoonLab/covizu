@@ -323,9 +323,20 @@ function accession_search(text_query) {
   
   beadplot(cluster.datum().cluster_idx);
 
+  var bead_hits = [];
+  bead_hits[text_query.toUpperCase()] = 0;
+  var cluster_hits = [], cluster_hits_last_id = [];
+  cluster_hits["cidx-"+cidx] = text_query.toUpperCase();
+  cluster_hits_last_id["cidx-"+cidx] = text_query.toUpperCase();
+  var hit_id = [map_cidx_to_id["cidx-"+cidx]]; 
+  
   const stats = search_results.update({
+    beads: bead_hits,
+    clusters_first_bead: cluster_hits,
+    clusters_last_bead: cluster_hits_last_id,
     current_point: 0,
     total_points: 1,
+    hit_ids: hit_id,
    });
   
   update_search_stats(stats); 
