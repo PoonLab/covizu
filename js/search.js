@@ -231,6 +231,42 @@ function previous_closest_match(non_hit_cluster_index, hit_ids) {
 }
 
 /**
+ * This function handles search by lineage
+ * @param {String} text_query 
+ */
+function lineage_search(text_query) {
+  var cidx = lineage_to_cid[text_query.toUpperCase()];
+
+  // Terminates if there is no match
+  if (cidx === undefined) {
+    $('#error_message').text(`No matches. Please try again.`);
+    return;
+  }
+
+  var cluster = select_cluster("cidx-"+cidx);
+
+  d3.select("#svg-timetree")
+    .selectAll("rect:not(.clicked):not(.clickedH)")
+    .attr("class","not_SelectedCluster");
+
+  cluster.attr("class", "SelectedCluster clicked");
+  beadplot(cluster.datum().cluster_idx);
+
+  // Generates table for all points
+  var cluster_regions = cluster.datum();
+  gentable(cluster_regions);
+  draw_region_distribution(cluster_regions.allregions);
+  gen_details_table(beaddata[cidx].points);  // update details table with all samples
+  
+  const stats = search_results.update({
+    current_point: 0,
+    total_points: 1,
+   });
+  
+  update_search_stats(stats); 
+}
+
+/**
  * This function handles search by accession
  * @param {String} text_query 
  */
@@ -299,6 +335,8 @@ function wrap_search() {
 
   if (isAccn(query)) 
     accession_search(query);
+  else if (isLineage(query))
+    lineage_search(query);
   else 
     main_search(beaddata, query, start_date, end_date);
 }
@@ -564,6 +602,15 @@ function index_accessions(clusters) {
 function as_label(search_data) {
 	const [, accn] = search_data;
 	return accn;
+}
+
+function index_lineage(clusters) {
+  var index = {};
+  for (const cid in clusters) {
+    var accns = clusters[cid].lineage
+    index[accns] = cid;
+  }
+  return index;
 }
 
 /**

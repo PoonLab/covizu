@@ -9,6 +9,14 @@ function isAccn(string) {
 }
 
 /**
+ * Retruns true if the string is a lineage 
+ */
+function isLineage(string) {
+  const lin_pat = /[A-Z]\.[0-9]+/i;
+  return lin_pat.test(string);
+}
+
+/**
  * Returns a string in an ISO8601 format
  *
  * @param {Date} date: The date to be formated

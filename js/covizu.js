@@ -102,7 +102,7 @@ $.getJSON("data/countries.json", function(data) {
 
 
 var clusters, beaddata, tips,
-    accn_to_cid, cindex;
+    accn_to_cid, cindex, lineage_to_cid;
 var map_cidx_to_id = [], id_to_cidx = [];
 
 // load cluster data from server
@@ -141,7 +141,8 @@ req.done(function() {
     }
   });
 
-
+  // Maps lineage to a cidx
+  lineage_to_cid = index_lineage(clusters);
 
   // Maps cidx to an id
   var key;
