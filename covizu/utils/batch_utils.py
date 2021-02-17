@@ -32,11 +32,8 @@ def beadplot_serial(lineage, features, args, callback=None):
         # (name, accession, location, date) - see clustering.py:recode_features()
         intermed = [label.split('|')[::-1] for label in labels[0]]
         intermed.sort()
-        variant = intermed[0][1]
-        beaddict['nodes'].update({variant: []})
-
-        for coldate, location, accn, label1 in intermed:
-            beaddict['nodes'][variant].append([coldate, location, accn, label1])
+        variant = intermed[0][2]  # keyed by accession of first sample
+        beaddict['nodes'].update({variant: intermed})  # date, location, accn, name
         return beaddict
 
     # generate majority consensus tree
