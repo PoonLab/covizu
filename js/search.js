@@ -420,6 +420,7 @@ function update_table_individual_bead(bead) {
 
 function select_next_prev_bead(bead_id_to_accession, curr_bead) {
   d3.selectAll('rect[class="clicked"]').attr('class', "not_SelectedCluster");
+  d3.selectAll('rect[class="not_SelectedCluster clicked"]').attr('class', "not_SelectedCluster");
 
   var next_cluster = d3.selectAll('rect[cidx="cidx-'+accn_to_cid[bead_id_to_accession[curr_bead]]+'"]');
   d3.selectAll("rect.clickedH").remove();

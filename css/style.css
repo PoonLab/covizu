@@ -318,6 +318,10 @@ rect.SelectedCluster:hover{
   stroke-width: 2;
 }
 
+rect.not_SelectedCluster.clicked {
+  fill-opacity: 0.1;
+}
+
 rect:hover{
   fill-opacity: 1;
 }

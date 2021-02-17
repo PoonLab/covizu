@@ -303,7 +303,7 @@ function draw_clusters(tips) {
       d3.selectAll("rect.clickedH").remove();
 
       // Remove "clicked" class to ensure that the previous cluster doesn't remain highligted
-      if ($('#search-input').val() !== "") {
+      if ($('#search-input').val() != "" || $('#start-date').val() != "" || $('#end-date').val() != "") {
         d3.selectAll(".SelectedCluster.clicked").attr('class', 'SelectedCluster'); 
         d3.selectAll("rect.clicked").attr('class', "not_SelectedCluster");
       }
@@ -319,14 +319,14 @@ function draw_clusters(tips) {
 
 
       if (this.className.baseVal !== "SelectedCluster"){
-        if ($('#search-input').val() !== "") {
+        if ($('#search-input').val() != "" || $('#start-date').val() != "" || $('#end-date').val() != "") {
           var hit_ids = search_results.get().hit_ids;
           var closest_cluster = previous_closest_match('cidx-'+d.cluster_idx, hit_ids);
           var bead_id;
  
           if (hit_ids[0] == hit_ids[hit_ids.length - 1] && map_cidx_to_id["cidx-"+cindex] < hit_ids[0])
             bead_id = (search_results.get().clusters_last_bead)[id_to_cidx[closest_cluster]];
-          else if (closest_cluster == hit_ids[hit_ids.length - 1])
+          else if (map_cidx_to_id["cidx-"+cindex] > hit_ids[hit_ids.length - 1])
             bead_id = (search_results.get().clusters_first_bead)[id_to_cidx[closest_cluster]];
           else
             bead_id = (search_results.get().clusters_last_bead)[id_to_cidx[closest_cluster]];
@@ -335,8 +335,10 @@ function draw_clusters(tips) {
             current_point: (search_results.get().beads)[bead_id]
           });
           update_search_stats(stats);
+          d3.select(this).attr("class", "not_SelectedCluster clicked");
         }
-        d3.select(this).attr("class", "clicked");
+        else 
+          d3.select(this).attr("class", "clicked");
 
         $("#barplot").text(null);
 

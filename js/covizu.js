@@ -362,9 +362,11 @@ req.done(function() {
     var curr_bead = search_results.get().current_point;
     var bead_hits = search_results.get().beads;
     var bead_id_to_accession = Object.keys(bead_hits);
+    var hit_ids = search_results.get().hit_ids;
 
+    // console.log(first_bead.id);
     // Edge case: User clicks next from a cluster above the first cluster
-    if (curr_bead == 0 && d3.selectAll("rect.clicked").nodes()[0].className.baseVal !== "SelectedCluster clicked") {
+    if (curr_bead == 0 && (parseInt(d3.selectAll("rect.clicked").nodes()[0].id.substring(3)) > hit_ids[hit_ids.length - 1])) {
       select_next_prev_bead(bead_id_to_accession, curr_bead);
       var working_bead = d3.selectAll('circle[id="'+bead_id_to_accession[curr_bead]+'"]').nodes()[0];
       working_bead.scrollIntoView({block: "center"});
