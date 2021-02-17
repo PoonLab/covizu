@@ -144,8 +144,12 @@ def serialize_tree(tree):
             # use accession of earliest sample to ID variant
             variant = node.labels[0]['accession']
 
-            # populate list with samples
-            obj['nodes'].update({variant: node.labels})
+            # convert dicts to lists to reduce JSON size
+            samples = [
+                (d['name'], d['accession'], d['location'], d['coldate'], d['gender'],
+                 d['age'], d['status']) for d in node.labels
+            ]
+            obj['nodes'].update({variant: samples})
         else:
             variant = 'unsampled'+str(us_count)
             obj['nodes'].update({variant: []})
