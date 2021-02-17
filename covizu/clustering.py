@@ -6,6 +6,7 @@ import subprocess
 from io import StringIO
 import sys
 import os
+from csv import DictWriter
 
 from Bio import Phylo
 from Bio.Phylo.BaseTree import Clade
@@ -20,18 +21,24 @@ def recode_features(records, callback=None):
     """
     Recode feature vectors with integer indices based on set union.
     Pass results to bootstrap() to reconstruct trees by neighbor-joining method.
+    This function is also responsible for embedding metadata in sequence labels.
 
     :param records:  list, dict for each record
     :param callback:  optional, function for progress monitoring
     :return:  dict, map of feature (genetic difference) to integer index;
-              list, nested list of labels associated with each unique variant
+              list, nested list of label dicts associated with each unique variant
               list, sets of integers (indexed features) for each variant
     """
     # compress genomes with identical feature vectors
     fvecs = {}
     for record in records:
-        label = '|'.join([record['covv_virus_name'], record['covv_accession_id'],
-                          record['covv_location'], record['covv_collection_date']])
+        label = {
+            'name': record['covv_virus_name'],
+            'coldate': record['covv_collection_date'],
+            'location': record['covv_location'],
+            'accession': record['covv_accession_id']
+        }
+        # genetic differences are sorted by reference position in record
         key = tuple([tuple(x) for x in record['diffs']])
         if key not in fvecs:
             fvecs.update({key: []})
@@ -41,7 +48,7 @@ def recode_features(records, callback=None):
     if callback:
         callback("Reduced to {} variants; generating feature set union".format(len(fvecs)))
     union = {}
-    labels = []
+    labels = []  # nested list of label dicts grouped by variant
     indexed = []
     for fvec in fvecs:
         labels.append(fvecs[fvec])
@@ -138,7 +145,6 @@ def consensus(trees, cutoff=0.5, callback=None):
     tip_index = {}
     for i, tip in enumerate(tree.get_terminals()):
         tip_index.update({tip.name: i})
-    ntips = len(tip_index)
 
     if callback:
         callback("Recording splits and branch lengths")
@@ -210,7 +216,7 @@ def build_trees(records, args, callback=None):
     :param args:  Namespace, from argparse.ArgumentParser
     :param callback:  function, optional for progress monitoring
     :return:  list, Phylo.BaseTree objects;
-              list, nested list of labels associated with each tip in tree
+              list, nested list of label dicts associated with each tip in tree
     """
     union, labels, indexed = recode_features(records, callback=callback)
     if len(indexed) == 1:
@@ -280,11 +286,13 @@ if __name__ == "__main__":
     # export map of sequence labels to tip indices
     if my_rank == 0:
         csvfile = os.path.join(args.outdir, "{}.labels.csv".format(args.lineage))
-        with open(csvfile, 'w') as handle:
-            handle.write("name,index\n")
-            for i, names in enumerate(labels):
-                for nm in names:
-                    handle.write('{},{}\n'.format(nm, i))
+        writer = DictWriter(open(csvfile, 'w'), fieldnames=[
+            'index', 'name', 'coldate', 'location', 'accession'
+        ])
+        writer.writeheader()
+        for index, variant in enumerate(labels):
+            for sample in variant:
+                writer.writerow(sample.update({'index': index}))
 
     outfile = os.path.join(args.outdir, '{}.nwk'.format(args.lineage))
 

@@ -9,16 +9,17 @@ from csv import DictReader
 
 def parse_labels(handle):
     """
-    Parse labels CSV - assumes header contains 'name' and 'index'
+    Parse labels CSV (MPI processing) - assumes header contains 'name' and 'index'
     :param handle:  open stream to CSV file in read mode
-    :return:  dict, lists of genome labels keyed by tip index
+    :return:  dict, lists of genome label dicts keyed by tip index
     """
     rows = DictReader(handle)
     results = {}
     for row in rows:
-        if row['index'] not in results:
-            results.update({row['index']: []})
-        results[row['index']].append(row['name'])
+        index = row.pop('index')
+        if index not in results:
+            results.update({index: []})
+        results[index].append(row)
     return results
 
 
@@ -91,7 +92,7 @@ def annotate_tree(tree, label_dict, minlen=0.5, callback=None):
     :return:  dict, lists of sequence labels keyed by integer indices
     """
 
-    # validate tree and labels
+    # validate tree and tip labels (integer indices)
     tip_labels = set([tip.name for tip in tree.get_terminals()])
     set_diff = tip_labels.difference(set(label_dict.keys()))
     if len(set_diff) > 0 and callback:
@@ -113,7 +114,7 @@ def annotate_tree(tree, label_dict, minlen=0.5, callback=None):
             tip.labels = label_dict[tip.name]
 
     for node in tree.get_nonterminals():
-        node.labels = []
+        node.labels = []  # store actual sample labels
         if node.name is None:
             # unsampled internal node
             node.name = ''
