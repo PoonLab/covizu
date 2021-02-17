@@ -51,7 +51,7 @@ def recode_features(records, callback=None):
     labels = []  # nested list of label dicts grouped by variant
     indexed = []
     for fvec, dicts in fvecs.items():
-        # sort dicts by collection date (ISO format)
+        # sort list of dicts by collection date (ISO format)
         labels.append(sorted(dicts, key=lambda d: d['coldate']))
         for feat in fvec:
             if feat not in union:

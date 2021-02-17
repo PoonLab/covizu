@@ -29,7 +29,7 @@ def beadplot_serial(lineage, features, args, callback=None):
     # if lineage only has one variant, no meaningful tree
     if trees is None:
         beaddict = {'lineage': lineage, 'nodes': {}, 'edges': []}
-        variant = labels[0]['accession']  # use earliest sample as key
+        variant = labels[0][0]['accession']  # use earliest sample as key
 
         # convert dicts to lists to reduce JSON size
         samples = [(l['name'], l['accession'], l['location'], l['date']) for l in labels]
