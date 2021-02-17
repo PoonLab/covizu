@@ -241,7 +241,7 @@ req.done(function() {
 
   // Enables "search" and "clear" buttons if the input fields are not empty
   $('#search-input').on('change keyup search', function() {
-    if ($('#search-input').val() != "") {
+    if ($('#search-input').val() != "" || $('#start-date').val() != "" || $('#end-date').val() != "") {
       $('#search-button').removeAttr("disabled");
       $('#clear_button').removeAttr("disabled");
     }
@@ -254,7 +254,7 @@ req.done(function() {
 
   $('#search-input').on('keydown', function(e) {
     $('#error_message').text(``);
-    if (e.keyCode == 13 && $('#search-input').val() != "") {
+    if (e.keyCode == 13 && ($('#search-input').val() != "" || $('#start-date').val() != "" || $('#end-date').val() != "")) {
       // type <enter> to run search
       // run_search();
       wrap_search();
@@ -271,11 +271,44 @@ req.done(function() {
     $('#error_message').text(``);
   });
 
+  $('#start-date').on('change keyup search', function() {
+    if ($('#start-date').val() != "") {
+      $('#search-button').removeAttr("disabled");
+      $('#clear_button').removeAttr("disabled");
+    }
+    else {
+      clear_selection();
+      $('#search_stats').text(`0 of 0 points`);
+      disable_buttons();
+    }
+  });
+
+  $('#end-date').on('change keyup search', function() {
+    if ($('#end-date').val() != "") {
+      $('#search-button').removeAttr("disabled");
+      $('#clear_button').removeAttr("disabled");
+    }
+    else {
+      clear_selection();
+      $('#search_stats').text(`0 of 0 points`);
+      disable_buttons();
+    }
+  })
+
   const dateFormat = 'yy-mm-dd'; // ISO_8601
   $('#start-date').datepicker({
     dateFormat,
     onSelect: function(date_text){
       const start = new Date(date_text);
+      if ($('#start-date').val() != "") {
+        $('#search-button').removeAttr("disabled");
+        $('#clear_button').removeAttr("disabled");
+      }
+      else {
+        clear_selection();
+        $('#search_stats').text(`0 of 0 points`);
+        disable_buttons();
+      }
       // const stats = search_stats.update({
       //   start,
       // });
@@ -291,6 +324,15 @@ req.done(function() {
     dateFormat,
     onSelect: function(date_text){
       const end = new Date(date_text);
+      if ($('#end-date').val() != "") {
+        $('#search-button').removeAttr("disabled");
+        $('#clear_button').removeAttr("disabled");
+      }
+      else {
+        clear_selection();
+        $('#search_stats').text(`0 of 0 points`);
+        disable_buttons();
+      }
       // search_by_dates(search_stats.get().start, end);
       // const stats = search_stats.update({
       //   end,

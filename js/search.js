@@ -370,6 +370,16 @@ function wrap_search() {
   var end_date_text = $('#end-date').val();
   var query = $('#search-input').val();
 
+  if (start_date_text !== "" && !isDate(start_date_text)) {
+    $('#error_message').text(`Invalid Start Date (YYYY-MM-DD).`);
+    return;
+  }
+
+  if (end_date_text !== "" && !isDate(end_date_text)) {
+    $('#error_message').text(`Invalid End Date (YYYY-MM-DD).`);
+    return;
+  }
+
   var start_date = (start_date_text === "") ? new Date("2020-01-01") : new Date(start_date_text);
   var end_date = (end_date_text === "") ? new Date() : new Date(end_date_text);
 

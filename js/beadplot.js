@@ -450,7 +450,7 @@ function clear_selection() {
    });
    update_search_stats(stats); 
 
-  // $('#error_message').text(``);
+  $('#error_message').text(``);
 
   d3.select("#svg-cluster").selectAll("line")
       .attr("stroke-opacity", 1);
