@@ -176,7 +176,7 @@ function map_clusters_to_tips(df, clusters) {
     for (var i=0; i<labels.length; i++) {
       label = labels[i];
       variant = cluster['nodes'][label];
-      coldates = coldates.concat(variant.map(x => x[0]));
+      coldates = coldates.concat(variant.map(x => x[3]));
     }
     coldates.sort();  // in place, ascending order
 

@@ -115,7 +115,7 @@ function tabulate(arr) {
  * along the horizontal line.  If there are no samples, then the variant is
  * "unsampled" and spans the entire width of the beadplot.
  *
- * @param {Object} variant:  associative list member of cluster.nodes
+ * @param {Object} variant:  Array, nested list of sample metadata
  * @param {number} y:  vertical position
  * @param {number} cidx:  cluster index for labeling points
  * @param {string} accn:  accession of baseline sample of variant
@@ -150,17 +150,21 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
   }
   else {
     // parse samples within variant, i.e., "beads"
-    var label = variant[0][2].replace(pat, "$1"),
-        coldates = variant.map(x => x[0]),
+    // each sample is an Array: [name, accession, location, coldate, gender, age, status]
+    var label = variant[0][0].replace(pat, "$1"),
+        coldates = variant.map(x => x[3]),
         isodate, samples, regions;
 
     coldates.sort();
     //Retrieving countries from variants?
-    var country = variant.map(x => x[2].split('/')[1]),
+    var geo = variant.map(x => x[2].split(' / ')),
+        region = geo.map(x => x[0]),
+        country = geo.map(x => x[1]),
+        locale = geo.map(x => x[2]),
         isodates = unique(coldates);
 
     // remove underscores in country names
-    country = country.map(x => x.replace(/_/g," "));
+    //country = country.map(x => x.replace(/_/g," "));
 
     vdata = {
       'accession': accn,
@@ -171,27 +175,23 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
       'y2': y,
       'count': coldates.length,
       'country': tabulate(country),
-      'region': country.map(x => countries[x]),
+      'region': region,
+      'locale': locale,
       'numBeads': isodates.length,
       'parent': null,
       'dist': 0,
       'unsampled': false
     };
 
-    for (var i=0; i<isodates.length; i++) {
+    for (let i=0; i<isodates.length; i++) {
       isodate = isodates[i];
-      samples = variant.filter(x => x[0] === isodate);
-      country = samples.map(x => x[2].split('/')[1]);
-      country = country.map(x => x.replace(/_/g," "));
-      regions = country.map(x => countries[x]);
 
-      // warn developers if no region for country
-      if (regions.includes(undefined)) {
-        console.log("Developer msg, need to update countries.json:");
-        for (const j in regions.filter(x => x===undefined)) {
-          console.log(`"${samples[j].country}"`);
-        }
-      }
+      // FIXME: this is not very efficient
+      samples = variant.filter(x => x[3] === isodate);
+      geo = samples.map(x => x[2].split(' / '));
+      region = geo.map(x => x[0]);
+      country = geo.map(x => x[1]);
+      locale = geo.map(x => x[2]);
 
       pdata.push({
         cidx,
@@ -200,9 +200,9 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
         'y': y,
         'count': samples.length,
         'accessions': samples.map(x => x[1]),
-        'labels': samples.map(x => x[2].replace(pat, "$1")),
-        'region1': mode(regions),
-        'region': regions,
+        'labels': samples.map(x => x[0].replace(pat, "$1")),
+        'region1': mode(region),  // most common region
+        'region': region,
         'country': tabulate(country),
         'parent': null,
         'dist': 0
@@ -363,7 +363,7 @@ function parse_clusters(clusters) {
       var nodelist = unique(cluster.edges.map(x => x.slice(0, 2)).flat());
 
       // date range of cluster
-      coldates = nodelist.map(a => cluster.nodes[a].map(x => x[0])).flat();
+      coldates = nodelist.map(a => cluster.nodes[a].map(x => x[3])).flat();
       coldates.sort()
       mindate = coldates[0];
       maxdate = coldates[coldates.length - 1];
