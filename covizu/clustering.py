@@ -32,16 +32,16 @@ def recode_features(records, callback=None):
     # compress genomes with identical feature vectors
     fvecs = {}
     for record in records:
+        # genetic differences are sorted by reference position in record
+        key = tuple([tuple(x) for x in record['diffs']])
+        if key not in fvecs:
+            fvecs.update({key: []})
         label = {
             'name': record['covv_virus_name'],
             'coldate': record['covv_collection_date'],
             'location': record['covv_location'],
             'accession': record['covv_accession_id']
         }
-        # genetic differences are sorted by reference position in record
-        key = tuple([tuple(x) for x in record['diffs']])
-        if key not in fvecs:
-            fvecs.update({key: []})
         fvecs[key].append(label)
 
     # generate union of all features
@@ -50,8 +50,9 @@ def recode_features(records, callback=None):
     union = {}
     labels = []  # nested list of label dicts grouped by variant
     indexed = []
-    for fvec in fvecs:
-        labels.append(fvecs[fvec])
+    for fvec, dicts in fvecs.items():
+        # sort dicts by collection date (ISO format)
+        labels.append(sorted(dicts, key=lambda d: d['coldate']))
         for feat in fvec:
             if feat not in union:
                 union.update({feat: len(union)})

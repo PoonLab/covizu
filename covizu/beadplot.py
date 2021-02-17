@@ -16,7 +16,7 @@ def parse_labels(handle):
     rows = DictReader(handle)
     results = {}
     for row in rows:
-        index = row.pop('index')
+        index = row.pop('index')  # use integer index as key
         if index not in results:
             results.update({index: []})
         results[index].append(row)
@@ -92,7 +92,7 @@ def annotate_tree(tree, label_dict, minlen=0.5, callback=None):
     :return:  dict, lists of sequence labels keyed by integer indices
     """
 
-    # validate tree and tip labels (integer indices)
+    # validate tree and tip names (integer indices)
     tip_labels = set([tip.name for tip in tree.get_terminals()])
     set_diff = tip_labels.difference(set(label_dict.keys()))
     if len(set_diff) > 0 and callback:
@@ -130,6 +130,7 @@ def serialize_tree(tree):
     """
     Convert annotated tree object to JSON
     TODO: label nodes with features (genetic differences)
+
     :param tree:  Phylo.BaseTree object from annotate_tree()
     :return:  dict, containing 'nodes' and 'edges'
     """
@@ -140,13 +141,11 @@ def serialize_tree(tree):
     us_count = 0  # number of unsampled variants
     for node in tree.find_clades(order='level'):
         if node.labels:
-            # sort samples by [coldate, location, accession, label]
-            intermed = [label.split('|')[::-1] for label in node.labels]
-            intermed.sort()  # ISO dates sort in increasing order
-            variant = intermed[0][2]  # use accession of earliest sample to ID variant
+            # use accession of earliest sample to ID variant
+            variant = node.labels[0]['accession']
 
             # populate list with samples
-            obj['nodes'].update({variant: intermed})
+            obj['nodes'].update({variant: node.labels})
         else:
             variant = 'unsampled'+str(us_count)
             obj['nodes'].update({variant: []})

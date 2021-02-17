@@ -1,6 +1,7 @@
 import subprocess
 from Bio import Phylo
 from covizu import clustering, treetime, beadplot
+from csv import DictReader
 
 
 def build_timetree(by_lineage, args, callback=None):
@@ -24,16 +25,15 @@ def beadplot_serial(lineage, features, args, callback=None):
     """ Compute distance matrices and reconstruct NJ trees """
     # bootstrap sampling and NJ tree reconstruction, serial mode
     trees, labels = clustering.build_trees(features, args, callback=callback)
-    if trees is None:
-        # lineage only has one variant, no meaningful tree
-        beaddict = {'lineage': lineage, 'nodes': {}, 'edges': []}
 
-        # use earliest sample as variant label
-        # (name, accession, location, date) - see clustering.py:recode_features()
-        intermed = [label.split('|')[::-1] for label in labels[0]]
-        intermed.sort()
-        variant = intermed[0][2]  # keyed by accession of first sample
-        beaddict['nodes'].update({variant: intermed})  # date, location, accn, name
+    # if lineage only has one variant, no meaningful tree
+    if trees is None:
+        beaddict = {'lineage': lineage, 'nodes': {}, 'edges': []}
+        variant = labels[0]['accession']  # use earliest sample as key
+
+        # convert dicts to lists to reduce JSON size
+        samples = [(l['name'], l['accession'], l['location'], l['date']) for l in labels]
+        beaddict['nodes'].update({variant: samples})
         return beaddict
 
     # generate majority consensus tree
@@ -41,10 +41,10 @@ def beadplot_serial(lineage, features, args, callback=None):
 
     # collapse polytomies and label internal nodes
     label_dict = dict([(str(idx), lst) for idx, lst in enumerate(labels)])
-    ctree = beadplot.annotate_tree(ctree, label_dict, callback=callback)
+    atree = beadplot.annotate_tree(ctree, label_dict, callback=callback)
 
     # convert to JSON format
-    beaddict = beadplot.serialize_tree(ctree)
+    beaddict = beadplot.serialize_tree(atree)
     beaddict.update({'lineage': lineage})
     return beaddict
 
@@ -52,18 +52,12 @@ def beadplot_serial(lineage, features, args, callback=None):
 def import_labels(handle, callback=None):
     """ Load map of genome labels to tip indices from CSV file """
     result = {}
-    _ = next(handle)  # skip header line
-    for line in handle:
-        try:
-            qname, idx = line.strip('\n').split(',')
-        except ValueError:
-            if callback:
-                callback("import_labels() failed to parse line {}".format(line), level="ERROR")
-            raise  # issue #206, sequence label contains delimiter
-
+    for row in DictReader(handle):
+        idx = row.pop('index')
         if idx not in result:
             result.update({idx: []})
-        result[idx].append(qname)
+        result[idx].append(row)
+    _ = next(handle)  # skip header line
     return result
 
 
@@ -74,6 +68,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None):
 
     :param by_lineage:  dict, feature vectors stratified by lineage
     :param args:  Namespace, from argparse.ArgumentParser()
+    :param callback:  func, optional callback function
     :param t0:  float, datetime.timestamp.
     :return:  list, beadplot data by lineage
     """
