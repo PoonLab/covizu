@@ -33,7 +33,7 @@ def beadplot_serial(lineage, features, args, callback=None):
 
         # convert dicts to lists to reduce JSON size
         samples = [
-            (l['name'], l['accession'], l['location'], l['date'], l['gender'],
+            (l['name'], l['accession'], l['location'], l['coldate'], l['gender'],
              l['age'], l['status'])
             for l in labels[0]
         ]
