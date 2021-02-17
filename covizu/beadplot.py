@@ -135,6 +135,7 @@ def serialize_tree(tree):
     :return:  dict, containing 'nodes' and 'edges'
     """
     obj = {'nodes': {}, 'edges': []}
+    fields = ['name', 'accession', 'location', 'coldate', 'gender', 'age', 'status']
     variant_d = {}
     parents = get_parents(tree)
 
@@ -145,10 +146,7 @@ def serialize_tree(tree):
             variant = node.labels[0]['accession']
 
             # convert dicts to lists to reduce JSON size
-            samples = [
-                (d['name'], d['accession'], d['location'], d['coldate'], d['gender'],
-                 d['age'], d['status']) for d in node.labels
-            ]
+            samples = [[d[k].replace('unknown', '') for k in fields] for d in node.labels]
             obj['nodes'].update({variant: samples})
         else:
             variant = 'unsampled'+str(us_count)
