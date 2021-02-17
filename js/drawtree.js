@@ -206,7 +206,14 @@ function map_clusters_to_tips(df, clusters) {
     tips[root_idx].max_ndiffs = tip_stats.max_ndiffs;
     tips[root_idx].mean_ndiffs = tip_stats.mean_ndiffs;
     tips[root_idx].nsamples = tip_stats.nsamples;
-    tips[root_idx].residual = tip_stats.residual;
+
+    // calculate residual from mean differences and mean collection date - fixes #241
+    let times = coldates.map(x => new Date(x).getTime()),
+        origin = 18231,  // days between 2019-12-01 and UNIX epoch (1970-01-01)
+        mean_time = times.reduce((x, y)=>x+y) / times.length / 8.64e7 - origin,
+        rate = 0.0655342,  // subs per genome per day
+        exp_diffs = rate * mean_time;  // expected number of differences
+    tips[root_idx].residual = tip_stats.mean_ndiffs - exp_diffs;  // tip_stats.residual;
   }
   return tips;
 }
@@ -597,7 +604,7 @@ function generate_legends() {
   // divergence legend
   $("div#svg-diverge-legend").html(legend({
     color: diverge_pal,
-    title: "Divergence (normalized residual from clock rate)",
+    title: "Divergence (from strict clock expectation)",
     width: 240
   })).hide();
 }

@@ -223,21 +223,27 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
  */
 function parse_edgelist(cluster, variants, points) {
   // map earliest collection date of child node to vertical edges
-  var edge, parent, child, dist, support,
+  let edge, parent, child, dist, support,
       edgelist = [];
 
   // generate maps of variants and points keyed by accession
-  var lookup_variant = {};
+  let lookup_variant = {};
   variants.forEach(function(row) {
     lookup_variant[row.accession] = row;
   });
 
-  var lookup_points = {}
+  let lookup_points = {},
+      index_points = {};  // index by y-coordinate
+
   points.forEach(function(pt) {
-    if (lookup_points[points.variant] === undefined) {
-      lookup_points[points.variant] = [];
+    if (lookup_points[pt.variant] === undefined) {
+      lookup_points[pt.variant] = [];
     }
-    lookup_points[points.variant].push(pt);
+    lookup_points[pt.variant].push(pt);
+    if (index_points[pt.y] === undefined) {
+      index_points[pt.y] = [];
+    }
+    index_points[pt.y].push(pt);
   })
 
   for (var e = 0; e < cluster.edges.length; e++) {
@@ -274,12 +280,20 @@ function parse_edgelist(cluster, variants, points) {
     child.dist = dist;
 
     // Assign the parent and genomic distance of each point
+    if (index_points[child.y1] !== undefined) {
+      for (let pt of index_points[child.y1]) {
+        pt.parent = parent.label;
+        pt.dist = dist;
+      }
+    }
+    /*
     for (let c = 0; c < points.length; c++) {
       if (points[c].y === child.y1) {
         points[c].parent = parent.label;
         points[c].dist = dist;
       }
     }
+    */
 
     // update variant time range
     if (parent.x1 > child.x1) {
@@ -477,6 +491,68 @@ function beadplot(cid) {
     $("#svg-cluster > svg").attr("width",currentWidth + marginB.left + marginB.right);
     $("#svg-clusteraxis > svg").attr("width", currentWidth + 20);
 
+
+    // draw vertical line segments that represent edges in NJ tree
+    visB.selectAll("lines")
+        .data(edgelist)
+        .enter().append("line")
+        .attr("class", "lines")
+        .attr("x1", xMap1B)
+        .attr("x2", xMap2B)
+        .attr("y1", yMap1B)
+        .attr("y2", yMap2B)
+        .attr("stroke-width", 1)
+        .attr("stroke", function(d) {
+          if (d.dist < 1.5) {
+            return("#aad");
+          } else if (d.dist < 2.5) {
+            return("#bbd");
+          } else {
+            return("#ccf");
+          }
+        })
+        .on("mouseover", function(d) {
+          var edge = d3.select(this);
+          edge.attr("stroke-width", 3);
+
+          // Show tooltip
+          cTooltip.transition()
+              .duration(50)
+              .style("opacity", 0.9);
+
+          let tooltipText = `<b>Parent:</b> ${d.parent}<br/><b>Child:</b> ${d.child}<br/>`;
+          tooltipText += `<b>Genomic distance:</b> ${Math.round(d.dist*100)/100}<br/>`;
+          tooltipText += `<b>Support:</b> ${(d.support === undefined) ? 'n/a' : d.support}<br/>`
+          tooltipText += `<b>Collection date:</b> ${formatDate(d.x2)}`;
+
+          cTooltip.html(tooltipText)
+              .style("left", function() {
+                if (d3.event.pageX > window.innerWidth/2) {
+                  return (
+                    d3.event.pageX -
+                    cTooltip.node().getBoundingClientRect().width +
+                    "px"
+                  );
+                } else {
+                  return d3.event.pageX + "px";
+                }
+              })
+              .style("top", function() {
+                if (d3.event.pageY > window.innerHeight/2) {
+                  return (d3.event.pageY - cTooltip.node().getBoundingClientRect().height - 15) + "px";
+                } else {
+                  return d3.event.pageY + 15 + "px";
+                }
+              });
+        })
+        .on("mouseout", function() {
+          d3.select(this).attr("stroke-width", 1);
+
+          cTooltip.transition()     // Hide tooltip
+              .duration(50)
+              .style("opacity", 0);
+        });
+
     // draw horizontal line segments that represent variants in cluster
     visB.selectAll("lines")
         .data(variants)
@@ -579,66 +655,6 @@ function beadplot(cid) {
         .attr("y", function(d) { return(yScaleB(d.y1)); })
         .text(function(d) { return(d.label); });
 
-    // draw vertical line segments that represent edges in NJ tree
-    visB.selectAll("lines")
-        .data(edgelist)
-        .enter().append("line")
-        .attr("class", "lines")
-        .attr("x1", xMap1B)
-        .attr("x2", xMap2B)
-        .attr("y1", yMap1B)
-        .attr("y2", yMap2B)
-        .attr("stroke-width", 1)
-        .attr("stroke", function(d) {
-          if (d.dist < 1.5) {
-            return("#55b7");
-          } else if (d.dist < 2.5) {
-            return("#77d7");
-          } else {
-            return("#99f7");
-          }
-        })
-        .on("mouseover", function(d) {
-          var edge = d3.select(this);
-          edge.attr("stroke-width", 3);
-
-          // Show tooltip
-          cTooltip.transition()
-              .duration(50)
-              .style("opacity", 0.9);
-
-          let tooltipText = `<b>Parent:</b> ${d.parent}<br/><b>Child:</b> ${d.child}<br/>`;
-          tooltipText += `<b>Genomic distance:</b> ${Math.round(d.dist*100)/100}<br/>`;
-          tooltipText += `<b>Support:</b> ${(d.support === undefined) ? 'n/a' : d.support}<br/>`
-          tooltipText += `<b>Collection date:</b> ${formatDate(d.x2)}`;
-
-          cTooltip.html(tooltipText)
-              .style("left", function() {
-                if (d3.event.pageX > window.innerWidth/2) {
-                  return (
-                    d3.event.pageX -
-                    cTooltip.node().getBoundingClientRect().width +
-                    "px"
-                  );
-                } else {
-                  return d3.event.pageX + "px";
-                }
-              })
-              .style("top", function() {
-                if (d3.event.pageY > window.innerHeight/2) {
-                  return (d3.event.pageY - cTooltip.node().getBoundingClientRect().height - 15) + "px";
-                } else {
-                  return d3.event.pageY + 15 + "px";
-                }
-              });
-        })
-        .on("mouseout", function() {
-          d3.select(this).attr("stroke-width", 1);
-
-          cTooltip.transition()     // Hide tooltip
-              .duration(50)
-              .style("opacity", 0);
-        });
 
     // draw "beads" to represent samples per collection date
     visB.selectAll("circle")
