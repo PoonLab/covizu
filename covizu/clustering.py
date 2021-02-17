@@ -23,13 +23,15 @@ def recode_features(records, callback=None):
 
     :param records:  list, dict for each record
     :param callback:  optional, function for progress monitoring
-    :return:  list, list; Phylo.BaseTree objects and labels associated with tips
+    :return:  dict, map of feature (genetic difference) to integer index;
+              list, nested list of labels associated with each unique variant
+              list, sets of integers (indexed features) for each variant
     """
     # compress genomes with identical feature vectors
     fvecs = {}
     for record in records:
         label = '|'.join([record['covv_virus_name'], record['covv_accession_id'],
-                          record['covv_collection_date']])
+                          record['covv_location'], record['covv_collection_date']])
         key = tuple([tuple(x) for x in record['diffs']])
         if key not in fvecs:
             fvecs.update({key: []})
@@ -207,6 +209,8 @@ def build_trees(records, args, callback=None):
     :param records:  list, feature vectors as dicts
     :param args:  Namespace, from argparse.ArgumentParser
     :param callback:  function, optional for progress monitoring
+    :return:  list, Phylo.BaseTree objects;
+              list, nested list of labels associated with each tip in tree
     """
     union, labels, indexed = recode_features(records, callback=callback)
     if len(indexed) == 1:
