@@ -32,7 +32,11 @@ def beadplot_serial(lineage, features, args, callback=None):
         variant = labels[0][0]['accession']  # use earliest sample as key
 
         # convert dicts to lists to reduce JSON size
-        samples = [(l['name'], l['accession'], l['location'], l['date']) for l in labels]
+        samples = [
+            (l['name'], l['accession'], l['location'], l['date'], l['gender'],
+             l['age'], l['status'])
+            for l in labels[0]
+        ]
         beaddict['nodes'].update({variant: samples})
         return beaddict
 

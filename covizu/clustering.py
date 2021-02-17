@@ -36,11 +36,15 @@ def recode_features(records, callback=None):
         key = tuple([tuple(x) for x in record['diffs']])
         if key not in fvecs:
             fvecs.update({key: []})
+        # this information will be carried over to generating JSON data
         label = {
             'name': record['covv_virus_name'],
             'coldate': record['covv_collection_date'],
             'location': record['covv_location'],
-            'accession': record['covv_accession_id']
+            'accession': record['covv_accession_id'],
+            'gender': record['covv_gender'],
+            'age': record['covv_patient_age'],
+            'status': record['covv_patient_status']
         }
         fvecs[key].append(label)
 
