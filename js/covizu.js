@@ -77,14 +77,14 @@ req.done(function() {
   $("#div-number-genomes").text(`Number of genomes: ${dbstats.noseqs}`);
 });
 
+// colors from https://personal.sron.nl/~pault/#sec:qualitative
 var country_pal = {
   "Africa": "#EEDD88",
-  "Asia": "#BBCC33",
-  "China": "#EE8866",
+  "Asia": "#EE8866",
   "Europe": "#44BB99",
   "North America": "#99DDFF",
   "Oceania": "#FFAABB",
-  "South America": "#77AADD"
+  "South America": "#AAAA00"
 };
 
 // load time-scaled phylogeny from server

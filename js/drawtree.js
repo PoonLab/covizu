@@ -185,8 +185,8 @@ function map_clusters_to_tips(df, clusters) {
 
     // augment data frame with cluster data
     tips[root_idx].cluster_idx = cidx;
+    tips[root_idx].region1 = cluster.region1;
     tips[root_idx].region = cluster.region;
-    tips[root_idx].allregions = cluster.allregions;
     tips[root_idx].country = cluster.country;
     tips[root_idx].searchtext = cluster.searchtext;
     tips[root_idx].label1 = cluster["lineage"];
@@ -259,7 +259,7 @@ function draw_clusters(tips) {
 
     let ctooltipText = `<b>Mean diffs from root:</b> ${Math.round(100*d.mean_ndiffs)/100.}<br/>`;
     ctooltipText += `<b>Deviation from clock:</b> ${Math.round(100*d.residual)/100.}<br>`;
-    ctooltipText += region_to_string(d.allregions);
+    ctooltipText += region_to_string(d.region);
     ctooltipText += `<b>Number of variants:</b> ${d.varcount}<br>`;
     ctooltipText += `<b>Collection dates:</b><br>${formatDate(d.first_date)} / ${formatDate(d.last_date)}`;
 
@@ -331,7 +331,7 @@ function draw_clusters(tips) {
       $("#barplot").text(null);
 
       gentable(d);
-      draw_region_distribution(d.allregions);
+      draw_region_distribution(d.region);
       gen_details_table(beaddata[d.cluster_idx].points);  // update details table with all samples
 
       // FIXME: this is the same div used for making barplot SVG
@@ -397,7 +397,7 @@ function changeTreeColour() {
           let opt = $("#select-tree-colours").val();
           if (opt === "Region") {
             $("#div-region-legend").show();
-            return(country_pal[d.region]);
+            return(country_pal[d.region1]);
           }
           else if (opt === "No. samples") {
             $("div#svg-sample-legend").show();
@@ -574,8 +574,8 @@ function ramp(color, n = 256) {
 
 function generate_legends() {
   // region legend with swatches
-  let s = `<div style="display: flex; align-items: center; margin-left: 0px; padding-top: 6px; min-height: 33px; font: 10px sans-serif;">`;
-  s += `<div style="width: 100%; columns: 60px;">`;
+  let s = `<div style="display: flex; align-items: center; margin-left: 0px; padding-top: 6px; min-height: 33px; font: 11px sans-serif;">`;
+  s += `<div style="width: 100%; columns: 100px;">`;
   for (const [key, value] of Object.entries(country_pal)) {
     s += `<div class="legend-item">`;
     s += `<div class="legend-swatch" style="background:${value};"></div>`;

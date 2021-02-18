@@ -38,6 +38,7 @@ var visBaxis = d3.select("div#svg-clusteraxis")
 // regular expression to remove redundant sequence name components
 const pat = /^hCoV-19\/(.+\/.+)\/20[0-9]{2}$/gi;
 
+var region_map = {};  // map country to region
 
 /**
  * Returns unique elements in given array.
@@ -166,6 +167,15 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
     // remove underscores in country names
     //country = country.map(x => x.replace(/_/g," "));
 
+    // update country to region map
+    for (let i=0; i < country.length; i++) {
+      let this_country = country[i],
+          this_region = region[i];
+      if (region_map[this_country] === undefined) {
+        region_map[this_country] = this_region;
+      }
+    }
+
     vdata = {
       'accession': accn,
       'label': label,
@@ -175,7 +185,7 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
       'y2': y,
       'count': coldates.length,
       'country': tabulate(country),
-      'region': region,
+      'region': tabulate(region),
       'locale': locale,
       'numBeads': isodates.length,
       'parent': null,
@@ -202,7 +212,7 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
         'accessions': samples.map(x => x[1]),
         'labels': samples.map(x => x[0].replace(pat, "$1")),
         'region1': mode(region),  // most common region
-        'region': region,
+        'region': tabulate(region),
         'country': tabulate(country),
         'parent': null,
         'dist': 0
@@ -390,9 +400,15 @@ function parse_clusters(clusters) {
 
     // calculate consensus region for cluster
     // collect all region Arrays for all samples, all variants
-    regions = points.map(x => x.region).flat();
-    cluster['region'] = mode(regions);
-    cluster['allregions'] = tabulate(regions);
+    cluster['region'] = merge_tables(points.map(x => x.region));
+    let max_freq = 0, max_region = '';
+    for (let row of Object.entries(cluster['region'])) {
+      if (row[1] > max_freq) {
+        max_freq = row[1];
+        max_region = row[0];
+      }
+    }
+    cluster['region1'] = max_region;  // most common region
 
     // concatenate all sample labels within cluster for searching
     labels = points.map(x => x.labels).flat();
@@ -888,13 +904,13 @@ function gen_details_table(obj) {
  * @param {Object} obj:  JS Object with country attribute
  */
 function gentable(obj) {
-  var my_countries = Object.entries(obj.country),
+  var my_countries = Object.entries(obj.country),  // returns Array of key/value pairs
       row, region;
 
   // annotate with region (continent)
   for (const i in my_countries) {
     row = my_countries[i];
-    region = countries[row[0]];
+    region = region_map[row[0]];
     my_countries[i] = [region].concat(row);
   }
 
@@ -959,7 +975,8 @@ function gentable(obj) {
  * @param {{}} my_regions: associative list of region and case count pairs
  */
 function draw_region_distribution(my_regions) {
-  const regions = unique(Object.values(countries)).sort();
+  const regions = ['Africa', 'Asia', 'Europe', 'North America', 'Oceania',
+                   'South America'];
   var counts = [], count;
 
   regions.forEach(function(r) {
