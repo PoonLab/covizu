@@ -575,7 +575,7 @@ function ramp(color, n = 256) {
 function generate_legends() {
   // region legend with swatches
   let s = `<div style="display: flex; align-items: center; margin-left: 0px; padding-top: 6px; min-height: 33px; font: 11px sans-serif;">`;
-  s += `<div style="width: 100%; columns: 100px;">`;
+  s += `<div style="width: 90%; columns: 100px;">`;
   for (const [key, value] of Object.entries(country_pal)) {
     s += `<div class="legend-item">`;
     s += `<div class="legend-swatch" style="background:${value};"></div>`;
@@ -589,7 +589,7 @@ function generate_legends() {
   $("div#svg-sample-legend").html(legend({
     color: sample_pal,
     title: "Sample size (log10)",
-    width: 240
+    width: 200
   })).hide();
 
   // collection date legend

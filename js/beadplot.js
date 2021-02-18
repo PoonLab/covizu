@@ -602,7 +602,7 @@ function beadplot(cid) {
               tooltipText += `<b>Parent:</b> ${d.parent}<br/><b>Genomic distance:</b> ${Math.round(d.dist*100)/100}<br/>`;
             }
             if (!d.unsampled) {
-              tooltipText += region_to_string(tabulate(d.region));
+              tooltipText += region_to_string(d.region);
               tooltipText += `<b>Unique collection dates:</b> ${d.numBeads}<br/>`;
               tooltipText += `<b>Collection dates:</b><br>${formatDate(d.x1)} / ${formatDate(d.x2)}`;
             }
@@ -654,7 +654,7 @@ function beadplot(cid) {
         .on("click", function(d) {
           if (d.label !== null && d.country !== null) {
             gentable(d);
-            draw_region_distribution(tabulate(d.region));
+            draw_region_distribution(d.region);
             let var_samples = points.filter(x => x.y === d.y1);
             gen_details_table(var_samples);
           }
@@ -706,7 +706,7 @@ function beadplot(cid) {
           if (d.parent || d.dist) {
             tooltipText += `<b>Parent:</b> ${d.parent}<br/><b>Genomic distance:</b> ${Math.round(d.dist*100)/100}<br/>`;
           }
-          tooltipText += region_to_string(tabulate(d.region));
+          tooltipText += region_to_string(d.region);
           tooltipText += `<b>Collection date:</b> ${formatDate(d.x)}`;
 
           // Tooltip appears 10 pixels left of the cursor
@@ -741,7 +741,7 @@ function beadplot(cid) {
           clear_selection();
           draw_halo(d);
           gentable(d);
-          draw_region_distribution(tabulate(d.region));
+          draw_region_distribution(d.region);
           gen_details_table(d);
         });
 
