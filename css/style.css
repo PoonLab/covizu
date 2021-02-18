@@ -362,6 +362,9 @@ rect.SelectedCluster[txt_hover="yes"]{
   color: #ccc !important;
 }
 
+table.details {
+  width: 500px;
+}
 /*
 details ::-webkit-details-marker {
     color: gray;

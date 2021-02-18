@@ -420,9 +420,10 @@ var theaders = ["Region", "Country", "Count"];
 var country_tbody = country_table.append("tbody");
 
 // Populate sequence details table
-var seq_table = d3.select("#seq-table").append('table');
+var seq_table = d3.select("#seq-table").append('table')
+    .attr("class", "details");
 var thead = seq_table.append('thead');
-var seq_theaders = ["Accession", "Name", "Date"];
+var seq_theaders = ["Accession", "Name", "Date", "Locale", "Age", "Gender", "Status"];
 var seq_tbody = seq_table.append('tbody');
 
 // implement acknowledgements dialog

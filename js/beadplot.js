@@ -106,6 +106,16 @@ function tabulate(arr) {
 }
 
 
+function parse_age(age_str) {
+  if (age_str.includes("months")) {
+    // fractional age < 1
+    return age_str.replace(" months", "") / 12;
+  } else {
+    return Number(age_str)
+  }
+}
+
+
 /**
  * Parse nodes that belong to the same variant.
  * A variant is a collection of genomes that are indistinguishable with respect to
@@ -143,6 +153,10 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
       'count': 0,
       'country': null,
       'region': null,
+      'gender': null,
+      'age': null,
+      'locale': null,
+      'status': null,
       'numBeads': 0,
       'parent': null,
       'dist': 0,
@@ -151,7 +165,8 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
   }
   else {
     // parse samples within variant, i.e., "beads"
-    // each sample is an Array: [name, accession, location, coldate, gender, age, status]
+    // each sample is an Array:
+    // [0: name, 1: accession, 2: location, 3: coldate, 4: gender, 5: age, 6: status]
     var label = variant[0][0].replace(pat, "$1"),
         coldates = variant.map(x => x[3]),
         isodate, samples, regions;
@@ -161,7 +176,6 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
     var geo = variant.map(x => x[2].split(' / ')),
         region = geo.map(x => x[0]),
         country = geo.map(x => x[1]),
-        locale = geo.map(x => x[2]),
         isodates = unique(coldates);
 
     // remove underscores in country names
@@ -186,7 +200,10 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
       'count': coldates.length,
       'country': tabulate(country),
       'region': tabulate(region),
-      'locale': locale,
+      'gender': variant.map(x => x[4]),
+      'age': variant.map(x => x[5]),
+      'locale': variant.map(x => x[2]),
+      'status': variant.map(x => x[6]),
       'numBeads': isodates.length,
       'parent': null,
       'dist': 0,
@@ -196,12 +213,11 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
     for (let i=0; i<isodates.length; i++) {
       isodate = isodates[i];
 
-      // FIXME: this is not very efficient
+      // FIXME: this is not very efficient - already parsed at variant level
       samples = variant.filter(x => x[3] === isodate);
       geo = samples.map(x => x[2].split(' / '));
       region = geo.map(x => x[0]);
       country = geo.map(x => x[1]);
-      locale = geo.map(x => x[2]);
 
       pdata.push({
         cidx,
@@ -214,6 +230,10 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
         'region1': mode(region),  // most common region
         'region': tabulate(region),
         'country': tabulate(country),
+        'gender': samples.map(x => x[4]),
+        'age': samples.map(x => x[5]),
+        'locale': samples.map(x => x[2]),
+        'status': samples.map(x => x[6]),
         'parent': null,
         'dist': 0
       })
@@ -318,7 +338,9 @@ function parse_edgelist(cluster, variants, points) {
 
 
 /**
- *
+ * Merge the counts for two or more tables.
+ * @param {Array} tables: Objects with integer values to be combined by key.
+ * @returns {Object}
  */
 function merge_tables(tables) {
   var total = {};
@@ -787,7 +809,7 @@ function region_to_string(my_regions) {
  * @param obj: JS object or an array of JS Objects
  */
 function gen_details_table(obj) {
-  var details = [];
+  let details = [], sample_details;
 
   // Check for a list of samples
   if (Array.isArray(obj)) {
@@ -797,7 +819,15 @@ function gen_details_table(obj) {
 
       // "zip" the sequence details of each sample
       for (let i = 0; i < obj[j].accessions.length; i++) {
-        let sample_details = [obj[j].accessions[i], obj[j].labels[i], formatDate(obj[j].x)];
+        sample_details = [
+          obj[j].accessions[i],
+          obj[j].labels[i],
+          formatDate(obj[j].x),
+          obj[j].locale[i],
+          obj[j].age[i],
+          obj[j].gender[i],
+          obj[j].status[i]
+        ];
         details.push(sample_details);
       }
     }
@@ -806,7 +836,9 @@ function gen_details_table(obj) {
   else {
     // "zip" the sequence details of each sample
     for (let i = 0; i < obj.accessions.length; i++) {
-      let sample_details = [obj.accessions[i], obj.labels[i], formatDate(obj.x)];
+      sample_details = [
+          obj.accessions[i], obj.labels[i], formatDate(obj.x), obj.locale[i], obj.age[i], obj.gender[i], obj.status[i]
+      ];
       details.push(sample_details);
     }
   }
@@ -848,10 +880,14 @@ function gen_details_table(obj) {
       .data(details)
       .enter()
       .append('tr')
-      .on("mouseover", function () {
+      .on("mouseover", function (x) {
+        let circle = d3.select("circle#"+x[0]).attr("stroke-width", 2);
+        circle.attr("r", 4*Math.sqrt(circle.datum().count)+3);
         d3.select(this).style("background-color", "#e2e2e2");  // Highlight on mouseover
       })
-      .on("mouseout", function () {            // Remove highlighting on mouseout
+      .on("mouseout", function (x) {            // Remove highlighting on mouseout
+        let circle = d3.select("circle#"+x[0]).attr("stroke-width", 1);
+        circle.attr("r", 4*Math.sqrt(circle.datum().count));
         d3.select(this).style("background-color", null);
       });
 
