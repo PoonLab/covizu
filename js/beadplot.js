@@ -826,7 +826,8 @@ function gen_details_table(obj) {
           obj[j].locale[i],
           obj[j].age[i],
           obj[j].gender[i],
-          obj[j].status[i]
+          obj[j].status[i],
+          obj[j].accessions[0]
         ];
         details.push(sample_details);
       }
@@ -837,7 +838,8 @@ function gen_details_table(obj) {
     // "zip" the sequence details of each sample
     for (let i = 0; i < obj.accessions.length; i++) {
       sample_details = [
-          obj.accessions[i], obj.labels[i], formatDate(obj.x), obj.locale[i], obj.age[i], obj.gender[i], obj.status[i]
+        obj.accessions[i], obj.labels[i], formatDate(obj.x), obj.locale[i],
+        obj.age[i], obj.gender[i], obj.status[i], obj.accessions[0]
       ];
       details.push(sample_details);
     }
@@ -881,19 +883,19 @@ function gen_details_table(obj) {
       .enter()
       .append('tr')
       .on("mouseover", function (x) {
-        let circle = d3.select("circle#"+x[0]).attr("stroke-width", 2);
+        let circle = d3.select("circle#"+x[7]).attr("stroke-width", 2);
         circle.attr("r", 4*Math.sqrt(circle.datum().count)+3);
         d3.select(this).style("background-color", "#e2e2e2");  // Highlight on mouseover
       })
       .on("mouseout", function (x) {            // Remove highlighting on mouseout
-        let circle = d3.select("circle#"+x[0]).attr("stroke-width", 1);
+        let circle = d3.select("circle#"+x[7]).attr("stroke-width", 1);
         circle.attr("r", 4*Math.sqrt(circle.datum().count));
         d3.select(this).style("background-color", null);
       });
 
   // Create a cell for every row in the column
   t_rows.selectAll('td')
-      .data(function (r) { return r; })
+      .data(function (r) { return r.slice(0,7); })
       .enter()
       .append('td')
       .append('span')
