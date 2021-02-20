@@ -271,22 +271,25 @@ function lineage_search(text_query, start_date, end_date) {
       map[bead.accessions[0]] = i; // value for the search indexing
       return map;
     }, {});
-
+    var bead_id_to_accession = Object.keys(bead_hits);
     var hit_id = [map_cidx_to_id["cidx-"+cidx]];
     var cluster_hits = [], cluster_hits_last_id = [];
-    var bead_data = beaddata[cidx].points;
-    cluster_hits["cidx-"+cidx] = bead_data[0].accessions[0];
-    cluster_hits_last_id["cidx-"+cidx] = bead_data[bead_data.length - 1].accessions[0];
-    var working_bead = d3.selectAll('circle[id="'+cluster_hits["cidx-"+cidx]+'"]').nodes()[0];
-    working_bead.scrollIntoView({block: "center"});
-    update_table_individual_bead(d3.select(working_bead).datum());
+    cluster_hits["cidx-"+cidx] = search_hits[0].accessions[0];
+    cluster_hits_last_id["cidx-"+cidx] = search_hits[search_hits.length - 1].accessions[0];
+
+    points_ui = d3.selectAll("#svg-cluster > svg > g > circle")
+    .filter(function(d) {
+      return bead_id_to_accession.includes(d.accessions[0])
+    });
+
+    select_beads(points_ui);
 
     const stats = search_results.update({
       beads: bead_hits,
       clusters_first_bead: cluster_hits,
       clusters_last_bead: cluster_hits_last_id,
       current_point: 0,
-      total_points: bead_data.length,
+      total_points: search_hits.length,
       hit_ids: hit_id,
      });
     
@@ -380,8 +383,20 @@ function wrap_search() {
     return;
   }
 
-  var start_date = (start_date_text === "") ? new Date("2020-01-01") : new Date(start_date_text);
-  var end_date = (end_date_text === "") ? new Date() : new Date(end_date_text);
+  var start_date, end_date;
+  if (start_date_text === "") {
+    start_date = new Date("2020-01-01");
+    $('#start-date').val("2020-01-01");
+  }
+  else
+    start_date = new Date(start_date_text);
+  
+  if (end_date_text === "") {
+    end_date = new Date();
+    $('#end-date').val(formatDate(end_date));
+  }
+  else
+    end_date = new Date(end_date_text);
 
   // Exception handing
   if (start_date > end_date) {
@@ -676,12 +691,12 @@ function index_lineage(clusters) {
  * @param {object} accn_to_cid: Accession numbers - cluster ids mapping
  * @returns {function}
  */
-function get_autocomplete_source_fn(accn_to_cid) {
+function get_autocomplete_source_fn(accn_to_cid, lineage_to_cid) {
 	// This is a hack to match anything that could be an acc number prefix
-	const prefix = /^(E|I|EP|IS|EPI_I|EPI_IS|EPI_ISL_?|EPI_?|ISL_?)$/i;
+	const prefix = /^(E|I|EP|IS|EPI_I|EPI_IS|EPI_ISL_?|EPI_?|ISL_?|[A-Z]\.[1-9]+)$/i;
 	const MIN_RESULTS = 10;
 	const normalize = (str) => str.replace(/[^a-z0-9]/gi, '').toLowerCase();
-	const data = Object.keys(accn_to_cid).map(accn => [
+	const data = Object.keys(accn_to_cid).sort().concat(Object.keys(lineage_to_cid).sort()).map(accn => [
 		normalize(accn), accn
 	]);
 

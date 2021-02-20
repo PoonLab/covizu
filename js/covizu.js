@@ -133,16 +133,17 @@ req.done(function() {
 
   accn_to_cid = index_accessions(clusters);
 
+  // Maps lineage to a cidx
+  lineage_to_cid = index_lineage(clusters);
+
   $('#search-input').autocomplete({
-    source: get_autocomplete_source_fn(accn_to_cid),
+    source: get_autocomplete_source_fn(accn_to_cid, lineage_to_cid),
     select: function( event, ui ) {
         const accn = ui.item.value;
         //search(accn);
     }
   });
 
-  // Maps lineage to a cidx
-  lineage_to_cid = index_lineage(clusters);
 
   // Maps cidx to an id
   var key;
@@ -233,7 +234,9 @@ req.done(function() {
       $('#previous_button').removeAttr("disabled");
       $('#search_stats').removeClass("disabled_stats");
     } else {
-      disable_buttons();
+      $('#next_button').attr("disabled", true);
+      $('#previous_button').attr("disabled", true);
+      $('#search_stats').addClass("disabled_stats");
     }
   }
 
@@ -250,10 +253,15 @@ req.done(function() {
       $('#search_stats').text(`0 of 0 points`);
       disable_buttons();
     }
-  })
+  });
 
-  $('#search-input').on('keydown', function(e) {
+  $('#search-input, #start-date, #end-date').on('keydown', function(e) {
     $('#error_message').text(``);
+    if (search_results.get().total_points > 0) {
+      clear_selection();
+      $('#search_stats').text(`0 of 0 points`);
+      disable_buttons();
+    }
     if (e.keyCode == 13 && ($('#search-input').val() != "" || $('#start-date').val() != "" || $('#end-date').val() != "")) {
       // type <enter> to run search
       // run_search();
@@ -271,8 +279,8 @@ req.done(function() {
     $('#error_message').text(``);
   });
 
-  $('#start-date').on('change keyup search', function() {
-    if ($('#start-date').val() != "") {
+  $('#start-date').on('change keyup', function() {
+    if ($('#start-date').val() != "" || $('#search-input').val() != "" || $('#end-date').val() != "") {
       $('#search-button').removeAttr("disabled");
       $('#clear_button').removeAttr("disabled");
     }
@@ -283,8 +291,8 @@ req.done(function() {
     }
   });
 
-  $('#end-date').on('change keyup search', function() {
-    if ($('#end-date').val() != "") {
+  $('#end-date').on('change keyup', function() {
+    if ($('#end-date').val() != "" || $('#search-input').val() != "" || $('#start-date').val() != "") {
       $('#search-button').removeAttr("disabled");
       $('#clear_button').removeAttr("disabled");
     }
@@ -353,8 +361,10 @@ req.done(function() {
   $('#clear_button').click(function(){
     clear_selection();
     // search();
+    $('#search-input').val('');
     $('#end-date').val('');
     $('#start-date').val('');
+    $('#error_message').text(``);
     disable_buttons();
   });
 
