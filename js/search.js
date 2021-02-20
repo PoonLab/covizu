@@ -47,6 +47,61 @@ function update_search_stats(stats) {
   $('#search_stats').text(`${stats.current_point+1} of ${stats.total_points} points`);
 }
 
+/************************************ Main Search Functions *************************************/
+
+/**
+ * This function wraps the main search function. 
+ * It reads the search arguments from the ui and ensures that the arguments required by main_search are corectly formatted.
+ * It also uses the results produced by the main_search function to populate the ui with the search results
+ * When the user changes the search query this should be rerun.
+ */
+function wrap_search() {
+  
+  var start_date_text = $('#start-date').val();
+  var end_date_text = $('#end-date').val();
+  var query = $('#search-input').val();
+
+  // Checks to see if the date is in the correct format
+  if (start_date_text !== "" && !isDate(start_date_text)) {
+    $('#error_message').text(`Invalid Start Date (YYYY-MM-DD).`);
+    return;
+  }
+
+  if (end_date_text !== "" && !isDate(end_date_text)) {
+    $('#error_message').text(`Invalid End Date (YYYY-MM-DD).`);
+    return;
+  }
+
+  var start_date, end_date;
+  if (start_date_text === "") {
+    start_date = new Date("2020-01-01");
+    $('#start-date').val("2020-01-01");
+  }
+  else
+    start_date = new Date(start_date_text);
+  
+  if (end_date_text === "") {
+    end_date = new Date();
+    $('#end-date').val(formatDate(end_date));
+  }
+  else
+    end_date = new Date(end_date_text);
+
+  // Exception handing
+  if (start_date > end_date) {
+    $('#error_message').text(`Start Date must be before the End Date.`);
+    return;
+  }
+
+  if (isAccn(query)) 
+    accession_search(query);
+  else if (isLineage(query))
+    lineage_search(query, start_date, end_date);
+  else 
+    main_search(beaddata, query, start_date, end_date);
+}
+
+
 /**
  * This is the main search search function, 
  * it identifies which cluster and beads contain a hit. 
@@ -123,13 +178,17 @@ function main_search(all_bead_data, text_query, start_date, end_date) {
 
   var cluster = select_cluster(selected_cidx);
 
+  // Reduces the opacity of all clusters
   d3.select("#svg-timetree")
     .selectAll("rect:not(.clicked):not(.clickedH)")
     .attr("class","not_SelectedCluster");
 
+  // Increases the opacity for only the clusters with hits
   for (const node of selections.nodes()){
     d3.select(node).attr("class", "SelectedCluster");
   }
+
+  // The current cluster is also given the "clicked" class
   cluster.attr("class", "SelectedCluster clicked");
   beadplot(cluster.datum().cluster_idx);
 
@@ -139,11 +198,11 @@ function main_search(all_bead_data, text_query, start_date, end_date) {
       return bead_id_to_accession.includes(d.accessions[0])
     });
 
+  // Selects all the beads with hits in the cluster and generates the table for the first hit
   select_beads(points_ui);
   var current_bead_id = bead_hits[cluster_hits[selected_cidx]];
   var total_points = Object.keys(bead_hits).length;
-
- // Update the search resutls array with the hits
+ 
  const stats = search_results.update({
   beads: bead_hits,
   clusters_first_bead: cluster_hits,
@@ -157,78 +216,6 @@ function main_search(all_bead_data, text_query, start_date, end_date) {
 
 }
 
-/**
- * This function searches for the closest cluster with a search hit (Binary search)
- * @param non_hit_cluster_index: cidx value
- * @param hit_ids: Sorted list of ids (not cidx) of clusters with a hit for the search query
- */
-function closest_match(non_hit_cluster_index, hit_ids) {
-  const target_index = map_cidx_to_id[non_hit_cluster_index];
-
-  if (target_index <= hit_ids[0])
-    return hit_ids[0];
-  
-  if (target_index >= hit_ids[hit_ids.length - 1])
-    return hit_ids[hit_ids.length - 1];
-
-  var i = 0, j = hit_ids.length, mid = 0;
-  while (i < j) {
-    mid = Math.floor((i + j)/2);
-    if (hit_ids[mid] == target_index)
-      return hit_ids[mid];
-
-    if (target_index < hit_ids[mid]) {
-      if (mid > 0 && target_index > hit_ids[mid - 1])
-        return getClosest(hit_ids[mid-1], hit_ids[mid], target_index);
-      j = mid;
-    }
-    else {
-      if (mid < hit_ids.length - 1 && target_index < hit_ids[mid+1])
-        return getClosest(hit_ids[mid], hit_ids[mid+1], target_index)
-      i = mid + 1;
-    }
-  }
-}
-
-function getClosest(key1, key2, target) {
-  if (target - key1 >= key2 - target)
-    return key2;
-  else
-    return key1;
-}
-
-/**
- * This function is similar to the closest_match function but returns the greater id value (previous cluster)
- * @param {String} non_hit_cluster_index 
- * @param {Array} hit_ids 
- */
-function previous_closest_match(non_hit_cluster_index, hit_ids) {
-  const target_index = map_cidx_to_id[non_hit_cluster_index];
-
-  if (target_index <= hit_ids[0])
-    return hit_ids[0];
-  
-  if (target_index >= hit_ids[hit_ids.length - 1])
-    return hit_ids[hit_ids.length - 1];
-
-  var i = 0, j = hit_ids.length, mid = 0;
-  while (i < j) {
-    mid = Math.floor((i + j)/2);
-    if (hit_ids[mid] == target_index)
-      return hit_ids[mid];
-
-    if (target_index < hit_ids[mid]) {
-      if (mid > 0 && target_index > hit_ids[mid - 1])
-        return hit_ids[mid];
-      j = mid;
-    }
-    else {
-      if (mid < hit_ids.length - 1 && target_index < hit_ids[mid+1])
-        return hit_ids[mid+1];
-      i = mid + 1;
-    }
-  }
-}
 
 /**
  * This function handles search by lineage
@@ -245,11 +232,13 @@ function lineage_search(text_query, start_date, end_date) {
 
   var cluster = select_cluster("cidx-"+cidx);
 
+  // Searches for the beads within the cluster that fall within the start and end date
   search_hits = beaddata[cidx].points.filter(function(bead) {
 	  temp = (bead.x >= start_date && bead.x <= end_date);
 	  return temp;
   });
 
+  // Reduces the opacity of all clusters
   d3.select("#svg-timetree")
     .selectAll("rect:not(.clicked):not(.clickedH)")
     .attr("class","not_SelectedCluster");
@@ -258,7 +247,7 @@ function lineage_search(text_query, start_date, end_date) {
   beadplot(cluster.datum().cluster_idx);
 
   if (search_hits.length === 0) {
-    // Generates table for all points
+    // Generates table for all points if there are no hits
     var cluster_regions = cluster.datum();
     gentable(cluster_regions);
     draw_region_distribution(cluster_regions.allregions);
@@ -295,14 +284,8 @@ function lineage_search(text_query, start_date, end_date) {
     
      update_search_stats(stats);
   }
-  
-  // const stats = search_results.update({
-  //   current_point: 0,
-  //   total_points: 1,
-  //  });
-  
-  // update_search_stats(stats); 
 }
+
 
 /**
  * This function handles search by accession
@@ -343,14 +326,7 @@ function accession_search(text_query) {
    });
   
   update_search_stats(stats); 
-
-  d3.selectAll("circle:not(.selectionH)")
-    .attr("class", "not_SelectedBead");
-
-  d3.select("div#svg-cluster")
-    .selectAll("line")
-    .attr("stroke-opacity", 0.3);
-
+  deselect_all_beads();
   var bead = d3.selectAll("circle").filter(function(d) {
     return d.accessions.includes(text_query.toUpperCase());
   });
@@ -361,57 +337,8 @@ function accession_search(text_query) {
   update_table_individual_bead(bead.datum());
 }
 
-/**
- * This function wraps the main search function. 
- * It reads the search arguments from the ui and ensures that the arguments required by main_search are corectly formatted.
- * It also uses the results produced by the main_search function to populate the ui with the search results
- * When the user changes the search query this should be rerun.
- */
-function wrap_search() {
-  
-  var start_date_text = $('#start-date').val();
-  var end_date_text = $('#end-date').val();
-  var query = $('#search-input').val();
 
-  if (start_date_text !== "" && !isDate(start_date_text)) {
-    $('#error_message').text(`Invalid Start Date (YYYY-MM-DD).`);
-    return;
-  }
-
-  if (end_date_text !== "" && !isDate(end_date_text)) {
-    $('#error_message').text(`Invalid End Date (YYYY-MM-DD).`);
-    return;
-  }
-
-  var start_date, end_date;
-  if (start_date_text === "") {
-    start_date = new Date("2020-01-01");
-    $('#start-date').val("2020-01-01");
-  }
-  else
-    start_date = new Date(start_date_text);
-  
-  if (end_date_text === "") {
-    end_date = new Date();
-    $('#end-date').val(formatDate(end_date));
-  }
-  else
-    end_date = new Date(end_date_text);
-
-  // Exception handing
-  if (start_date > end_date) {
-    $('#error_message').text(`Start Date must be before the End Date.`);
-    return;
-  }
-
-  if (isAccn(query)) 
-    accession_search(query);
-  else if (isLineage(query))
-    lineage_search(query, start_date, end_date);
-  else 
-    main_search(beaddata, query, start_date, end_date);
-}
-
+/************************************ Helper Functions *************************************/
 
 function select_cluster(cidx) {
   d3.selectAll("rect.clicked").attr('class', "default");
@@ -433,6 +360,12 @@ function update_table_individual_bead(bead) {
   gen_details_table(bead);
 }
 
+
+/**
+ * This function selects the next or previous bead in search_results
+ * @param  bead_id_to_accession: Maps bead id to an accession 
+ * @param  curr_bead: The next or previous bead id that needs to be selected
+ */
 function select_next_prev_bead(bead_id_to_accession, curr_bead) {
   d3.selectAll('rect[class="clicked"]').attr('class', "not_SelectedCluster");
   d3.selectAll('rect[class="not_SelectedCluster clicked"]').attr('class', "not_SelectedCluster");
@@ -452,13 +385,7 @@ function select_next_prev_bead(bead_id_to_accession, curr_bead) {
     return bead_id_to_accession.includes(d.accessions[0])
   });
   selected = points_ui.nodes();
-
-  d3.selectAll("circle:not(.selectionH)")
-      .attr("class", "not_SelectedBead");
-
-  d3.select("div#svg-cluster")
-      .selectAll("line")
-      .attr("stroke-opacity", 0.3);
+  deselect_all_beads();
   for (const node of selected) {
     selected_obj = d3.select(node);
     create_selection(selected_obj);
@@ -509,6 +436,20 @@ function select_clusters(rects) {
   }
 }
 
+// Reduces opacity level of all beads in the cluster
+function deselect_all_beads() {
+  d3.selectAll("circle:not(.selectionH)")
+      .attr("class", "not_SelectedBead");
+  d3.select("div#svg-cluster")
+      .selectAll("line")
+      .attr("stroke-opacity", 0.3);
+}
+
+function select_working_bead(bead_id_to_accession, curr_bead) {
+  var working_bead = d3.selectAll('circle[id="'+bead_id_to_accession[curr_bead]+'"]').nodes()[0];
+  working_bead.scrollIntoView({block: "center"});
+  update_table_individual_bead(d3.select(working_bead).datum());
+}
 
 /**
  * Highlight beads in current beadplot.
@@ -518,13 +459,7 @@ function select_beads(points_ui) {
   //
   selected = points_ui.nodes();
 
-  //
-  d3.selectAll("circle:not(.selectionH)")
-      .attr("class", "not_SelectedBead");
-  //
-  d3.select("div#svg-cluster")
-      .selectAll("line")
-      .attr("stroke-opacity", 0.3);
+  deselect_all_beads();
   for (const node of selected) {
     selected_obj = d3.select(node);
     create_selection(selected_obj);
@@ -648,6 +583,85 @@ function select_bead_by_accession(accn, reset_clusters_tree = true) {
   }
 }
 
+function find_beads_points(beadsdata){
+  return beadsdata.map(bead => bead.points).flat()
+}
+
+/**
+ * This function searches for the closest cluster with a search hit (Binary search)
+ * @param non_hit_cluster_index: cidx value
+ * @param hit_ids: Sorted list of ids (not cidx) of clusters with a hit for the search query
+ */
+function closest_match(non_hit_cluster_index, hit_ids) {
+  const target_index = map_cidx_to_id[non_hit_cluster_index];
+
+  if (target_index <= hit_ids[0])
+    return hit_ids[0];
+  
+  if (target_index >= hit_ids[hit_ids.length - 1])
+    return hit_ids[hit_ids.length - 1];
+
+  var i = 0, j = hit_ids.length, mid = 0;
+  while (i < j) {
+    mid = Math.floor((i + j)/2);
+    if (hit_ids[mid] == target_index)
+      return hit_ids[mid];
+
+    if (target_index < hit_ids[mid]) {
+      if (mid > 0 && target_index > hit_ids[mid - 1])
+        return getClosest(hit_ids[mid-1], hit_ids[mid], target_index);
+      j = mid;
+    }
+    else {
+      if (mid < hit_ids.length - 1 && target_index < hit_ids[mid+1])
+        return getClosest(hit_ids[mid], hit_ids[mid+1], target_index)
+      i = mid + 1;
+    }
+  }
+}
+
+function getClosest(key1, key2, target) {
+  if (target - key1 >= key2 - target)
+    return key2;
+  else
+    return key1;
+}
+
+
+/**
+ * This function is similar to the closest_match function but returns the greater id value (previous cluster)
+ * @param {String} non_hit_cluster_index 
+ * @param {Array} hit_ids 
+ */
+function previous_closest_match(non_hit_cluster_index, hit_ids) {
+  const target_index = map_cidx_to_id[non_hit_cluster_index];
+
+  if (target_index <= hit_ids[0])
+    return hit_ids[0];
+  
+  if (target_index >= hit_ids[hit_ids.length - 1])
+    return hit_ids[hit_ids.length - 1];
+
+  var i = 0, j = hit_ids.length, mid = 0;
+  while (i < j) {
+    mid = Math.floor((i + j)/2);
+    if (hit_ids[mid] == target_index)
+      return hit_ids[mid];
+
+    if (target_index < hit_ids[mid]) {
+      if (mid > 0 && target_index > hit_ids[mid - 1])
+        return hit_ids[mid];
+      j = mid;
+    }
+    else {
+      if (mid < hit_ids.length - 1 && target_index < hit_ids[mid+1])
+        return hit_ids[mid+1];
+      i = mid + 1;
+    }
+  }
+}
+
+/************************************ Autocomplete *************************************/
 
 /**
  * Populate Object with accession-cluster ID as key-value pairs.
@@ -715,6 +729,8 @@ function get_autocomplete_source_fn(accn_to_cid, lineage_to_cid) {
 }
 
 
+/****************************************************************************************/
+
 // FIXME: no argument needed here
 function search() {
 	var query = $('#search-input').val();
@@ -732,11 +748,6 @@ function search() {
     //bead_indexer: 0,
   //});
   //update_search_stats(stats);
-}
-
-
-function find_beads_points(beadsdata){
-  return beadsdata.map(bead => bead.points).flat()
 }
 
 

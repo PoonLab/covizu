@@ -331,12 +331,7 @@ function draw_clusters(tips) {
           else
             bead_id = (search_results.get().clusters_last_bead)[id_to_cidx[closest_cluster]];
 
-          // Reduces opacity level of all beads in the cluster
-          d3.selectAll("circle:not(.selectionH)")
-            .attr("class", "not_SelectedBead");
-          d3.select("div#svg-cluster")
-            .selectAll("line")
-            .attr("stroke-opacity", 0.3);
+          deselect_all_beads();
 
           var stats = search_results.update({
             current_point: (search_results.get().beads)[bead_id]
@@ -373,13 +368,7 @@ function draw_clusters(tips) {
         });
 
         selected = points_ui.nodes();
-        //
-        d3.selectAll("circle:not(.selectionH)")
-            .attr("class", "not_SelectedBead");
-        //
-        d3.select("div#svg-cluster")
-            .selectAll("line")
-            .attr("stroke-opacity", 0.3);
+        deselect_all_beads();
         for (const node of selected) {
           selected_obj = d3.select(node);
           create_selection(selected_obj);
