@@ -318,7 +318,17 @@ function draw_clusters(tips) {
       }
 
 
-      if (this.className.baseVal !== "SelectedCluster"){
+      if (isLineage($('#search-input').val())) {
+        if (this.className.baseVal !== "SelectedCluster"){
+          deselect_all_beads();
+          d3.select(this).attr("class", "not_SelectedCluster clicked");
+        }
+
+        gentable(d);
+        draw_region_distribution(d.allregions);
+        gen_details_table(beaddata[d.cluster_idx].points);  // update details table with all samples
+      }
+      else if (this.className.baseVal !== "SelectedCluster"){
         if ($('#search-input').val() != "" || $('#start-date').val() != "" || $('#end-date').val() != "") {
           var hit_ids = search_results.get().hit_ids;
           var closest_cluster = previous_closest_match('cidx-'+d.cluster_idx, hit_ids);
