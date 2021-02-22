@@ -737,6 +737,10 @@ function beadplot(cid) {
           gentable(d);
           draw_region_distribution(tabulate(d.region));
           gen_details_table(d);
+          $('#search-input').val('');
+          $('#end-date').val('');
+          $('#start-date').val('');
+          $('#error_message').text(``);
 
           // Disable buttons
           $('#search-button').attr("disabled", true);
