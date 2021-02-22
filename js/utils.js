@@ -16,3 +16,30 @@ function isAccn(string) {
 function formatDate(date) {
   return d3.utcFormat("%Y-%m-%d")(date);
 }
+
+/**
+/* Returns sid param from url
+/
+*/
+var getUrlParameter = function getUrlParameter(sParam) {
+    var sPageURL = window.location.search.substring(1),
+        sURLVariables = sPageURL.split('&'),
+        sParameterName,
+        i;
+
+    for (i = 0; i < sURLVariables.length; i++) {
+        sParameterName = sURLVariables[i].split('=');
+
+        if (sParameterName[0] === sParam) {
+            return typeof sParameterName[1] === undefined ? true : decodeURIComponent(sParameterName[1]);
+        }
+    }
+    return false;
+};
+
+
+/**
+/* Retruns encoded URI string from JSON object
+/*
+*/
+function jsonToURI(json){ return encodeURIComponent(JSON.stringify(json)); }
