@@ -4,8 +4,30 @@ $( function() {
 
 $(document).tooltip({show: null});
 
+/*********************** Session ID check ***********************/
+var sid = getUrlParameter('sid') // Load vars from url
+
+payload = jsonToURI({"cmd":"state/session/validate",
+ "api": {"version":1},
+ "client_id":"cid-e9418c5b4b6e",
+ "sid": sid})
+
+$.post('https://gpsapi.epicov.org/epi3/gps_api'+ payload, function(data, status){
+  alert("Data: " + data + "\nStatus: " + status);
+  console.log(data)
+}); 
+
+
+//Not logged in 
+var r = confirm('Unable to verify session credentials. Please access app through platform.gisaid.org. Press "OK" to redirect to GISAID homepage.')
+if (r == true){
+  window.location.href = 'https://platform.gisaid.org'
+}
+throw new Error('Forbidden')
+  
 
 /*********************** DIALOGS ***********************/
+
 
 $( "#splash" ).dialog({
   autoOpen: true,
