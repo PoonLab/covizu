@@ -442,3 +442,11 @@ function save_beadplot() {
       {type: "text/plain;charset=utf-8"});
   saveAs(blob, clusters[cindex].lineage + ".nwk");
 }
+
+$('#save_svg').click(function(){
+  var config = {
+    filename: 'customFileName',
+  }
+  d3_save_svg.save(d3.select('#svg-cluster>svg').node(), config);
+
+});
