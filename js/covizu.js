@@ -102,7 +102,8 @@ $.getJSON("data/countries.json", function(data) {
 
 
 var clusters, beaddata, tips,
-    accn_to_cid, cindex;
+    accn_to_cid, cindex, lineage_to_cid;
+var map_cidx_to_id = [], id_to_cidx = [];
 
 // load cluster data from server
 req = $.getJSON("data/clusters.json", function(data) {
@@ -132,74 +133,32 @@ req.done(function() {
 
   accn_to_cid = index_accessions(clusters);
 
+  // Maps lineage to a cidx
+  lineage_to_cid = index_lineage(clusters);
+
   $('#search-input').autocomplete({
-    source: get_autocomplete_source_fn(accn_to_cid),
+    source: get_autocomplete_source_fn(accn_to_cid, lineage_to_cid),
     select: function( event, ui ) {
         const accn = ui.item.value;
         //search(accn);
     }
   });
 
-  /***********************  SEARCH INTERFACE ***********************/
-  function run_search() {
 
-      var query = $('#search-input').val();
-
-      if (query !== "") {
-        // revert selections
-        d3.selectAll("rect.clicked").attr('class', "default");
-        d3.selectAll("rect.clickedH").remove();
-      }
-
-      // Create new search stats
-      const points = find_beads_points(beaddata)
-              .filter(point => point.labels.some(label => label.includes(query)));
-
-      // Map cluster index to id
-      var map_to_id = [], key;
-      var rect = d3.selectAll('#svg-timetree > svg > rect')
-              .nodes()
-              .sort((x, y) => d3.ascending(
-                      parseInt(x.id.substring(3)),
-                      parseInt(y.id.substring(3))
-              ));
-      for (var i = rect.length - 1; i >= 0; i--) {
-        key = rect[i].id;
-        map_to_id[key] = d3.select(rect[i]).attr("cidx");
-      }
-
-      // Count the number of hits in each cluster
-      var count_hits_per_cluster = {};
-      for (var i = 0; i < points.length; i++) {
-        key = 'cidx-' + points[i].cidx;
-        if (count_hits_per_cluster[key] == null) {
-          count_hits_per_cluster[key] = 1
-          continue
-        }
-        count_hits_per_cluster[key]++;
-      }
-
-      // First index of each cluster
-      var start_idx = [], start_index = 0;
-      for (const [key, value] of Object.entries(map_to_id)) {
-        start_idx[key] = start_index;
-        if (count_hits_per_cluster[value] != null) {
-          start_index = start_index +  count_hits_per_cluster[value];
-        }
-      }
-
-      const stats = search_stats.update({
-        query,
-        current_point: 0,
-        total_points: points.length,
-        points: points,
-        bead_indexer: 0,
-        start_idx: start_idx,
-      });
-      update_search_stats(stats);
-      search();
-      enable_buttons();
+  // Maps cidx to an id
+  var key;
+  var rect = d3.selectAll('#svg-timetree > svg > rect:not(.clickedH)').nodes();
+  for (var i = 0; i < rect.length; i++) {
+	  key = d3.select(rect[i]).attr("cidx");
+	  map_cidx_to_id[key] = parseInt(d3.select(rect[i]).attr("id").substring(3));
   }
+
+  // Maps id to a cidx
+  const reverseMapping = o => Object.keys(o).reduce((r, k) => Object.assign(r, { [o[k]]: (r[o[k]] || []).concat(k) }), {})
+  id_to_cidx = reverseMapping(map_cidx_to_id);
+
+
+  /***********************  SEARCH INTERFACE ***********************/
 
   // Enable and Disable "Search", "Clear" "Next" and "Previous" buttons when needed
   function disable_buttons() {
@@ -211,20 +170,70 @@ req.done(function() {
   }
 
   function enable_buttons() {
-    if (search_stats.get().total_points > 0) {
+    if (search_results.get().total_points > 0) {
       $('#next_button').removeAttr("disabled");
       $('#previous_button').removeAttr("disabled");
       $('#search_stats').removeClass("disabled_stats");
     } else {
-      disable_buttons();
+      $('#next_button').attr("disabled", true);
+      $('#previous_button').attr("disabled", true);
+      $('#search_stats').addClass("disabled_stats");
     }
   }
 
   disable_buttons();
 
   // Enables "search" and "clear" buttons if the input fields are not empty
-  $('#search-input').on('change keyup', function() {
-    if ($('#search-input').val() != "") {
+  $('#search-input').on('change keyup search', function() {
+    if ($('#search-input').val() != "" || $('#start-date').val() != "" || $('#end-date').val() != "") {
+      $('#search-button').removeAttr("disabled");
+      $('#clear_button').removeAttr("disabled");
+    }
+    else {
+      clear_selection();
+      $('#search_stats').text(`0 of 0 points`);
+      disable_buttons();
+    }
+  });
+
+  $('#search-input, #start-date, #end-date').on('keydown', function(e) {
+    $('#error_message').text(``);
+    if (search_results.get().total_points > 0) {
+      clear_selection();
+      $('#search_stats').text(`0 of 0 points`);
+      disable_buttons();
+    }
+    if (e.keyCode == 13 && ($('#search-input').val() != "" || $('#start-date').val() != "" || $('#end-date').val() != "")) {
+      // type <enter> to run search
+      // run_search();
+      wrap_search();
+      enable_buttons();
+    }
+  });
+
+  // Removes the error message when the user clicks on the date picker
+  $('#start-date').on('mousedown', function() {
+    $('#error_message').text(``);
+  });
+
+  $('#end-date').on('mousedown', function() {
+    $('#error_message').text(``);
+  });
+
+  $('#start-date').on('change keyup', function() {
+    if ($('#start-date').val() != "" || $('#search-input').val() != "" || $('#end-date').val() != "") {
+      $('#search-button').removeAttr("disabled");
+      $('#clear_button').removeAttr("disabled");
+    }
+    else {
+      clear_selection();
+      $('#search_stats').text(`0 of 0 points`);
+      disable_buttons();
+    }
+  });
+
+  $('#end-date').on('change keyup', function() {
+    if ($('#end-date').val() != "" || $('#search-input').val() != "" || $('#start-date').val() != "") {
       $('#search-button').removeAttr("disabled");
       $('#clear_button').removeAttr("disabled");
     }
@@ -235,26 +244,19 @@ req.done(function() {
     }
   })
 
-  $('#search-input').on('keydown', function(e) {
-    if (e.keyCode == 13 && $('#search-input').val() != "") {
-      // type <enter> to run search
-      run_search();
-      wrap_search();
-    }
-  });
-
   const dateFormat = 'yy-mm-dd'; // ISO_8601
   $('#start-date').datepicker({
     dateFormat,
     onSelect: function(date_text){
       const start = new Date(date_text);
-      const stats = search_stats.update({
-        start,
-      });
-      update_search_stats(stats);
-      if (start && stats.end) {
-        search_by_dates(beaddata, start, stats.end);
-        run_search();
+      if ($('#start-date').val() != "") {
+        $('#search-button').removeAttr("disabled");
+        $('#clear_button').removeAttr("disabled");
+      }
+      else {
+        clear_selection();
+        $('#search_stats').text(`0 of 0 points`);
+        disable_buttons();
       }
     }
   });
@@ -263,152 +265,88 @@ req.done(function() {
     dateFormat,
     onSelect: function(date_text){
       const end = new Date(date_text);
-      search_by_dates(search_stats.get().start, end);
-      const stats = search_stats.update({
-        end,
-      });
-      if (stats.start && end) {
-        search_by_dates(beaddata, stats.start, end);
-        run_search();
+      if ($('#end-date').val() != "") {
+        $('#search-button').removeAttr("disabled");
+        $('#clear_button').removeAttr("disabled");
+      }
+      else {
+        clear_selection();
+        $('#search_stats').text(`0 of 0 points`);
+        disable_buttons();
       }
     }
   });
 
   $('#search-button').click(function() {
-    run_search();
+    wrap_search();
+    enable_buttons();
   });
 
   // Clear search
   $('#clear_button').click(function(){
     clear_selection();
-    search();
+    // search();
+    $('#search-input').val('');
     $('#end-date').val('');
     $('#start-date').val('');
+    $('#error_message').text(``);
     disable_buttons();
   });
 
-  // Iterate results
   $('#next_button').click(function() {
-    // retrieve current rect element
-    var current_cluster = d3.selectAll(".clicked").node();
-    var current_index = current_cluster.id;
+    var curr_bead = search_results.get().current_point;
+    var bead_hits = search_results.get().beads;
+    var bead_id_to_accession = Object.keys(bead_hits);
+    var hit_ids = search_results.get().hit_ids;
 
-    if (search_stats.get().current_point+1 < search_stats.get().total_points) {
-      // increment bead index and current point display
-      var stats = search_stats.update({
-        current_point: search_stats.get().start_idx[current_index] +
-                search_stats.get().bead_indexer + 1,
-        bead_indexer: search_stats.get().bead_indexer + 1,
-      });
-
-      update_search_stats(stats);
-
-      // Select bead hits in the current cluster
-      var selected_points = d3.selectAll(".SelectedBead");
-
-      // Move to the next cluster if next bead is in next cluster
-      if (search_stats.get().bead_indexer > selected_points.nodes().length) {
-
-        // Select cluster hits
-        var selected_clusters = d3.selectAll(".SelectedCluster, .clicked").nodes();
-        selected_clusters.sort((x, y) => d3.ascending(parseInt(x.id.substring(3)),
-                parseInt(y.id.substring(3))));
-
-        // Find current cluster
-        var matched = selected_clusters.findIndex(function(d, i) {
-          if (d.id === current_index)
-            return i;
-        })
-
-        // Move to next cluster and reset bead indexer
-        var next_cluster = selected_clusters[matched - 1];
-        d3.select(next_cluster).dispatch('click');
-        stats = search_stats.update({
-                current_point: search_stats.get().start_idx[next_cluster.id] + search_stats.get().bead_indexer + 1,
-                bead_indexer: search_stats.get().bead_indexer + 1,
-        });
-        update_search_stats(stats);
-
-        // Select bead hits in next cluster
-        selected_points = d3.selectAll(".SelectedBead");
-      }
-
-      // Scroll to the next bead
-      var working_bead = selected_points.nodes()[search_stats.get().bead_indexer-1];
-      working_bead.scrollIntoView({block: "center"});
-
-      var selected_bead = d3.select(working_bead).datum();
-
-      draw_halo(selected_bead);
-      gentable(selected_bead);
-      draw_region_distribution(tabulate(selected_bead.region));
-      gen_details_table(selected_bead);
+    // console.log(first_bead.id);
+    // Edge case: User clicks next from a cluster above the first cluster
+    if (curr_bead == 0 && (parseInt(d3.selectAll("rect.clicked").nodes()[0].id.substring(3)) > hit_ids[hit_ids.length - 1])) {
+      select_next_prev_bead(bead_id_to_accession, curr_bead);
+      select_working_bead(bead_id_to_accession, curr_bead);
     }
+    else if (curr_bead + 1 < search_results.get().total_points) {
+      if (accn_to_cid[bead_id_to_accession[curr_bead]] != accn_to_cid[bead_id_to_accession[curr_bead + 1]]) {
+        select_next_prev_bead(bead_id_to_accession, curr_bead+1);
+      }
+      select_working_bead(bead_id_to_accession, curr_bead + 1);
 
+      const stats = search_results.update({
+        current_point: curr_bead + 1
+      });
+      
+      update_search_stats(stats);
+    }
+  });
 
-  });  // end click next button
 
   $('#previous_button').click(function(){
+    var curr_bead = search_results.get().current_point;
+    var bead_hits = search_results.get().beads;
+    var bead_id_to_accession = Object.keys(bead_hits);
+    var hit_ids = search_results.get().hit_ids;
 
-    // Find current cluster
-    var current_cluster = d3.selectAll(".clicked").node();
-    var current_index = current_cluster.id;
-
-    if (search_stats.get().current_point > 0) {
-      // Find index of current bead
-      var stats = search_stats.update({
-        current_point: search_stats.get().start_idx[current_index] +
-                search_stats.get().bead_indexer - 1,
-        bead_indexer: search_stats.get().bead_indexer - 1,
-      });
-      update_search_stats(stats);
-
-      // Select bead hits in the current cluster
-      var selected_points = d3.selectAll(".SelectedBead");
-
-      // Move to the previous cluster if previous bead is in previous cluster
-      if (search_stats.get().bead_indexer < 1) {
-
-        // Select cluster hits
-        var selected_clusters = d3.selectAll(".SelectedCluster, .clicked").nodes();
-        selected_clusters.sort((x, y) => d3.ascending(parseInt(x.id.substring(3)),
-                parseInt(y.id.substring(3)))
-        );
-
-        // Find current cluster
-        var matched = selected_clusters.findIndex(function(d, i) {
-          if (d.id === current_index)
-            return i;
-        })
-
-        // Move to next cluster and reset bead indexer
-        var previous_cluster = selected_clusters[matched + 1];
-        d3.select(previous_cluster).dispatch('click');
-
-        // Select bead hits in next cluster
-        var selected_points = d3.selectAll(".SelectedBead");
-
-        stats = search_stats.update({
-          current_point: search_stats.get().start_idx[previous_cluster.id] + selected_points.nodes().length,
-          bead_indexer: selected_points.nodes().length,
-        });
-        update_search_stats(stats);
-
+    var current_selection = d3.selectAll("rect.clicked").nodes()[0];
+    if (current_selection.className.baseVal !== "SelectedCluster clicked") {
+      if(parseInt(current_selection.id.substring(3)) < hit_ids[hit_ids.length - 1]) {
+        select_next_prev_bead(bead_id_to_accession, curr_bead);
+        select_working_bead(bead_id_to_accession, curr_bead);
       }
-
-      // Scroll to the next bead
-      var working_bead = selected_points.nodes()[search_stats.get().bead_indexer-1];
-      working_bead.scrollIntoView({block: "center"});
-
-      var selected_bead = d3.select(working_bead).datum();
-      draw_halo(selected_bead);
-      gentable(selected_bead);
-      draw_region_distribution(tabulate(selected_bead.region));
-      gen_details_table(selected_bead);
     }
+    else if (curr_bead - 1 >= 0) {
+      // If the previous bead is not in the same cluster, selection of cluster needs to be modified
+      if (accn_to_cid[bead_id_to_accession[curr_bead]] != accn_to_cid[bead_id_to_accession[curr_bead - 1]]) {
+        select_next_prev_bead(bead_id_to_accession, curr_bead-1);
+      }
+      select_working_bead(bead_id_to_accession, curr_bead - 1);
 
-  });  // end click previous button
-
+      const stats = search_results.update({
+        current_point: curr_bead - 1
+      });
+      
+      update_search_stats(stats);
+    }
+  });
 });
 
 /*********************** UPDATE TABLES ***********************/
