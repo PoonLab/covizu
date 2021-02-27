@@ -482,6 +482,20 @@ function beadplot(cid) {
         min_y = d3.min(variants, yValue1B),
         max_y = d3.max(variants, yValue1B);
 
+    edgelist.forEach(function(d) {
+      d.x1.setHours(0,0,0);
+      d.x2.setHours(0,0,0);
+    });
+
+    points.forEach(function(d) {
+      d.x.setHours(0,0,0);
+    });
+
+    variants.forEach(function(d) {
+      d.x1.setHours(0,0,0);
+      d.x2.setHours(0,0,0);
+    });
+
     // update vertical range for consistent spacing between variants
     heightB = max_y * 10 + 40;
     $("#svg-cluster > svg").attr("height", heightB + marginB.top + marginB.bottom);
@@ -489,8 +503,11 @@ function beadplot(cid) {
     yScaleB.domain([min_y, max_y]);
 
     xScaleB = d3.scaleLinear().range([0, currentWidth]);
+    var xAxis = d3.scaleTime().range([0, currentWidth]);
+
     // allocate space for text labels on left
     xScaleB.domain([mindate - 170*(spandate/currentWidth), maxdate]);
+    xAxis.domain([mindate - 170*(spandate/currentWidth), maxdate]);
 
     // update horizontal range
 
@@ -750,12 +767,16 @@ function beadplot(cid) {
           $('#search_stats').addClass("disabled_stats");
         });
 
+ 
+    var tickCount = 0.005*currentWidth;
+    if (tickCount <= 4) tickCount = 4;
+
     // draw x-axis
     visBaxis.append("g")
         .attr("transform", "translate(0,20)")
         .call(
-          d3.axisTop(xScaleB)
-            .ticks(5)
+          d3.axisTop(xAxis)
+            .ticks(tickCount)
             .tickFormat(d3.timeFormat("%Y-%m-%d"))
         );
   }
