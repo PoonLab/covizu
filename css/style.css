@@ -318,6 +318,10 @@ rect.SelectedCluster:hover{
   stroke-width: 2;
 }
 
+rect.not_SelectedCluster.clicked {
+  fill-opacity: 0.1;
+}
+
 rect:hover{
   fill-opacity: 1;
 }
@@ -336,8 +340,9 @@ rect.SelectedCluster[txt_hover="yes"]{
 }
 
 #search-input {
-  width: 250px;
+  width: 300px;
 }
+
 
 .or {
   margin-right: 5px;
@@ -423,7 +428,7 @@ details + dl {
     transition: .3s linear;
 }
 .bar input:focus {
-    width: 300px;
+    width: 100px;
 }
 
 #svg-timetreeaxis {

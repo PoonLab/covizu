@@ -478,7 +478,17 @@ function draw_halo(bead) {
  */
 function clear_selection() {
   // clear search field
-  $('#search-input').val('');
+  // $('#search-input').val('');
+  $('#search_stats').text(`0 of 0 points`);
+
+  // Update stats so that the "Previous" and "Next" buttons do not become enabled in the next search query
+  const stats = search_results.update({
+    current_point: -1,
+    total_points: 0,
+   });
+   update_search_stats(stats); 
+
+  // $('#error_message').text(``);
 
   d3.select("#svg-cluster").selectAll("line")
       .attr("stroke-opacity", 1);
@@ -765,6 +775,17 @@ function beadplot(cid) {
           gentable(d);
           draw_region_distribution(d.region);
           gen_details_table(d);
+          $('#search-input').val('');
+          $('#end-date').val('');
+          $('#start-date').val('');
+          $('#error_message').text(``);
+
+          // Disable buttons
+          $('#search-button').attr("disabled", true);
+          $('#clear_button').attr("disabled", true);
+          $('#next_button').attr("disabled", true);
+          $('#previous_button').attr("disabled", true);
+          $('#search_stats').addClass("disabled_stats");
         });
 
     // draw x-axis
