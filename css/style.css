@@ -126,19 +126,27 @@ div.tree-beadplot {
   width: 250px;
 }
 
-.tree-beadplot-content {
+.tree-content {
   height: 81vh;
   overflow-y: scroll;
 }
 
-.tree-beadplot-content::-webkit-scrollbar {
-  display: none;
-}
-
-.tree-beadplot-content {
+.tree-content {
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
 }
+
+.tree-content::-webkit-scrollbar {
+  display: none;
+}
+
+.beadplot-content {
+  height: 81vh;
+  overflow-y: scroll;
+  scrollbar-track-color: white;
+}
+
+
 
 div.leftbox {
   overflow: auto;
@@ -164,12 +172,15 @@ div.middlebox {
   width: 500px;
   height: 100%;
   -ms-overflow-style: none;
-  scrollbar-width: none;
+  /* scrollbar-width: none; */
   margin: 5px 5px 0px 9px;
 }
+
+/*
 div.middlebox::-webkit-scrollbar {
   display: none;
 }
+ */
 
 div.rightbox {
   box-sizing: border-box;
@@ -194,7 +205,7 @@ div.legend-container {
 }
 
 div.search-bar-container {
-  margin: 0 5px 5px 5px;
+  margin: 5px 5px 5px 5px;
   /* flex: grow; */
 }
 
@@ -255,6 +266,20 @@ footer {
   z-index: 150;
   background-color: rgba(255,255,255,0.7);
   font-size: 0.8em;
+}
+
+span.clicker {
+  background-color: #999;
+  color: white;
+  font-size: 8pt;
+  vertical-align: middle;
+  margin: 1px;
+  padding: 1px;
+  display: inline-block;
+}
+
+span.clicker:hover {
+  background-color: #777;
 }
 
 button.ack {
@@ -318,6 +343,10 @@ rect.SelectedCluster:hover{
   stroke-width: 2;
 }
 
+rect.not_SelectedCluster.clicked {
+  fill-opacity: 0.1;
+}
+
 rect:hover{
   fill-opacity: 1;
 }
@@ -336,8 +365,9 @@ rect.SelectedCluster[txt_hover="yes"]{
 }
 
 #search-input {
-  width: 250px;
+  width: 300px;
 }
+
 
 .or {
   margin-right: 5px;
@@ -420,7 +450,7 @@ details + dl {
     transition: .3s linear;
 }
 .bar input:focus {
-    width: 300px;
+    width: 100px;
 }
 
 #svg-timetreeaxis {
