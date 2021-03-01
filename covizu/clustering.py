@@ -16,14 +16,17 @@ from covizu.utils.progress_utils import Callback
 sys.setrecursionlimit(20000)  # fix for issue #127, default limit 1000
 
 
-def recode_features(records, callback=None):
+def recode_features(records, callback=None, limit=10000):
     """
     Recode feature vectors with integer indices based on set union.
     Pass results to bootstrap() to reconstruct trees by neighbor-joining method.
 
     :param records:  list, dict for each record
     :param callback:  optional, function for progress monitoring
-    :return:  list, list; Phylo.BaseTree objects and labels associated with tips
+    :param limit:  int, maximum number of variants
+    :return:  dict, key-value pairs of all features indexed by integers
+              list, nested list of labels by variant (identical feature vectors)
+              list, sets of feature vectors encoded by integers, by variant
     """
     # compress genomes with identical feature vectors
     fvecs = {}
@@ -35,13 +38,17 @@ def recode_features(records, callback=None):
             fvecs.update({key: []})
         fvecs[key].append(label)
 
+    # limit to N most recently-sampled feature vectors
+    intermed = [(max([l.split('|')[-1] for l in label]), key) for key, label in fvecs.items()]
+    intermed.sort(reverse=True)
+
     # generate union of all features
     if callback:
         callback("Reduced to {} variants; generating feature set union".format(len(fvecs)))
     union = {}
     labels = []
     indexed = []
-    for fvec in fvecs:
+    for _, fvec in intermed[:limit]:
         labels.append(fvecs[fvec])
         for feat in fvec:
             if feat not in union:
@@ -237,6 +244,9 @@ def parse_args():
                         help="Path to RapidNJ binary executable.")
     parser.add_argument("--timestamp", type=float, default=None,
                         help="option, timestamp to set callback function")
+    parser.add_argument("--max-variants", type=int, default=10000,
+                        help="option, limit number of variants per lineage, prioritizing the "
+                             "most recently sampled variants")
 
     return parser.parse_args()
 
@@ -271,7 +281,7 @@ if __name__ == "__main__":
         sys.exit()
 
     # generate distance matrices from bootstrap samples [[ MPI ]]
-    union, labels, indexed = recode_features(records, callback=cb.callback)
+    union, labels, indexed = recode_features(records, callback=cb.callback, limit=args.max_variants)
 
     # export map of sequence labels to tip indices
     if my_rank == 0:
