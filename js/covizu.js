@@ -397,6 +397,45 @@ req.done(function() {
       update_search_stats(stats);
     }
   });
+
+  $(document).on('keydown', function(e) {
+    // User presses the left arrow key (37) or right arrow key (39)
+    if (e.keyCode == 37 || e.keyCode == 39) {
+      var selected_bead = d3.selectAll(".selectionH").nodes();
+
+      var points_deselected = d3.selectAll(".not_SelectedBead").nodes();
+      if (points_deselected.length == 0)
+        deselect_all_beads();
+
+      if (selected_bead.length == 0) {
+        var points_ui = d3.selectAll("#svg-cluster > svg > g > circle").nodes()[0];
+        var working_bead = d3.selectAll('circle[id="'+points_ui.__data__.accessions[0]+'"]').nodes()[0];
+        working_bead.scrollIntoView({block: "center"});
+        update_table_individual_bead(d3.select(working_bead).datum());
+      }
+      else {
+        var selected_accession = selected_bead[0].attributes.bead.nodeValue;
+        var bead_node = d3.selectAll('circle[id="'+selected_accession+'"]');
+        var bead_id = parseInt(bead_node.nodes()[0].attributes.idx.nodeValue);
+        var total_nodes = d3.selectAll("#svg-cluster > svg > g > circle").nodes().length;
+
+        if (e.keyCode == 37) {
+          if (bead_id - 1 >= 0) {
+            var prev_node = d3.selectAll('circle[idx="'+(bead_id-1).toString()+'"]').nodes()[0];
+            bead_node.attr("class", "not_SelectedBead");
+            select_next_bead(prev_node);
+          }
+        }
+        else if (e.keyCode == 39) {
+          if (bead_id + 1 < total_nodes - 1) {
+            var next_node = d3.selectAll('circle[idx="'+(bead_id+1).toString()+'"]').nodes()[0];
+            bead_node.attr("class", "not_SelectedBead");
+            select_next_bead(next_node);
+          }
+        }
+      }
+    }
+  });
 });
 
 /*********************** UPDATE TABLES ***********************/

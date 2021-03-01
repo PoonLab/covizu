@@ -431,7 +431,8 @@ function draw_halo(bead) {
       .attr("fill", "none")
       .attr("stroke", "grey")
       .attr("fill-opacity", 1)
-      .attr("stroke-width", 5);
+      .attr("stroke-width", 5)
+      .attr("bead", bead.accessions[0]);
 }
 
 
@@ -697,6 +698,7 @@ function beadplot(cid) {
         .attr("cy", yMapB)
         .attr("class", "default")
         .attr("id", function(d) { return d.accessions[0]; })
+        .attr("idx", function(d, i) { return i; })
         .attr("search_hit", function(d) {
           if (search_results.get().beads.length == 0){
             return null;
@@ -1130,4 +1132,13 @@ function serialize_beadplot(cidx) {
   var edgelist = beaddata[cidx].edgelist,
       root = edgelist[0].parent;
   return serialize_branch(root, edgelist)+';';
+}
+
+
+function select_next_bead(next_node) {
+  var select_bead = d3.selectAll('circle[id="'+next_node.id+'"]');
+  select_bead.attr("class", "SelectedBead");
+  var working_bead = select_bead.nodes()[0];
+  working_bead.scrollIntoView({block: "center"});
+  update_table_individual_bead(d3.select(working_bead).datum());
 }
