@@ -126,19 +126,27 @@ div.tree-beadplot {
   width: 250px;
 }
 
-.tree-beadplot-content {
+.tree-content {
   height: 81vh;
   overflow-y: scroll;
 }
 
-.tree-beadplot-content::-webkit-scrollbar {
-  display: none;
-}
-
-.tree-beadplot-content {
+.tree-content {
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
 }
+
+.tree-content::-webkit-scrollbar {
+  display: none;
+}
+
+.beadplot-content {
+  height: 81vh;
+  overflow-y: scroll;
+  scrollbar-track-color: white;
+}
+
+
 
 div.leftbox {
   overflow: auto;
@@ -164,12 +172,15 @@ div.middlebox {
   width: 500px;
   height: 100%;
   -ms-overflow-style: none;
-  scrollbar-width: none;
+  /* scrollbar-width: none; */
   margin: 5px 5px 0px 9px;
 }
+
+/*
 div.middlebox::-webkit-scrollbar {
   display: none;
 }
+ */
 
 div.rightbox {
   box-sizing: border-box;
