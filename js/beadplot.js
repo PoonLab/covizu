@@ -223,21 +223,27 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
  */
 function parse_edgelist(cluster, variants, points) {
   // map earliest collection date of child node to vertical edges
-  var edge, parent, child, dist, support,
+  let edge, parent, child, dist, support,
       edgelist = [];
 
   // generate maps of variants and points keyed by accession
-  var lookup_variant = {};
+  let lookup_variant = {};
   variants.forEach(function(row) {
     lookup_variant[row.accession] = row;
   });
 
-  var lookup_points = {}
+  let lookup_points = {},
+      index_points = {};  // index by y-coordinate
+
   points.forEach(function(pt) {
-    if (lookup_points[points.variant] === undefined) {
-      lookup_points[points.variant] = [];
+    if (lookup_points[pt.variant] === undefined) {
+      lookup_points[pt.variant] = [];
     }
-    lookup_points[points.variant].push(pt);
+    lookup_points[pt.variant].push(pt);
+    if (index_points[pt.y] === undefined) {
+      index_points[pt.y] = [];
+    }
+    index_points[pt.y].push(pt);
   })
 
   for (var e = 0; e < cluster.edges.length; e++) {
@@ -274,12 +280,20 @@ function parse_edgelist(cluster, variants, points) {
     child.dist = dist;
 
     // Assign the parent and genomic distance of each point
+    if (index_points[child.y1] !== undefined) {
+      for (let pt of index_points[child.y1]) {
+        pt.parent = parent.label;
+        pt.dist = dist;
+      }
+    }
+    /*
     for (let c = 0; c < points.length; c++) {
       if (points[c].y === child.y1) {
         points[c].parent = parent.label;
         points[c].dist = dist;
       }
     }
+    */
 
     // update variant time range
     if (parent.x1 > child.x1) {
@@ -417,7 +431,8 @@ function draw_halo(bead) {
       .attr("fill", "none")
       .attr("stroke", "grey")
       .attr("fill-opacity", 1)
-      .attr("stroke-width", 5);
+      .attr("stroke-width", 5)
+      .attr("bead", bead.accessions[0]);
 }
 
 
@@ -426,7 +441,22 @@ function draw_halo(bead) {
  */
 function clear_selection() {
   // clear search field
-  $('#search-input').val('');
+  // $('#search-input').val('');
+  $('#search_stats').text(`0 of 0 points`);
+
+  // Update stats so that the "Previous" and "Next" buttons do not become enabled in the next search query
+  const stats = search_results.update({
+    current_point: -1,
+    total_points: 0,
+   });
+   update_search_stats(stats); 
+
+  // $('#error_message').text(``);
+
+  // Changes opacity of currently clicked cluster
+  d3.selectAll("rect.clicked").attr('class', "clicked");
+  $("#loading").hide();
+  $("#loading_text").text(``);
 
   d3.select("#svg-cluster").selectAll("line")
       .attr("stroke-opacity", 1);
@@ -458,6 +488,20 @@ function beadplot(cid) {
         min_y = d3.min(variants, yValue1B),
         max_y = d3.max(variants, yValue1B);
 
+    edgelist.forEach(function(d) {
+      d.x1.setHours(0,0,0);
+      d.x2.setHours(0,0,0);
+    });
+
+    points.forEach(function(d) {
+      d.x.setHours(0,0,0);
+    });
+
+    variants.forEach(function(d) {
+      d.x1.setHours(0,0,0);
+      d.x2.setHours(0,0,0);
+    });
+
     // update vertical range for consistent spacing between variants
     heightB = max_y * 10 + 40;
     $("#svg-cluster > svg").attr("height", heightB + marginB.top + marginB.bottom);
@@ -465,8 +509,11 @@ function beadplot(cid) {
     yScaleB.domain([min_y, max_y]);
 
     xScaleB = d3.scaleLinear().range([0, currentWidth]);
+    var xAxis = d3.scaleTime().range([0, currentWidth]);
+
     // allocate space for text labels on left
     xScaleB.domain([mindate - 170*(spandate/currentWidth), maxdate]);
+    xAxis.domain([mindate - 170*(spandate/currentWidth), maxdate]);
 
     // update horizontal range
 
@@ -476,6 +523,68 @@ function beadplot(cid) {
 
     $("#svg-cluster > svg").attr("width",currentWidth + marginB.left + marginB.right);
     $("#svg-clusteraxis > svg").attr("width", currentWidth + 20);
+
+
+    // draw vertical line segments that represent edges in NJ tree
+    visB.selectAll("lines")
+        .data(edgelist)
+        .enter().append("line")
+        .attr("class", "lines")
+        .attr("x1", xMap1B)
+        .attr("x2", xMap2B)
+        .attr("y1", yMap1B)
+        .attr("y2", yMap2B)
+        .attr("stroke-width", 1)
+        .attr("stroke", function(d) {
+          if (d.dist < 1.5) {
+            return("#aad");
+          } else if (d.dist < 2.5) {
+            return("#bbd");
+          } else {
+            return("#ccf");
+          }
+        })
+        .on("mouseover", function(d) {
+          var edge = d3.select(this);
+          edge.attr("stroke-width", 3);
+
+          // Show tooltip
+          cTooltip.transition()
+              .duration(50)
+              .style("opacity", 0.9);
+
+          let tooltipText = `<b>Parent:</b> ${d.parent}<br/><b>Child:</b> ${d.child}<br/>`;
+          tooltipText += `<b>Genomic distance:</b> ${Math.round(d.dist*100)/100}<br/>`;
+          tooltipText += `<b>Support:</b> ${(d.support === undefined) ? 'n/a' : d.support}<br/>`
+          tooltipText += `<b>Collection date:</b> ${formatDate(d.x2)}`;
+
+          cTooltip.html(tooltipText)
+              .style("left", function() {
+                if (d3.event.pageX > window.innerWidth/2) {
+                  return (
+                    d3.event.pageX -
+                    cTooltip.node().getBoundingClientRect().width +
+                    "px"
+                  );
+                } else {
+                  return d3.event.pageX + "px";
+                }
+              })
+              .style("top", function() {
+                if (d3.event.pageY > window.innerHeight/2) {
+                  return (d3.event.pageY - cTooltip.node().getBoundingClientRect().height - 15) + "px";
+                } else {
+                  return d3.event.pageY + 15 + "px";
+                }
+              });
+        })
+        .on("mouseout", function() {
+          d3.select(this).attr("stroke-width", 1);
+
+          cTooltip.transition()     // Hide tooltip
+              .duration(50)
+              .style("opacity", 0);
+        });
 
     // draw horizontal line segments that represent variants in cluster
     visB.selectAll("lines")
@@ -579,66 +688,6 @@ function beadplot(cid) {
         .attr("y", function(d) { return(yScaleB(d.y1)); })
         .text(function(d) { return(d.label); });
 
-    // draw vertical line segments that represent edges in NJ tree
-    visB.selectAll("lines")
-        .data(edgelist)
-        .enter().append("line")
-        .attr("class", "lines")
-        .attr("x1", xMap1B)
-        .attr("x2", xMap2B)
-        .attr("y1", yMap1B)
-        .attr("y2", yMap2B)
-        .attr("stroke-width", 1)
-        .attr("stroke", function(d) {
-          if (d.dist < 1.5) {
-            return("#55b7");
-          } else if (d.dist < 2.5) {
-            return("#77d7");
-          } else {
-            return("#99f7");
-          }
-        })
-        .on("mouseover", function(d) {
-          var edge = d3.select(this);
-          edge.attr("stroke-width", 3);
-
-          // Show tooltip
-          cTooltip.transition()
-              .duration(50)
-              .style("opacity", 0.9);
-
-          let tooltipText = `<b>Parent:</b> ${d.parent}<br/><b>Child:</b> ${d.child}<br/>`;
-          tooltipText += `<b>Genomic distance:</b> ${Math.round(d.dist*100)/100}<br/>`;
-          tooltipText += `<b>Support:</b> ${(d.support === undefined) ? 'n/a' : d.support}<br/>`
-          tooltipText += `<b>Collection date:</b> ${formatDate(d.x2)}`;
-
-          cTooltip.html(tooltipText)
-              .style("left", function() {
-                if (d3.event.pageX > window.innerWidth/2) {
-                  return (
-                    d3.event.pageX -
-                    cTooltip.node().getBoundingClientRect().width +
-                    "px"
-                  );
-                } else {
-                  return d3.event.pageX + "px";
-                }
-              })
-              .style("top", function() {
-                if (d3.event.pageY > window.innerHeight/2) {
-                  return (d3.event.pageY - cTooltip.node().getBoundingClientRect().height - 15) + "px";
-                } else {
-                  return d3.event.pageY + 15 + "px";
-                }
-              });
-        })
-        .on("mouseout", function() {
-          d3.select(this).attr("stroke-width", 1);
-
-          cTooltip.transition()     // Hide tooltip
-              .duration(50)
-              .style("opacity", 0);
-        });
 
     // draw "beads" to represent samples per collection date
     visB.selectAll("circle")
@@ -649,6 +698,7 @@ function beadplot(cid) {
         .attr("cy", yMapB)
         .attr("class", "default")
         .attr("id", function(d) { return d.accessions[0]; })
+        .attr("idx", function(d, i) { return i; })
         .attr("search_hit", function(d) {
           if (search_results.get().beads.length == 0){
             return null;
@@ -711,14 +761,29 @@ function beadplot(cid) {
           gentable(d);
           draw_region_distribution(tabulate(d.region));
           gen_details_table(d);
+          $('#search-input').val('');
+          $('#end-date').val('');
+          $('#start-date').val('');
+          $('#error_message').text(``);
+
+          // Disable buttons
+          $('#search-button').attr("disabled", true);
+          $('#clear_button').attr("disabled", true);
+          $('#next_button').attr("disabled", true);
+          $('#previous_button').attr("disabled", true);
+          $('#search_stats').addClass("disabled_stats");
         });
+
+ 
+    var tickCount = 0.005*currentWidth;
+    if (tickCount <= 4) tickCount = 4;
 
     // draw x-axis
     visBaxis.append("g")
         .attr("transform", "translate(0,20)")
         .call(
-          d3.axisTop(xScaleB)
-            .ticks(5)
+          d3.axisTop(xAxis)
+            .ticks(tickCount)
             .tickFormat(d3.timeFormat("%Y-%m-%d"))
         );
   }
@@ -1067,4 +1132,13 @@ function serialize_beadplot(cidx) {
   var edgelist = beaddata[cidx].edgelist,
       root = edgelist[0].parent;
   return serialize_branch(root, edgelist)+';';
+}
+
+
+function select_next_bead(next_node) {
+  var select_bead = d3.selectAll('circle[id="'+next_node.id+'"]');
+  select_bead.attr("class", "SelectedBead");
+  var working_bead = select_bead.nodes()[0];
+  working_bead.scrollIntoView({block: "center"});
+  update_table_individual_bead(d3.select(working_bead).datum());
 }
