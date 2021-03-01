@@ -205,7 +205,7 @@ div.legend-container {
 }
 
 div.search-bar-container {
-  margin: 5px 5px 5px 5px;
+  margin: 4px 5px 0px 5px;
   /* flex: grow; */
 }
 
@@ -525,4 +525,10 @@ a.sort-by:after {
 
 .hide-before:before, .hide-after:after {
     display: none !important;
+}
+
+#loading{
+  vertical-align: middle;
+  padding-right: 5px;
+  width: 18px;
 }

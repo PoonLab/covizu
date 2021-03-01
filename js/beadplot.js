@@ -452,6 +452,11 @@ function clear_selection() {
 
   // $('#error_message').text(``);
 
+  // Changes opacity of currently clicked cluster
+  d3.selectAll("rect.clicked").attr('class', "clicked");
+  $("#loading").hide();
+  $("#loading_text").text(``);
+
   d3.select("#svg-cluster").selectAll("line")
       .attr("stroke-opacity", 1);
   d3.selectAll("circle:not(.selectionH)")
