@@ -381,10 +381,7 @@ function save_beadplot() {
   saveAs(blob, clusters[cindex].lineage + ".nwk");
 }
 
-$('#save_svg').click(function(){
-  var config = {
-    filename: 'customFileName',
-  }
+function export_svg() {
+  var config = {filename: clusters[cindex].lineage};
   d3_save_svg.save(d3.select('#svg-cluster>svg').node(), config);
-
-});
+}
