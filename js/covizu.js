@@ -125,6 +125,7 @@ req.done(function() {
 
   // initial display
   // d3.select(node).dispatch("click");
+  cindex = node.__data__.cluster_idx;
   d3.select(node).attr("class", "clicked");
   beadplot(node.__data__.cluster_idx);
   $("#barplot").text(null);
