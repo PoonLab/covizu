@@ -436,6 +436,21 @@ function draw_halo(bead) {
 }
 
 
+function draw_halo_front(bead) {
+  d3.selectAll(".selectionH").remove();
+
+  visB.append("circle")
+    .attr('class', "selectionH")
+    .attr("cx", xScaleB(xValueB(bead)))
+    .attr("cy", yScaleB(yValueB(bead)))
+    .attr("r", 4 * Math.sqrt(bead.count) + 4)
+    .attr("fill", "none")
+    .attr("stroke", "grey")
+    .attr("fill-opacity", 1)
+    .attr("stroke-width", 5)
+    .attr("bead", bead.accessions[0]);
+}
+
 /**
  * Reset beadplot display to default settings.
  */
@@ -757,7 +772,10 @@ function beadplot(cid) {
         })
         .on("click", function(d) {
           clear_selection();
-          draw_halo(d);
+          this.remove();
+          d3.selectAll("div#svg-cluster > svg > g").node().append(this);
+          draw_halo_front(d);
+
           gentable(d);
           draw_region_distribution(tabulate(d.region));
           gen_details_table(d);
@@ -1137,8 +1155,10 @@ function serialize_beadplot(cidx) {
 
 function select_next_bead(next_node) {
   var select_bead = d3.selectAll('circle[id="'+next_node.id+'"]');
-  select_bead.attr("class", "SelectedBead");
+  select_bead.node().classList.add("currBead");
+  select_bead.remove();
+  d3.selectAll("div#svg-cluster > svg > g").node().append(select_bead.node());
   var working_bead = select_bead.nodes()[0];
   working_bead.scrollIntoView({block: "center"});
-  update_table_individual_bead(d3.select(working_bead).datum());
+  update_table_individual_bead_front(d3.select(working_bead).datum());
 }
