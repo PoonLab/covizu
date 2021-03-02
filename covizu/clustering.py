@@ -16,14 +16,14 @@ from covizu.utils.progress_utils import Callback
 sys.setrecursionlimit(20000)  # fix for issue #127, default limit 1000
 
 
-def recode_features(records, callback=None, limit=10000):
+def recode_features(records, callback=None, limit=20000):
     """
     Recode feature vectors with integer indices based on set union.
     Pass results to bootstrap() to reconstruct trees by neighbor-joining method.
 
     :param records:  list, dict for each record
     :param callback:  optional, function for progress monitoring
-    :param limit:  int, maximum number of variants
+    :param limit:  int, maximum number of variants to prevent memory allocation crashes
     :return:  dict, key-value pairs of all features indexed by integers
               list, nested list of labels by variant (identical feature vectors)
               list, sets of feature vectors encoded by integers, by variant
@@ -244,7 +244,7 @@ def parse_args():
                         help="Path to RapidNJ binary executable.")
     parser.add_argument("--timestamp", type=float, default=None,
                         help="option, timestamp to set callback function")
-    parser.add_argument("--max-variants", type=int, default=10000,
+    parser.add_argument("--max-variants", type=int, default=20000,
                         help="option, limit number of variants per lineage, prioritizing the "
                              "most recently sampled variants")
 

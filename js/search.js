@@ -319,6 +319,13 @@ function update_table_individual_bead(bead) {
   gen_details_table(bead);
 }
 
+function update_table_individual_bead_front(bead) {
+  draw_halo_front(bead);
+  gentable(bead);
+  draw_region_distribution(tabulate(bead.region));
+  gen_details_table(bead);
+}
+
 
 /**
  * This function selects the next or previous bead in search_results
@@ -405,9 +412,12 @@ function deselect_all_beads() {
 }
 
 function select_working_bead(bead_id_to_accession, curr_bead) {
-  var working_bead = d3.selectAll('circle[id="'+bead_id_to_accession[curr_bead]+'"]').nodes()[0];
+  var current_bead = d3.selectAll('circle[id="'+bead_id_to_accession[curr_bead]+'"]');
+  var working_bead = current_bead.nodes()[0];
+  current_bead.remove();
+  d3.selectAll("div#svg-cluster > svg > g").node().append(current_bead.node());
   working_bead.scrollIntoView({block: "center"});
-  update_table_individual_bead(d3.select(working_bead).datum());
+  update_table_individual_bead_front(d3.select(working_bead).datum());
 }
 
 /**
