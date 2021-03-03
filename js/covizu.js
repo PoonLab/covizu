@@ -88,6 +88,11 @@ $( "#ack-open" ).click(function() {
 
 /*********************** LOAD JSON DATA ***********************/
 
+// Forces the requested files to not be cached by the browser
+$.ajaxSetup({ 
+  cache: false 
+});
+
 // load database statistics
 var dbstats, req;
 req = $.getJSON("data/dbstats.json", function(data) {
