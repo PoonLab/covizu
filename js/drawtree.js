@@ -299,44 +299,15 @@ function draw_clusters(tips) {
           .style("opacity", 0);
     })
     .on("click", function(d) {
-      cindex = d.cluster_idx;  // store index as global variable
-      d3.selectAll("rect.clickedH").remove();
-
-      beadplot(d.cluster_idx);
-
-      if (isAccn($('#search-input').val())) {
-        $('#search-input').val('');
-      }
-
-      search();
-
-      // Reset search stats
-      if ($('#search-input').val() !== "") {
-	      var stats = search_stats.update({
-                current_point: search_stats.get().start_idx[this.id],
-                bead_indexer: 0,
-        });
-        update_search_stats(stats);
-      }
-
-      // reset all rectangles to high transparency
-      if ($('#search-input').val() === "") {
-        vis.selectAll("rect.clicked").attr('class', "default");
-      }
-
-      d3.select(this).attr("class", "clicked");
-
-      draw_cluster_box(d3.select(this));
-
-      $("#barplot").text(null);
-
-      gentable(d);
-      draw_region_distribution(d.allregions);
-      gen_details_table(beaddata[d.cluster_idx].points);  // update details table with all samples
-
-      // FIXME: this is the same div used for making barplot SVG
-      $("#text-node").html(`Number of cases: ${d.count}<br/>Number of variants: ${d.varcount}<br/>`);
-
+      var cluster_info = this;
+      $('#error_message').text(``);
+      $("#loading").show();
+      $("#loading_text").text(`Loading. Please Wait...`);
+      setTimeout(function() {
+        click_cluster(d, cluster_info);
+        $("#loading").hide();
+        $("#loading_text").text(``);
+      }, 20);
     });
 
   // generate colour palettes
@@ -607,4 +578,97 @@ function generate_legends() {
     title: "Divergence (from strict clock expectation)",
     width: 240
   })).hide();
+}
+
+
+function click_cluster(d, cluster_info) {
+  cindex = d.cluster_idx;  // store index as global variable
+  d3.selectAll("rect.clickedH").remove();
+
+  // Remove "clicked" class to ensure that the previous cluster doesn't remain highligted
+  if (search_results.get().total_points > 0) {
+    d3.selectAll(".SelectedCluster.clicked").attr('class', 'SelectedCluster'); 
+    d3.selectAll("rect.clicked").attr('class', "not_SelectedCluster");
+  }
+  else
+    d3.selectAll("rect.clicked").attr('class', "default");
+
+  beadplot(d.cluster_idx);
+
+  // reset all rectangles to high transparency
+  if ($('#search-input').val() === "") {
+    vis.selectAll("rect.clicked").attr('class', "default");
+  }
+
+
+  if (isLineage($('#search-input').val())) {
+    if (cluster_info.className.baseVal !== "SelectedCluster"){
+      deselect_all_beads();
+      d3.select(cluster_info).attr("class", "not_SelectedCluster clicked");
+    }
+
+    gentable(d);
+    draw_region_distribution(d.allregions);
+    gen_details_table(beaddata[d.cluster_idx].points);  // update details table with all samples
+  }
+  else if (cluster_info.className.baseVal !== "SelectedCluster"){
+    if (search_results.get().total_points > 0) {
+      var hit_ids = search_results.get().hit_ids;
+      var closest_cluster = previous_closest_match('cidx-'+d.cluster_idx, hit_ids);
+      var bead_id;
+
+      if (hit_ids[0] == hit_ids[hit_ids.length - 1] && map_cidx_to_id["cidx-"+cindex] < hit_ids[0])
+        bead_id = (search_results.get().clusters_last_bead)[id_to_cidx[closest_cluster]];
+      else if (map_cidx_to_id["cidx-"+cindex] > hit_ids[hit_ids.length - 1])
+        bead_id = (search_results.get().clusters_first_bead)[id_to_cidx[closest_cluster]];
+      else
+        bead_id = (search_results.get().clusters_last_bead)[id_to_cidx[closest_cluster]];
+
+      deselect_all_beads();
+
+      var stats = search_results.update({
+        current_point: (search_results.get().beads)[bead_id]
+      });
+      update_search_stats(stats);
+      d3.select(cluster_info).attr("class", "not_SelectedCluster clicked");
+    }
+    else 
+      d3.select(cluster_info).attr("class", "clicked");
+
+    $("#barplot").text(null);
+
+    gentable(d);
+    draw_region_distribution(d.allregions);
+    gen_details_table(beaddata[d.cluster_idx].points);  // update details table with all samples
+    
+    // FIXME: this is the same div used for making barplot SVG
+    $("#text-node").html(`Number of cases: ${d.count}<br/>Number of variants: ${d.varcount}<br/>`);
+  }
+  else {
+    // If the selected cluster is a SelectedCluster, then the search_results need to be updated to point to the first bead in the cluster
+    d3.select(cluster_info).attr("class", "SelectedCluster clicked");
+    var bead_hits = search_results.get().beads;
+    var current_id = (search_results.get().clusters_first_bead)['cidx-' + d.cluster_idx]
+    var bead_id_to_accession = Object.keys(bead_hits);
+    var stats = search_results.update({
+      current_point: bead_hits[current_id]
+    });
+    update_search_stats(stats);
+    // Beads in Cluster
+    points_ui = d3.selectAll("#svg-cluster > svg > g > circle")
+    .filter(function(d) {
+      return bead_id_to_accession.includes(d.accessions[0])
+    });
+
+    selected = points_ui.nodes();
+    deselect_all_beads();
+    for (const node of selected) {
+      selected_obj = d3.select(node);
+      create_selection(selected_obj);
+    }
+    var working_bead = d3.selectAll('circle[id="'+current_id+'"]').nodes()[0];
+    working_bead.scrollIntoView({block: "center"});
+    update_table_individual_bead(d3.select(working_bead).datum());
+  }
+  draw_cluster_box(d3.select(cluster_info));
 }
