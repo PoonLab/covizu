@@ -481,5 +481,10 @@ function save_beadplot() {
 
 function export_svg() {
   var config = {filename: clusters[cindex].lineage};
-  d3_save_svg.save(d3.select('#svg-cluster>svg').node(), config);
+  var svg_beadplot = d3.select('#svg-cluster>svg').node();
+  d3_save_svg.save(svg_beadplot, config);
+  svg_beadplot.removeAttribute("style");
+  svg_beadplot.removeAttribute("version");
+  svg_beadplot.removeAttribute("xmlns");
+  svg_beadplot.removeAttribute("xmlns:xlink");
 }
