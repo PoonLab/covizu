@@ -44,7 +44,7 @@ $( "#splash" ).dialog({
 
 $("#splash-button").parents(".ui-dialog-buttonpane")
         .append("<div style=\"color: #4F2683\" id='splash-extra'>Loading JSON data from server (~10s)..." +
-                "<img style=\"vertical-align: middle\" width=\"33px\" src=\"img/Loading_icon_cropped.gif\"/>" +
+                "<img style=\"vertical-align: middle\" width=\"36px\" src=\"img/Loading_icon_GISAID.gif\"/>" +
                 "</div>");
 
 $( "#help-timetree" ).dialog({
