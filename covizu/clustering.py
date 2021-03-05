@@ -50,7 +50,7 @@ def recode_features(records, callback=None, limit=20000):
         fvecs[key].append(label)
 
     # limit to N most recently-sampled feature vectors
-    intermed = [(max([l.split('|')[-1] for l in label]), key) for key, label in fvecs.items()]
+    intermed = [(max(l['coldate'] for l in label), key, label) for key, label in fvecs.items()]
     intermed.sort(reverse=True)
 
     # generate union of all features
@@ -59,7 +59,7 @@ def recode_features(records, callback=None, limit=20000):
     union = {}
     labels = []  # nested list of label dicts grouped by variant
     indexed = []
-    
+
     for _, fvec, dicts in intermed[:limit]:
         # sort list of dicts by collection date (ISO format)
         labels.append(sorted(dicts, key=lambda d: d['coldate']))
