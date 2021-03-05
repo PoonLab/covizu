@@ -3,6 +3,8 @@ $( function() {
 } );
 
 $(document).tooltip({show: null});
+$("#loading_text").text(``);
+$("#loading").hide();
 
 /*********************** Session ID check ***********************/
 var sid = getUrlParameter('sid') // Load vars from url
@@ -23,7 +25,6 @@ $.post('https://gpsapi.epicov.org/epi3/gps_api?req='+ payload, function(data, st
     throw new Error('Forbidden')
   }
 });
-
 
 /*********************** DIALOGS ***********************/
 
@@ -149,7 +150,15 @@ req.done(function() {
       node = rect.nodes()[rect.size()-1];
 
   // initial display
-  d3.select(node).dispatch("click");
+  // d3.select(node).dispatch("click");
+  cindex = node.__data__.cluster_idx;
+  d3.select(node).attr("class", "clicked");
+  beadplot(node.__data__.cluster_idx);
+  $("#barplot").text(null);
+  gentable(node.__data__);
+  draw_region_distribution(node.__data__.allregions);
+  gen_details_table(beaddata[node.__data__.cluster_idx].points);  // update details table with all samples
+  draw_cluster_box(d3.select(node));
 
   /*
   rect = d3.selectAll("#svg-cluster > svg > g > circle");
@@ -232,8 +241,15 @@ req.done(function() {
     if (e.keyCode == 13 && ($('#search-input').val() != "" || $('#start-date').val() != "" || $('#end-date').val() != "")) {
       // type <enter> to run search
       // run_search();
-      wrap_search();
-      enable_buttons();
+      $('#error_message').text(``);
+      $("#loading").show();
+      $("#loading_text").text(`Loading. Please Wait...`);
+      setTimeout(function() {
+        wrap_search();
+        enable_buttons();
+        $("#loading").hide();
+        $("#loading_text").text(``);
+      }, 20);
     }
   });
 
@@ -304,8 +320,15 @@ req.done(function() {
   });
 
   $('#search-button').click(function() {
-    wrap_search();
-    enable_buttons();
+    $('#error_message').text(``);
+    $("#loading").show();
+    $("#loading_text").text(`Loading. Please Wait...`);
+    setTimeout(function() {
+      wrap_search();
+      enable_buttons();
+      $("#loading").hide();
+      $("#loading_text").text(``);
+    }, 20);
   });
 
   // Clear search
@@ -328,14 +351,28 @@ req.done(function() {
     // console.log(first_bead.id);
     // Edge case: User clicks next from a cluster above the first cluster
     if (curr_bead == 0 && (parseInt(d3.selectAll("rect.clicked").nodes()[0].id.substring(3)) > hit_ids[hit_ids.length - 1])) {
-      select_next_prev_bead(bead_id_to_accession, curr_bead);
-      select_working_bead(bead_id_to_accession, curr_bead);
+      $("#loading").show();
+      $("#loading_text").text(`Loading. Please Wait...`);
+      setTimeout(function() {
+        select_next_prev_bead(bead_id_to_accession, curr_bead);
+        select_working_bead(bead_id_to_accession, curr_bead);
+        $("#loading").hide();
+        $("#loading_text").text(``);
+      }, 20);
     }
     else if (curr_bead + 1 < search_results.get().total_points) {
       if (accn_to_cid[bead_id_to_accession[curr_bead]] != accn_to_cid[bead_id_to_accession[curr_bead + 1]]) {
-        select_next_prev_bead(bead_id_to_accession, curr_bead+1);
+        $("#loading").show();
+        $("#loading_text").text(`Loading. Please Wait...`);
+        setTimeout(function() {
+          select_next_prev_bead(bead_id_to_accession, curr_bead + 1);
+          select_working_bead(bead_id_to_accession, curr_bead + 1);
+          $("#loading").hide();
+          $("#loading_text").text(``);
+        }, 20);
       }
-      select_working_bead(bead_id_to_accession, curr_bead + 1);
+      else
+        select_working_bead(bead_id_to_accession, curr_bead + 1);
 
       const stats = search_results.update({
         current_point: curr_bead + 1
@@ -355,22 +392,78 @@ req.done(function() {
     var current_selection = d3.selectAll("rect.clicked").nodes()[0];
     if (current_selection.className.baseVal !== "SelectedCluster clicked") {
       if(parseInt(current_selection.id.substring(3)) < hit_ids[hit_ids.length - 1]) {
-        select_next_prev_bead(bead_id_to_accession, curr_bead);
-        select_working_bead(bead_id_to_accession, curr_bead);
+        $("#loading").show();
+        $("#loading_text").text(`Loading. Please Wait...`);
+        setTimeout(function() {
+          select_next_prev_bead(bead_id_to_accession, curr_bead);
+          select_working_bead(bead_id_to_accession, curr_bead);
+          $("#loading").hide();
+          $("#loading_text").text(``);
+        }, 20);
       }
     }
     else if (curr_bead - 1 >= 0) {
       // If the previous bead is not in the same cluster, selection of cluster needs to be modified
       if (accn_to_cid[bead_id_to_accession[curr_bead]] != accn_to_cid[bead_id_to_accession[curr_bead - 1]]) {
-        select_next_prev_bead(bead_id_to_accession, curr_bead-1);
+        $("#loading").show();
+        $("#loading_text").text(`Loading. Please Wait...`);
+        setTimeout(function() {
+          select_next_prev_bead(bead_id_to_accession, curr_bead-1);
+          select_working_bead(bead_id_to_accession, curr_bead-1);
+          $("#loading").hide();
+          $("#loading_text").text(``);
+        }, 20);
       }
-      select_working_bead(bead_id_to_accession, curr_bead - 1);
+      else
+        select_working_bead(bead_id_to_accession, curr_bead - 1);
 
       const stats = search_results.update({
         current_point: curr_bead - 1
       });
       
       update_search_stats(stats);
+    }
+  });
+
+  $(document).on('keydown', function(e) {
+    // User presses the left arrow key (37) or right arrow key (39)
+    if (e.keyCode == 37 || e.keyCode == 39) {
+      var selected_bead = d3.selectAll(".selectionH").nodes();
+
+      // var points_deselected = d3.selectAll(".not_SelectedBead").nodes();
+      // if (points_deselected.length == 0)
+      //   deselect_all_beads();
+
+      if (selected_bead.length == 0) {
+        var points_ui = d3.selectAll("#svg-cluster > svg > g > circle").nodes()[0];
+        var working_bead = d3.selectAll('circle[id="'+points_ui.__data__.accessions[0]+'"]').nodes()[0];
+        working_bead.classList.add("currBead");
+        working_bead.scrollIntoView({block: "center"});
+        update_table_individual_bead(d3.select(working_bead).datum());
+      }
+      else {
+        var selected_accession = selected_bead[0].attributes.bead.nodeValue;
+        var bead_node = d3.selectAll('circle[id="'+selected_accession+'"]');
+        var bead_id = parseInt(bead_node.nodes()[0].attributes.idx.nodeValue);
+        var total_nodes = d3.selectAll("#svg-cluster > svg > g > circle").nodes().length;
+
+        if (e.keyCode == 37) {
+          if (bead_id - 1 >= 0) {
+            var prev_node = d3.selectAll('circle[idx="'+(bead_id-1).toString()+'"]').nodes()[0];
+            // bead_node.attr("class", "not_SelectedBead");
+            bead_node.node().classList.remove("currBead");
+            select_next_bead(prev_node);
+          }
+        }
+        else if (e.keyCode == 39) {
+          if (bead_id + 1 < total_nodes - 1) {
+            var next_node = d3.selectAll('circle[idx="'+(bead_id+1).toString()+'"]').nodes()[0];
+            // bead_node.attr("class", "not_SelectedBead");
+            bead_node.node().classList.remove("currBead");
+            select_next_bead(next_node);
+          }
+        }
+      }
     }
   });
 });
@@ -418,3 +511,12 @@ $('#save_svg').click(function(){
 
 });
 */
+function export_svg() {
+  var config = {filename: clusters[cindex].lineage};
+  var svg_beadplot = d3.select('#svg-cluster>svg').node();
+  d3_save_svg.save(svg_beadplot, config);
+  svg_beadplot.removeAttribute("style");
+  svg_beadplot.removeAttribute("version");
+  svg_beadplot.removeAttribute("xmlns");
+  svg_beadplot.removeAttribute("xmlns:xlink");
+}

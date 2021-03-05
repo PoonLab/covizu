@@ -126,19 +126,27 @@ div.tree-beadplot {
   width: 250px;
 }
 
-.tree-beadplot-content {
+.tree-content {
   height: 81vh;
   overflow-y: scroll;
 }
 
-.tree-beadplot-content::-webkit-scrollbar {
-  display: none;
-}
-
-.tree-beadplot-content {
+.tree-content {
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
 }
+
+.tree-content::-webkit-scrollbar {
+  display: none;
+}
+
+.beadplot-content {
+  height: 81vh;
+  overflow-y: scroll;
+  scrollbar-track-color: white;
+}
+
+
 
 div.leftbox {
   overflow: auto;
@@ -164,12 +172,15 @@ div.middlebox {
   width: 500px;
   height: 100%;
   -ms-overflow-style: none;
-  scrollbar-width: none;
+  /* scrollbar-width: none; */
   margin: 5px 5px 0px 9px;
 }
+
+/*
 div.middlebox::-webkit-scrollbar {
   display: none;
 }
+ */
 
 div.rightbox {
   box-sizing: border-box;
@@ -194,7 +205,7 @@ div.legend-container {
 }
 
 div.search-bar-container {
-  margin: 5px 5px 5px 5px;
+  margin: 4px 5px 0px 5px;
   /* flex: grow; */
 }
 
@@ -257,6 +268,20 @@ footer {
   font-size: 0.8em;
 }
 
+span.clicker {
+  background-color: #999;
+  color: white;
+  font-size: 8pt;
+  vertical-align: middle;
+  margin: 1px;
+  padding: 1px;
+  display: inline-block;
+}
+
+span.clicker:hover {
+  background-color: #777;
+}
+
 button.ack {
   /* https://stackoverflow.com/questions/1367409/how-to-make-button-look-like-a-link */
   background: none!important;
@@ -294,6 +319,11 @@ circle.default{
 
 .SelectedBead{
   fill-opacity: 1;
+  stroke: black;
+}
+
+.currBead {
+  fill-opacity: 1 !important;
   stroke: black;
 }
 
@@ -503,4 +533,10 @@ a.sort-by:after {
 
 .hide-before:before, .hide-after:after {
     display: none !important;
+}
+
+#loading{
+  vertical-align: middle;
+  padding-right: 5px;
+  width: 18px;
 }

@@ -469,9 +469,25 @@ function draw_halo(bead) {
       .attr("fill", "none")
       .attr("stroke", "grey")
       .attr("fill-opacity", 1)
-      .attr("stroke-width", 5);
+      .attr("stroke-width", 5)
+      .attr("bead", bead.accessions[0]);
 }
 
+
+function draw_halo_front(bead) {
+  d3.selectAll(".selectionH").remove();
+
+  visB.append("circle")
+    .attr('class', "selectionH")
+    .attr("cx", xScaleB(xValueB(bead)))
+    .attr("cy", yScaleB(yValueB(bead)))
+    .attr("r", 4 * Math.sqrt(bead.count) + 4)
+    .attr("fill", "none")
+    .attr("stroke", "grey")
+    .attr("fill-opacity", 1)
+    .attr("stroke-width", 5)
+    .attr("bead", bead.accessions[0]);
+}
 
 /**
  * Reset beadplot display to default settings.
@@ -489,6 +505,11 @@ function clear_selection() {
    update_search_stats(stats); 
 
   // $('#error_message').text(``);
+
+  // Changes opacity of currently clicked cluster
+  d3.selectAll("rect.clicked").attr('class', "clicked");
+  $("#loading").hide();
+  $("#loading_text").text(``);
 
   d3.select("#svg-cluster").selectAll("line")
       .attr("stroke-opacity", 1);
@@ -520,6 +541,20 @@ function beadplot(cid) {
         min_y = d3.min(variants, yValue1B),
         max_y = d3.max(variants, yValue1B);
 
+    edgelist.forEach(function(d) {
+      d.x1.setHours(0,0,0);
+      d.x2.setHours(0,0,0);
+    });
+
+    points.forEach(function(d) {
+      d.x.setHours(0,0,0);
+    });
+
+    variants.forEach(function(d) {
+      d.x1.setHours(0,0,0);
+      d.x2.setHours(0,0,0);
+    });
+
     // update vertical range for consistent spacing between variants
     heightB = max_y * 10 + 40;
     $("#svg-cluster > svg").attr("height", heightB + marginB.top + marginB.bottom);
@@ -527,8 +562,11 @@ function beadplot(cid) {
     yScaleB.domain([min_y, max_y]);
 
     xScaleB = d3.scaleLinear().range([0, currentWidth]);
+    var xAxis = d3.scaleTime().range([0, currentWidth]);
+
     // allocate space for text labels on left
     xScaleB.domain([mindate - 170*(spandate/currentWidth), maxdate]);
+    xAxis.domain([mindate - 170*(spandate/currentWidth), maxdate]);
 
     // update horizontal range
 
@@ -713,6 +751,7 @@ function beadplot(cid) {
         .attr("cy", yMapB)
         .attr("class", "default")
         .attr("id", function(d) { return d.accessions[0]; })
+        .attr("idx", function(d, i) { return i; })
         .attr("search_hit", function(d) {
           if (search_results.get().beads.length == 0){
             return null;
@@ -771,7 +810,10 @@ function beadplot(cid) {
         })
         .on("click", function(d) {
           clear_selection();
-          draw_halo(d);
+          this.remove();
+          d3.selectAll("div#svg-cluster > svg > g").node().append(this);
+          draw_halo_front(d);
+
           gentable(d);
           draw_region_distribution(d.region);
           gen_details_table(d);
@@ -788,12 +830,16 @@ function beadplot(cid) {
           $('#search_stats').addClass("disabled_stats");
         });
 
+ 
+    var tickCount = 0.005*currentWidth;
+    if (tickCount <= 4) tickCount = 4;
+
     // draw x-axis
     visBaxis.append("g")
         .attr("transform", "translate(0,20)")
         .call(
-          d3.axisTop(xScaleB)
-            .ticks(5)
+          d3.axisTop(xAxis)
+            .ticks(tickCount)
             .tickFormat(d3.timeFormat("%Y-%m-%d"))
         );
   }
@@ -1159,4 +1205,15 @@ function serialize_beadplot(cidx) {
   var edgelist = beaddata[cidx].edgelist,
       root = edgelist[0].parent;
   return serialize_branch(root, edgelist)+';';
+}
+
+
+function select_next_bead(next_node) {
+  var select_bead = d3.selectAll('circle[id="'+next_node.id+'"]');
+  select_bead.node().classList.add("currBead");
+  select_bead.remove();
+  d3.selectAll("div#svg-cluster > svg > g").node().append(select_bead.node());
+  var working_bead = select_bead.nodes()[0];
+  working_bead.scrollIntoView({block: "center"});
+  update_table_individual_bead_front(d3.select(working_bead).datum());
 }

@@ -42,7 +42,9 @@
         <div class="search-bar-container">
           <div id="search-bar">
             <input type="search" id="search-input"
-                    placeholder="e.g., B.1.351 or EPI_ISL_434070 or Canada">
+                    placeholder="e.g., EPI_ISL_434070 or Canada">
+          </div>
+          <div id="search-bar">
             <input id="start-date" class="dates"
                       placeholder="Start">
             to
@@ -58,11 +60,7 @@
             <button type="button" id="previous_button">Previous</button>
             <button type="button" id="next_button">Next</button>
             <span id="search_stats">0 of 0 points</span>
-          </div>
-          <div style="padding-top: 5px;">
-            <img id="loading" src="img/Loading_icon_cropped.gif"/>
-            <span id="loading_text"></span>
-            <span id="error_message"></span>
+            <button type="button" id="save_svg">Export SVG</button>
           </div>
         </div>
         <!-- </span> -->
@@ -72,31 +70,23 @@
         <div class="leftbox">
           <div class="floattitle">
             Time-scaled tree
-            <span class="clicker" title="Download time-scaled tree" onclick="save_timetree()">
-              &nbsp;&nbsp;NWK&nbsp;&nbsp;
-            </span>
+            <span title="Download time-scaled tree" onclick="save_timetree()"> &#128317;</span>
             <span title="Timetree help" onclick="$('#help-timetree').dialog('open');" style="cursor: help">&#128304;</span>
           </div>
           <div class="floattitle" id="svg-timetreeaxis" style="top: 58px; z-index: 13"></div>
           <div class="tree-container">
-            <div class="tree-content" id="svg-timetree" style="width: 250px; max-width: 250px;"></div>
+            <div class="tree-beadplot-content" id="svg-timetree" style="width: 250px; max-width: 250px;"></div>
           </div>
         </div>
 
         <div class="middlebox">
           <div class="floattitle">
             Beadplot
-            <span class="clicker" title="Download beadplot as tree" onclick="save_beadplot();">
-              &nbsp;&nbsp;NWK&nbsp;&nbsp;
-            </span>
-            <!--<button type="button" id="save_svg">Export SVG</button>-->
-            <span class="clicker" title="Save beadplot as SVG" onclick="export_svg();">
-              &nbsp;&nbsp;SVG&nbsp;&nbsp;
-            </span>
+            <span title="Download beadplot as tree" onclick="save_beadplot();"> &#128317;</span>
             <span title="Beadplot help" onclick="$('#help-beadplot').dialog('open');" style="cursor: help">&#128304;</span>
           </div>
           <div class="floattitle" id="svg-clusteraxis" style="top: 58px; z-index: 14"></div>
-          <div class="beadplot-content" id="svg-cluster"></div>
+          <div class="tree-beadplot-content" id="svg-cluster"></div>
         </div>
       </div>
     </div>
@@ -143,7 +133,7 @@
               <div id="seqtable-hint" class="hint">
                 Hover over accession (EPI_ISL_#) to display laboratory and author info.
               </div>
-              <div style="overflow-y: auto; overflow-x: scroll; max-height: 200px" id="seq-table"></div>
+              <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="seq-table"></div>
             </div>
           </div>
         </div>
@@ -153,29 +143,34 @@
 
   <div id="splash" title="Welcome">
     <p>
-      <b>CoVizu</b> is an <a href="https://github.com/PoonLab/CoVizu" target="_new">open source project</a>
-      endeavouring to visualize the global diversity of SARS-CoV-2 genomes, which are provided by
-      the <a href="https://gisaid.org" target="_new">GISAID Initiative</a>.
+      <b>CoVizu</b> es un <a href="https://github.com/PoonLab/CoVizu" target="_new">proyecto de código abierto</a>
+      cuyo objetivo es el de visualizat la diversidad de genomas de SARS-CoV-2, que son entregados por la
+      iniciativa <a href="https://gisaid.org" target="_new">GISAID</a>.
     </p>
     <p>
-      This web page provides two interactive visualizations of these data.
-      On the left, it displays a <a href="https://en.wikipedia.org/wiki/Phylogenetic_tree" target="_new">
-      phylogenetic tree</a> summarizing the evolutionary relationships among different
-      <a href="https://cov-lineages.org" target="_new">SARS-CoV-2 lineages</a> (groupings of viruses with
-      similar genomes, useful for linking outbreaks in different places; <a href="https://www.nature.com/articles/s41564-020-0770-5" target="_new">Rambaut
+      Esta página web permite visualizar la información de dos formas interactivas.
+      En el panel izquierdo muestra un <a href="https://en.wikipedia.org/wiki/Phylogenetic_tree" target="_new">
+      ábol filogenético</a> resumiento las relaciones evolutivas entre differentes
+      <a href="https://cov-lineages.org" target="_new">linajes de SARS-CoV-2</a> (agrupando virus con genomas 
+      similares, lo que resulta para encontrar relaciones entre brotes en differentes lugares; 
+      <a href="https://www.nature.com/articles/s41564-020-0770-5" target="_new">Rambaut
       <i>et al.</i> 2020</a>).
-      You can navigate between different lineages by clicking on their respective boxes.
+      Es posible navegar entre diferentes linajes haciendo click en sus respectivos recuadros.
     </p>
     <p>
-      Selecting a lineage displays a "beadplot" visualization in the centre of the page.
+      Al selectionar un linaje, es posible visualizar en la página central un diagramada conocido como "beadplot".
+      En este diagrama, cada línea horizontal representa una o más muestras de SARS-CoV-2 que comparten la misma 
+      sequencia.
+      Los 
       Each horizontal line represents one or more samples of SARS-CoV-2 that share the same genome
       sequence.
-      Beads along the line represent the dates that this variant was sampled.
+      Las burbujas a lo largo de la línea representan las fechas en las cuales se tomaton 
+      las muestras de dicha variante.
     </p>
     <p>
-      For more help, click on the
+      Para más información, has click en los
       <a style="text-decoration: none;" href="https://en.wikipedia.org/wiki/Shoshinsha_mark" target="_new">
-        &#128304;</a>icons.
+        &#128304;</a>íconos.
     </p>
   </div>
 
@@ -299,8 +294,8 @@
   </footer>
 
   <script src="js/beadplot.js"></script>
-  <script src="js/utils.js"></script>
   <script src="js/drawtree.js"></script>
+  <script src="js/utils.js"></script>
   <script src="js/phylo.js"></script>
   <script src="js/search.js"></script>
   <script src="js/gisaid/gisaid.js?random=1"></script>
