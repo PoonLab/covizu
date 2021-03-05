@@ -7,24 +7,24 @@ $("#loading_text").text(``);
 $("#loading").hide();
 
 /*********************** Session ID check ***********************/
-var sid = getUrlParameter('sid') // Load vars from url
+// var sid = getUrlParameter('sid') // Load vars from url
 
-payload = jsonToURI({"cmd":"state/session/validate",
- "api": {"version":1},
- "client_id":"cid-e9418c5b4b6e",
- "sid": sid})
+// payload = jsonToURI({"cmd":"state/session/validate",
+//  "api": {"version":1},
+//  "client_id":"cid-e9418c5b4b6e",
+//  "sid": sid})
 
-$.post('https://gpsapi.epicov.org/epi3/gps_api?req='+ payload, function(data, status){
-  console.log(data)
-  //Not logged in
-  if (data.rc != "ok"){
-    var r = confirm('Unable to verify session credentials. Please access app through platform.gisaid.org. Press "OK" to redirect to GISAID homepage.')
-    if (r == true){
-      window.location.href = 'https://platform.gisaid.org'
-      }
-    throw new Error('Forbidden')
-  }
-});
+// $.post('https://gpsapi.epicov.org/epi3/gps_api?req='+ payload, function(data, status){
+//   console.log(data)
+//   //Not logged in
+//   if (data.rc != "ok"){
+//     var r = confirm('Unable to verify session credentials. Please access app through platform.gisaid.org. Press "OK" to redirect to GISAID homepage.')
+//     if (r == true){
+//       window.location.href = 'https://platform.gisaid.org'
+//       }
+//     throw new Error('Forbidden')
+//   }
+// });
 
 /*********************** DIALOGS ***********************/
 
@@ -156,7 +156,7 @@ req.done(function() {
   beadplot(node.__data__.cluster_idx);
   $("#barplot").text(null);
   gentable(node.__data__);
-  draw_region_distribution(node.__data__.allregions);
+  draw_region_distribution(node.__data__.region);
   gen_details_table(beaddata[node.__data__.cluster_idx].points);  // update details table with all samples
   draw_cluster_box(d3.select(node));
 

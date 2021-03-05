@@ -241,7 +241,7 @@ function lineage_search(text_query, start_date, end_date) {
   var cluster_info = cluster.datum();
   beadplot(cluster_info.cluster_idx);
   gentable(cluster_info);
-  draw_region_distribution(cluster_info.allregions);
+  draw_region_distribution(cluster_info.region);
   gen_details_table(beaddata[cluster_info.cluster_idx].points); 
 }
 
@@ -315,14 +315,14 @@ function select_cluster(cidx) {
 function update_table_individual_bead(bead) {
   draw_halo(bead);
   gentable(bead);
-  draw_region_distribution(tabulate(bead.region));
+  draw_region_distribution(bead.region);
   gen_details_table(bead);
 }
 
 function update_table_individual_bead_front(bead) {
   draw_halo_front(bead);
   gentable(bead);
-  draw_region_distribution(tabulate(bead.region));
+  draw_region_distribution(bead.region);
   gen_details_table(bead);
 }
 

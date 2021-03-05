@@ -608,7 +608,7 @@ function click_cluster(d, cluster_info) {
     }
 
     gentable(d);
-    draw_region_distribution(d.allregions);
+    draw_region_distribution(d.region);
     gen_details_table(beaddata[d.cluster_idx].points);  // update details table with all samples
   }
   else if (cluster_info.className.baseVal !== "SelectedCluster"){
@@ -638,7 +638,7 @@ function click_cluster(d, cluster_info) {
     $("#barplot").text(null);
 
     gentable(d);
-    draw_region_distribution(d.allregions);
+    draw_region_distribution(d.region);
     gen_details_table(beaddata[d.cluster_idx].points);  // update details table with all samples
     
     // FIXME: this is the same div used for making barplot SVG
