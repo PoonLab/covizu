@@ -219,6 +219,44 @@ def sort_by_lineage(records, callback=None):
     return result
 
 
+def convert_json(infile, provision):
+    """
+    Convert clusters JSON file from main branch format to EpiCov format.
+    :param infile:  open file stream ('r') to clusters JSON
+    :param provision:  str, path to GISAID provision file
+    :return:  dict, revised clusters to serialize to new JSON file
+    """
+    # first generate dictionary from provision keyed by accession
+    metadata = {}
+    with lzma.open(provision, 'rb') as handle:
+        for line in handle:
+            record = json.loads(line)
+            metadata.update({record['covv_accession_id']: {
+                'name': record['covv_virus_name'],
+                'location': record['covv_location'],
+                'coldate': record['covv_collection_date'],
+                'gender': record['covv_gender'],
+                'age': record['covv_patient_age'],
+                'status': record['covv_patient_status']
+            }})
+
+    clusters = json.load(infile)
+    for cluster in clusters:
+        for variant, samples in cluster['nodes'].items():
+            revised = []
+            for coldate, accn, name in samples:
+                md = metadata.get(accn, None)
+                if md is None:
+                    print("Failed to retrieve metadata for accession {}".format(accn))
+                    sys.exit()
+                revised.append([name, accn, md['location'], coldate, md['gender'], md['age'], md['status']])
+
+            # replace list of samples
+            cluster['nodes'][variant] = revised
+
+    return clusters
+
+
 def parse_args():
     """ Command line help text"""
     parser = argparse.ArgumentParser("")
