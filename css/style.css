@@ -252,6 +252,10 @@ div.legend {
   padding: 3px;
 }
 
+.ui-slider .ui-slider-handle {
+  color: red;
+}
+
 .hint {
   border-bottom: 1px dotted #000;
   cursor: help;

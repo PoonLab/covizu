@@ -1,10 +1,12 @@
 $( function() {
   $( "#tabs" ).tabs();
+  $("#vedge-slider").slider();
 } );
 
 $(document).tooltip({show: null});
 $("#loading_text").text(``);
 $("#loading").hide();
+
 
 /*********************** DIALOGS ***********************/
 
