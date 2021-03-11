@@ -414,8 +414,7 @@ function deselect_all_beads() {
 function select_working_bead(bead_id_to_accession, curr_bead) {
   var current_bead = d3.selectAll('circle[id="'+bead_id_to_accession[curr_bead]+'"]');
   var working_bead = current_bead.nodes()[0];
-  current_bead.remove();
-  d3.selectAll("div#svg-cluster > svg > g").node().append(current_bead.node());
+  current_bead.raise();
   working_bead.scrollIntoView({block: "center"});
   update_table_individual_bead_front(d3.select(working_bead).datum());
 }
