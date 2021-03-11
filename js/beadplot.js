@@ -502,6 +502,7 @@ function beadplot(cid) {
   let slider = $("#vedge-slider");
   slider.slider("value", 2.0)
         .slider("option", "max", max_dist);
+  $( "#custom-handle" ).text("2.0");
 
   function redraw() {
     let currentWidth = document.getElementById("svg-cluster").clientWidth
@@ -565,8 +566,34 @@ function beadplot(cid) {
           return("#bbd");
         })
         .on("mouseover", function(d) {
+          // visual feedback
           var edge = d3.select(this);
           edge.attr("stroke-width", 3);
+
+          let parent_variant = d3.select(".lines#"+d.parent.replace('/', '-').replace(' ', '_')),
+              child_variant = d3.select(".lines#"+d.child.replace('/', '-').replace(' ', '_'));
+
+          if (!parent_variant.empty()) {
+            if (parent_variant.datum().count > 0) {
+              d3.selectAll("circle").filter(ci => ci.y === d.y1)
+                  .attr("stroke-width", 1.5)
+                  .attr("r", function(d) {
+                    return 4 * Math.sqrt(d.count) + 3;
+                  });
+            }
+            parent_variant.attr("stroke-width", 5);
+          }
+
+          if (!child_variant.empty()) {
+            if (child_variant.datum().count > 0) {
+              d3.selectAll("circle").filter(ci=>ci.y===d.y2)
+                  .attr("stroke-width", 1.5)
+                  .attr("r", function(d) {
+                    return 4*Math.sqrt(d.count)+3;
+                  });
+            }
+            child_variant.attr("stroke-width", 5);
+          }
 
           // Show tooltip
           cTooltip.transition()
@@ -598,8 +625,33 @@ function beadplot(cid) {
                 }
               });
         })
-        .on("mouseout", function() {
+        .on("mouseout", function(d) {
           d3.select(this).attr("stroke-width", 1);
+
+          let parent_variant = d3.select(".lines#"+d.parent.replace('/', '-').replace(' ', '_')),
+              child_variant = d3.select(".lines#"+d.child.replace('/', '-').replace(' ', '_'));
+
+          if (!parent_variant.empty()) {
+            if (parent_variant.datum().count > 0) {
+              d3.selectAll("circle").filter(ci=>ci.y===d.y1)
+                  .attr("stroke-width", 1)
+                  .attr("r", function(d) {
+                    return 4 * Math.sqrt(d.count);
+                  });
+            }
+            parent_variant.attr("stroke-width", 3);
+          }
+
+          if (!child_variant.empty()) {
+            if (child_variant.datum().count > 0) {
+              d3.selectAll("circle").filter(ci=>ci.y===d.y2)
+                  .attr("stroke-width", 1)
+                  .attr("r", function(d) {
+                    return 4 * Math.sqrt(d.count);
+                  });
+            }
+            child_variant.attr("stroke-width", 3);
+          }
 
           cTooltip.transition()     // Hide tooltip
               .duration(50)
@@ -610,7 +662,10 @@ function beadplot(cid) {
     visB.selectAll("lines")
         .data(variants)
         .enter().append("line")
-        .attr(  "class", "lines")
+        .attr("class", "lines")
+        .attr("id", function(d) {
+          return d.label.replace('/', '-').replace(' ', '_');
+        })
         .attr("x1", xMap1B)
         .attr("x2", xMap2B)
         .attr("y1", yMap1B)
@@ -813,11 +868,16 @@ function beadplot(cid) {
   redraw();
   window.addEventListener("resize", redraw);
 
-  if ($._data(slider[0], "events").slidechange !== undefined) {
-    // replace previous event listener
-    $._data(slider[0], "events").slidechange.pop();
+  // replace previous event listeners
+  let listeners = $._data(slider[0], "events");
+  if (listeners.slidechange !== undefined) {
+    listeners.slidechange.pop();
   }
-  slider.on("slidechange", function(event, ui) {
+  if (listeners.slide !== undefined) {
+    listeners.slide.pop();
+  }
+
+  slider.on(edgelist.length < 200 ? "slide" : "slidechange", function(event, ui) {
     if (ui.valueOf().value !== 2.0) {
       // avoid drawing beadplot twice on load
       redraw();
@@ -864,7 +924,12 @@ function gen_details_table(obj) {
 
       // "zip" the sequence details of each sample
       for (let i = 0; i < obj[j].accessions.length; i++) {
-        let sample_details = [obj[j].accessions[i], obj[j].labels[i], formatDate(obj[j].x)];
+        let sample_details = [
+          obj[j].accessions[i],
+          obj[j].labels[i],
+          formatDate(obj[j].x),
+          obj[j].accessions[0]  // variant labeled by accession
+        ];
         details.push(sample_details);
       }
     }
@@ -873,7 +938,12 @@ function gen_details_table(obj) {
   else {
     // "zip" the sequence details of each sample
     for (let i = 0; i < obj.accessions.length; i++) {
-      let sample_details = [obj.accessions[i], obj.labels[i], formatDate(obj.x)];
+      let sample_details = [
+        obj.accessions[i],
+        obj.labels[i],
+        formatDate(obj.x),
+        obj.accessions[0]
+      ];
       details.push(sample_details);
     }
   }
@@ -915,16 +985,24 @@ function gen_details_table(obj) {
       .data(details)
       .enter()
       .append('tr')
-      .on("mouseover", function () {
-        d3.select(this).style("background-color", "#e2e2e2");  // Highlight on mouseover
+      .on("mouseover", function (x) {
+        //console.log(x);
+        let circle = d3.select("circle#"+x[3]).attr("stroke-width", 2);
+        circle.attr("r", 4*Math.sqrt(circle.datum().count)+3);
+
+        // Highlight row on mouseover
+        d3.select(this).style("background-color", "#e2e2e2");
       })
-      .on("mouseout", function () {            // Remove highlighting on mouseout
+      .on("mouseout", function (x) {
+        let circle = d3.select("circle#"+x[3]).attr("stroke-width", 1);
+        circle.attr("r", 4*Math.sqrt(circle.datum().count));
+        // Remove highlighting on mouseout
         d3.select(this).style("background-color", null);
       });
 
   // Create a cell for every row in the column
   t_rows.selectAll('td')
-      .data(function (r) { return r; })
+      .data(function (r) { return r.slice(0,3); })
       .enter()
       .append('td')
       .append('span')

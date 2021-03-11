@@ -307,6 +307,21 @@ button.ack {
   margin: 1em auto;
 }
 
+div#vedge-slider {
+  width: 150px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+#custom-handle {
+  width: 3em;
+  height: 1.6em;
+  top: 50%;
+  font-size: 8pt;
+  margin-top: -.8em;
+  text-align: center;
+  line-height: 1.6em;
+}
 
 circle.default{
   fill-opacity: 1;

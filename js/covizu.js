@@ -1,6 +1,16 @@
 $( function() {
   $( "#tabs" ).tabs();
+
+  var handle = $( "#custom-handle" );
+
   $("#vedge-slider").slider({
+    create: function( event, ui ) {
+      handle.text( $( this ).slider( "value" ) );
+    },
+    slide: function( event, ui ) {
+      handle.text( ui.value );
+    },
+    min: 0.5,
     step: 0.01
   });
 } );
