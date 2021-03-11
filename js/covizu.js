@@ -1,6 +1,8 @@
 $( function() {
   $( "#tabs" ).tabs();
-  $("#vedge-slider").slider();
+  $("#vedge-slider").slider({
+    step: 0.01
+  });
 } );
 
 $(document).tooltip({show: null});

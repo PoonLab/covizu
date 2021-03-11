@@ -721,8 +721,6 @@ function search() {
 
 
 function search_by_dates(start, end) {
-  console.log(start);
-  console.log(end);
   var rects = d3.selectAll("#svg-timetree > svg > rect:not(.clickedH)")
     .filter(function(d) { return d.first_date <= end && d.last_date >= start });
   select_clusters(rects);

@@ -497,8 +497,15 @@ function beadplot(cid) {
       edgelist = beaddata[cid].edgelist,
       points = beaddata[cid].points;
 
-  function redraw() {    
-    currentWidth = document.getElementById("svg-cluster").clientWidth - marginB.left -  marginB.right;
+  // rescale slider
+  let max_dist = Math.max(...edgelist.map(x => x.dist));
+  let slider = $("#vedge-slider");
+  slider.slider("value", 2.0)
+        .slider("option", "max", max_dist);
+
+  function redraw() {
+    let currentWidth = document.getElementById("svg-cluster").clientWidth
+        - marginB.left -  marginB.right;
 
     // set plotting domain
     var mindate = d3.min(variants, xValue1B),
@@ -546,7 +553,7 @@ function beadplot(cid) {
 
     // draw vertical line segments that represent edges in NJ tree
     visB.selectAll("lines")
-        .data(edgelist)
+        .data(edgelist.filter(x => x.dist <= slider.slider("value")))
         .enter().append("line")
         .attr("class", "lines")
         .attr("x1", xMap1B)
@@ -555,13 +562,7 @@ function beadplot(cid) {
         .attr("y2", yMap2B)
         .attr("stroke-width", 1)
         .attr("stroke", function(d) {
-          if (d.dist < 1.5) {
-            return("#aad");
-          } else if (d.dist < 2.5) {
-            return("#bbd");
-          } else {
-            return("#ccf");
-          }
+          return("#bbd");
         })
         .on("mouseover", function(d) {
           var edge = d3.select(this);
@@ -796,7 +797,7 @@ function beadplot(cid) {
           $('#search_stats').addClass("disabled_stats");
         });
 
- 
+
     var tickCount = 0.005*currentWidth;
     if (tickCount <= 4) tickCount = 4;
 
@@ -812,7 +813,18 @@ function beadplot(cid) {
   redraw();
   window.addEventListener("resize", redraw);
 
+  if ($._data(slider[0], "events").slidechange !== undefined) {
+    // replace previous event listener
+    $._data(slider[0], "events").slidechange.pop();
+  }
+  slider.on("slidechange", function(event, ui) {
+    if (ui.valueOf().value !== 2.0) {
+      // avoid drawing beadplot twice on load
+      redraw();
+    }
+  });
 }
+
 
 /**
  * Writes information about the region distribution to a string
