@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<head>
+  <meta charset="UTF-8"/>
+  <title>CoVizu</title>
+  <meta name="description"
+        content="CoVizu: L'analyser et visualisation la diversit&eacute; globale des g&eacute;nomes du SRAS-CoV-2 en temps r&eacute;el.">
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <link rel="stylesheet" href="css/style.css">
+
+  <script src="js/jquery.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+  <script src="js/d3.js"></script>
+  <script src="js/d3-scale.js"></script>
+  <script src="js/FileSaver.js"></script>
+  <script src="js/d3-save-svg.min.js"></script>
+</head>
+
+<body>
+  <div class="tooltip" id="tooltipContainer"></div>
+
+  <div class="app">
+    <div class="app-left">
+      <div class="bar" style="top: 10px; left: 10px; z-index:10" >
+        <!-- <span style="display: inline-block; width: 250px; vertical-align: top"> -->
+        <div class="legend-container">
+          <label for="select-tree-colours">Colorer les branches:</label>
+          <select name="tree-colours" id="select-tree-colours">
+            <option>R&eacute;gion</option>
+            <option>T. de l'&eacute;chantillon</option>
+            <option>Date de collecte</option>
+            <option>Divergence</option>
+          </select>
+          <div class="legend" id="div-region-legend"></div>
+          <div class="legend" id="svg-sample-legend"></div>
+          <div class="legend" id="svg-coldate-legend"></div>
+          <div class="legend" id="svg-diverge-legend"></div>
+        </div>
+        <!-- </span> -->
+
+        <!-- <span style="display: inline-block; vertical-align: top"> -->
+        <div class="search-bar-container">
+          <div id="search-bar">
+            <input type="search" id="search-input"
+                    placeholder="e.g., B.1.351 ou EPI_ISL_434070 ou Canada">
+            <input id="start-date" class="dates"
+                      placeholder="D&eacute;but">
+            to
+            <input id="end-date" class="dates"
+                      placeholder="Fin">
+            <span onclick="$('#help-search').dialog('open');" style="cursor: help">&#128304;</span>
+          </div>
+          <br/>
+          
+          <div id="navigation" style="padding-top: 5px">
+            <button type="button" id="search-button">Rechercher</button>
+            <button type="button" id="clear_button">R&eacute;initialiser</button>
+            <button type="button" id="previous_button">Pr&eacute;c&eacute;dent</button>
+            <button type="button" id="next_button">Suivant</button>
+            <span id="search_stats">0 de 0 points</span>
+          </div>
+          <div style="padding-top: 5px;">
+            <img id="loading" src="img/Loading_icon_cropped.gif"/>
+            <span id="loading_text"></span>
+            <span id="error_message"></span>
+          </div>
+        </div>
+        <!-- </span> -->
+      </div>
+    
+      <div class="tree-beadplot">
+        <div class="leftbox">
+          <div class="floattitle">
+            Phylog&eacute;nie &eacute;chelonn&eacute; sur le temps
+            <span class="clicker" title="T&eacute;l&eacute;charger la phylog&eacute;nie" onclick="save_timetree()">
+              &nbsp;&nbsp;NWK&nbsp;&nbsp;
+            </span>
+            <span title="Aider avec la phylog&eacute;nie" onclick="$('#help-timetree').dialog('open');" style="cursor: help">&#128304;</span>
+          </div>
+          <div class="floattitle" id="svg-timetreeaxis" style="top: 58px; z-index: 13"></div>
+          <div class="tree-container">
+            <div class="tree-content" id="svg-timetree" style="width: 250px; max-width: 250px;"></div>
+          </div>
+        </div>
+
+        <div class="middlebox">
+          <div class="floattitle">
+            Diagramme perle
+            <span class="clicker" title="T&eacute;l&eacute;charger comme un arbre" onclick="save_beadplot();">
+              &nbsp;&nbsp;NWK&nbsp;&nbsp;
+            </span>
+            <!--<button type="button" id="save_svg">Export SVG</button>-->
+            <span class="clicker" title="T&eacute;l&eacute;charger le SVG" onclick="export_svg();">
+              &nbsp;&nbsp;SVG&nbsp;&nbsp;
+            </span>
+            <span title="Aider avec le diagramme perle" onclick="$('#help-beadplot').dialog('open');" style="cursor: help">&#128304;</span>
+
+            <span style="width: 150px;">
+              <label style="vertical-align: middle;" for="vedge-slider">Edge cutoff:&nbsp;&nbsp;</label>
+              <div id="vedge-slider">
+                <div id="custom-handle" class="ui-slider-handle"></div>
+              </div>
+            </span>
+          </div>
+          <div class="floattitle" id="svg-clusteraxis" style="top: 58px; z-index: 14"></div>
+          <div class="beadplot-content" id="svg-cluster"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-right">
+      <div class="sticky">
+        <div style="top: 0; right: 0; z-index: 10; width: 270px">
+          <a href="https://github.com/PoonLab/covizu" target=“_new” class="github-corner" aria-label="View source on GitHub">
+            <!-- https://github.com/tholman/github-corners -->
+            <svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0; z-index: 21" aria-hidden="true">
+              <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
+              <path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path>
+              <path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path>
+            </svg>
+          </a>
+        </div>
+        <div class="rightbox">
+          <div style="padding-top: 10px;"><h1>CoVizu</h1></div>
+          <div style="padding-top: 10px; padding-right: 6px;">
+            <h3>Near real-time visualization of SARS-CoV-2 (hCoV-19) genomic variation</h3>
+          </div>
+          <span style="width: 250px">
+            <div class="gisaid">Enabled by data from&nbsp;<a href="https://gisaid.org" target="_new">
+                <img src="https://www.gisaid.org/fileadmin/gisaid/img/schild.png"
+                     height="24px"/>
+              </a>
+            </div>
+          </span>
+          <p>
+            <div style="font-size: 0.9em;" id="div-last-update"></div>
+            <div style="padding-bottom: 20px; font-size: 0.9em;" id="div-number-genomes"></div>
+          </p>
+
+          <div id="tabs">
+            <ul>
+              <li><a href="#tabs-1">Countries</a></li>
+              <li><a href="#tabs-2">Samples</a></li>
+            </ul>
+            <div id="tabs-1">
+              <div class="breaker" id="barplot"></div>
+              <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="country-table"></div>
+            </div>
+            <div id="tabs-2">
+              <div id="seqtable-hint" class="hint">
+                Hover over accession (EPI_ISL_#) to display laboratory and author info.
+              </div>
+              <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="seq-table"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="splash" title="Welcome">
+    <p>
+      <b>CoVizu</b> is an <a href="https://github.com/PoonLab/CoVizu" target="_new">open source project</a>
+      endeavouring to visualize the global diversity of SARS-CoV-2 genomes, which are provided by
+      the <a href="https://gisaid.org" target="_new">GISAID Initiative</a>.
+    </p>
+    <p>
+      This web page provides two interactive visualizations of these data.
+      On the left, it displays a <a href="https://en.wikipedia.org/wiki/Phylogenetic_tree" target="_new">
+      phylogenetic tree</a> summarizing the evolutionary relationships among different
+      <a href="https://cov-lineages.org" target="_new">SARS-CoV-2 lineages</a> (groupings of viruses with
+      similar genomes, useful for linking outbreaks in different places; <a href="https://www.nature.com/articles/s41564-020-0770-5" target="_new">Rambaut
+      <i>et al.</i> 2020</a>).
+      You can navigate between different lineages by clicking on their respective boxes.
+    </p>
+    <p>
+      Selecting a lineage displays a "beadplot" visualization in the centre of the page.
+      Each horizontal line represents one or more samples of SARS-CoV-2 that share the same genome
+      sequence.
+      Beads along the line represent the dates that this variant was sampled.
+    </p>
+    <p>
+      For more help, click on the
+      <a style="text-decoration: none;" href="https://en.wikipedia.org/wiki/Shoshinsha_mark" target="_new">
+        &#128304;</a>icons.
+    </p>
+  </div>
+
+  <div id="help-timetree" title="Help: Time-scaled tree interface">
+    <p>
+      A phylogenetic tree is a model of how different populations are related by common ancestors.
+      The tree displayed here (generated by <a href="https://github.com/neherlab/treetime">
+      TreeTime</a> v0.8.0) summarizes the common ancestry of different
+      <a href="https://cov-lineages.org" target="_new">SARS-CoV-2 lineages</a>, which are
+      pre-defined groupings of viruses based on genome similarity.
+    </p>
+    <p>
+      A time scale is drawn above the tree marked with
+      <a href="https://en.wikipedia.org/wiki/ISO_8601" target="_new">dates</a>.
+      The earliest ancestor (root) is drawn on the left, and the most recent observed descendants are
+      on the right.
+      We estimate the dates of common ancestors by comparing the sampled genomes and assuming
+      a <a href="http://virological.org/t/phylodynamic-analysis-176-genomes-6-mar-2020/356" target="_new">constant rate</a> of evolution.
+    </p>
+    <p>
+      For each lineage, we draw a rectangle to summarize the range of sample collection
+      dates, and colour it according to the geographic region it was sampled most often.
+      To explore the samples within a lineage, click on the label (<i>e.g.,</i> "B.4")
+      or the rectangle to retrieve the associated beadplot.
+    </p>
+  </div>
+
+  <div id="help-beadplot" title="Help: Beadplot interface">
+    <p>
+      We use beadplots to visualize the different variants of SARS-CoV-2 within a
+      <a href="https://cov-lineages.org" target="_new">lineage</a>, where and when
+      they have been sampled, and how they are related to each other.
+      Every object in the beadplot has additional info in a tooltip (which you view by hovering
+      over that object with your mouse pointer).
+    </p>
+    <p>
+      Each horizontal line segment represents a variant &ndash; viruses with
+      <span class="hint" title="It's a bit more complicated.  Many genomes are identical in sequence, but many more have missing information - parts of the genome that have not been sequenced.  Since we can't be 100% certain two genomes with missing parts are identical, we randomly re-sample genomes 100 times (non-parametric bootstrap) and evaluate how often they are separated in our analysis.">identical</span>
+      genomes.
+      We draw beads along a line to indicate when that variant was sampled.
+      If there are no beads on the line and it is grey, then it is an unsampled variant:
+      two or more sampled variants descend from an ancestral variant that has not
+      been directly observed.
+    </p>
+    <p>
+      The area of the bead is scaled in proportion to the number of times the variant
+      was sampled that day.
+      This is important for rapid or intensively-sampled epidemics, <i>e.g.,</i>
+      lineage D.2 in Australia.
+      Beads are <span class="hint" title="Refer to the barplot in the Countries tab in the right panel for a colour legend.">coloured</span>
+      with respect to the most common geographic region of the samples.
+    </p>
+    <p>
+      We draw vertical line segments to connects variants to their
+      <span class="hint" title="The direction of ancestor-descendant relationships is based on midpoint rooting of the consensus neighbor-joining tree.  This is a crude method, so be cautious about over-interpreting the directionality of these relationships.">common ancestors</span>.
+      These relationships are estimated by the <a href="https://en.wikipedia.org/wiki/Neighbor_joining">neighbor-joining method</a> using
+      <a href="https://birc.au.dk/software/rapidnj/">RapidNJ</a>.
+      Tooltips for each edge report the number of genetic differences (mutations)
+      between ancestor and descendant as the "genomic distance".
+      Since it's difficult to reconstruct exactly when these mutations occurred,
+      we simply map each line to when the first sample was collected.
+    </p>
+  </div>
+
+  <div id="help-search" title="Help: Search interface">
+    <p>
+      Since there is an overwhelming number of sampled infections that we are trying to visualize
+      here, we have built a basic search interface that you can interact with using the inputs
+      at the top of this web page.
+    </p>
+    <p>
+      You can use the text box to find a specific sample by GISAID accession number.
+      If you start to enter an accession number, the text box will display a number of
+      possibilities (autocompletion).
+      You can also search samples by substring (case-sensitive).
+      For example, searching for "Madaga" (hit enter to submit) will jump to the first lineage that
+      contains a sample from Madagascar.
+    </p>
+    <p>
+      Use the "Previous" and "Next" buttons to iterate through your search results, and the "Clear"
+      button to reset the search interface.
+    </p>
+  </div>
+
+  <div id="dialog" title="Acknowledgements">
+    <p>
+      We would like to thank the GISAID Initiative and are grateful to all of the data contributors,
+      i.e. the Authors, the Originating laboratories responsible for obtaining the specimens, and
+      the Submitting laboratories for generating the genetic sequence and metadata and sharing via
+      the GISAID Initiative, on which this research is based.
+    </p>
+    <p>
+      Elbe, S., and Buckland-Merrett, G. (2017)
+      Data, disease and diplomacy: GISAID’s innovative contribution to global health.
+      <i>Global Challenges</i>, 1:33-46.<br/>
+      DOI: <a href="https://doi.org/10.1002/gch2.1018" target=“_new”>10.1002/gch2.1018</a>&nbsp;&nbsp;
+      PMCID: <a href="https://pubmed.ncbi.nlm.nih.gov/31565258/" target=“_new”>31565258</a>
+    </p>
+    <p>
+      Note: When using results from these analyses in your manuscript, ensure that you also
+      acknowledge the Contributors of data, i.e. “We gratefully acknowledge all the Authors,
+      the Originating laboratories responsible for obtaining the specimens, and the Submitting
+      laboratories for generating the genetic sequence and metadata and sharing via the GISAID
+      Initiative, on which this research is based.”
+    </p>
+    <p>
+      Also, cite the following reference:
+      Shu, Y., McCauley, J. (2017) GISAID: From vision to reality. <i>EuroSurveillance</i>, 22(13)<br/>
+      DOI: <a href="https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2017.22.13.30494" target=“_new”>10.2807/1560-7917.ES.2017.22.13.30494</a>&nbsp;&nbsp;
+      PMCID: <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5388101/" target=“_new”>PMC5388101</a>
+    </p>
+  </div>
+
+
+  <footer class="footer">
+    GISAID data provided on this website are subject to GISAID’s
+    <a href="https://www.gisaid.org/DAA/" target=“_new”>Terms and Conditions</a>
+    &emsp;&emsp;
+    <button class="ack" id="ack-open" onclick="console.log('click');">Acknowledgements</button>
+
+  </footer>
+
+  <script src="js/beadplot.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/drawtree.js"></script>
+  <script src="js/phylo.js"></script>
+  <script src="js/search.js"></script>
+  <script src="js/gisaid/gisaid.js?random=1"></script>
+
+  <script src="js/covizu.js"></script>
+</body>
+</html>
