@@ -497,8 +497,16 @@ function beadplot(cid) {
       edgelist = beaddata[cid].edgelist,
       points = beaddata[cid].points;
 
-  function redraw() {    
-    currentWidth = document.getElementById("svg-cluster").clientWidth - marginB.left -  marginB.right;
+  // rescale slider
+  let max_dist = Math.max(...edgelist.map(x => x.dist));
+  let slider = $("#vedge-slider");
+  slider.slider("value", 2.0)
+        .slider("option", "max", max_dist);
+  $( "#custom-handle" ).text("2.0");
+
+  function redraw() {
+    let currentWidth = document.getElementById("svg-cluster").clientWidth
+        - marginB.left -  marginB.right;
 
     // set plotting domain
     var mindate = d3.min(variants, xValue1B),
@@ -546,7 +554,7 @@ function beadplot(cid) {
 
     // draw vertical line segments that represent edges in NJ tree
     visB.selectAll("lines")
-        .data(edgelist)
+        .data(edgelist.filter(x => x.dist <= slider.slider("value")))
         .enter().append("line")
         .attr("class", "lines")
         .attr("x1", xMap1B)
@@ -555,17 +563,37 @@ function beadplot(cid) {
         .attr("y2", yMap2B)
         .attr("stroke-width", 1)
         .attr("stroke", function(d) {
-          if (d.dist < 1.5) {
-            return("#aad");
-          } else if (d.dist < 2.5) {
-            return("#bbd");
-          } else {
-            return("#ccf");
-          }
+          return("#bbd");
         })
         .on("mouseover", function(d) {
+          // visual feedback
           var edge = d3.select(this);
           edge.attr("stroke-width", 3);
+
+          let parent_variant = d3.select(".lines#"+d.parent.replace('/', '-').replace(' ', '_')),
+              child_variant = d3.select(".lines#"+d.child.replace('/', '-').replace(' ', '_'));
+
+          if (!parent_variant.empty()) {
+            if (parent_variant.datum().count > 0) {
+              d3.selectAll("circle").filter(ci => ci.y === d.y1)
+                  .attr("stroke-width", 1.5)
+                  .attr("r", function(d) {
+                    return 4 * Math.sqrt(d.count) + 3;
+                  });
+            }
+            parent_variant.attr("stroke-width", 5);
+          }
+
+          if (!child_variant.empty()) {
+            if (child_variant.datum().count > 0) {
+              d3.selectAll("circle").filter(ci=>ci.y===d.y2)
+                  .attr("stroke-width", 1.5)
+                  .attr("r", function(d) {
+                    return 4*Math.sqrt(d.count)+3;
+                  });
+            }
+            child_variant.attr("stroke-width", 5);
+          }
 
           // Show tooltip
           cTooltip.transition()
@@ -597,8 +625,33 @@ function beadplot(cid) {
                 }
               });
         })
-        .on("mouseout", function() {
+        .on("mouseout", function(d) {
           d3.select(this).attr("stroke-width", 1);
+
+          let parent_variant = d3.select(".lines#"+d.parent.replace('/', '-').replace(' ', '_')),
+              child_variant = d3.select(".lines#"+d.child.replace('/', '-').replace(' ', '_'));
+
+          if (!parent_variant.empty()) {
+            if (parent_variant.datum().count > 0) {
+              d3.selectAll("circle").filter(ci=>ci.y===d.y1)
+                  .attr("stroke-width", 1)
+                  .attr("r", function(d) {
+                    return 4 * Math.sqrt(d.count);
+                  });
+            }
+            parent_variant.attr("stroke-width", 3);
+          }
+
+          if (!child_variant.empty()) {
+            if (child_variant.datum().count > 0) {
+              d3.selectAll("circle").filter(ci=>ci.y===d.y2)
+                  .attr("stroke-width", 1)
+                  .attr("r", function(d) {
+                    return 4 * Math.sqrt(d.count);
+                  });
+            }
+            child_variant.attr("stroke-width", 3);
+          }
 
           cTooltip.transition()     // Hide tooltip
               .duration(50)
@@ -609,7 +662,10 @@ function beadplot(cid) {
     visB.selectAll("lines")
         .data(variants)
         .enter().append("line")
-        .attr(  "class", "lines")
+        .attr("class", "lines")
+        .attr("id", function(d) {
+          return d.label.replace('/', '-').replace(' ', '_');
+        })
         .attr("x1", xMap1B)
         .attr("x2", xMap2B)
         .attr("y1", yMap1B)
@@ -776,8 +832,7 @@ function beadplot(cid) {
         })
         .on("click", function(d) {
           clear_selection();
-          this.remove();
-          d3.selectAll("div#svg-cluster > svg > g").node().append(this);
+          d3.select(this).raise();
           draw_halo_front(d);
 
           gentable(d);
@@ -796,7 +851,7 @@ function beadplot(cid) {
           $('#search_stats').addClass("disabled_stats");
         });
 
- 
+
     var tickCount = 0.005*currentWidth;
     if (tickCount <= 4) tickCount = 4;
 
@@ -812,7 +867,23 @@ function beadplot(cid) {
   redraw();
   window.addEventListener("resize", redraw);
 
+  // replace previous event listeners
+  let listeners = $._data(slider[0], "events");
+  if (listeners.slidechange !== undefined) {
+    listeners.slidechange.pop();
+  }
+  if (listeners.slide !== undefined) {
+    listeners.slide.pop();
+  }
+
+  slider.on(edgelist.length < 200 ? "slide" : "slidechange", function(event, ui) {
+    if (ui.valueOf().value !== 2.0) {
+      // avoid drawing beadplot twice on load
+      redraw();
+    }
+  });
 }
+
 
 /**
  * Writes information about the region distribution to a string
@@ -852,7 +923,12 @@ function gen_details_table(obj) {
 
       // "zip" the sequence details of each sample
       for (let i = 0; i < obj[j].accessions.length; i++) {
-        let sample_details = [obj[j].accessions[i], obj[j].labels[i], formatDate(obj[j].x)];
+        let sample_details = [
+          obj[j].accessions[i],
+          obj[j].labels[i],
+          formatDate(obj[j].x),
+          obj[j].accessions[0]  // variant labeled by accession
+        ];
         details.push(sample_details);
       }
     }
@@ -861,7 +937,12 @@ function gen_details_table(obj) {
   else {
     // "zip" the sequence details of each sample
     for (let i = 0; i < obj.accessions.length; i++) {
-      let sample_details = [obj.accessions[i], obj.labels[i], formatDate(obj.x)];
+      let sample_details = [
+        obj.accessions[i],
+        obj.labels[i],
+        formatDate(obj.x),
+        obj.accessions[0]
+      ];
       details.push(sample_details);
     }
   }
@@ -903,16 +984,24 @@ function gen_details_table(obj) {
       .data(details)
       .enter()
       .append('tr')
-      .on("mouseover", function () {
-        d3.select(this).style("background-color", "#e2e2e2");  // Highlight on mouseover
+      .on("mouseover", function (x) {
+        //console.log(x);
+        let circle = d3.select("circle#"+x[3]).attr("stroke-width", 2);
+        circle.attr("r", 4*Math.sqrt(circle.datum().count)+3);
+
+        // Highlight row on mouseover
+        d3.select(this).style("background-color", "#e2e2e2");
       })
-      .on("mouseout", function () {            // Remove highlighting on mouseout
+      .on("mouseout", function (x) {
+        let circle = d3.select("circle#"+x[3]).attr("stroke-width", 1);
+        circle.attr("r", 4*Math.sqrt(circle.datum().count));
+        // Remove highlighting on mouseout
         d3.select(this).style("background-color", null);
       });
 
   // Create a cell for every row in the column
   t_rows.selectAll('td')
-      .data(function (r) { return r; })
+      .data(function (r) { return r.slice(0,3); })
       .enter()
       .append('td')
       .append('span')
@@ -1159,9 +1248,10 @@ function serialize_beadplot(cidx) {
 
 function select_next_bead(next_node) {
   var select_bead = d3.selectAll('circle[id="'+next_node.id+'"]');
-  select_bead.node().classList.add("currBead");
-  select_bead.remove();
-  d3.selectAll("div#svg-cluster > svg > g").node().append(select_bead.node());
+
+  // Moves the selected bead (circle) to the bottom of the list
+  select_bead.raise();
+  
   var working_bead = select_bead.nodes()[0];
   working_bead.scrollIntoView({block: "center"});
   update_table_individual_bead_front(d3.select(working_bead).datum());
