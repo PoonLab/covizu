@@ -892,17 +892,17 @@ function beadplot(cid) {
  */
 function region_to_string(my_regions) {
   // Display region distribution in tooltip
-  let regStr = `<b>Number of cases</b><br>`,
+  let regStr = `<b>${i18n_text.tip_cases}:</b><br>`,
       total = 0;
 
   for (let [r_key, r_value] of Object.entries(my_regions)) {
-    regStr += `${r_key}: ${r_value}<br>`;
+    regStr += `${i18n_text.region_legend[r_key]}: ${r_value}<br>`;
     total += r_value;
   }
 
   // Display total number of cases if variants are from multiple countries
   if(Object.keys(my_regions).length > 1) {
-    regStr += `Total: ${total}<br>`
+    regStr += `${i18n_text.total}: ${total}<br>`
   }
 
   return regStr;

@@ -18,9 +18,41 @@
 
 <body>
   <script>
-    // legend text
-    // cannot display HTML in title attribute
-    var timetree_legend = "Divergence (prédiction d'horloge stricte)";
+    /*
+     Language translations in other files.
+
+     Change this for every index-lang.html
+     Note: cannot display HTML in title attribute, i.e., &eacute; will not render.
+     i18n = internationalization
+     */
+    var i18n_text = {
+      // time-tree legend titles
+      region_legend: {
+        "Africa": "Afrique",  // English -> lang
+        "Asia": "Asie",
+        "China": "Chine",
+        "Europe": "L'Europe",
+        "North America": "Amérique du Nord",
+        "Oceania": "Océanie",
+        "South America": "Amérique du Nord"
+      },
+      sample_legend: "Taille de l'échantillon (log10)",
+      coldate_legend: "Date de l'echantillon précédente",
+      diverge_legend: "Divergence (prédiction d'horloge stricte)",
+      total: "Total",
+
+      // side bar data statistics
+      last_update: "Révision précédente",
+      number_genomes: "Nombre de génomes",
+
+      // tooltips
+      tip_diffs: "Moyen de différences à la racine",
+      tip_residual: "Déviation de l'horloge",
+      tip_cases: "Nombre de cas",
+      tip_varcount: "Nombre de variantes",
+      tip_coldates: "Dates de collecte",
+    };
+
   </script>
 
   <div class="tooltip" id="tooltipContainer"></div>
@@ -102,7 +134,7 @@
             <span title="Aider avec le diagramme perle" onclick="$('#help-beadplot').dialog('open');" style="cursor: help">&#128304;</span>
 
             <span style="width: 150px;">
-              <label style="vertical-align: middle;" for="vedge-slider">Edge cutoff:&nbsp;&nbsp;</label>
+              <label style="vertical-align: middle;" for="vedge-slider">Limite de liens:&nbsp;&nbsp;</label>
               <div id="vedge-slider">
                 <div id="custom-handle" class="ui-slider-handle"></div>
               </div>
@@ -132,7 +164,7 @@
             <h3>Visualisation de la variation g&eacute;nomique du SRAS-CoV-2 (hCoV-19) en temps r&eacute;el.</h3>
           </div>
           <span style="width: 250px">
-            <div class="gisaid">Enabled by data from&nbsp;<a href="https://gisaid.org" target="_new">
+            <div class="gisaid">Activ&eacute; par les donn&eacute;es de&nbsp;<a href="https://gisaid.org" target="_new">
                 <img src="https://www.gisaid.org/fileadmin/gisaid/img/schild.png"
                      height="24px"/>
               </a>

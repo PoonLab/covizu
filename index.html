@@ -18,8 +18,41 @@
 
 <body>
   <script>
-    // legend text for translation
-    var timetree_legend = "Divergence (from strict clock expectation)";
+    /*
+     Language translations in other files.
+
+     Change this for every index-lang.html
+     Note: cannot display HTML in title attribute, i.e., &eacute; will not render.
+     i18n = internationalization
+     */
+    var i18n_text = {
+      // time-tree legend titles
+      region_legend: {
+        "Africa": "Africa",  // English -> lang
+        "Asia": "Asia",
+        "China": "China",
+        "Europe": "Europe",
+        "North America": "North America",
+        "Oceania": "Oceania",
+        "South America": "South America"
+      },
+      sample_legend: "Sample size (log10)",
+      coldate_legend: "Last collection date",
+      diverge_legend: "Divergence (strict molecular clock)",
+      total: "Total",
+
+      // side bar data statistics
+      last_update: "Last update",
+      number_genomes: "Number of genomes",
+
+      // tooltips
+      tip_diffs: "Mean diffs from root",
+      tip_residual: "Deviation from clock",
+      tip_cases: "Number of cases",
+      tip_varcount: "Number of variants",
+      tip_coldates: "Collection dates"
+    };
+
   </script>
 
   <div class="tooltip" id="tooltipContainer"></div>

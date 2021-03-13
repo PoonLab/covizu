@@ -93,8 +93,8 @@ req = $.getJSON("data/dbstats.json", function(data) {
   dbstats = data;
 });
 req.done(function() {
-  $("#div-last-update").text(`Last update: ${dbstats.lastupdate}`);
-  $("#div-number-genomes").text(`Number of genomes: ${dbstats.noseqs}`);
+  $("#div-last-update").text(`${i18n_text.last_update}: ${dbstats.lastupdate}`);
+  $("#div-number-genomes").text(`${i18n_text.number_genomes}: ${dbstats.noseqs}`);
 });
 
 var country_pal = {
