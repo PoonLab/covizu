@@ -598,7 +598,7 @@ function beadplot(cid) {
           // Show tooltip
           cTooltip.transition()
               .duration(50)
-              .style("opacity", 0.9);
+              .style("opacity", 0.75);
 
           let tooltipText = `<b>Parent:</b> ${d.parent}<br/><b>Child:</b> ${d.child}<br/>`;
           tooltipText += `<b>Genomic distance:</b> ${Math.round(d.dist*100)/100}<br/>`;
@@ -609,12 +609,12 @@ function beadplot(cid) {
               .style("left", function() {
                 if (d3.event.pageX > window.innerWidth/2) {
                   return (
-                    d3.event.pageX -
+                    d3.event.pageX - 15 -
                     cTooltip.node().getBoundingClientRect().width +
                     "px"
                   );
                 } else {
-                  return d3.event.pageX + "px";
+                  return d3.event.pageX + 15 + "px";
                 }
               })
               .style("top", function() {
@@ -703,24 +703,24 @@ function beadplot(cid) {
               // Show tooltip
               cTooltip.transition()
                   .duration(50)
-                  .style("opacity", 0.9);
+                  .style("opacity", 0.75);
 
               // Tooltip appears 10 pixels left of the cursor
               cTooltip.html(tooltipText)
                   .style("left", function() {
                     if (d3.event.pageX > window.innerWidth/2) {
                       return (
-                        d3.event.pageX -
+                        d3.event.pageX - 10 -
                         cTooltip.node().getBoundingClientRect().width +
                         "px"
                       );
                     } else {
-                      return d3.event.pageX + "px";
+                      return d3.event.pageX + 10 + "px";
                     }
                   })
                   .style("top", function() {
                     if (d3.event.pageY > window.innerHeight/2) {
-                      return (d3.event.pageY - cTooltip.node().getBoundingClientRect().height - 15) + "px";
+                      return (d3.event.pageY - cTooltip.node().getBoundingClientRect().height - 10) + "px";
                     } else {
                       return d3.event.pageY + 10 + "px";
                     }
@@ -793,7 +793,7 @@ function beadplot(cid) {
 
           cTooltip.transition()
               .duration(50)
-              .style("opacity", 0.9);
+              .style("opacity", 0.75);
 
           let tooltipText = "";
           if (d.parent || d.dist) {
@@ -807,12 +807,12 @@ function beadplot(cid) {
               .style("left", function() {
                 if (d3.event.pageX > window.innerWidth/2) {
                   return (
-                    d3.event.pageX -
+                    d3.event.pageX - 15 -
                     cTooltip.node().getBoundingClientRect().width +
                     "px"
                   );
                 } else {
-                  return d3.event.pageX + "px";
+                  return d3.event.pageX + 15 + "px";
                 }
               })
               .style("top", function() {
