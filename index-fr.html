@@ -17,6 +17,12 @@
 </head>
 
 <body>
+  <script>
+    // legend text
+    // cannot display HTML in title attribute
+    var timetree_legend = "Divergence (prédiction d'horloge stricte)";
+  </script>
+
   <div class="tooltip" id="tooltipContainer"></div>
 
   <div class="app">
@@ -26,10 +32,10 @@
         <div class="legend-container">
           <label for="select-tree-colours">Colorer les branches:</label>
           <select name="tree-colours" id="select-tree-colours">
-            <option>R&eacute;gion</option>
-            <option>T. de l'&eacute;chantillon</option>
-            <option>Date de collecte</option>
-            <option>Divergence</option>
+            <option value="Region">R&eacute;gion</option>
+            <option value="No. samples">T. de l'&eacute;chantillon</option>
+            <option value="Collection date">Date de collecte</option>
+            <option value="Divergence">Divergence</option>
           </select>
           <div class="legend" id="div-region-legend"></div>
           <div class="legend" id="svg-sample-legend"></div>
@@ -123,7 +129,7 @@
         <div class="rightbox">
           <div style="padding-top: 10px;"><h1>CoVizu</h1></div>
           <div style="padding-top: 10px; padding-right: 6px;">
-            <h3>Near real-time visualization of SARS-CoV-2 (hCoV-19) genomic variation</h3>
+            <h3>Visualisation de la variation g&eacute;nomique du SRAS-CoV-2 (hCoV-19) en temps r&eacute;el.</h3>
           </div>
           <span style="width: 250px">
             <div class="gisaid">Enabled by data from&nbsp;<a href="https://gisaid.org" target="_new">

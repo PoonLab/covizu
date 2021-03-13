@@ -575,7 +575,7 @@ function generate_legends() {
   // divergence legend
   $("div#svg-diverge-legend").html(legend({
     color: diverge_pal,
-    title: "Divergence (from strict clock expectation)",
+    title: timetree_legend,
     width: 240
   })).hide();
 }
