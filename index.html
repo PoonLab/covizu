@@ -17,6 +17,44 @@
 </head>
 
 <body>
+  <script>
+    /*
+     Language translations in other files.
+
+     Change this for every index-lang.html
+     Note: cannot display HTML in title attribute, i.e., &eacute; will not render.
+     i18n = internationalization
+     */
+    var i18n_text = {
+      // time-tree legend titles
+      region_legend: {
+        "Africa": "Africa",  // English -> lang
+        "Asia": "Asia",
+        "China": "China",
+        "Europe": "Europe",
+        "North America": "North America",
+        "Oceania": "Oceania",
+        "South America": "South America"
+      },
+      sample_legend: "Sample size (log10)",
+      coldate_legend: "Last collection date",
+      diverge_legend: "Divergence (strict molecular clock)",
+      total: "Total",
+
+      // side bar data statistics
+      last_update: "Last update",
+      number_genomes: "Number of genomes",
+
+      // tooltips
+      tip_diffs: "Mean diffs from root",
+      tip_residual: "Deviation from clock",
+      tip_cases: "Number of cases",
+      tip_varcount: "Number of variants",
+      tip_coldates: "Collection dates"
+    };
+
+  </script>
+
   <div class="tooltip" id="tooltipContainer"></div>
 
   <div class="app">
@@ -26,10 +64,10 @@
         <div class="legend-container">
           <label for="select-tree-colours">Colour tree by:</label>
           <select name="tree-colours" id="select-tree-colours">
-            <option>Region</option>
-            <option>No. samples</option>
-            <option>Collection date</option>
-            <option>Divergence</option>
+            <option value="Region">Region</option>
+            <option value="No. samples">No. samples</option>
+            <option value="Collection date">Collection date</option>
+            <option value="Divergence">Divergence</option>
           </select>
           <div class="legend" id="div-region-legend"></div>
           <div class="legend" id="svg-sample-legend"></div>
@@ -94,6 +132,13 @@
               &nbsp;&nbsp;SVG&nbsp;&nbsp;
             </span>
             <span title="Beadplot help" onclick="$('#help-beadplot').dialog('open');" style="cursor: help">&#128304;</span>
+
+            <span style="width: 150px;">
+              <label style="vertical-align: middle;" for="vedge-slider">Edge cutoff:&nbsp;&nbsp;</label>
+              <div id="vedge-slider">
+                <div id="custom-handle" class="ui-slider-handle"></div>
+              </div>
+            </span>
           </div>
           <div class="floattitle" id="svg-clusteraxis" style="top: 58px; z-index: 14"></div>
           <div class="beadplot-content" id="svg-cluster"></div>

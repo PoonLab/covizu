@@ -82,10 +82,11 @@ div.tooltip{
   padding: 12px;
   font: 12px sans-serif;
   background: #fffaff;
-  border: 2px solid #4f2683;
+  border: 1px solid #4f2683;
   border-radius: 8px;
   pointer-events: none;
 }
+
 
 div.hint {
   font-size: 0.8em;
@@ -307,6 +308,21 @@ button.ack {
   margin: 1em auto;
 }
 
+div#vedge-slider {
+  width: 150px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+#custom-handle {
+  width: 3em;
+  height: 1.6em;
+  top: 50%;
+  font-size: 8pt;
+  margin-top: -.8em;
+  text-align: center;
+  line-height: 1.6em;
+}
 
 circle.default{
   fill-opacity: 1;
@@ -319,11 +335,6 @@ circle.default{
 
 .SelectedBead{
   fill-opacity: 1;
-  stroke: black;
-}
-
-.currBead {
-  fill-opacity: 1 !important;
   stroke: black;
 }
 

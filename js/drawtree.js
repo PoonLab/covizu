@@ -257,11 +257,11 @@ function draw_clusters(tips) {
             .duration(50)
             .style("opacity", 0.9);
 
-    let ctooltipText = `<b>Mean diffs from root:</b> ${Math.round(100*d.mean_ndiffs)/100.}<br/>`;
-    ctooltipText += `<b>Deviation from clock:</b> ${Math.round(100*d.residual)/100.}<br>`;
+    let ctooltipText = `<b>${i18n_text.tip_diffs}:</b> ${Math.round(100*d.mean_ndiffs)/100.}<br/>`;
+    ctooltipText += `<b>${i18n_text.tip_residual}:</b> ${Math.round(100*d.residual)/100.}<br>`;
     ctooltipText += region_to_string(d.allregions);
-    ctooltipText += `<b>Number of variants:</b> ${d.varcount}<br>`;
-    ctooltipText += `<b>Collection dates:</b><br>${formatDate(d.first_date)} / ${formatDate(d.last_date)}`;
+    ctooltipText += `<b>${i18n_text.tip_varcount}:</b> ${d.varcount}<br>`;
+    ctooltipText += `<b>${i18n_text.tip_coldates}:</b><br>${formatDate(d.first_date)} / ${formatDate(d.last_date)}`;
 
     // Tooltip appears 10 pixels left of the cursor
     // Position tooltip based on the y-position of the cluster
@@ -548,9 +548,10 @@ function generate_legends() {
   let s = `<div style="display: flex; align-items: center; margin-left: 0px; padding-top: 6px; min-height: 33px; font: 10px sans-serif;">`;
   s += `<div style="width: 100%; columns: 60px;">`;
   for (const [key, value] of Object.entries(country_pal)) {
+    let region = i18n_text.region_legend[key];
     s += `<div class="legend-item">`;
     s += `<div class="legend-swatch" style="background:${value};"></div>`;
-    s += `<div class="legend-label" title="${key}">${key}</div>`;
+    s += `<div class="legend-label" title="${region}">${region}</div>`;
     s += `</div>`;
   }
   s += `</div></div>`;
@@ -559,7 +560,7 @@ function generate_legends() {
   // sample size legend
   $("div#svg-sample-legend").html(legend({
     color: sample_pal,
-    title: "Sample size (log10)",
+    title: i18n_text.sample_legend,
     width: 240
   })).hide();
 
@@ -568,14 +569,14 @@ function generate_legends() {
       days = (millsec1 - millsec0) / 8.64e7;
   $("div#svg-coldate-legend").html(legend({
     color: d3.scaleSequential([-days, 0], d3.interpolateCividis),
-    title: "Last sample date (days before present)",
+    title: i18n_text.coldate_legend,
     width: 240
   })).hide();
 
   // divergence legend
   $("div#svg-diverge-legend").html(legend({
     color: diverge_pal,
-    title: "Divergence (from strict clock expectation)",
+    title: i18n_text.diverge_legend,
     width: 240
   })).hide();
 }

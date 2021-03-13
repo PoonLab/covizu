@@ -1,10 +1,24 @@
 $( function() {
   $( "#tabs" ).tabs();
+
+  var handle = $( "#custom-handle" );
+
+  $("#vedge-slider").slider({
+    create: function( event, ui ) {
+      handle.text( $( this ).slider( "value" ) );
+    },
+    slide: function( event, ui ) {
+      handle.text( ui.value );
+    },
+    min: 0.5,
+    step: 0.01
+  });
 } );
 
 $(document).tooltip({show: null});
 $("#loading_text").text(``);
 $("#loading").hide();
+
 
 /*********************** DIALOGS ***********************/
 
@@ -79,8 +93,8 @@ req = $.getJSON("data/dbstats.json", function(data) {
   dbstats = data;
 });
 req.done(function() {
-  $("#div-last-update").text(`Last update: ${dbstats.lastupdate}`);
-  $("#div-number-genomes").text(`Number of genomes: ${dbstats.noseqs}`);
+  $("#div-last-update").text(`${i18n_text.last_update}: ${dbstats.lastupdate}`);
+  $("#div-number-genomes").text(`${i18n_text.number_genomes}: ${dbstats.noseqs}`);
 });
 
 var country_pal = {
@@ -409,14 +423,9 @@ req.done(function() {
     if (e.keyCode == 37 || e.keyCode == 39) {
       var selected_bead = d3.selectAll(".selectionH").nodes();
 
-      // var points_deselected = d3.selectAll(".not_SelectedBead").nodes();
-      // if (points_deselected.length == 0)
-      //   deselect_all_beads();
-
       if (selected_bead.length == 0) {
         var points_ui = d3.selectAll("#svg-cluster > svg > g > circle").nodes()[0];
         var working_bead = d3.selectAll('circle[id="'+points_ui.__data__.accessions[0]+'"]').nodes()[0];
-        working_bead.classList.add("currBead");
         working_bead.scrollIntoView({block: "center"});
         update_table_individual_bead(d3.select(working_bead).datum());
       }
@@ -429,16 +438,12 @@ req.done(function() {
         if (e.keyCode == 37) {
           if (bead_id - 1 >= 0) {
             var prev_node = d3.selectAll('circle[idx="'+(bead_id-1).toString()+'"]').nodes()[0];
-            // bead_node.attr("class", "not_SelectedBead");
-            bead_node.node().classList.remove("currBead");
             select_next_bead(prev_node);
           }
         }
         else if (e.keyCode == 39) {
           if (bead_id + 1 < total_nodes - 1) {
             var next_node = d3.selectAll('circle[idx="'+(bead_id+1).toString()+'"]').nodes()[0];
-            // bead_node.attr("class", "not_SelectedBead");
-            bead_node.node().classList.remove("currBead");
             select_next_bead(next_node);
           }
         }

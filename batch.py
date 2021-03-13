@@ -8,6 +8,7 @@ import covizu
 from covizu.utils import gisaid_utils
 from covizu.utils.progress_utils import Callback
 from covizu.utils.batch_utils import *
+from tempfile import NamedTemporaryFile
 
 
 def parse_args():
@@ -136,6 +137,7 @@ if __name__ == "__main__":
 
     result = make_beadplots(by_lineage, args, cb.callback, t0=cb.t0.timestamp())
     outfile.write(json.dumps(result))  # serialize results to JSON
+    outfile.close()
 
     # write data stats
     dbstat_file = os.path.join(args.outdir, 'dbstats.{}.json'.format(timestamp))
@@ -163,5 +165,18 @@ if __name__ == "__main__":
         subprocess.check_call(['scp', nwk_file, '{}/timetree.nwk'.format(server_root)])
         subprocess.check_call(['scp', outfile.name, '{}/clusters.json'.format(server_root)])
         subprocess.check_call(['scp', dbstat_file, '{}/dbstats.json'.format(server_root)])
+
+        # upload files to EpiCoV server
+        server_epicov = 'filogeneti.ca:/var/www/html/epicov/data'
+        subprocess.check_call(['scp', nwk_file, '{}/timetree.nwk'.format(server_epicov)])
+        subprocess.check_call(['scp', dbstat_file, '{}/dbstats.json'.format(server_epicov)])
+
+        # modify clusters JSON
+        epifile = open(outfile.name, 'r')
+        epicov_data = gisaid_utils.convert_json(epifile, args.infile)
+        fp = NamedTemporaryFile('w', delete=False)
+        json.dump(epicov_data, fp=fp)  # serialize to temp file
+        fp.close()
+        subprocess.check_call(['scp', fp.name, '{}/clusters.json'.format(server_epicov)])
 
     cb.callback("All done!")
