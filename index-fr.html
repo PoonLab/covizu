@@ -17,6 +17,7 @@
 </head>
 
 <body>
+  <script src="i18n/datepicker-fr.js"></script>
   <script>
     /*
      Language translations in other files.
@@ -44,6 +45,8 @@
       // side bar data statistics
       last_update: "Révision précédente",
       number_genomes: "Nombre de génomes",
+      countries: "Pays",
+      samples: "Échantillons",
 
       // tooltips
       tip_diffs: "Moyen de différences à la racine",
@@ -159,7 +162,9 @@
           </a>
         </div>
         <div class="rightbox">
-          <div style="padding-top: 10px;"><h1>CoVizu</h1></div>
+          <div style="padding-top: 10px; cursor: help;">
+            <h1><span onclick="$('#splash').dialog('open');">CoVizu</span></h1>
+          </div>
           <div style="padding-top: 10px; padding-right: 6px;">
             <h3>Visualisation de la variation g&eacute;nomique du SRAS-CoV-2 (hCoV-19) en temps r&eacute;el.</h3>
           </div>
@@ -222,9 +227,9 @@
       &eacute;chantillonn&eacute;e.
     </p>
     <p>
-      For more help, click on the
+      Pour plus d'aide, cliquez sur l'ic&ocirc;ne
       <a style="text-decoration: none;" href="https://en.wikipedia.org/wiki/Shoshinsha_mark" target="_new">
-        &#128304;</a>icons.
+        &#128304;</a>.
     </p>
   </div>
 

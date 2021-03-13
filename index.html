@@ -44,6 +44,8 @@
       // side bar data statistics
       last_update: "Last update",
       number_genomes: "Number of genomes",
+      countries: "Countries",
+      samples: "Samples",
 
       // tooltips
       tip_diffs: "Mean diffs from root",
@@ -159,7 +161,9 @@
           </a>
         </div>
         <div class="rightbox">
-          <div style="padding-top: 10px;"><h1>CoVizu</h1></div>
+          <div style="padding-top: 10px; cursor: help;">
+            <h1><span onclick="$('#splash').dialog('open');">CoVizu</span></h1>
+          </div>
           <div style="padding-top: 10px; padding-right: 6px;">
             <h3>Near real-time visualization of SARS-CoV-2 (hCoV-19) genomic variation</h3>
           </div>
