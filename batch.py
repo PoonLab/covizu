@@ -174,8 +174,9 @@ if __name__ == "__main__":
         # modify clusters JSON
         epifile = open(outfile.name, 'r')
         epicov_data = gisaid_utils.convert_json(epifile, args.infile)
-        with NamedTemporaryFile('w') as fp:
-            json.dump(epicov_data, fp=fp)  # serialize to temp file
-            subprocess.check_call(['scp', fp.name, '{}/clusters.json'.format(server_epicov)])
+        fp = NamedTemporaryFile('w', delete=False)
+        json.dump(epicov_data, fp=fp)  # serialize to temp file
+        fp.close()
+        subprocess.check_call(['scp', fp.name, '{}/clusters.json'.format(server_epicov)])
 
     cb.callback("All done!")
