@@ -27,7 +27,7 @@ $( "#splash" ).dialog({
   width: 600,
   buttons: [{
     id: "splash-button",
-    text: "Okay!",
+    text: i18n_text.okay,
     disabled: true,
     click: function() {
       $( this ).dialog( "close" );
@@ -36,38 +36,41 @@ $( "#splash" ).dialog({
 });
 
 $("#splash-button").parents(".ui-dialog-buttonpane")
-        .append("<div style=\"color: #4F2683\" id='splash-extra'>Loading JSON data from server (~10s)..." +
+        .append("<div style=\"color: #4F2683\" id='splash-extra'>" + i18n_text.loading_json +
                 "<img style=\"vertical-align: middle\" width=\"33px\" src=\"img/Loading_icon_cropped.gif\"/>" +
                 "</div>");
 
 $( "#help-timetree" ).dialog({
   autoOpen: false,
   width: 600,
-  buttons: {
-    "Got it!": function() {
+  buttons: [{
+    text: i18n_text.got_it,
+    click: function() {
       $( this ).dialog( "close" );
     }
-  }
+  }]
 });
 
 $( "#help-beadplot" ).dialog({
   autoOpen: false,
   width: 600,
-  buttons: {
-    "Got it!": function() {
+  buttons: [{
+    text: i18n_text.got_it,
+    click: function() {
       $( this ).dialog( "close" );
     }
-  }
+  }]
 });
 
 $( "#help-search" ).dialog({
   autoOpen: false,
   width: 600,
-  buttons: {
-    "Got it!": function() {
+  buttons: [{
+    text: i18n_text.got_it,
+    click: function() {
       $( this ).dialog( "close" );
     }
-  }
+  }]
 });
 
 $( "#dialog" ).dialog({
@@ -213,13 +216,14 @@ req.done(function() {
 
   // Enables "search" and "clear" buttons if the input fields are not empty
   $('#search-input').on('change keyup search', function() {
-    if ($('#search-input').val() != "" || $('#start-date').val() != "" || $('#end-date').val() != "") {
+    if ($('#search-input').val() !== "" || $('#start-date').val() !== "" ||
+        $('#end-date').val() !== "") {
       $('#search-button').removeAttr("disabled");
       $('#clear_button').removeAttr("disabled");
     }
     else {
       clear_selection();
-      $('#search_stats').text(`0 of 0 points`);
+      $('#search_stats').text(i18n_text.zero_points);
       disable_buttons();
     }
   });
@@ -228,15 +232,16 @@ req.done(function() {
     $('#error_message').text(``);
     if (search_results.get().total_points > 0) {
       clear_selection();
-      $('#search_stats').text(`0 of 0 points`);
+      $('#search_stats').text(i18n_text.zero_points);
       disable_buttons();
     }
-    if (e.keyCode == 13 && ($('#search-input').val() != "" || $('#start-date').val() != "" || $('#end-date').val() != "")) {
+    if (e.keyCode === 13 && ($('#search-input').val() !== "" || $('#start-date').val() !== "" ||
+        $('#end-date').val() !== "")) {
       // type <enter> to run search
       // run_search();
       $('#error_message').text(``);
       $("#loading").show();
-      $("#loading_text").text(`Loading. Please Wait...`);
+      $("#loading_text").text(i18n_text.loading);
       setTimeout(function() {
         wrap_search();
         enable_buttons();
@@ -262,19 +267,20 @@ req.done(function() {
     }
     else {
       clear_selection();
-      $('#search_stats').text(`0 of 0 points`);
+      $('#search_stats').text(i18n_text.zero_points);
       disable_buttons();
     }
   });
 
   $('#end-date').on('change keyup', function() {
-    if ($('#end-date').val() != "" || $('#search-input').val() != "" || $('#start-date').val() != "") {
+    if ($('#end-date').val() !== "" || $('#search-input').val() !== "" ||
+        $('#start-date').val() !== "") {
       $('#search-button').removeAttr("disabled");
       $('#clear_button').removeAttr("disabled");
     }
     else {
       clear_selection();
-      $('#search_stats').text(`0 of 0 points`);
+      $('#search_stats').text(i18n_text.zero_points);
       disable_buttons();
     }
   })
@@ -290,7 +296,7 @@ req.done(function() {
       }
       else {
         clear_selection();
-        $('#search_stats').text(`0 of 0 points`);
+        $('#search_stats').text(i18n_text.zero_points);
         disable_buttons();
       }
     }
@@ -306,7 +312,7 @@ req.done(function() {
       }
       else {
         clear_selection();
-        $('#search_stats').text(`0 of 0 points`);
+        $('#search_stats').text(i18n_text.zero_points);
         disable_buttons();
       }
     }
@@ -315,7 +321,7 @@ req.done(function() {
   $('#search-button').click(function() {
     $('#error_message').text(``);
     $("#loading").show();
-    $("#loading_text").text(`Loading. Please Wait...`);
+    $("#loading_text").text(i18n_text.loading);
     setTimeout(function() {
       wrap_search();
       enable_buttons();
@@ -345,7 +351,7 @@ req.done(function() {
     // Edge case: User clicks next from a cluster above the first cluster
     if (curr_bead == 0 && (parseInt(d3.selectAll("rect.clicked").nodes()[0].id.substring(3)) > hit_ids[hit_ids.length - 1])) {
       $("#loading").show();
-      $("#loading_text").text(`Loading. Please Wait...`);
+      $("#loading_text").text(i18n_text.loading);
       setTimeout(function() {
         select_next_prev_bead(bead_id_to_accession, curr_bead);
         select_working_bead(bead_id_to_accession, curr_bead);
@@ -354,9 +360,10 @@ req.done(function() {
       }, 20);
     }
     else if (curr_bead + 1 < search_results.get().total_points) {
-      if (accn_to_cid[bead_id_to_accession[curr_bead]] != accn_to_cid[bead_id_to_accession[curr_bead + 1]]) {
+      if (accn_to_cid[bead_id_to_accession[curr_bead]] !==
+          accn_to_cid[bead_id_to_accession[curr_bead + 1]]) {
         $("#loading").show();
-        $("#loading_text").text(`Loading. Please Wait...`);
+        $("#loading_text").text(i18n_text.loading);
         setTimeout(function() {
           select_next_prev_bead(bead_id_to_accession, curr_bead + 1);
           select_working_bead(bead_id_to_accession, curr_bead + 1);
@@ -386,7 +393,7 @@ req.done(function() {
     if (current_selection.className.baseVal !== "SelectedCluster clicked") {
       if(parseInt(current_selection.id.substring(3)) < hit_ids[hit_ids.length - 1]) {
         $("#loading").show();
-        $("#loading_text").text(`Loading. Please Wait...`);
+        $("#loading_text").text(i18n_text.loading);
         setTimeout(function() {
           select_next_prev_bead(bead_id_to_accession, curr_bead);
           select_working_bead(bead_id_to_accession, curr_bead);
@@ -397,9 +404,10 @@ req.done(function() {
     }
     else if (curr_bead - 1 >= 0) {
       // If the previous bead is not in the same cluster, selection of cluster needs to be modified
-      if (accn_to_cid[bead_id_to_accession[curr_bead]] != accn_to_cid[bead_id_to_accession[curr_bead - 1]]) {
+      if (accn_to_cid[bead_id_to_accession[curr_bead]] !==
+          accn_to_cid[bead_id_to_accession[curr_bead - 1]]) {
         $("#loading").show();
-        $("#loading_text").text(`Loading. Please Wait...`);
+        $("#loading_text").text(i18n_text.loading);
         setTimeout(function() {
           select_next_prev_bead(bead_id_to_accession, curr_bead-1);
           select_working_bead(bead_id_to_accession, curr_bead-1);
@@ -452,10 +460,11 @@ req.done(function() {
   });
 });
 
+
 /*********************** UPDATE TABLES ***********************/
 // populate countries table
 var country_table = d3.select("#country-table").append('table');
-var theaders = ["Region", "Country", "Count"];
+var theaders = i18n_text.country_theaders;
 
 // to be populated in beadplot.js
 var country_tbody = country_table.append("tbody");
@@ -463,7 +472,7 @@ var country_tbody = country_table.append("tbody");
 // Populate sequence details table
 var seq_table = d3.select("#seq-table").append('table');
 var thead = seq_table.append('thead');
-var seq_theaders = ["Accession", "Name", "Date"];
+var seq_theaders = i18n_text.sample_theaders;
 var seq_tbody = seq_table.append('tbody');
 
 // implement acknowledgements dialog

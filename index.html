@@ -19,11 +19,9 @@
 <body>
   <script>
     /*
-     Language translations in other files.
-
+     Language translations for text in other files.
      Change this for every index-lang.html
-     Note: cannot display HTML in title attribute, i.e., &eacute; will not render.
-     i18n = internationalization
+     Note: we cannot display HTML in title attribute, i.e., &eacute; will not render.
      */
     var i18n_text = {
       // time-tree legend titles
@@ -44,6 +42,8 @@
       // side bar data statistics
       last_update: "Last update",
       number_genomes: "Number of genomes",
+      number_cases: "Number of cases",
+      region: "Region",
       countries: "Countries",
       samples: "Samples",
 
@@ -52,7 +52,29 @@
       tip_residual: "Deviation from clock",
       tip_cases: "Number of cases",
       tip_varcount: "Number of variants",
-      tip_coldates: "Collection dates"
+      tip_coldates: "Collection dates",
+
+      vedge_parent: "Parent",
+      vedge_child: "Child",
+      vedge_distance: "Genomic distance",
+      vedge_support: "Support",
+      vedge_coldate: "Collection date",
+
+      hedge_unique_dates: "Unique collection dates",
+      hedge_coldates: "Collection dates",
+
+      sample_orig_lab: "Originating lab",
+      sample_subm_lab: "Submitting lab",
+      sample_authors: "Authors",
+
+      // miscellaneous
+      okay: "Okay!",
+      got_it: "Got it!",
+      loading: `Loading. Please Wait...`,
+      loading_json: "Loading JSON data from server (~10s)...",
+      zero_points: `0 of 0 points`,
+      country_theaders: ["Region", "Country", "Count"],
+      sample_theaders: ["Accession", "Name", "Date"],
     };
 
   </script>
