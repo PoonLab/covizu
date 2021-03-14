@@ -4,17 +4,6 @@
 Development of CoVizu is primarily being carried out on workstations and servers running Ubuntu 16.04+. 
 However, we have also run the system on desktop computers running macOS 10.13.
 
-## Dependencies
-
-* a C build environment
-* [Python](https://www.python.org/) 3.6 or higher, and the following modules:
-  * [networkx](https://networkx.github.io/) version 2.3+
-  * [BioPython](https://biopython.org/) version 1.7+
-* [minimap2](https://github.com/lh3/minimap2) version 2.1+ 
-* GNU [sed](https://www.gnu.org/software/sed/) stream editor
-* [FastTree2](http://www.microbesonline.org/fasttree/) version 2.1.10+, compiled for [double precision](http://www.microbesonline.org/fasttree/#BranchLen)
-* [TreeTime](https://github.com/neherlab/treetime) version 0.7.5+
-* [RapidNJ](https://birc.au.dk/software/rapidnj/)
 
 ## Coding style
 
@@ -33,7 +22,7 @@ However, we have also run the system on desktop computers running macOS 10.13.
 * Every function should open with a [docstring](https://www.python.org/dev/peps/pep-0257).  If the function is very brief with a small number of self-explanatory arguments, then a one-line docstring is fine.  Otherwise, use a multi-line docstring.  Use `:param varname: description` entries to document arguments. Use `:return: type, description` entries to document return values.   
 
 
-## Commiting your code
+## Committing your code
 
 Do not push commits to the `master` branch.  All development should be tracked in the `dev` branch and then merged into `master` after it has been tested.  
 

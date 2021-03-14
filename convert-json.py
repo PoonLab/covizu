@@ -2,6 +2,7 @@ import argparse
 import json
 from covizu.utils.gisaid_utils import convert_json
 
+# command line interface
 parser = argparse.ArgumentParser(description="Convert JSON from main branch to epicov formats.")
 parser.add_argument('json', type=argparse.FileType('r'),
                     help='input, cluster JSON file to convert')
