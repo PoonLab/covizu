@@ -254,7 +254,7 @@
     </p>
   </div>
 
-  <div id="help-timetree" title="Help: Time-scaled tree interface">
+  <div id="help-timetree" title="Aider: Interface de l'arbre">
     <p>
       Un arbre phylog&eacute;n&eacute;tique est un mod&egrave;le des relations ancestrales de
       populations diff&eacute;rentes.
@@ -274,25 +274,30 @@
       <a href="http://virological.org/t/phylodynamic-analysis-176-genomes-6-mar-2020/356" target="_new">constant</a>.
     </p>
     <p>
-      For each lineage, we draw a rectangle to summarize the range of sample collection
-      dates, and colour it according to the geographic region it was sampled most often.
-      To explore the samples within a lineage, click on the label (<i>e.g.,</i> "B.4")
-      or the rectangle to retrieve the associated beadplot.
+      Pour chaque ling&eacute;es, nous dessinons un rectangle pour repr&eacute;senter
+      la plague de dates de pr&eacute;l&egrave;vement des &eacute;chantillons, et le
+      colorons en fonctoin de la r&eacute;gion g&eacute;ographique la plus courante.
+      Pour explorer les &eacute;chantillons au sein d'une lign&eacute;e, cliquez sur
+      l'&eacute;tiquette (par exemple, &laquo;B.4&raquo;) ou le rectangle pour
+      r&eacute;cup&eacute;rer le diagramme perle associ&eacute;.
     </p>
   </div>
 
-  <div id="help-beadplot" title="Help: Beadplot interface">
+  <div id="help-beadplot" title="Aider: Interface du diagramme perle">
     <p>
-      We use beadplots to visualize the different variants of SARS-CoV-2 within a
-      <a href="https://cov-lineages.org" target="_new">lineage</a>, where and when
-      they have been sampled, and how they are related to each other.
-      Every object in the beadplot has additional info in a tooltip (which you view by hovering
-      over that object with your mouse pointer).
+      Nous utilisons les diagrammes perle pour visualiser les variantes de SRAS-CoV-2
+      au sein d'une <a href="https://cov-lineages.org" target="_new">lign&eacute;e</a>,
+      o&ugrave; et quand ils ont &eacute;t&eacute; &eacute;chantillonn&eacute;s, et
+      comment ils sont li&eacute;s les uns aux autres.
+      Chaque objet du diagramme perle a des informations suppl&eacute;mentaires dans une
+      info-bulle (que vous visualisez en survolant cet objet avec le pointeur de votre souris).
     </p>
     <p>
-      Each horizontal line segment represents a variant &ndash; viruses with
-      <span class="hint" title="It's a bit more complicated.  Many genomes are identical in sequence, but many more have missing information - parts of the genome that have not been sequenced.  Since we can't be 100% certain two genomes with missing parts are identical, we randomly re-sample genomes 100 times (non-parametric bootstrap) and evaluate how often they are separated in our analysis.">identical</span>
-      genomes.
+      Chaque segment de ligne horizontale repr&eacute;sente une variante - virus avec
+      Each horizontal line segment represents a variant &ndash; virus avec des g&eacute;nomes
+      <span class="hint" title="C'est un peu plus compliqu&eacute;.  De nombreux g&eacute;nomes sont identiques en s&eacute;quence, mais bien d'autres a ont des informations manquantes - parties du g&eacute;nome qui n'ont pas &eacute;t&eacute; s&eacute;quenc&eacute;es.  Puisque nous ne pouvons pas &ecirc;tre s&ucirc;r &agrave; 100% que deux g&eacute;nomes avec des parties manquantes sont identiques, nous r&eacute;&eacute;chantillonnons les g&eacute;nomes 100 fois (bootstrap non-param&eacute;trique) et &eacute;valuer la fr&eacute;quence &agrave; laquelle ils sont s&eacute;par&eacute;s dans notre analyse.">identiques</span>.
+      g&eacute;nomes.
+      
       We draw beads along a line to indicate when that variant was sampled.
       If there are no beads on the line and it is grey, then it is an unsampled variant:
       two or more sampled variants descend from an ancestral variant that has not
