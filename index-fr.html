@@ -293,27 +293,27 @@
       info-bulle (que vous visualisez en survolant cet objet avec le pointeur de votre souris).
     </p>
     <p>
-      Chaque segment de ligne horizontale repr&eacute;sente une variante - virus avec
-      Each horizontal line segment represents a variant &ndash; virus avec des g&eacute;nomes
+      Chaque segment de ligne horizontale repr&eacute;sente une variante &ndash; virus avec des g&eacute;nomes
       <span class="hint" title="C'est un peu plus compliqu&eacute;.  De nombreux g&eacute;nomes sont identiques en s&eacute;quence, mais bien d'autres a ont des informations manquantes - parties du g&eacute;nome qui n'ont pas &eacute;t&eacute; s&eacute;quenc&eacute;es.  Puisque nous ne pouvons pas &ecirc;tre s&ucirc;r &agrave; 100% que deux g&eacute;nomes avec des parties manquantes sont identiques, nous r&eacute;&eacute;chantillonnons les g&eacute;nomes 100 fois (bootstrap non-param&eacute;trique) et &eacute;valuer la fr&eacute;quence &agrave; laquelle ils sont s&eacute;par&eacute;s dans notre analyse.">identiques</span>.
-      g&eacute;nomes.
-      
-      We draw beads along a line to indicate when that variant was sampled.
-      If there are no beads on the line and it is grey, then it is an unsampled variant:
-      two or more sampled variants descend from an ancestral variant that has not
-      been directly observed.
+      Nous dessinons les perles sur une ligne pour indiquer quand cette variante a &eacute;t&eacute;
+      &eacute;chatillonn&eacute;e.
+      S'il n'y a pas de perles sur la ligne et qu'elle est grise, alors c'est une variante non
+      &eacute;chatillonn&eacute;e: deux ou plusieurs variantes &eacute;chatillonn&eacute;e
+      descendent d'une variante ancestrale qui n'a pas &eacute;t&eacute; directement observ&eacute;e.
     </p>
     <p>
-      The area of the bead is scaled in proportion to the number of times the variant
-      was sampled that day.
-      This is important for rapid or intensively-sampled epidemics, <i>e.g.,</i>
-      lineage D.2 in Australia.
-      Beads are <span class="hint" title="Refer to the barplot in the Countries tab in the right panel for a colour legend.">coloured</span>
-      with respect to the most common geographic region of the samples.
+      L'aire de la perle est mis &agrave; l'&eacute;chelle proportionnellement &agrave; le nombre
+      de fois que cette variante a &eacute;t&eacute; &eacute;chatillonn&eacute;e ce jour-l&agrave;.
+      Ceci est important pour les &eacute;pid&eacute;mies rapides ou avec &eacute;chantillonnage intensif;
+      par exemple, le lign&eacute;e D.2 &agrave; Australie.
+      Les perles sont color&eacute;es selon la r&eacute;gion g&eacute;ographique la plus commune des
+      &eacute;chantillons, ou d'autres informations comme vous voulez.
     </p>
     <p>
-      We draw vertical line segments to connects variants to their
-      <span class="hint" title="The direction of ancestor-descendant relationships is based on midpoint rooting of the consensus neighbor-joining tree.  This is a crude method, so be cautious about over-interpreting the directionality of these relationships.">common ancestors</span>.
+      Nous dessinons des lignes verticales qui relient les variantes &agrave; leurs
+      <span class="hint" title="Le direction des relations anc&ecirc;tres-descendants est, en effet, déterminé par les degrés des n&oelig;uds en l'arbre non racin&eacute;.  Celui est une m&eacute;thode brute, alors soyez prudent lorsque interpr&eacute;r le sens de ces relations.">anc&ecirc;tres communs</span>.
+
+
       These relationships are estimated by the <a href="https://en.wikipedia.org/wiki/Neighbor_joining">neighbor-joining method</a> using
       <a href="https://birc.au.dk/software/rapidnj/">RapidNJ</a>.
       Tooltips for each edge report the number of genetic differences (mutations)
