@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fr" lang="fr">
 <head>
   <meta charset="UTF-8"/>
   <title>CoVizu</title>
   <meta name="description"
-        content="CoVizu: L'analyser et visualisation la diversit&eacute; globale des g&eacute;nomes du SRAS-CoV-2 en temps r&eacute;el.">
+        content="CoVizu: analyse et visualisation en temps r&eacute;el de la diversit&eacute; globale des g&eacute;nomes du SRAS-CoV-2.">
   <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
   <link rel="stylesheet" href="css/style.css">
 
@@ -29,18 +29,18 @@
         "Africa": "Afrique",  // English -> lang
         "Asia": "Asie",
         "China": "Chine",
-        "Europe": "L'Europe",
+        "Europe": "Europe",
         "North America": "Amérique du Nord",
         "Oceania": "Océanie",
         "South America": "Amérique du Sud"
       },
       sample_legend: "Taille de l'échantillon (log10)",
-      coldate_legend: "Date de l'echantillon précédente",
-      diverge_legend: "Divergence (prédiction d'horloge stricte)",
+      coldate_legend: "Date des échantillons les plus récents",
+      diverge_legend: "Divergence (prédiction par horloge moléculaire stricte)",
       total: "Total",
 
       // side bar data statistics
-      last_update: "Révision précédente",
+      last_update: "Dernière révision",
       number_genomes: "Nombre de génomes",
       number_lineages: "Nombre de lignées",
       number_cases: "Nombre de cas",
@@ -49,10 +49,10 @@
       samples: "Échantillons",
 
       // tooltips
-      tip_diffs: "Moyen de différences à la racine",
-      tip_residual: "Déviation de l'horloge",
+      tip_diffs: "Nombre moyen de mutations",
+      tip_residual: "Ecart à la régression temporelle",
       tip_cases: "Nombre de cas",
-      tip_varcount: "Nombre de variantes",
+      tip_varcount: "Nombre de variants",
       tip_coldates: "Dates de collecte",
 
       vedge_parent: "Parent",
@@ -134,11 +134,11 @@
       <div class="tree-beadplot">
         <div class="leftbox">
           <div class="floattitle">
-            Phylog&eacute;nie &eacute;chelonn&eacute; sur le temps
+            Phylog&eacute;nie temporelle
             <span class="clicker" title="T&eacute;l&eacute;charger la phylog&eacute;nie" onclick="save_timetree()">
               &nbsp;&nbsp;NWK&nbsp;&nbsp;
             </span>
-            <span title="Aider avec la phylog&eacute;nie" onclick="$('#help-timetree').dialog('open');" style="cursor: help">&#128304;</span>
+            <span title="Aide avec la phylog&eacute;nie" onclick="$('#help-timetree').dialog('open');" style="cursor: help">&#128304;</span>
           </div>
           <div class="floattitle" id="svg-timetreeaxis" style="top: 58px; z-index: 13"></div>
           <div class="tree-container">
@@ -148,7 +148,7 @@
 
         <div class="middlebox">
           <div class="floattitle">
-            Diagramme perle
+            Diagramme en perle
             <span class="clicker" title="T&eacute;l&eacute;charger comme un arbre" onclick="save_beadplot();">
               &nbsp;&nbsp;NWK&nbsp;&nbsp;
             </span>
@@ -156,7 +156,7 @@
             <span class="clicker" title="T&eacute;l&eacute;charger le SVG" onclick="export_svg();">
               &nbsp;&nbsp;SVG&nbsp;&nbsp;
             </span>
-            <span title="Aider avec le diagramme perle" onclick="$('#help-beadplot').dialog('open');" style="cursor: help">&#128304;</span>
+            <span title="Aide avec le diagramme en perle" onclick="$('#help-beadplot').dialog('open');" style="cursor: help">&#128304;</span>
 
             <span style="width: 150px;">
               <label style="vertical-align: middle;" for="vedge-slider">Limite de liens:&nbsp;&nbsp;</label>
@@ -193,10 +193,10 @@
             <a href="index-es.html">es</a>
           </div>
           <div style="padding-top: 10px; padding-right: 6px;">
-            <h3>Visualisation de la variation g&eacute;nomique du SRAS-CoV-2 (hCoV-19) en temps r&eacute;el.</h3>
+            <h3>Visualisation en temps r&eacute;el de la variation g&eacute;nomique du SRAS-CoV-2 (hCoV-19).</h3>
           </div>
           <span style="width: 250px">
-            <div class="gisaid">Activ&eacute; par les donn&eacute;es de&nbsp;<a href="https://gisaid.org" target="_new">
+            <div class="gisaid">Bas&eacute; sur les donn&eacute;es de <a href="https://gisaid.org" target="_new">
                 <img src="https://www.gisaid.org/fileadmin/gisaid/img/schild.png"
                      height="24px"/>
               </a>
@@ -211,7 +211,11 @@
           <div id="tabs">
             <ul>
               <li><a href="#tabs-1">Pays</a></li>
+<<<<<<< master
+              <li><a href="#tabs-2">&eacute;chantillons</a></li>
+=======
               <li><a href="#tabs-2">&Eacute;chantillons</a></li>
+>>>>>>> dev
             </ul>
             <div id="tabs-1">
               <div class="breaker" id="barplot"></div>
@@ -219,7 +223,11 @@
             </div>
             <div id="tabs-2">
               <div id="seqtable-hint" class="hint">
+<<<<<<< master
+                Passer la souris sur les accessions (EPI_ISL_#) pour afficher le laboratoire et d'autres informations.
+=======
                 Survoler le num&eacute;ro d'ordre (EPI_ISL_#) pour afficher les informations du laboratoires et l'auteurs.
+>>>>>>> dev
               </div>
               <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="seq-table"></div>
             </div>
@@ -246,11 +254,15 @@
       <i>et al.</i> 2020</a>).
     </p>
     <p>
-      En cliquant sur une lign&eacute;e on fait appara&icirc;tre un &laquo;diagramme perle&raquo; au centre de la page.
+      En cliquant sur une lign&eacute;e on fait appara&icirc;tre un &laquo;diagramme en perle&raquo; au centre de la page.
       Sur une m&ecirc;me ligne horizontale sont reproup&eacute;s les &eacute;chantillons partageant le
       m&ecirc;me g&eacute;nome.
       Les cercles repr&eacute;sentent les dates auxquelles le variant a &eacute;t&eacute;
+<<<<<<< master
+      &eacute;chantillonn&eacute;.
+=======
       &eacute;chantillonn&eacute;e.
+>>>>>>> dev
     </p>
     <p>
       Pour plus d'aide, cliquez sur les
@@ -259,6 +271,72 @@
     </p>
   </div>
 
+<<<<<<< master
+  <div id="help-timetree" title="Aide: Phylog&eacute;nie temporelle des lign&eacute;es">
+    <p>
+      Un arbre phylog&eacute;n&eacute;tique est un mod&egrave;le montrant comment diff&eacute;rentes populations ont evolu&eacute; &agrave; partir de leurs anc&ecirc;tres communs.
+      L'arbre represent&eacute; ici (g&eacute;n&eacute;re avec <a href="https://github.com/neherlab/treetime">
+      TreeTime</a> v0.8.0) r&eacute;sume l'&eacute;volution des diff&eacute;rentes <a href="https://cov-lineages.org" target="_new">lign&eacute;es de SRAS-CoV-2</a>, 
+      qui sont pr&eacute;-d&eacute;finies en regroupant les virus en fonction de la similarit&eacute; de leurs g&eacute;nomes.
+    </p>
+    <p>
+      L'&eacute;chelle temporelle est r&eacute;pr&eacute;sent&eacute;e en haut de l'arbre.
+	  L'anc&ecirc;tre le plus ancien (racine) est sur la gauche, les descendants les plus r&eacute;cents sont sur la droite.
+      On estime la date d'emergence en comparant les g&eacute;nomes et en supposant 
+      un <a href="http://virological.org/t/phylodynamic-analysis-176-genomes-6-mar-2020/356" target="_new">taux d'evolution constant</a>.
+    </p>
+    <p>
+      Pour chaque lign&eacute;e on dessine un rectangle repr&eacute;sentant l'intervalle de temps pendant lequel la lign&eacute;e a &eacute;t&eacute; &eacute;chantillonn&eacute;e,
+	  color&eacute; en fonction de la r&eacute;gion
+      dans laquelle elle a &eacute;t&eacute; le plus souvent observ&eacute;e.
+      Cliquez dessus pour explorer les &eacute;chantillons de chaque lign&eacute;e et afficher un diagramme en perle.
+    </p>
+  </div>
+
+  <div id="help-beadplot" title="Aide: Diagramme en perle">
+    <p>
+      On utilise un diagramme en perle pour visualiser les diff&eacute;rents variants de SRAS-CoV-2 d'une m&ecirc;me <a href="https://cov-lineages.org" target="_new">lign&eacute;e</a>,
+      o&ugrave; et quand ils ont &eacute;t&eacute; &eacute;chantillonn&eacute;s, et comment ils sont li&eacute;s les uns aux autres.
+      Chaque objet dans le diagramme contient des informations suppl&eacute;mentaires visibles en passant avec la souris. 
+    </p>
+    <p>
+      Chaque ligne horizontale repr&eacute;sente un variant &ndash; des virus avec
+      <span class="hint" title="C'est un peu plus compliqu&eacute;. Beaucoup de g&eacute;nomes ont des s&eacute;quences identiques, mais certains ont des s&eacute;quences incompl&egrave;tes, des parties du g&eacute;nome qui n'ont pas &eacute;t&eacute; correctement s&eacute;quenc&eacute;es. Puisqu'on ne peut &ecirc;tre certain &agrave; 100% que deux g&eacute;nomes incompl&ecirc;ts sont identiques, on r&eacute;-&eacute;chantillonne les g&eacute;nomes 100 fois al&eacute;atoirement (bootstrap non-param&eacute;trique) et on &eacute;value la probabilit&eacute; que ces genomes soient li&eacute;s.">des g&eacute;nomes identiques</span>.
+      Sur une m&ecirc;me ligne horizontale sont dessin&eacute;es des perles qui indiquent quand le variant a &eacute;t&eacute; &eacute;chantillonn&eacute;.
+      Quand deux ou plus de variants descendent d'un m&ecirc;me variant qui n'a pas &eacute;t&eacute; directement observ&eacute;,
+	  alors la ligne est grise et ne contient aucune perle ce qui indique un variant non-&eacute;chantillonn&eacute;. 
+    </p>
+    <p>
+      La taille de la perle repr&eacute;sente le nombre de fois que le variant a &eacute;t&eacute; observ&eacute; &agrave; cette date.
+      Regouper ainsi les &eacute;chantillons indentiques (en s&eacute;quence et en date) est n&eacute;cessaire pour ce type d'&eacute;pidemie rapide avec des centaines de milliers de s&eacute;quences, <i>e.g.,</i>
+      la lign&eacute;e D.2 en Australie.
+      Les perles sont <span class="hint" title="La l&eacute;gende est visible sur la droite dans le diagramme en boites r&eacute;presentant les r&eacute;gions et pays.">color&eacute;es</span>
+      en fonction de la r&eacute;gion o&ugrave; les &eacute;chantillons ont &eacute;t&eacute; le plus souvent observ&eacute;s.
+    </p>
+    <p>
+      Les lignes verticales repr&eacute;sentent les <span class="hint" title="The direction of ancestor-descendant relationships is based on midpoint rooting of the consensus neighbor-joining tree. This is a crude method, so be cautious about over-interpreting the directionality of these relationships.">relations d'ancestralit&eacute;</span> entre les diff&eacute;rentes lignes horizontales (les variants).
+      Les relations sont estim&eacute;es via <a href="https://en.wikipedia.org/wiki/Neighbor_joining">la methode neighbor-joining</a> en utilisant <a href="https://birc.au.dk/software/rapidnj/">RapidNJ</a>.
+	  Pour chaque lien le champ "distance genomique" de l'info-bulle indique le nombre de diff&eacute;rences (mutations) entre anc&ecirc;tre et descendant.
+      Puisqu'il est difficile de reconstruire la date exacte où ces mutations ont &eacute;merg&eacute;,
+      on a choisi d'utiliser la date où le premier &eacute;chantillon a &eacute;t&eacute; observ&eacute;.
+    </p>
+  </div>
+
+  <div id="help-search" title="Aide: Interface de recherche">
+    <p>
+      Puisqu'il y a un nombre consid&eacute;rable d'&eacute;chantillons s&eacute;quenc&eacute;s qu'on tente ici de visualiser,
+      on a ajout&eacute; en haut de la page une interface permettant de faire des recherches simples.
+    </p>
+    <p>
+      Vous pouvez l'utiliser pour rechercher un &eacute;chantillon particulier &agrave; partir de son accession GISAID.
+      Si vous entrez le d&eacute;but de l'accession, le champ proposera un certain de nombre de possibilit&eacute;s (autocompl&eacute;tion).
+      Vous pouvez aussi entrer le d&eacute;but d'un nom de pays, par exemple rechercher "Madaga"
+      vous am&egrave;nera &agrave; la premi&egrave;re lign&eacute;e qui contient des &eacute;chantillons de Madagascar.
+    </p>
+    <p>
+      Utilisez les boutons "Pr&eacute;c&eacute;dent" et "Suivant" pour naviguer entre les r&eacute;sultats de la recherche,
+      et le bouton "R&eacute;initialiser" pour annuler la recherche.
+=======
   <div id="help-timetree" title="Aider: Interface de l'arbre">
     <p>
       Un arbre phylog&eacute;n&eacute;tique est un mod&egrave;le montrant comment diff&eacute;rentes
@@ -336,16 +414,24 @@
     <p>
       Utilisez les boutons "Pr&eacute;c&eacute;dant" et "Suivant" pour naviguer dans les
       r&eacute;sultats de la recherce, et le bouton "R&eacute;initialiser" pour annuler le filtre.
+>>>>>>> dev
     </p>
   </div>
 
   <div id="dialog" title="Remerciements">
     <p>
+<<<<<<< master
+      Nous addressons nos remerciements &agrave; l'initiative GISAID ainsi qu'&agrave; tous ceux qui ont produit les donn&eacute;es,
+      les auteurs, les laboratoires qui ont collect&eacute; les &eacute;chantillons des patients, et les laboratoires qui ont 
+      r&eacute;alis&eacute; le s&eacute;quençage, l'assemblage des g&eacute;nomes, les m&eacute;tadonn&eacute;es, et qui ont partag&eacute; leurs donn&eacute;es sur GiSAID,
+      nous permettant de r&eacute;aliser cette visualisation.
+=======
       Nous addressons nos remerciements à l'initiative GISAID ainsi qu'&agrave; tous ceux qui ont
       produit les donn&eacute;es, les auteurs, les laboratoires qui ont collect&eacute; les
       &eacute;chantillons des patients, et les laboratoires qui ont r&eacute;alis&eacute; le
       s&eacute;quençage, l'assemblage des g&eacute;nomes, les m&eacute;tadonn&eacute;es, et qui ont
       partag&eacute; leurs donn&eacute;es sur GISAID, nous permettant de r&eacute;aliser cette visualisation.
+>>>>>>> dev
     </p>
     <p>
       Elbe, S., and Buckland-Merrett, G. (2017)
@@ -355,11 +441,19 @@
       PMCID: <a href="https://pubmed.ncbi.nlm.nih.gov/31565258/" target=“_new”>31565258</a>
     </p>
     <p>
+<<<<<<< master
+      Note : si vous utilisez les r&eacute;sultats de ces analyses dans vos publications, assurez-vous de mentionner et remercier
+      les auteurs des donn&eacute;es : “We gratefully acknowledge all the Authors,
+      the Originating laboratories responsible for obtaining the specimens, and the Submitting
+      laboratories for generating the genetic sequence and metadata and sharing via the GISAID
+      Initiative, on which this research is based.”
+=======
       Note : si vous utilisez les r&eacute;sultats de ces analyses dans vos publications, assurez-vous de
       mentionner et remercier les auteurs des donn&eacute;es :
       "We gratefully acknowledge all the Authors, the Originating laboratories responsible for
       obtaining the specimens, and the Submitting laboratories for generating the genetic sequence
       and metadata and sharing via the GISAID Initiative, on which this research is based."
+>>>>>>> dev
     </p>
     <p>
       &Eacute;galement, citez la r&eacute;f&eacute;rence suivante :
