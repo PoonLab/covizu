@@ -42,6 +42,7 @@
       // side bar data statistics
       last_update: "Révision précédente",
       number_genomes: "Nombre de génomes",
+      number_lineages: "Nombre de lignées",
       number_cases: "Nombre de cas",
       region: "Région",
       countries: "Pays",
@@ -186,6 +187,11 @@
           <div style="padding-top: 10px; cursor: help;">
             <h1><span onclick="$('#splash').dialog('open');">CoVizu</span></h1>
           </div>
+          <div style="font-size: 8pt;">
+            <a href="index.html">en</a>
+            <a href="index-fr.html">fr</a>
+            <a href="index-es.html">es</a>
+          </div>
           <div style="padding-top: 10px; padding-right: 6px;">
             <h3>Visualisation de la variation g&eacute;nomique du SRAS-CoV-2 (hCoV-19) en temps r&eacute;el.</h3>
           </div>
@@ -198,7 +204,8 @@
           </span>
           <p>
             <div style="font-size: 0.9em;" id="div-last-update"></div>
-            <div style="padding-bottom: 20px; font-size: 0.9em;" id="div-number-genomes"></div>
+            <div style="font-size: 0.9em;" id="div-number-genomes"></div>
+            <div style="font-size: 0.9em;" id="div-number-lineages"></div>
           </p>
 
           <div id="tabs">

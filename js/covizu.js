@@ -94,10 +94,12 @@ $.ajaxSetup({
 var dbstats, req;
 req = $.getJSON("data/dbstats.json", function(data) {
   dbstats = data;
+  dbstats.nlineages = Object.keys(dbstats.lineages).length;
 });
 req.done(function() {
   $("#div-last-update").text(`${i18n_text.last_update}: ${dbstats.lastupdate}`);
   $("#div-number-genomes").text(`${i18n_text.number_genomes}: ${dbstats.noseqs}`);
+  $("#div-number-lineages").text(`${i18n_text.number_lineages}: ${dbstats.nlineages}`);
 });
 
 var country_pal = {
