@@ -113,7 +113,7 @@
             <span class="clicker" title="T&eacute;l&eacute;charger la phylog&eacute;nie" onclick="save_timetree()">
               &nbsp;&nbsp;NWK&nbsp;&nbsp;
             </span>
-            <span title="Aider avec la phylog&eacute;nie" onclick="$('#help-timetree').dialog('open');" style="cursor: help">&#128304;</span>
+            <span title="Aide avec la phylog&eacute;nie" onclick="$('#help-timetree').dialog('open');" style="cursor: help">&#128304;</span>
           </div>
           <div class="floattitle" id="svg-timetreeaxis" style="top: 58px; z-index: 13"></div>
           <div class="tree-container">
@@ -226,35 +226,35 @@
     </p>
   </div>
 
-  <div id="help-timetree" title="Help: Time-scaled tree interface">
+  <div id="help-timetree" title="Aide: Phylog&eacute;nie temporelle des lign&eacute;es">
     <p>
-      Un arbre phylog&eacute;n&eacute;tique est un mod&egrave;le montrant comment differentes populations ont evolu&eacute; &agrave; partir de leurs anc&ecirc;tres communs.
+      Un arbre phylog&eacute;n&eacute;tique est un mod&egrave;le montrant comment diff&eacute;rentes populations ont evolu&eacute; &agrave; partir de leurs anc&ecirc;tres communs.
       L'arbre represent&eacute; ici (g&eacute;n&eacute;re avec <a href="https://github.com/neherlab/treetime">
       TreeTime</a> v0.8.0) r&eacute;sume l'&eacute;volution des diff&eacute;rentes <a href="https://cov-lineages.org" target="_new">lign&eacute;es de SRAS-CoV-2</a>, 
       qui sont pr&eacute;-d&eacute;finies en regroupant les virus en fonction de la similarit&eacute; de leurs g&eacute;nomes.
     </p>
     <p>
       L'&eacute;chelle temporelle est r&eacute;pr&eacute;sent&eacute;e en haut de l'arbre.
-      La largeur du rectangle r&eacute;presente le temps pendant lequel la lign&eacute;e a ete observ&eacute;e,
-      De la date d'&eacute;mergence &agrave; la date des derniers virus observ&eacute;s.
+	  L'anc&ecirc;tre le plus ancien (racine) est sur la gauche, les descendants les plus r&eacute;cents sont sur la droite.
       On estime la date d'emergence en comparant les g&eacute;nomes et en supposant 
       un <a href="http://virological.org/t/phylodynamic-analysis-176-genomes-6-mar-2020/356" target="_new">taux d'evolution constant</a>.
     </p>
     <p>
-      La couleur du rectangle repr&eacute;sentant la lignee est choisie en fonction de la r&eacute;gion
+      Pour chaque lign&eacute;e on dessine un rectangle repr&eacute;sentant l'intervalle de temps pendant lequel la lign&eacute;e a &eacute;t&eacute; &eacute;chantillonn&eacute;e,
+	  color&eacute; en fonction de la r&eacute;gion
       dans laquelle elle a &eacute;t&eacute; le plus souvent observ&eacute;e.
-      Cliquez dessus pour explorer les echantillons de chaque lign&eacute;e et afficher un diagramme en perle.
+      Cliquez dessus pour explorer les &eacute;chantillons de chaque lign&eacute;e et afficher un diagramme en perle.
     </p>
   </div>
 
-  <div id="help-beadplot" title="Help: Beadplot interface">
+  <div id="help-beadplot" title="Aide: Diagramme en perle">
     <p>
       On utilise un diagramme en perle pour visualiser les diff&eacute;rents variants de SRAS-CoV-2 d'une m&ecirc;me <a href="https://cov-lineages.org" target="_new">lign&eacute;e</a>,
-      ou et quand ils ont &eacute;t&eacute; echantillonn&eacute;s, et comment ils sont li&eacute;s les uns aux autres.
-      Chaque objet dans le diagramme contient des informations suppl&eacute;mentaires visibles en passant la souris dessus. 
+      o&ugrave; et quand ils ont &eacute;t&eacute; &eacute;chantillonn&eacute;s, et comment ils sont li&eacute;s les uns aux autres.
+      Chaque objet dans le diagramme contient des informations suppl&eacute;mentaires visibles en passant avec la souris. 
     </p>
     <p>
-      Chaque ligne horizontale r&eacute;pr&eacute;sente un variant &ndash; des virus avec
+      Chaque ligne horizontale repr&eacute;sente un variant &ndash; des virus avec
       <span class="hint" title="C'est un peu plus compliqu&eacute;. Beaucoup de g&eacute;nomes ont des s&eacute;quences identiques, mais certains ont des s&eacute;quences incompl&egrave;tes, des parties du g&eacute;nome qui n'ont pas &eacute;t&eacute; correctement s&eacute;quenc&eacute;es. Puisqu'on ne peut &ecirc;tre certain &agrave; 100% que deux g&eacute;nomes incompl&ecirc;ts sont identiques, on r&eacute;-&eacute;chantillonne les g&eacute;nomes 100 fois al&eacute;atoirement (bootstrap non-param&eacute;trique) et on &eacute;value la probabilit&eacute; que ces genomes soient li&eacute;s.">des g&eacute;nomes identiques</span>.
       Sur une m&ecirc;me ligne horizontale sont dessin&eacute;es des perles qui indiquent quand le variant a &eacute;t&eacute; &eacute;chantillonn&eacute;.
       Quand deux ou plus de variants descendent d'un m&ecirc;me variant qui n'a pas &eacute;t&eacute; directement observ&eacute;,
@@ -262,10 +262,10 @@
     </p>
     <p>
       La taille de la perle repr&eacute;sente le nombre de fois que le variant a &eacute;t&eacute; observ&eacute; &agrave; cette date.
-      Regouper ainsi les &eacute;chantillons indentiques en s&eacute;quence et en date est n&eacute;cessaire pour ce type d'&eacute;pidemie rapide avec des centaines de milliers de s&eacute;quences, <i>e.g.,</i>
-      la lign&eacute;e D.2 en Australie ou B.1.1.7 au Royaume-Uni.
+      Regouper ainsi les &eacute;chantillons indentiques (en s&eacute;quence et en date) est n&eacute;cessaire pour ce type d'&eacute;pidemie rapide avec des centaines de milliers de s&eacute;quences, <i>e.g.,</i>
+      la lign&eacute;e D.2 en Australie.
       Les perles sont <span class="hint" title="La l&eacute;gende est visible sur la droite dans le diagramme en boites r&eacute;presentant les r&eacute;gions et pays.">color&eacute;es</span>
-      en fonction de la r&eacute;gion ou les &eacute;chantillons ont &eacute;t&eacute; le plus souvent observ&eacute;s.
+      en fonction de la r&eacute;gion o&ugrave; les &eacute;chantillons ont &eacute;t&eacute; le plus souvent observ&eacute;s.
     </p>
     <p>
       Les lignes verticales repr&eacute;sentent les <span class="hint" title="The direction of ancestor-descendant relationships is based on midpoint rooting of the consensus neighbor-joining tree. This is a crude method, so be cautious about over-interpreting the directionality of these relationships.">relations d'ancestralit&eacute;</span> entre les diff&eacute;rentes lignes horizontales (les variants).
@@ -276,19 +276,19 @@
     </p>
   </div>
 
-  <div id="help-search" title="Help: Search interface">
+  <div id="help-search" title="Aide: Interface de recherche">
     <p>
-      Puisqu'il y a un nombre consid&eacute;rable d'&eacute;chantillons s&eacute;quenc&eacute; qu'on tente ici de visualiser,
+      Puisqu'il y a un nombre consid&eacute;rable d'&eacute;chantillons s&eacute;quenc&eacute;s qu'on tente ici de visualiser,
       on a ajout&eacute; en haut de la page une interface permettant de faire des recherches simples.
     </p>
     <p>
       Vous pouvez l'utiliser pour rechercher un &eacute;chantillon particulier &agrave; partir de son accession GISAID.
       Si vous entrez le d&eacute;but de l'accession, le champ proposera un certain de nombre de possibilit&eacute;s (autocompl&eacute;tion).
-      Vous pouvez aussi entrer le debut d'un nom de pays, par exemple rechercher "Madaga"
+      Vous pouvez aussi entrer le d&eacute;but d'un nom de pays, par exemple rechercher "Madaga"
       vous am&egrave;nera &agrave; la premi&egrave;re lign&eacute;e qui contient des &eacute;chantillons de Madagascar.
     </p>
     <p>
-      Utilisez les boutons "Pr&eacute;c&eacute;dant" et "Suivant" pour naviguer entre les r&eacute;sultats de la recherche,
+      Utilisez les boutons "Pr&eacute;c&eacute;dent" et "Suivant" pour naviguer entre les r&eacute;sultats de la recherche,
       et le bouton "R&eacute;initialiser" pour annuler la recherche.
     </p>
   </div>
