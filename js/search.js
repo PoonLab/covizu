@@ -293,7 +293,7 @@ function accession_search(text_query) {
   create_selection(bead);
   bead.node().scrollIntoView({block: "center"});
 
-  update_table_individual_bead(bead.datum());
+  update_table_individual_bead_front(bead.datum());
 }
 
 
@@ -437,7 +437,8 @@ function select_beads(points_ui) {
   if (selected.length > 0) {
     selected[0].scrollIntoView({block: "center"});
     selected_obj = d3.select(selected[0]);
-    update_table_individual_bead(d3.select(selected[0]).datum())
+    selected_obj.raise();
+    update_table_individual_bead_front(d3.select(selected[0]).datum())
   }
 }
 

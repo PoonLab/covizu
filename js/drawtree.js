@@ -667,9 +667,12 @@ function click_cluster(d, cluster_info) {
       selected_obj = d3.select(node);
       create_selection(selected_obj);
     }
-    var working_bead = d3.selectAll('circle[id="'+current_id+'"]').nodes()[0];
+
+    var select_bead = d3.selectAll('circle[id="'+current_id+'"]');
+    select_bead.raise();
+    var working_bead = select_bead.nodes()[0];
     working_bead.scrollIntoView({block: "center"});
-    update_table_individual_bead(d3.select(working_bead).datum());
+    update_table_individual_bead_front(d3.select(working_bead).datum());
   }
   draw_cluster_box(d3.select(cluster_info));
 }

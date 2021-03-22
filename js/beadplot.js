@@ -575,7 +575,7 @@ function beadplot(cid) {
 
           if (!parent_variant.empty()) {
             if (parent_variant.datum().count > 0) {
-              d3.selectAll("circle").filter(ci => ci.y === d.y1)
+              d3.selectAll("circle").filter(function(ci) {return !this.classList.contains('selectionH') && ci.y === d.y1})
                   .attr("stroke-width", 1.5)
                   .attr("r", function(d) {
                     return 4 * Math.sqrt(d.count) + 3;
@@ -586,7 +586,7 @@ function beadplot(cid) {
 
           if (!child_variant.empty()) {
             if (child_variant.datum().count > 0) {
-              d3.selectAll("circle").filter(ci=>ci.y===d.y2)
+              d3.selectAll("circle").filter(function(ci) {return !this.classList.contains('selectionH') && ci.y === d.y2})
                   .attr("stroke-width", 1.5)
                   .attr("r", function(d) {
                     return 4*Math.sqrt(d.count)+3;
@@ -633,7 +633,7 @@ function beadplot(cid) {
 
           if (!parent_variant.empty()) {
             if (parent_variant.datum().count > 0) {
-              d3.selectAll("circle").filter(ci=>ci.y===d.y1)
+              d3.selectAll("circle").filter(function(ci) {return !this.classList.contains('selectionH') && ci.y === d.y1})
                   .attr("stroke-width", 1)
                   .attr("r", function(d) {
                     return 4 * Math.sqrt(d.count);
@@ -644,7 +644,7 @@ function beadplot(cid) {
 
           if (!child_variant.empty()) {
             if (child_variant.datum().count > 0) {
-              d3.selectAll("circle").filter(ci=>ci.y===d.y2)
+              d3.selectAll("circle").filter(function(ci) {return !this.classList.contains('selectionH') && ci.y === d.y2})
                   .attr("stroke-width", 1)
                   .attr("r", function(d) {
                     return 4 * Math.sqrt(d.count);
