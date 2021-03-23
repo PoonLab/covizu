@@ -587,7 +587,7 @@ function click_cluster(d, cluster_info) {
   d3.selectAll("rect.clickedH").remove();
 
   // Remove "clicked" class to ensure that the previous cluster doesn't remain highligted
-  if (search_results.get().total_points > 0) {
+  if (search_results.get().total_points > 0 || isLineage($('#search-input').val())) {
     d3.selectAll(".SelectedCluster.clicked").attr('class', 'SelectedCluster'); 
     d3.selectAll("rect.clicked").attr('class', "not_SelectedCluster");
   }
