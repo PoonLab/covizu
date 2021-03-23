@@ -435,7 +435,9 @@ req.done(function() {
 
       if (selected_bead.length == 0) {
         var points_ui = d3.selectAll("#svg-cluster > svg > g > circle").nodes()[0];
-        var working_bead = d3.selectAll('circle[id="'+points_ui.__data__.accessions[0]+'"]').nodes()[0];
+        var selected_bead = d3.selectAll('circle[id="'+points_ui.__data__.accessions[0]+'"]');
+        selected_bead.raise();
+        var working_bead = selected_bead.nodes()[0];
         working_bead.scrollIntoView({block: "center"});
         update_table_individual_bead_front(d3.select(working_bead).datum());
       }
