@@ -1272,4 +1272,15 @@ function select_next_bead(next_node) {
   var working_bead = select_bead.nodes()[0];
   working_bead.scrollIntoView({block: "center"});
   update_table_individual_bead_front(d3.select(working_bead).datum());
+
+  if (next_node.classList.contains("SelectedBead") && search_results.get().total_points > 0) {
+    var search_index = search_results.get().beads[next_node.id];
+    if (search_index !== undefined) {
+      const stats = search_results.update({
+        current_point: search_index
+      });
+
+      update_search_stats(stats);
+    }
+  }
 }
