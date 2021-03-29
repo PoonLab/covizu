@@ -98,7 +98,7 @@ def batch_fasta(gen, size=100):
     """
     stdin = ''
     batch = []
-    for i, record in enumerate(gen):
+    for i, record in enumerate(gen, 1):
         qname = record['covv_virus_name']
         sequence = record.pop('sequence')
         stdin += '>{}\n{}\n'.format(qname, sequence)
