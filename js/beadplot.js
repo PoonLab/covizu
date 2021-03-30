@@ -600,10 +600,10 @@ function beadplot(cid) {
               .duration(50)
               .style("opacity", 0.75);
 
-          let tooltipText = `<b>Parent:</b> ${d.parent}<br/><b>Child:</b> ${d.child}<br/>`;
-          tooltipText += `<b>Genomic distance:</b> ${Math.round(d.dist*100)/100}<br/>`;
-          tooltipText += `<b>Support:</b> ${(d.support === undefined) ? 'n/a' : d.support}<br/>`
-          tooltipText += `<b>Collection date:</b> ${formatDate(d.x2)}`;
+          let tooltipText = `<b>${i18n_text.vedge_parent}:</b> ${d.parent}<br/><b>${i18n_text.vedge_child}:</b> ${d.child}<br/>`;
+          tooltipText += `<b>${i18n_text.vedge_distance}:</b> ${Math.round(d.dist*100)/100}<br/>`;
+          tooltipText += `<b>${i18n_text.vedge_support}:</b> ${(d.support === undefined) ? 'n/a' : d.support}<br/>`
+          tooltipText += `<b>${i18n_text.vedge_coldate}:</b> ${formatDate(d.x2)}`;
 
           cTooltip.html(tooltipText)
               .style("left", function() {
@@ -691,12 +691,12 @@ function beadplot(cid) {
 
             let tooltipText = "";
             if (d.parent || d.dist) {
-              tooltipText += `<b>Parent:</b> ${d.parent}<br/><b>Genomic distance:</b> ${Math.round(d.dist*100)/100}<br/>`;
+              tooltipText += `<b>${i18n_text.vedge_parent}:</b> ${d.parent}<br/><b>${i18n_text.vedge_distance}:</b> ${Math.round(d.dist*100)/100}<br/>`;
             }
             if (!d.unsampled) {
               tooltipText += region_to_string(tabulate(d.region));
-              tooltipText += `<b>Unique collection dates:</b> ${d.numBeads}<br/>`;
-              tooltipText += `<b>Collection dates:</b><br>${formatDate(d.x1)} / ${formatDate(d.x2)}`;
+              tooltipText += `<b>${i18n_text.hedge_unique_dates}:</b> ${d.numBeads}<br/>`;
+              tooltipText += `<b>${i18n_text.hedge_coldates}:</b><br>${formatDate(d.x1)} / ${formatDate(d.x2)}`;
             }
 
             if (tooltipText.length > 0) {
@@ -797,10 +797,10 @@ function beadplot(cid) {
 
           let tooltipText = "";
           if (d.parent || d.dist) {
-            tooltipText += `<b>Parent:</b> ${d.parent}<br/><b>Genomic distance:</b> ${Math.round(d.dist*100)/100}<br/>`;
+            tooltipText += `<b>Parent:</b> ${d.parent}<br/><b>${i18n_text.vedge_distance}:</b> ${Math.round(d.dist*100)/100}<br/>`;
           }
           tooltipText += region_to_string(tabulate(d.region));
-          tooltipText += `<b>Collection date:</b> ${formatDate(d.x)}`;
+          tooltipText += `<b>${i18n_text.vedge_coldate}:</b> ${formatDate(d.x)}`;
 
           // Tooltip appears 10 pixels left of the cursor
           cTooltip.html(tooltipText)
@@ -1016,9 +1016,9 @@ function gen_details_table(obj) {
                 .style("opacity", 0.9);
 
             let tooltipText = "";
-            tooltipText = `<b>Originating lab:</b> ${gd.covv_orig_lab}<br/>`;
-            tooltipText += `<b>Submitting lab:</b> ${gd.covv_subm_lab}<br/>`;
-            tooltipText += `<b>Authors:</b> ${gd.covv_authors}`;
+            tooltipText = `<b>${i18n_text.sample_orig_lab}:</b> ${gd.covv_orig_lab}<br/>`;
+            tooltipText += `<b>${i18n_text.sample_subm_lab}:</b> ${gd.covv_subm_lab}<br/>`;
+            tooltipText += `<b>${i18n_text.sample_authors}:</b> ${gd.covv_authors}`;
 
             // Tooltip appears 10 pixels left of the cursor
             cTooltip.html(tooltipText)
@@ -1184,30 +1184,30 @@ function draw_region_distribution(my_regions) {
       .attr("width", xScale.bandwidth())
       .attr("fill", function(d) { return(country_pal[d.region]); });
 
-    // Write the case count above each bar
-    regionBars.append("text")
-        .style("font", "0.7em/1.2 Lato, sans-serif")
-        .attr("x", (r) => xScale(r.region) + xScale.bandwidth() / 2)
-        .attr("y", (r) => yScale(r.count) - 5)
-        .attr("text-anchor", "middle")
-        .text((r) => `${r.count}`);
+  // Write the case count above each bar
+  regionBars.append("text")
+      .style("font", "0.7em/1.2 Lato, sans-serif")
+      .attr("x", (r) => xScale(r.region) + xScale.bandwidth() / 2)
+      .attr("y", (r) => yScale(r.count) - 5)
+      .attr("text-anchor", "middle")
+      .text((r) => `${r.count}`);
 
-    // Add axis labels
-    svg.append("text")
-        .style("font", "0.8em/1.2 Lato, sans-serif")
-        .attr("transform", "rotate(-90)")
-        .attr("x", -(height / 2) - margin.top)
-        .attr("y", 0)
-        .attr("dy", "1em")
-        .attr("text-anchor", "middle")
-        .text("Number of Cases");
+  // Add axis labels
+  svg.append("text")
+      .style("font", "0.8em/1.2 Lato, sans-serif")
+      .attr("transform", "rotate(-90)")
+      .attr("x", -(height / 2) - margin.top)
+      .attr("y", 0)
+      .attr("dy", "1em")
+      .attr("text-anchor", "middle")
+      .text(i18n_text.number_cases);
 
-    svg.append("text")
-        .style("font", "0.8em/1.2 Lato, sans-serif")
-        .attr("text-anchor", "middle")
-        .attr("x", (width / 2) + margin.left)
-        .attr("y", height + 85)
-        .text("Region");
+  svg.append("text")
+      .style("font", "0.8em/1.2 Lato, sans-serif")
+      .attr("text-anchor", "middle")
+      .attr("x", (width / 2) + margin.left)
+      .attr("y", height + 85)
+      .text(i18n_text.region);
 }
 
 

@@ -19,11 +19,9 @@
 <body>
   <script>
     /*
-     Language translations in other files.
-
+     Language translations for text in other files.
      Change this for every index-lang.html
-     Note: cannot display HTML in title attribute, i.e., &eacute; will not render.
-     i18n = internationalization
+     Note: we cannot display HTML in title attribute, i.e., &eacute; will not render.
      */
     var i18n_text = {
       // time-tree legend titles
@@ -44,13 +42,40 @@
       // side bar data statistics
       last_update: "Last update",
       number_genomes: "Number of genomes",
+      number_lineages: "Number of lineages",
+      number_cases: "Number of cases",
+      region: "Region",
+      countries: "Countries",
+      samples: "Samples",
 
       // tooltips
       tip_diffs: "Mean diffs from root",
       tip_residual: "Deviation from clock",
       tip_cases: "Number of cases",
       tip_varcount: "Number of variants",
-      tip_coldates: "Collection dates"
+      tip_coldates: "Collection dates",
+
+      vedge_parent: "Parent",
+      vedge_child: "Child",
+      vedge_distance: "Genomic distance",
+      vedge_support: "Support",
+      vedge_coldate: "Collection date",
+
+      hedge_unique_dates: "Unique collection dates",
+      hedge_coldates: "Collection dates",
+
+      sample_orig_lab: "Originating lab",
+      sample_subm_lab: "Submitting lab",
+      sample_authors: "Authors",
+
+      // miscellaneous
+      okay: "Okay!",
+      got_it: "Got it!",
+      loading: `Loading. Please Wait...`,
+      loading_json: "Loading JSON data from server (~10s)...",
+      zero_points: `0 of 0 points`,
+      country_theaders: ["Region", "Country", "Count"],
+      sample_theaders: ["Accession", "Name", "Date"],
     };
 
   </script>
@@ -159,7 +184,14 @@
           </a>
         </div>
         <div class="rightbox">
-          <div style="padding-top: 10px;"><h1>CoVizu</h1></div>
+          <div style="padding-top: 10px; cursor: help;">
+            <h1><span onclick="$('#splash').dialog('open');">CoVizu</span></h1>
+          </div>
+          <div style="font-size: 8pt;">
+            <a href="index.html">en</a>
+            <a href="index-fr.html">fr</a>
+            <a href="index-es.html">es</a>
+          </div>
           <div style="padding-top: 10px; padding-right: 6px;">
             <h3>Near real-time visualization of SARS-CoV-2 (hCoV-19) genomic variation</h3>
           </div>
@@ -172,7 +204,8 @@
           </span>
           <p>
             <div style="font-size: 0.9em;" id="div-last-update"></div>
-            <div style="padding-bottom: 20px; font-size: 0.9em;" id="div-number-genomes"></div>
+            <div style="font-size: 0.9em;" id="div-number-genomes"></div>
+            <div style="font-size: 0.9em;" id="div-number-lineages"></div>
           </p>
 
           <div id="tabs">
@@ -275,7 +308,7 @@
     </p>
     <p>
       We draw vertical line segments to connects variants to their
-      <span class="hint" title="The direction of ancestor-descendant relationships is based on midpoint rooting of the consensus neighbor-joining tree.  This is a crude method, so be cautious about over-interpreting the directionality of these relationships.">common ancestors</span>.
+      <span class="hint" title="The direction of ancestor-descendant relationships is, in effect, determined by degree size.  This is a crude estimate, so be cautious about interpreting the directionality of these relationships.">common ancestors</span>.
       These relationships are estimated by the <a href="https://en.wikipedia.org/wiki/Neighbor_joining">neighbor-joining method</a> using
       <a href="https://birc.au.dk/software/rapidnj/">RapidNJ</a>.
       Tooltips for each edge report the number of genetic differences (mutations)
