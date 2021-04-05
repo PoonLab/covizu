@@ -143,10 +143,3 @@ def get_mutations(by_lineage):
         result.update({lineage: common})
     return result
 
-
-def parse_mutation(feat):
-    """
-    Map feature (type, pos, alt) from reference nucleotide coordinate system to amino
-    acid substitutions, if relevant.
-    """
-    
