@@ -225,7 +225,6 @@ req.done(function() {
     }
     else {
       clear_selection();
-      $('#search_stats').text(i18n_text.zero_points);
       disable_buttons();
     }
   });
@@ -234,7 +233,6 @@ req.done(function() {
     $('#error_message').text(``);
     if (search_results.get().total_points > 0) {
       clear_selection();
-      $('#search_stats').text(i18n_text.zero_points);
       disable_buttons();
     }
     if (e.keyCode === 13 && ($('#search-input').val() !== "" || $('#start-date').val() !== "" ||
@@ -269,7 +267,6 @@ req.done(function() {
     }
     else {
       clear_selection();
-      $('#search_stats').text(i18n_text.zero_points);
       disable_buttons();
     }
   });
@@ -282,7 +279,6 @@ req.done(function() {
     }
     else {
       clear_selection();
-      $('#search_stats').text(i18n_text.zero_points);
       disable_buttons();
     }
   })
@@ -298,7 +294,6 @@ req.done(function() {
       }
       else {
         clear_selection();
-        $('#search_stats').text(i18n_text.zero_points);
         disable_buttons();
       }
     }
@@ -314,7 +309,6 @@ req.done(function() {
       }
       else {
         clear_selection();
-        $('#search_stats').text(i18n_text.zero_points);
         disable_buttons();
       }
     }
@@ -435,9 +429,11 @@ req.done(function() {
 
       if (selected_bead.length == 0) {
         var points_ui = d3.selectAll("#svg-cluster > svg > g > circle").nodes()[0];
-        var working_bead = d3.selectAll('circle[id="'+points_ui.__data__.accessions[0]+'"]').nodes()[0];
+        var selected_bead = d3.selectAll('circle[id="'+points_ui.__data__.accessions[0]+'"]');
+        selected_bead.raise();
+        var working_bead = selected_bead.nodes()[0];
         working_bead.scrollIntoView({block: "center"});
-        update_table_individual_bead(d3.select(working_bead).datum());
+        update_table_individual_bead_front(d3.select(working_bead).datum());
       }
       else {
         var selected_accession = selected_bead[0].attributes.bead.nodeValue;

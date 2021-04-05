@@ -444,6 +444,7 @@ function draw_halo_front(bead) {
   d3.selectAll(".selectionH").remove();
 
   visB.append("circle")
+    .data([{"y": bead.y, "count": bead.count}])
     .attr('class', "selectionH")
     .attr("cx", xScaleB(xValueB(bead)))
     .attr("cy", yScaleB(yValueB(bead)))
@@ -461,7 +462,6 @@ function draw_halo_front(bead) {
 function clear_selection() {
   // clear search field
   // $('#search-input').val('');
-  $('#search_stats').text(`0 of 0 points`);
 
   // Update stats so that the "Previous" and "Next" buttons do not become enabled in the next search query
   const stats = search_results.update({
@@ -576,8 +576,12 @@ function beadplot(cid) {
           if (!parent_variant.empty()) {
             if (parent_variant.datum().count > 0) {
               d3.selectAll("circle").filter(ci => ci.y === d.y1)
-                  .attr("stroke-width", 1.5)
+                  .attr("stroke-width", function() {
+                    if (this.classList.contains("selectionH")) return 5;
+                    return 1.5;
+                  })
                   .attr("r", function(d) {
+                    if (this.classList.contains("selectionH")) return 4*Math.sqrt(d.count)+7;
                     return 4 * Math.sqrt(d.count) + 3;
                   });
             }
@@ -586,9 +590,13 @@ function beadplot(cid) {
 
           if (!child_variant.empty()) {
             if (child_variant.datum().count > 0) {
-              d3.selectAll("circle").filter(ci=>ci.y===d.y2)
-                  .attr("stroke-width", 1.5)
+              d3.selectAll("circle").filter(ci => ci.y === d.y2)
+                  .attr("stroke-width", function() {
+                    if (this.classList.contains("selectionH")) return 5;
+                    return 1.5;
+                  })
                   .attr("r", function(d) {
+                    if (this.classList.contains("selectionH")) return 4*Math.sqrt(d.count)+7;
                     return 4*Math.sqrt(d.count)+3;
                   });
             }
@@ -633,9 +641,13 @@ function beadplot(cid) {
 
           if (!parent_variant.empty()) {
             if (parent_variant.datum().count > 0) {
-              d3.selectAll("circle").filter(ci=>ci.y===d.y1)
-                  .attr("stroke-width", 1)
+              d3.selectAll("circle").filter(ci => ci.y === d.y1)
+                  .attr("stroke-width", function() {
+                    if (this.classList.contains("selectionH")) return 5;
+                    return 1;
+                  })
                   .attr("r", function(d) {
+                    if (this.classList.contains("selectionH")) return 4*Math.sqrt(d.count)+4;
                     return 4 * Math.sqrt(d.count);
                   });
             }
@@ -644,9 +656,13 @@ function beadplot(cid) {
 
           if (!child_variant.empty()) {
             if (child_variant.datum().count > 0) {
-              d3.selectAll("circle").filter(ci=>ci.y===d.y2)
-                  .attr("stroke-width", 1)
+              d3.selectAll("circle").filter(ci => ci.y === d.y2)
+                  .attr("stroke-width", function() {
+                    if (this.classList.contains("selectionH")) return 5;
+                    return 1;
+                  })
                   .attr("r", function(d) {
+                    if (this.classList.contains("selectionH")) return 4*Math.sqrt(d.count)+4;
                     return 4 * Math.sqrt(d.count);
                   });
             }
@@ -1255,4 +1271,15 @@ function select_next_bead(next_node) {
   var working_bead = select_bead.nodes()[0];
   working_bead.scrollIntoView({block: "center"});
   update_table_individual_bead_front(d3.select(working_bead).datum());
+
+  if (next_node.classList.contains("SelectedBead") && search_results.get().total_points > 0) {
+    var search_index = search_results.get().beads[next_node.id];
+    if (search_index !== undefined) {
+      const stats = search_results.update({
+        current_point: search_index
+      });
+
+      update_search_stats(stats);
+    }
+  }
 }

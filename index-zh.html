@@ -43,13 +43,39 @@
       // side bar data statistics
       last_update: "最新更新",
       number_genomes: "基因组数",
+      number_lineages: "世系数",
+      number_cases: "案件数",
+      region: "地区",
+      countries: "国家",
+      samples: "样本",
 
       // tooltips
       tip_diffs: "与根的平均差异",
       tip_residual: "与钟的偏差",
-      tip_cases: "个案数",
+      tip_cases: "案件数",
       tip_varcount: "变异数量",
-      tip_coldates: "收集日期"
+      tip_coldates: "收集日期",
+
+      vedge_parent: "父节",
+      vedge_child: "子节",
+      vedge_distance: "基因组距离(分支的长度)",
+      vedge_support: "有这个分支的树（百分比）",
+      vedge_coldate: "采集日期",
+
+      hedge_unique_dates: "收集日期数",
+      hedge_coldates: "采集日期",
+
+      sample_orig_lab: "原始实验室",
+      sample_subm_lab: "提交实验室",
+      sample_authors: "作者",
+
+      // miscellaneous
+      okay: "好的",
+      got_it: "知道了",
+      loading: `加载请稍候...`,
+      loading_json: "从服务器加载JSON数据 (~十秒)...",
+      country_theaders: ["地区", "国家", "数"],
+      sample_theaders: ["登记号", "名", "日期"],
     };
 
   </script>
@@ -94,7 +120,12 @@
             <button type="button" id="clear_button">清除</button>
             <button type="button" id="previous_button">上一项</button>
             <button type="button" id="next_button">下一项</button>
-            <span id="search_stats">0分，共0分</span>
+            <div id="search_stats">
+              <span id="curr_hit" style="float: left;">0</span>
+              <span style="float: left;">分，共</span>
+              <span id="tot_hits" style="float: left;">0</span>
+              <span>分</span>
+            </div>
           </div>
           <div style="padding-top: 5px;">
             <img id="loading" src="img/Loading_icon_cropped.gif"/>
@@ -158,7 +189,15 @@
           </a>
         </div>
         <div class="rightbox">
-          <div style="padding-top: 10px;"><h1>CoVizu</h1></div>
+          <div style="padding-top: 10px; cursor: help;">
+            <h1><span onclick="$('#splash').dialog('open');">CoVizu</span></h1>
+          </div>
+          <div style="font-size: 8pt;">
+            <a href="index.html">en</a>
+            <a href="index-es.html">es</a>
+            <a href="index-fr.html">fr</a>
+            <a href="index-zh.html">zh</a>
+          </div>
           <div style="padding-top: 10px; padding-right: 6px;">
             <h3> SARS-CoV-2（hCoV-19）基因组变异的近实时可视化</h3>
           </div>
@@ -171,7 +210,8 @@
           </span>
           <p>
             <div style="font-size: 0.9em;" id="div-last-update"></div>
-            <div style="padding-bottom: 20px; font-size: 0.9em;" id="div-number-genomes"></div>
+            <div style="font-size: 0.9em;" id="div-number-genomes"></div>
+            <div style="font-size: 0.9em;" id="div-number-lineages"></div>
           </p>
 
           <div id="tabs">
@@ -197,7 +237,7 @@
 
   <div id="splash" title="Welcome">
     <p>
-      <b>CoVizu</b> is an <a href="https://github.com/PoonLab/CoVizu" target="_new">开源项目</a>
+      <b>CoVizu</b>  <a href="https://github.com/PoonLab/CoVizu" target="_new">开源项目</a>
       致力于可视化SARS-CoV-2基因组的全球多样性，该基因组由
       <a href="https://gisaid.org" target="_new">GISAID倡议</a>.
     </p>
@@ -222,94 +262,75 @@
     </p>
   </div>
 
-  <div id="help-timetree" title="Help: Time-scaled tree interface">
+  <div id="help-timetree" title=" 帮助：时标树形界面">
     <p>
-      种系发生树是共同祖先如何将不同种群关联的模型。
+      种系发生树是共同祖先如何将不同种群关联的模型.
       这里显示的树 (由此生成 <a href="https://github.com/neherlab/treetime"> 
-      TreeTime</a> v0.8.0) summarizes the common ancestry of different
-      <a href="https://cov-lineages.org" target="_new">SARS-CoV-2 lineages</a>, which are
-      pre-defined groupings of viruses based on genome similarity.
+      TreeTime</a> v0.8.0) 总结了不同病毒的共同祖先
+      <a href="https://cov-lineages.org" target="_new">SARS-CoV-2 lineages</a>, 它们是基于基因组相似性的预先定义的病毒分组.
     </p>
     <p>
-      A time scale is drawn above the tree marked with
-      <a href="https://en.wikipedia.org/wiki/ISO_8601" target="_new">dates</a>.
-      The earliest ancestor (root) is drawn on the left, and the most recent observed descendants are
-      on the right.
-      We estimate the dates of common ancestors by comparing the sampled genomes and assuming
-      a <a href="http://virological.org/t/phylodynamic-analysis-176-genomes-6-mar-2020/356" target="_new">constant rate</a> of evolution.
+      时间刻度画在标有
+      <a href="https://en.wikipedia.org/wiki/ISO_8601" target="_new">日期</a>.
+      最早的祖先(根)画在左边，最近观察到的后代画在右边.
+      我们通过比较采样的基因组和假设一个
+      a <a href="http://virological.org/t/phylodynamic-analysis-176-genomes-6-mar-2020/356" target="_new">恒定的进化速率</a> 来估算共同祖先的日期.
     </p>
     <p>
-      For each lineage, we draw a rectangle to summarize the range of sample collection
-      dates, and colour it according to the geographic region it was sampled most often.
-      To explore the samples within a lineage, click on the label (<i>e.g.,</i> "B.4")
-      or the rectangle to retrieve the associated beadplot.
+      对于每个谱系，我们绘制一个矩形以汇总样本收集日期的范围，并根据最常采样的地理区域为其着色.
+      要浏览一个谱系内的样本，请点击标签（<i>e.g.,</i> "B.4")或矩形以检索关联的珠图.
     </p>
   </div>
 
   <div id="help-beadplot" title="Help: Beadplot interface">
     <p>
-      We use beadplots to visualize the different variants of SARS-CoV-2 within a
-      <a href="https://cov-lineages.org" target="_new">lineage</a>, where and when
-      they have been sampled, and how they are related to each other.
-      Every object in the beadplot has additional info in a tooltip (which you view by hovering
-      over that object with your mouse pointer).
+      我们使用珠图来可视化SARS-CoV-2的不同变体在
+      <a href="https://cov-lineages.org" target="_new">谱系</a>中的采样时间，地点以及它们之间的相互关系.
+      珠图中的每个对象在工具提示中都有额外的信息(你可以用鼠标指针悬停在该对象上查看).
     </p>
     <p>
-      Each horizontal line segment represents a variant &ndash; viruses with
-      <span class="hint" title="It's a bit more complicated.  Many genomes are identical in sequence, but many more have missing information - parts of the genome that have not been sequenced.  Since we can't be 100% certain two genomes with missing parts are identical, we randomly re-sample genomes 100 times (non-parametric bootstrap) and evaluate how often they are separated in our analysis.">identical</span>
-      genomes.
-      We draw beads along a line to indicate when that variant was sampled.
-      If there are no beads on the line and it is grey, then it is an unsampled variant:
-      two or more sampled variants descend from an ancestral variant that has not
-      been directly observed.
+      每个水平线代表一个变体 &ndash; 具有
+      <span class="hint" title="这有点复杂.许多基因组在序列上是相同的，但是更多的基因组有缺失的信息——基因组的部分还没有被测序.由于我们不能100%确定两个缺失部分的基因组是完全相同的，我们随机重新采样基因组100次(非参数bootstrap)，并评估他们在我们的分析中分离的频率.">相同</span>
+      基因组的病毒.
+      我们沿着一条线画出珠子来表明该变体何时被取样.如果绳子上没有珠子，而且它是灰色的，则它是未采样的变体：
+      两个或多个采样的变体来自一个祖先变体，该祖先变体没有被直接观察到.
     </p>
     <p>
-      The area of the bead is scaled in proportion to the number of times the variant
-      was sampled that day.
-      This is important for rapid or intensively-sampled epidemics, <i>e.g.,</i>
-      lineage D.2 in Australia.
-      Beads are <span class="hint" title="Refer to the barplot in the Countries tab in the right panel for a colour legend.">coloured</span>
-      with respect to the most common geographic region of the samples.
+      珠的面积与当天变体被采样的次数成比例.
+      这对于快速流行或密集采样的流行病很重要， <i>例如,</i>
+      澳大利亚 D.2.谱系
+      珠子根据样本最常见的地理区域 <span class="hint" title="请参阅右侧面板中地区选项卡中的条形图，以获取颜色图例">着色</span>
     </p>
     <p>
-      We draw vertical line segments to connects variants to their
-      <span class="hint" title="The direction of ancestor-descendant relationships is based on midpoint rooting of the consensus neighbor-joining tree.  This is a crude method, so be cautious about over-interpreting the directionality of these relationships.">common ancestors</span>.
-      These relationships are estimated by the <a href="https://en.wikipedia.org/wiki/Neighbor_joining">neighbor-joining method</a> using
-      <a href="https://birc.au.dk/software/rapidnj/">RapidNJ</a>.
-      Tooltips for each edge report the number of genetic differences (mutations)
-      between ancestor and descendant as the "genomic distance".
-      Since it's difficult to reconstruct exactly when these mutations occurred,
-      we simply map each line to when the first sample was collected.
+      我们绘制垂直线段来连接变体和它们
+      <span class="hint" title="祖先-后代关系的方向是基于近邻结合树的中点根.这是一种粗略的方法，因此请谨慎对待过度解释这些关系的方向性.">共同的祖先</span>.
+      这些关系是通过 <a href="https://en.wikipedia.org/wiki/Neighbor_joining">近邻结合法</a> 中
+      <a href="https://birc.au.dk/software/rapidnj/">RapidNJ</a> 计算的.
+      每个边缘的工具提示报告祖先和后代之间的基因差异(突变)的数量为“基因组距离”.由于很难准确地重建这些突变发生的时间，我们只需将每一行映射到第一个样本收集的时间.
     </p>
   </div>
 
-  <div id="help-search" title="Help: Search interface">
+  <div id="help-search" title="帮助：搜索界面">
     <p>
-      Since there is an overwhelming number of sampled infections that we are trying to visualize
-      here, we have built a basic search interface that you can interact with using the inputs
-      at the top of this web page.
+      由于我们试图在此处可视化大量抽样感染，因此我们构建了一个基本的搜索界面，您可以使用该网页顶部的输入进行交互.
     </p>
     <p>
-      You can use the text box to find a specific sample by GISAID accession number.
-      If you start to enter an accession number, the text box will display a number of
-      possibilities (autocompletion).
-      You can also search samples by substring (case-sensitive).
-      For example, searching for "Madaga" (hit enter to submit) will jump to the first lineage that
-      contains a sample from Madagascar.
+      您可以使用文本框通过GISAID登录号查找特定的样品.
+      如果您开始输入登记号，则文本框中将显示一个
+      可能性（自动完成）.
+      您还可以按子字符串搜索样本（区分大小写）.
+      例如，搜索“ Madaga”（按回车键提交）将跳至
+      包含来自马达加斯加的样本.
     </p>
     <p>
-      Use the "Previous" and "Next" buttons to iterate through your search results, and the "Clear"
-      button to reset the search interface.
+      使用“上一步”和“下一步”按钮来迭代搜索结果，使用“清除”按钮来重置搜索界面
     </p>
   </div>
 
-  <div id="dialog" title="Acknowledgements">
+  <div id="dialog" title="致谢">
     <p>
-      We would like to thank the GISAID Initiative and are grateful to all of the data contributors,
-      i.e. the Authors, the Originating laboratories responsible for obtaining the specimens, and
-      the Submitting laboratories for generating the genetic sequence and metadata and sharing via
-      the GISAID Initiative, on which this research is based.
-    </p>
+      我们要感谢GISAID计划，并感谢所有数据提供者，
+      即作者、负责获取标本的原始实验室、提交生成基因序列和元数据并通过GISAID计划(本研究的基础)进行共享的实验室.
     <p>
       Elbe, S., and Buckland-Merrett, G. (2017)
       Data, disease and diplomacy: GISAID’s innovative contribution to global health.
@@ -318,14 +339,13 @@
       PMCID: <a href="https://pubmed.ncbi.nlm.nih.gov/31565258/" target=“_new”>31565258</a>
     </p>
     <p>
-      Note: When using results from these analyses in your manuscript, ensure that you also
-      acknowledge the Contributors of data, i.e. “We gratefully acknowledge all the Authors,
+      使用这些分析的结果时，请确保您也致谢数据的贡献者，例如 - “We gratefully acknowledge all the Authors,
       the Originating laboratories responsible for obtaining the specimens, and the Submitting
       laboratories for generating the genetic sequence and metadata and sharing via the GISAID
       Initiative, on which this research is based.”
     </p>
     <p>
-      Also, cite the following reference:
+      另外，请引用以下参考资料：
       Shu, Y., McCauley, J. (2017) GISAID: From vision to reality. <i>EuroSurveillance</i>, 22(13)<br/>
       DOI: <a href="https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2017.22.13.30494" target=“_new”>10.2807/1560-7917.ES.2017.22.13.30494</a>&nbsp;&nbsp;
       PMCID: <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5388101/" target=“_new”>PMC5388101</a>
@@ -334,10 +354,10 @@
 
 
   <footer class="footer">
-    GISAID data provided on this website are subject to GISAID’s
-    <a href="https://www.gisaid.org/DAA/" target=“_new”>Terms and Conditions</a>
+    本网站提供的GISAID数据遵守GISAID的
+    <a href="https://www.gisaid.org/DAA/" target=“_new”>条款和条件</a>
     &emsp;&emsp;
-    <button class="ack" id="ack-open" onclick="console.log('click');">Acknowledgements</button>
+    <button class="ack" id="ack-open" onclick="console.log('click');">致谢</button>
 
   </footer>
 

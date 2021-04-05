@@ -402,6 +402,7 @@ rect.SelectedCluster[txt_hover="yes"]{
 
 #search_stats {
   color: #000;
+  display: inline-block;
 }
 
 .disabled_stats{

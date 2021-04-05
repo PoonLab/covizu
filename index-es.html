@@ -18,9 +18,65 @@
 
 <body>
   <script>
-    // legend text
-    // cannot display HTML in title attribute
-    var timetree_legend = "Divergence (prédiction d'horloge stricte)";
+    /*
+     Language translations for text in other files.
+     Change this for every index-lang.html
+     Note: we cannot display HTML in title attribute, i.e., &eacute; will not render.
+     */
+    var i18n_text = {
+      // time-tree legend titles
+      region_legend: {
+        "Africa": "Africa",  // English -> lang
+        "Asia": "Asia",
+        "China": "China",
+        "Europe": "Europa",
+        "North America": "América del Norte",
+        "Oceania": "Oceania",
+        "South America": "América del Sur"
+      },
+      sample_legend: "Tamaño de la muestra (log10)",
+      coldate_legend: "Colección mas reciente",
+      diverge_legend: "Divergencia (strict molecular clock)", //??
+      total: "Total",
+
+      // side bar data statistics
+      last_update: "última actualización",
+      number_genomes: "Número de genomas",
+      number_lineages: "Número de linajes",
+      number_cases: "Número de caos",
+      region: "Región",
+      countries: "Países",
+      samples: "Muestras",
+
+      // tooltips
+      tip_diffs: "Distancia media desde la raíz",
+      tip_residual: "Desviación del reloj", //??
+      tip_cases: "Número de caos",
+      tip_varcount: "Número de variantes",
+      tip_coldates: "Fecha de colección",
+
+      vedge_parent: "Padre",
+      vedge_child: "Hijo",
+      vedge_distance: "Distancia genómica",
+      vedge_support: "Support",
+      vedge_coldate: "Fecha de colección",
+
+      hedge_unique_dates: "Fechas de colección únicas",
+      hedge_coldates: "Fecas de colección",
+
+      sample_orig_lab: "Laboratorio de origen",
+      sample_subm_lab: "Laboratorio de sometimiento",
+      sample_authors: "Autores",
+
+      // miscellaneous
+      okay: "De acuerdo!",
+      got_it: "Entiendo",
+      loading: `Cargando. Por favor espere...`,
+      loading_json: "Cargando archivos JSON desde el servidor (~10s)...",
+      country_theaders: ["Región", "País", "Conteo"],
+      sample_theaders: ["Accesión", "Nombre", "Fecha"],
+    };
+
   </script>
 
   <div class="tooltip" id="tooltipContainer"></div>
@@ -30,12 +86,12 @@
       <div class="bar" style="top: 10px; left: 10px; z-index:10" >
         <!-- <span style="display: inline-block; width: 250px; vertical-align: top"> -->
         <div class="legend-container">
-          <label for="select-tree-colours">Colour tree by:</label>
+          <label for="select-tree-colours">Colorear árbol por:</label>
           <select name="tree-colours" id="select-tree-colours">
-            <option value="Region">Region</option>
-            <option value="No. samples">No. samples</option>
-            <option value="Collection date">Collection date</option>
-            <option value="Divergence">Divergence</option>
+            <option value="Region">Región</option>
+            <option value="No. samples">No. muestras</option>
+            <option value="Collection date">Fecha de colección</option>
+            <option value="Divergence">Divergencia</option>
           </select>
           <div class="legend" id="div-region-legend"></div>
           <div class="legend" id="svg-sample-legend"></div>
@@ -48,12 +104,10 @@
         <div class="search-bar-container">
           <div id="search-bar">
             <input type="search" id="search-input"
-                    placeholder="e.g., EPI_ISL_434070 or Canada">
-          </div>
-          <div id="search-bar">
+                    placeholder="e.g., B.1.351 or EPI_ISL_434070 or Canada">
             <input id="start-date" class="dates"
                       placeholder="Start">
-            to
+            hasta
             <input id="end-date" class="dates"
                       placeholder="End">
             <span onclick="$('#help-search').dialog('open');" style="cursor: help">&#128304;</span>
@@ -61,12 +115,21 @@
           <br/>
           
           <div id="navigation" style="padding-top: 5px">
-            <button type="button" id="search-button">Search</button>
-            <button type="button" id="clear_button">Clear</button>
-            <button type="button" id="previous_button">Previous</button>
-            <button type="button" id="next_button">Next</button>
-            <span id="search_stats">0 of 0 points</span>
-            <button type="button" id="save_svg">Export SVG</button>
+            <button type="button" id="search-button">Buscar</button>
+            <button type="button" id="clear_button">Limpiar</button>
+            <button type="button" id="previous_button">Anterior</button>
+            <button type="button" id="next_button">Siguiente</button>
+            <div id="search_stats">
+              <span id="curr_hit">0</span>
+              <span>de</span>
+              <span id="tot_hits">0</span>
+              <span>puntos</span>
+            </div>
+          </div>
+          <div style="padding-top: 5px;">
+            <img id="loading" src="img/Loading_icon_cropped.gif"/>
+            <span id="loading_text"></span>
+            <span id="error_message"></span>
           </div>
         </div>
         <!-- </span> -->
@@ -76,23 +139,38 @@
         <div class="leftbox">
           <div class="floattitle">
             Time-scaled tree
-            <span title="Download time-scaled tree" onclick="save_timetree()"> &#128317;</span>
+            <span class="clicker" title="Download time-scaled tree" onclick="save_timetree()">
+              &nbsp;&nbsp;NWK&nbsp;&nbsp;
+            </span>
             <span title="Timetree help" onclick="$('#help-timetree').dialog('open');" style="cursor: help">&#128304;</span>
           </div>
           <div class="floattitle" id="svg-timetreeaxis" style="top: 58px; z-index: 13"></div>
           <div class="tree-container">
-            <div class="tree-beadplot-content" id="svg-timetree" style="width: 250px; max-width: 250px;"></div>
+            <div class="tree-content" id="svg-timetree" style="width: 250px; max-width: 250px;"></div>
           </div>
         </div>
 
         <div class="middlebox">
           <div class="floattitle">
             Beadplot
-            <span title="Download beadplot as tree" onclick="save_beadplot();"> &#128317;</span>
+            <span class="clicker" title="Download beadplot as tree" onclick="save_beadplot();">
+              &nbsp;&nbsp;NWK&nbsp;&nbsp;
+            </span>
+            <!--<button type="button" id="save_svg">Export SVG</button>-->
+            <span class="clicker" title="Save beadplot as SVG" onclick="export_svg();">
+              &nbsp;&nbsp;SVG&nbsp;&nbsp;
+            </span>
             <span title="Beadplot help" onclick="$('#help-beadplot').dialog('open');" style="cursor: help">&#128304;</span>
+
+            <span style="width: 150px;">
+              <label style="vertical-align: middle;" for="vedge-slider">Edge cutoff:&nbsp;&nbsp;</label>
+              <div id="vedge-slider">
+                <div id="custom-handle" class="ui-slider-handle"></div>
+              </div>
+            </span>
           </div>
           <div class="floattitle" id="svg-clusteraxis" style="top: 58px; z-index: 14"></div>
-          <div class="tree-beadplot-content" id="svg-cluster"></div>
+          <div class="beadplot-content" id="svg-cluster"></div>
         </div>
       </div>
     </div>
@@ -110,9 +188,17 @@
           </a>
         </div>
         <div class="rightbox">
-          <div style="padding-top: 10px;"><h1>CoVizu</h1></div>
+          <div style="padding-top: 10px; cursor: help;">
+            <h1><span onclick="$('#splash').dialog('open');">CoVizu</span></h1>
+          </div>
+          <div style="font-size: 8pt;">
+            <a href="index.html">en</a>
+            <a href="index-es.html">es</a>
+            <a href="index-fr.html">fr</a>
+            <a href="index-zh.html">zh</a>
+          </div>
           <div style="padding-top: 10px; padding-right: 6px;">
-            <h3>Near real-time visualization of SARS-CoV-2 (hCoV-19) genomic variation</h3>
+            <h3>Visulización en tiempo real de la variación genómica de SARS-CoV-2 (hCoV-19)</h3>
           </div>
           <span style="width: 250px">
             <div class="gisaid">Enabled by data from&nbsp;<a href="https://gisaid.org" target="_new">
@@ -123,13 +209,14 @@
           </span>
           <p>
             <div style="font-size: 0.9em;" id="div-last-update"></div>
-            <div style="padding-bottom: 20px; font-size: 0.9em;" id="div-number-genomes"></div>
+            <div style="font-size: 0.9em;" id="div-number-genomes"></div>
+            <div style="font-size: 0.9em;" id="div-number-lineages"></div>
           </p>
 
           <div id="tabs">
             <ul>
-              <li><a href="#tabs-1">Countries</a></li>
-              <li><a href="#tabs-2">Samples</a></li>
+              <li><a href="#tabs-1">Países</a></li>
+              <li><a href="#tabs-2">Muestras</a></li>
             </ul>
             <div id="tabs-1">
               <div class="breaker" id="barplot"></div>
@@ -137,7 +224,7 @@
             </div>
             <div id="tabs-2">
               <div id="seqtable-hint" class="hint">
-                Hover over accession (EPI_ISL_#) to display laboratory and author info.
+                Pasa sobre las accesiones (EPI_ISL_#) para mostrar información sobre laboratorios y autores
               </div>
               <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="seq-table"></div>
             </div>
@@ -150,31 +237,25 @@
   <div id="splash" title="Welcome">
     <p>
       <b>CoVizu</b> es un <a href="https://github.com/PoonLab/CoVizu" target="_new">proyecto de código abierto</a>
-      cuyo objetivo es el de visualizat la diversidad de genomas de SARS-CoV-2, que son entregados por la
-      iniciativa <a href="https://gisaid.org" target="_new">GISAID</a>.
+      creado con el objetivo de visualizar la diversidad global de los genomas de SARS-CoV2, obtenidos
+      a partir de la <a href="https://gisaid.org" target="_new">iniciativa GISAID</a>.
     </p>
     <p>
-      Esta página web permite visualizar la información de dos formas interactivas.
-      En el panel izquierdo muestra un <a href="https://en.wikipedia.org/wiki/Phylogenetic_tree" target="_new">
-      ábol filogenético</a> resumiento las relaciones evolutivas entre differentes
-      <a href="https://cov-lineages.org" target="_new">linajes de SARS-CoV-2</a> (agrupando virus con genomas 
-      similares, lo que resulta para encontrar relaciones entre brotes en differentes lugares; 
-      <a href="https://www.nature.com/articles/s41564-020-0770-5" target="_new">Rambaut
+      Este sitio está compuesto de dos visualizaciones interactivas. 
+      En la izquierda, se muestra un <a href="https://en.wikipedia.org/wiki/Phylogenetic_tree" target="_new">
+      árbol filogenético</a> que resume las relaciones evolutivas entre diferentes 
+      <a href="https://cov-lineages.org" target="_new">linajes de SARS-CoV-2</a> (agrupar virus con genomas similares 
+      es útil para detectar brotes relaciones en diferentes lugares; <a href="https://www.nature.com/articles/s41564-020-0770-5" target="_new">Rambaut
       <i>et al.</i> 2020</a>).
-      Es posible navegar entre diferentes linajes haciendo click en sus respectivos recuadros.
+      Puedes navegar entre diferentes linajes haciendo click en sus respectivas ramas.
     </p>
     <p>
-      Al selectionar un linaje, es posible visualizar en la página central un diagramada conocido como "beadplot".
-      En este diagrama, cada línea horizontal representa una o más muestras de SARS-CoV-2 que comparten la misma 
-      sequencia.
-      Los 
-      Each horizontal line represents one or more samples of SARS-CoV-2 that share the same genome
-      sequence.
-      Las burbujas a lo largo de la línea representan las fechas en las cuales se tomaton 
-      las muestras de dicha variante.
+      Al seleccionar un linaje, se muestra una visulización de "beadplot" en el centro de la página.
+      Cada línea horizontal representa una o más muestras de SARS-CoV-2 con la misma secuencia genómica. 
+      Líneas verticales a lo largo de dicha línea representa las fechas en las cuales estas variantes fueron colectadas.
     </p>
     <p>
-      Para más información, has click en los
+      Para más ayuda has click en los
       <a style="text-decoration: none;" href="https://en.wikipedia.org/wiki/Shoshinsha_mark" target="_new">
         &#128304;</a>íconos.
     </p>
@@ -182,11 +263,12 @@
 
   <div id="help-timetree" title="Help: Time-scaled tree interface">
     <p>
-      A phylogenetic tree is a model of how different populations are related by common ancestors.
-      The tree displayed here (generated by <a href="https://github.com/neherlab/treetime">
-      TreeTime</a> v0.8.0) summarizes the common ancestry of different
-      <a href="https://cov-lineages.org" target="_new">SARS-CoV-2 lineages</a>, which are
-      pre-defined groupings of viruses based on genome similarity.
+      Un árbol filogenético es un modelo que permite establecer relaciones entre diferentes 
+      poblaciones que comparten un ancestro común.
+      La filogenia mostrada aquí (generada con <a href="https://github.com/neherlab/treetime">
+      TreeTime</a> v0.8.0) resume el ancestro común de los diferentes 
+      <a href="https://cov-lineages.org" target="_new">linajes de SARS-CoV-2</a>, que han sido
+      definidos agrupando virus de acuerdo a la similitud de sus genomas. 
     </p>
     <p>
       A time scale is drawn above the tree marked with
@@ -231,7 +313,7 @@
     </p>
     <p>
       We draw vertical line segments to connects variants to their
-      <span class="hint" title="The direction of ancestor-descendant relationships is based on midpoint rooting of the consensus neighbor-joining tree.  This is a crude method, so be cautious about over-interpreting the directionality of these relationships.">common ancestors</span>.
+      <span class="hint" title="The direction of ancestor-descendant relationships is, in effect, determined by degree size.  This is a crude estimate, so be cautious about interpreting the directionality of these relationships.">common ancestors</span>.
       These relationships are estimated by the <a href="https://en.wikipedia.org/wiki/Neighbor_joining">neighbor-joining method</a> using
       <a href="https://birc.au.dk/software/rapidnj/">RapidNJ</a>.
       Tooltips for each edge report the number of genetic differences (mutations)
@@ -300,8 +382,8 @@
   </footer>
 
   <script src="js/beadplot.js"></script>
-  <script src="js/drawtree.js"></script>
   <script src="js/utils.js"></script>
+  <script src="js/drawtree.js"></script>
   <script src="js/phylo.js"></script>
   <script src="js/search.js"></script>
   <script src="js/gisaid/gisaid.js?random=1"></script>
