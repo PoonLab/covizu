@@ -120,3 +120,33 @@ def make_beadplots(by_lineage, args, callback=None, t0=None):
         result.append(beaddict)
 
     return result
+
+
+def get_mutations(by_lineage):
+    """
+    Extract common mutations from feature vectors for each lineage
+    :param by_lineage:  dict, return value from process_feed()
+    :return:  dict, common mutations by lineage
+    """
+    result = {}
+    for lineage, samples in by_lineage.items():
+        # enumerate features
+        counts = {}
+        for sample in samples:
+            for diff in sample['diffs']:
+                feat = tuple(diff)
+                if feat not in counts:
+                    counts.update({feat: 0})
+                counts[feat] += 1
+        # filter for mutations that occur in at least half of samples
+        common = [feat for feat, count in counts.items() if count/len(samples) >= 0.5]
+        result.update({lineage: common})
+    return result
+
+
+def parse_mutation(feat):
+    """
+    Map feature (type, pos, alt) from reference nucleotide coordinate system to amino
+    acid substitutions, if relevant.
+    """
+    
