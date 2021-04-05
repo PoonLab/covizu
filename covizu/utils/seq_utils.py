@@ -331,32 +331,39 @@ class SC2Locator:
         Map feature from reference nucleotide coordinate system to amino
         acid substitutions, if relevant.
         :param feat:  tuple (str, int, str); type, position and alternate state
-        :return:  dict,
+        :return:  str, AA or indel string; or None if synonymous nucleotide substitution
         """
         # unpack feature
         typ, pos, alt = feat
 
-        # is the mutation within a reading frame?
-        this_orf = None
-        this_left, this_right = None, None
-        for orf, coords in self.orfs.items():
-            for left, right in coords:
-                if left <= pos < right:
-                    this_orf = orf
-                    this_left, this_right = left, right
-                    break
+        if typ == '~':
+            # is substitution within a reading frame?
+            this_orf = None
+            this_left, this_right = None, None
+            for orf, coords in self.orfs.items():
+                for left, right in coords:
+                    if left <= pos < right:
+                        this_orf = orf
+                        this_left, this_right = left, right
+                        break
+            # does the mutation change an amino acid?
+            if this_orf:
+                # retrieve codons
+                codon_left = 3 * ((pos-this_left)//3)
+                codon_pos = (pos-this_left) % 3
+                rcodon = self.refseq[codon_left:(codon_left+3)]
+                ramino = self.gcode[rcodon]
+                qcodon = list(rcodon)
+                qcodon[codon_pos] = alt
+                qcodon = ''.join(qcodon)
+                qamino = self.gcode[qcodon]
+                if ramino != qamino:
+                    return 'aa:{}:{}{:0.0f}{}'.format(this_orf, ramino, 1+codon_left/3, qamino)
+        elif typ == '+':
+            return 'ins:{}:{}'.format(pos, alt)
+        elif typ == '-':
+            return 'del:{}:{}'.format(pos, alt)
 
-        # does the mutation change an amino acid?
-        if this_orf and typ == '~':
-            # retrieve codons
-            codon_left = 3 * ((pos-this_left)//3)
-            codon_pos = (pos-this_left) % 3
-            rcodon = refseq[codon_left:(codon_left+3)]
-            qcodon = list(rcodon)
-            qcodon[codon_pos] = alt
-            qcodon = ''.join(qcodon)
-            if self.gcode[rcodon] != self.gcode[qcodon]:
-                pass
-
+        return None
 
 
