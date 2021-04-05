@@ -74,7 +74,6 @@
       got_it: "知道了",
       loading: `加载请稍候...`,
       loading_json: "从服务器加载JSON数据 (~十秒)...",
-      zero_points: `0 of 0 points`,
       country_theaders: ["地区", "国家", "数"],
       sample_theaders: ["登记号", "名", "日期"],
     };
@@ -121,7 +120,12 @@
             <button type="button" id="clear_button">清除</button>
             <button type="button" id="previous_button">上一项</button>
             <button type="button" id="next_button">下一项</button>
-            <span id="search_stats">0分，共0分</span>
+            <div id="search_stats">
+              <span id="curr_hit" style="float: left;">0</span>
+              <span style="float: left;">分，共</span>
+              <span id="tot_hits" style="float: left;">0</span>
+              <span>分</span>
+            </div>
           </div>
           <div style="padding-top: 5px;">
             <img id="loading" src="img/Loading_icon_cropped.gif"/>

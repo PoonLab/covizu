@@ -225,7 +225,6 @@ req.done(function() {
     }
     else {
       clear_selection();
-      $('#search_stats').text(i18n_text.zero_points);
       disable_buttons();
     }
   });
@@ -234,7 +233,6 @@ req.done(function() {
     $('#error_message').text(``);
     if (search_results.get().total_points > 0) {
       clear_selection();
-      $('#search_stats').text(i18n_text.zero_points);
       disable_buttons();
     }
     if (e.keyCode === 13 && ($('#search-input').val() !== "" || $('#start-date').val() !== "" ||
@@ -269,7 +267,6 @@ req.done(function() {
     }
     else {
       clear_selection();
-      $('#search_stats').text(i18n_text.zero_points);
       disable_buttons();
     }
   });
@@ -282,7 +279,6 @@ req.done(function() {
     }
     else {
       clear_selection();
-      $('#search_stats').text(i18n_text.zero_points);
       disable_buttons();
     }
   })
@@ -298,7 +294,6 @@ req.done(function() {
       }
       else {
         clear_selection();
-        $('#search_stats').text(i18n_text.zero_points);
         disable_buttons();
       }
     }
@@ -314,7 +309,6 @@ req.done(function() {
       }
       else {
         clear_selection();
-        $('#search_stats').text(i18n_text.zero_points);
         disable_buttons();
       }
     }

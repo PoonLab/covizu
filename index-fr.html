@@ -73,7 +73,6 @@
       got_it: "J'ai compris!",
       loading: `Chargement en cours.  Un moment, s'il vous plait...`,
       loading_json: "Chargement les donn&eacute;es JSON depuis le serveur (~10 sec)...",
-      zero_points: `0 de 0 points`,
       country_theaders: ["Région", "Pays", "Compte"],
       sample_theaders: ["Num d'ordre", "Nom", "Date"],
     };
@@ -120,7 +119,12 @@
             <button type="button" id="clear_button">R&eacute;initialiser</button>
             <button type="button" id="previous_button">Pr&eacute;c&eacute;dent</button>
             <button type="button" id="next_button">Suivant</button>
-            <span id="search_stats">0 de 0 points</span>
+            <div id="search_stats">
+              <span id="curr_hit">0</span>
+              <span>de</span>
+              <span id="tot_hits">0</span>
+              <span>points</span>
+            </div>
           </div>
           <div style="padding-top: 5px;">
             <img id="loading" src="img/Loading_icon_cropped.gif"/>

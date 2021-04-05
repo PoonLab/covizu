@@ -462,7 +462,6 @@ function draw_halo_front(bead) {
 function clear_selection() {
   // clear search field
   // $('#search-input').val('');
-  $('#search_stats').text(`0 of 0 points`);
 
   // Update stats so that the "Previous" and "Next" buttons do not become enabled in the next search query
   const stats = search_results.update({

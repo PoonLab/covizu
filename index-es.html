@@ -73,7 +73,6 @@
       got_it: "Entiendo",
       loading: `Cargando. Por favor espere...`,
       loading_json: "Cargando archivos JSON desde el servidor (~10s)...",
-      zero_points: `0 of 0 puntos`,
       country_theaders: ["Región", "País", "Conteo"],
       sample_theaders: ["Accesión", "Nombre", "Fecha"],
     };
@@ -120,7 +119,12 @@
             <button type="button" id="clear_button">Limpiar</button>
             <button type="button" id="previous_button">Anterior</button>
             <button type="button" id="next_button">Siguiente</button>
-            <span id="search_stats">0 de 0 puntos</span>
+            <div id="search_stats">
+              <span id="curr_hit">0</span>
+              <span>de</span>
+              <span id="tot_hits">0</span>
+              <span>puntos</span>
+            </div>
           </div>
           <div style="padding-top: 5px;">
             <img id="loading" src="img/Loading_icon_cropped.gif"/>

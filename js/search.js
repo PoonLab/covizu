@@ -44,7 +44,8 @@ const search_results = prepare_search_stats({
 });
 
 function update_search_stats(stats) {
-  $('#search_stats').text(`${stats.current_point+1} of ${stats.total_points} points`);
+  $('#curr_hit').text(stats.current_point+1);
+  $('#tot_hits').text(stats.total_points);
 }
 
 /************************************ Main Search Functions *************************************/
