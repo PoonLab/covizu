@@ -86,7 +86,7 @@ def bootstrap(union, indexed, binpath='rapidnj', callback=None, callfreq=1000):
     outfile.write('{0:>5}\n'.format(n))
     for i in range(n):
         if callback and i % callfreq == 0:
-            callback("  row {} of {}".format(i, n))
+            callback("  row {} of {}".format(i, n), level='DEBUG')
         outfile.write('{}'.format(i))
         for j in range(n):
             if i == j:
