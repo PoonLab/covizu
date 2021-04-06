@@ -307,18 +307,18 @@ class SC2Locator:
             '---': '-', 'XXX': '?'
         }
         self.orfs = {
-            'orf1ab': [(265, 13468),  # without frameshift, orf1a proceeds to 13484
-                       (13466, 21555)],
-            'S': [(21562, 25384)],
-            'orf3a': [(25392, 26220)],
-            'E': [(26244, 26472)],
-            'M': [(26522, 27191)],
-            'orf6': [(27201, 27387)],
-            'orf7a': [(27393, 27758)],
-            'orf7b': [(27755, 27886)],
-            'orf8': [(27893, 28259)],
-            'N': [(28273, 29533)],
-            'orf10': [(29557, 29674)]
+            'orf1a': (265, 13468),
+            'orf1b': (13467, 21555),
+            'S': (21562, 25384),
+            'orf3a': (25392, 26220),
+            'E': (26244, 26472),
+            'M': (26522, 27191),
+            'orf6': (27201, 27387),
+            'orf7a': (27393, 27758),
+            'orf7b': (27755, 27886),
+            'orf8': (27893, 28259),
+            'N': (28273, 29533),
+            'orf10': (29557, 29674)
         }
 
         # load reference genome
@@ -335,35 +335,41 @@ class SC2Locator:
         """
         # unpack feature
         typ, pos, alt = feat
-
         if typ == '~':
             # is substitution within a reading frame?
             this_orf = None
             this_left, this_right = None, None
             for orf, coords in self.orfs.items():
-                for left, right in coords:
-                    if left <= pos < right:
-                        this_orf = orf
-                        this_left, this_right = left, right
-                        break
+                left, right = coords
+                if left <= pos < right:
+                    this_orf = orf
+                    this_left, this_right = left, right
+                    break
+
             # does the mutation change an amino acid?
             if this_orf:
                 # retrieve codons
                 codon_left = 3 * ((pos-this_left)//3)
                 codon_pos = (pos-this_left) % 3
-                rcodon = self.refseq[codon_left:(codon_left+3)]
+
+                rcodon = self.refseq[this_left:this_right][codon_left:(codon_left+3)]
                 ramino = self.gcode[rcodon]
+
                 qcodon = list(rcodon)
                 qcodon[codon_pos] = alt
                 qcodon = ''.join(qcodon)
                 qamino = self.gcode[qcodon]
+
                 if ramino != qamino:
                     return 'aa:{}:{}{:0.0f}{}'.format(this_orf, ramino, 1+codon_left/3, qamino)
-        elif typ == '+':
-            return 'ins:{}:{}'.format(pos, alt)
-        elif typ == '-':
-            return 'del:{}:{}'.format(pos, alt)
 
+        elif typ == '+':
+            return 'ins:{}:{}'.format(pos+1, alt)
+
+        elif typ == '-':
+            return 'del:{}:{}'.format(pos+1, alt)
+
+        # otherwise
         return None
 
 
