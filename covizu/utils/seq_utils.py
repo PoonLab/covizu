@@ -364,7 +364,7 @@ class SC2Locator:
                     return 'aa:{}:{}{:0.0f}{}'.format(this_orf, ramino, 1+codon_left/3, qamino)
 
         elif typ == '+':
-            return 'ins:{}:{}'.format(pos+1, alt)
+            return 'ins:{}:{}'.format(pos+1, alt.length)
 
         elif typ == '-':
             return 'del:{}:{}'.format(pos+1, alt)
