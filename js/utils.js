@@ -55,3 +55,11 @@ function getUrlParameter(sParam) {
     }
     return false;
 };
+
+
+/**
+/* Returns encoded URI string from JSON object
+/*
+*/
+function jsonToURI(json){ return encodeURIComponent(JSON.stringify(json)); }
+
