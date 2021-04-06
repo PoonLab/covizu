@@ -912,7 +912,7 @@ function region_to_string(my_regions) {
       total = 0;
 
   for (let [r_key, r_value] of Object.entries(my_regions)) {
-    regStr += `${i18n_text.region_legend[r_key]}: ${r_value}<br>`;
+    regStr += `&nbsp;&nbsp;${i18n_text.region_legend[r_key]}: ${r_value}<br>`;
     total += r_value;
   }
 
@@ -923,6 +923,7 @@ function region_to_string(my_regions) {
 
   return regStr;
 }
+
 
 /**
  * Creates a table that displays sequence details (Sequence name, GISAID accession number, collection date)

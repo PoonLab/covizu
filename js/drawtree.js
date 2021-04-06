@@ -206,6 +206,7 @@ function map_clusters_to_tips(df, clusters) {
     tips[root_idx].max_ndiffs = tip_stats.max_ndiffs;
     tips[root_idx].mean_ndiffs = tip_stats.mean_ndiffs;
     tips[root_idx].nsamples = tip_stats.nsamples;
+    tips[root_idx].mutations = tip_stats.mutations;
 
     // calculate residual from mean differences and mean collection date - fixes #241
     let times = coldates.map(x => new Date(x).getTime()),
@@ -235,6 +236,14 @@ function xaxis_to_date(x, tip) {
 }
 
 
+function mutations_to_string(mutations) {
+  let mutStr = `<b>${i18n_text.tip_mutations}:</b><br/>`;
+  for (mutation of mutations) {
+    mutStr += `&nbsp;&nbsp;${mutation}<br/>`;
+  }
+  return mutStr;
+}
+
 /**
  * Add subtree objects to time-scaled tree.
  * @param {Array} tips, clusters that have been mapped to tips of tree
@@ -259,6 +268,7 @@ function draw_clusters(tips) {
 
     let ctooltipText = `<b>${i18n_text.tip_diffs}:</b> ${Math.round(100*d.mean_ndiffs)/100.}<br/>`;
     ctooltipText += `<b>${i18n_text.tip_residual}:</b> ${Math.round(100*d.residual)/100.}<br>`;
+    ctooltipText += mutations_to_string(d.mutations);
     ctooltipText += region_to_string(d.allregions);
     ctooltipText += `<b>${i18n_text.tip_varcount}:</b> ${d.varcount}<br>`;
     ctooltipText += `<b>${i18n_text.tip_coldates}:</b><br>${formatDate(d.first_date)} / ${formatDate(d.last_date)}`;
