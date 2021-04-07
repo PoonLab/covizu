@@ -314,8 +314,8 @@ class SC2Locator:
             'E': (26244, 26472),
             'M': (26522, 27191),
             'orf6': (27201, 27387),
-            'orf7a': (27393, 27758),
-            'orf7b': (27755, 27886),
+            'orf7a': (27393, 27759),
+            'orf7b': (27755, 27887),
             'orf8': (27893, 28259),
             'N': (28273, 29533),
             'orf10': (29557, 29674)
@@ -364,7 +364,7 @@ class SC2Locator:
                     return 'aa:{}:{}{:0.0f}{}'.format(this_orf, ramino, 1+codon_left/3, qamino)
 
         elif typ == '+':
-            return 'ins:{}:{}'.format(pos+1, alt.length)
+            return 'ins:{}:{}'.format(pos+1, len(alt))
 
         elif typ == '-':
             return 'del:{}:{}'.format(pos+1, alt)
