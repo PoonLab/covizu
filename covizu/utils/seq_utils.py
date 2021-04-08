@@ -1,5 +1,6 @@
 from datetime import date
 import bisect
+import pkg_resources
 
 from scipy.stats import poisson
 from scipy.optimize import root
@@ -282,3 +283,93 @@ def filter_problematic(obj, mask, callback=None):
     if callback:
         callback('filtered {} problematic features'.format(count))
     return result
+
+
+class SC2Locator:
+    def __init__(self, ref_file=pkg_resources.resource_filename('covizu', 'data/NC_045512.fa')):
+        self.gcode = {
+            'TTT': 'F', 'TTC': 'F', 'TTA': 'L', 'TTG': 'L',
+            'TCT': 'S', 'TCC': 'S', 'TCA': 'S', 'TCG': 'S',
+            'TAT': 'Y', 'TAC': 'Y', 'TAA': '*', 'TAG': '*',
+            'TGT': 'C', 'TGC': 'C', 'TGA': '*', 'TGG': 'W',
+            'CTT': 'L', 'CTC': 'L', 'CTA': 'L', 'CTG': 'L',
+            'CCT': 'P', 'CCC': 'P', 'CCA': 'P', 'CCG': 'P',
+            'CAT': 'H', 'CAC': 'H', 'CAA': 'Q', 'CAG': 'Q',
+            'CGT': 'R', 'CGC': 'R', 'CGA': 'R', 'CGG': 'R',
+            'ATT': 'I', 'ATC': 'I', 'ATA': 'I', 'ATG': 'M',
+            'ACT': 'T', 'ACC': 'T', 'ACA': 'T', 'ACG': 'T',
+            'AAT': 'N', 'AAC': 'N', 'AAA': 'K', 'AAG': 'K',
+            'AGT': 'S', 'AGC': 'S', 'AGA': 'R', 'AGG': 'R',
+            'GTT': 'V', 'GTC': 'V', 'GTA': 'V', 'GTG': 'V',
+            'GCT': 'A', 'GCC': 'A', 'GCA': 'A', 'GCG': 'A',
+            'GAT': 'D', 'GAC': 'D', 'GAA': 'E', 'GAG': 'E',
+            'GGT': 'G', 'GGC': 'G', 'GGA': 'G', 'GGG': 'G',
+            '---': '-', 'XXX': '?'
+        }
+        self.orfs = {
+            'orf1a': (265, 13468),
+            'orf1b': (13467, 21555),
+            'S': (21562, 25384),
+            'orf3a': (25392, 26220),
+            'E': (26244, 26472),
+            'M': (26522, 27191),
+            'orf6': (27201, 27387),
+            'orf7a': (27393, 27759),
+            'orf7b': (27755, 27887),
+            'orf8': (27893, 28259),
+            'N': (28273, 29533),
+            'orf10': (29557, 29674)
+        }
+
+        # load reference genome
+        with open(ref_file) as handle:
+            fasta = convert_fasta(handle)
+            self.refseq = fasta[0][1]
+
+    def parse_mutation(self, feat):
+        """
+        Map feature from reference nucleotide coordinate system to amino
+        acid substitutions, if relevant.
+        :param feat:  tuple (str, int, str); type, position and alternate state
+        :return:  str, AA or indel string; or None if synonymous nucleotide substitution
+        """
+        # unpack feature
+        typ, pos, alt = feat
+        if typ == '~':
+            # is substitution within a reading frame?
+            this_orf = None
+            this_left, this_right = None, None
+            for orf, coords in self.orfs.items():
+                left, right = coords
+                if left <= pos < right:
+                    this_orf = orf
+                    this_left, this_right = left, right
+                    break
+
+            # does the mutation change an amino acid?
+            if this_orf:
+                # retrieve codons
+                codon_left = 3 * ((pos-this_left)//3)
+                codon_pos = (pos-this_left) % 3
+
+                rcodon = self.refseq[this_left:this_right][codon_left:(codon_left+3)]
+                ramino = self.gcode[rcodon]
+
+                qcodon = list(rcodon)
+                qcodon[codon_pos] = alt
+                qcodon = ''.join(qcodon)
+                qamino = self.gcode[qcodon]
+
+                if ramino != qamino:
+                    return 'aa:{}:{}{:0.0f}{}'.format(this_orf, ramino, 1+codon_left/3, qamino)
+
+        elif typ == '+':
+            return 'ins:{}:{}'.format(pos+1, len(alt))
+
+        elif typ == '-':
+            return 'del:{}:{}'.format(pos+1, alt)
+
+        # otherwise
+        return None
+
+
