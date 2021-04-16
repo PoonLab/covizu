@@ -231,7 +231,8 @@ req.done(function() {
 
   $('#search-input, #start-date, #end-date').on('keydown', function(e) {
     $('#error_message').text(``);
-    if (search_results.get().total_points > 0) {
+    // Only resets search results if the backspace key is pressed
+    if (search_results.get().total_points > 0 && (e.keyCode == 8)) {
       clear_selection();
       disable_buttons();
     }
@@ -423,6 +424,11 @@ req.done(function() {
   });
 
   $(document).on('keydown', function(e) {
+    // Ignore event if its inside an input field
+    if (e.target.matches('input')) {
+      return;
+    }
+
     // User presses the left arrow key (37) or right arrow key (39)
     if (e.keyCode == 37 || e.keyCode == 39) {
       var selected_bead = d3.selectAll(".selectionH").nodes();
