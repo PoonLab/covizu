@@ -70,11 +70,35 @@ def collapse_polytomies(tree, minlen=0.5):
     return tree
 
 
+def min_pair_lens(tree):
+    """
+    Obtain the list of minimum pairwise patristic distances in the tree.
+    For each tip, this is the shortest path of branches to another tip in the tree.
+    This annotates the tree as a measure related to sampling density.
+    """
+
+    clades = list(tree.find_clades(terminal=True))
+    min_dists = [min([tree.distance(target1=clade, target2=x) for x in clades if x!=clade]) for clade in clades]
+
+    return(sum(min_dists)/len(min_dists))
+
+def term_lens(tree):
+    """
+    Obtain the mean terminal branch lengths in this tree
+    """
+
+    clades = list(tree.find_clades(terminal=True))
+    term_dists = [clade.branch_length for clade in clades]
+
+    return(sum(term_dists)/len(term_dists))
+
+
 def print_phylo(tree):
     """ DEBUGGING - format() not implemented for Clade objects """
     with StringIO() as handle:
         Phylo.write(tree, handle, "newick")
         print(handle.getvalue())
+
 
 
 def annotate_tree(tree, label_dict, minlen=0.5, callback=None):
