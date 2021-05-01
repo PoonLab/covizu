@@ -79,7 +79,7 @@ function readTree(text) {
         curnode.id = nodeId;
     }
 
-    return (drawtree(root));
+    return (getTimeTreeData(root));
 }
 
 
@@ -181,19 +181,22 @@ function edges(df, rectangular=false) {
         if (rectangular) {
           pair = {
               x1: row.x, y1: row.y, id1: row.thisId,
-              x2: parent.x, y2: row.y, id2: undefined
+              x2: parent.x, y2: row.y, id2: undefined,
+              last_date: row.isTip ? row.last_date : undefined
           };
           result.push(pair);
           pair = {
               x1: parent.x, y1: row.y, id1: undefined,
-              x2: parent.x, y2: parent.y, id2: row.parentId
+              x2: parent.x, y2: parent.y, id2: row.parentId,
+              last_date: row.isTip ? row.last_date : undefined
           };
           result.push(pair);
         }
         else {
           pair = {
               x1: row.x, y1: row.y, id1: row.thisId,
-              x2: parent.x, y2: parent.y, id2: row.parentId
+              x2: parent.x, y2: parent.y, id2: row.parentId,
+              last_date: row.isTip ? row.last_date : undefined
           };
           result.push(pair);
         }
