@@ -298,57 +298,57 @@
     <p>
       Cada segmento horizontal representa una variante &ndash; virus con
       <span class="hint" title="It's a bit more complicated.  Many genomes are identical in sequence, but many more have missing information - parts of the genome that have not been sequenced.  Since we can't be 100% certain two genomes with missing parts are identical, we randomly re-sample genomes 100 times (non-parametric bootstrap) and evaluate how often they are separated in our analysis.">genomas idénticos</span>
-      Las círculos dibujados a través de las líneas indican la fecha de colección de la variante.
-      Si no hay más círculos en la línea y ésta es gris, esto representa una variante que no ha sido colectada:
-      dos o m'as variantes colectadas descienden de una variante ancestral que no ha sido 
+      Las círculos (beads) dibujados a través de las líneas indican la fecha de colección de la variante.
+      Si no hay más círculos en la línea y ésta es gris, esto representa una variante que no ha sido muestreada:
+      dos o mas variantes colectadas descienden de una variante ancestral que no ha sido 
       directamente observada.
     </p>
     <p>
-      The area of the bead is scaled in proportion to the number of times the variant
-      was sampled that day.
-      This is important for rapid or intensively-sampled epidemics, <i>e.g.,</i>
-      lineage D.2 in Australia.
-      Beads are <span class="hint" title="Refer to the barplot in the Countries tab in the right panel for a colour legend.">coloured</span>
-      with respect to the most common geographic region of the samples.
+      El área del círculo es proporcionl al número de veces que una variante 
+      ha sido muestreada ese día.
+      Esto es relevante para epidemias que en las que el se toman muestras con mucha 
+      frequencia, <i>e.g.,</i> linage D.2 in Australia.
+      Los círculos son <span class="hint" title="Refer to the barplot in the Countries tab in the right panel for a colour legend.">coloreados</span>
+      con respecto a la región geográfica muestrada más comñun en las muestras. 
     </p>
     <p>
-      We draw vertical line segments to connects variants to their
-      <span class="hint" title="The direction of ancestor-descendant relationships is, in effect, determined by degree size.  This is a crude estimate, so be cautious about interpreting the directionality of these relationships.">common ancestors</span>.
-      These relationships are estimated by the <a href="https://en.wikipedia.org/wiki/Neighbor_joining">neighbor-joining method</a> using
+      Los líneas verticales conectan las variantes con sus 
+      <span class="hint" title="The direction of ancestor-descendant relationships is, in effect, determined by degree size.  This is a crude estimate, so be cautious about interpreting the directionality of these relationships.">ancestros comunes</span>.
+      Éstas relaciones son estimadas usando el método <a href="https://en.wikipedia.org/wiki/Neighbor_joining">neighbor-joining</a> implementado en
       <a href="https://birc.au.dk/software/rapidnj/">RapidNJ</a>.
-      Tooltips for each edge report the number of genetic differences (mutations)
-      between ancestor and descendant as the "genomic distance".
-      Since it's difficult to reconstruct exactly when these mutations occurred,
-      we simply map each line to when the first sample was collected.
+      Los mensajes emergentes sobre cada línea vertical contienen reportes sobre la cantidad de diferencias genéticas (mutaciones)
+      entre el ancestro y su descendiente, esto es, "distancia genética".
+      Dado que la reconstrucción exacta de cuándo estas mutaciones ocurrieron es extremedamente complicada, 
+      decidimos mapear cada línea a el momento en que dicha muestra fue colectada.
     </p>
   </div>
 
   <div id="help-search" title="Help: Search interface">
     <p>
-      Since there is an overwhelming number of sampled infections that we are trying to visualize
-      here, we have built a basic search interface that you can interact with using the inputs
-      at the top of this web page.
+      Dado que la cantidad de muestras de infecciones que se desea visualizar es abrumadora, 
+      nuestro equipo ha construido una interfaz con la cual los y las usuarias pueden interactuar 
+      usando las diferentes opciones de búsqueda que se encuentran en la parte superior de la página.
     </p>
     <p>
-      You can use the text box to find a specific sample by GISAID accession number.
-      If you start to enter an accession number, the text box will display a number of
-      possibilities (autocompletion).
-      You can also search samples by substring (case-sensitive).
-      For example, searching for "Madaga" (hit enter to submit) will jump to the first lineage that
-      contains a sample from Madagascar.
+      El campo de texto puede ser usado para encontrar muestras específicas usando el número de accessión de GISAD.
+      Esta utilidad cuenta además con una función de autocompletar para encontrar posibles muestras con 
+      accesiones similares.
+      También es posible buscar muestras con fragmentos del código.
+      Por ejemplo, buscando por "Madaga" y presionando enter, se visualizará 
+      el primer linaje que contenga una muestra de Madagascar. 
     </p>
     <p>
-      Use the "Previous" and "Next" buttons to iterate through your search results, and the "Clear"
-      button to reset the search interface.
+      Usando el botón "Anterior" se puede iterar a través del resultado de la búsqueda, y el botón 
+      "Limpiar" resetea la interfaz.
     </p>
   </div>
 
   <div id="dialog" title="Acknowledgements">
     <p>
-      We would like to thank the GISAID Initiative and are grateful to all of the data contributors,
-      i.e. the Authors, the Originating laboratories responsible for obtaining the specimens, and
-      the Submitting laboratories for generating the genetic sequence and metadata and sharing via
-      the GISAID Initiative, on which this research is based.
+      Nos gustaría agradecer a GISAID Initiative y a todas las personas que han contribuído con sus datos, 
+      i.e. Autores, laboratorios originarios responsables por la obtención de los especímenes, y 
+      laboratorios que han generado las secuencias genéticas y la metadata en la cual se basa esta investigación
+      y que ha sido compartida a través de GISAID Initiative.
     </p>
     <p>
       Elbe, S., and Buckland-Merrett, G. (2017)
@@ -358,14 +358,15 @@
       PMCID: <a href="https://pubmed.ncbi.nlm.nih.gov/31565258/" target=“_new”>31565258</a>
     </p>
     <p>
-      Note: When using results from these analyses in your manuscript, ensure that you also
-      acknowledge the Contributors of data, i.e. “We gratefully acknowledge all the Authors,
-      the Originating laboratories responsible for obtaining the specimens, and the Submitting
-      laboratories for generating the genetic sequence and metadata and sharing via the GISAID
-      Initiative, on which this research is based.”
+      Nota: En caso de compartir los resultados de éstos análisis en tu manuscrito, asegúrate 
+      de reconocer a los contribuidores, i.e. " Nos gustaría agradecer a GISAID Initiative y a todas 
+      las personas que han contribuído con sus datos, i.e. Autores, laboratorios originarios 
+      responsables por la obtención de los especímenes, y laboratorios que han generado las secuencias 
+      genéticas y la metadata en la cual se basa esta investigación y que ha sido compartida 
+      a través de GISAID Initiative."
     </p>
     <p>
-      Also, cite the following reference:
+      Además, recuerda citar las siguientes referencias:
       Shu, Y., McCauley, J. (2017) GISAID: From vision to reality. <i>EuroSurveillance</i>, 22(13)<br/>
       DOI: <a href="https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2017.22.13.30494" target=“_new”>10.2807/1560-7917.ES.2017.22.13.30494</a>&nbsp;&nbsp;
       PMCID: <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5388101/" target=“_new”>PMC5388101</a>
@@ -374,10 +375,10 @@
 
 
   <footer class="footer">
-    GISAID data provided on this website are subject to GISAID’s
-    <a href="https://www.gisaid.org/DAA/" target=“_new”>Terms and Conditions</a>
+    Los datos proporcionados por GISAID en su página web están sujetos a
+    <a href="https://www.gisaid.org/DAA/" target=“_new”>Términos y Condiciones</a>
     &emsp;&emsp;
-    <button class="ack" id="ack-open" onclick="console.log('click');">Acknowledgements</button>
+    <button class="ack" id="ack-open" onclick="console.log('click');">Agradecimientos</button>
 
   </footer>
 
