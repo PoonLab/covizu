@@ -147,7 +147,7 @@ def parse_nexus(nexus_file, fasta, callback=None):
     return phy, residuals
 
 
-def retrieve_genomes(by_lineage, ref_file):
+def retrieve_genomes(by_lineage, ref_file, earliest=False):
     """
     Identify most recent sampled genome sequence for each Pangolin lineage.
     Export as FASTA for TreeTime analysis.
@@ -168,7 +168,7 @@ def retrieve_genomes(by_lineage, ref_file):
     for lineage, records in by_lineage.items():
         intermed = [(r['covv_collection_date'], r['diffs'], r['missing']) for r in records]
         intermed.sort(reverse=True)  # descending order
-        coldate, diffs, missing = intermed[0]
+        coldate, diffs, missing = intermed[-1] if earliest else intermed[0]
 
         # update lists
         lineages.append(lineage)
