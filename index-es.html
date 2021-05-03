@@ -26,7 +26,7 @@
     var i18n_text = {
       // time-tree legend titles
       region_legend: {
-        "Africa": "Africa",  // English -> lang
+        "Africa": "África",  // English -> lang
         "Asia": "Asia",
         "China": "China",
         "Europe": "Europa",
@@ -40,10 +40,10 @@
       total: "Total",
 
       // side bar data statistics
-      last_update: "última actualización",
+      last_update: "Última actualización",
       number_genomes: "Número de genomas",
       number_lineages: "Número de linajes",
-      number_cases: "Número de caos",
+      number_cases: "Número de casos",
       region: "Región",
       countries: "Países",
       samples: "Muestras",
@@ -272,37 +272,36 @@
       definidos agrupando virus de acuerdo a la similitud de sus genomas. 
     </p>
     <p>
-      A time scale is drawn above the tree marked with
-      <a href="https://en.wikipedia.org/wiki/ISO_8601" target="_new">dates</a>.
-      The earliest ancestor (root) is drawn on the left, and the most recent observed descendants are
-      on the right.
-      We estimate the dates of common ancestors by comparing the sampled genomes and assuming
-      a <a href="http://virological.org/t/phylodynamic-analysis-176-genomes-6-mar-2020/356" target="_new">constant rate</a> of evolution.
+      Sobre el árbol se encuentra una escala de tiempo con las 
+      <a href="https://en.wikipedia.org/wiki/ISO_8601" target="_new">fechas</a>.
+      El primer ancestro (la raíz) está dibujado a la izquierda, y los descendientes observados más recientemente
+      se encuentran a la derecha. 
+      Las fechas del ancestro común fueron estimadas comparando los genomas asumiendo
+      una <a href="http://virological.org/t/phylodynamic-analysis-176-genomes-6-mar-2020/356" target="_new">tasa constante</a> de evolución.
     </p>
     <p>
-      For each lineage, we draw a rectangle to summarize the range of sample collection
-      dates, and colour it according to the geographic region it was sampled most often.
-      To explore the samples within a lineage, click on the label (<i>e.g.,</i> "B.4")
-      or the rectangle to retrieve the associated beadplot.
+      Para cada linage dibujamos un rectángulo que resume el rango en el que las muestras fueron colectadas. 
+      El rectángulo es además coloreado de acuerdo a la región geográfica en la cual las muestras fueron colectadas con mayor frequencia. 
+      Para explorar las muestras al interior de un linage, haga click en la etiqueta (<i>e.g.,</i> "B.4")
+      o en el rectángulo para obtener el "beadplot" asociado. 
     </p>
   </div>
 
   <div id="help-beadplot" title="Help: Beadplot interface">
     <p>
-      We use beadplots to visualize the different variants of SARS-CoV-2 within a
-      <a href="https://cov-lineages.org" target="_new">lineage</a>, where and when
-      they have been sampled, and how they are related to each other.
-      Every object in the beadplot has additional info in a tooltip (which you view by hovering
-      over that object with your mouse pointer).
+      Los "beadplots" permiten visualizar las diferentes variantes of SARS-CoV-2 al interior de un
+      <a href="https://cov-lineages.org" target="_new">linage</a>, dónde y cuándo
+      han sido colectados, y cómo se relacionan entre ellos.
+      Cada objeto en el "beadplot" contiene información adicional en los mensajes emergentes
+      (que se obtienen al pasar sobre el objeto con el mouse).
     </p>
     <p>
-      Each horizontal line segment represents a variant &ndash; viruses with
-      <span class="hint" title="It's a bit more complicated.  Many genomes are identical in sequence, but many more have missing information - parts of the genome that have not been sequenced.  Since we can't be 100% certain two genomes with missing parts are identical, we randomly re-sample genomes 100 times (non-parametric bootstrap) and evaluate how often they are separated in our analysis.">identical</span>
-      genomes.
-      We draw beads along a line to indicate when that variant was sampled.
-      If there are no beads on the line and it is grey, then it is an unsampled variant:
-      two or more sampled variants descend from an ancestral variant that has not
-      been directly observed.
+      Cada segmento horizontal representa una variante &ndash; virus con
+      <span class="hint" title="It's a bit more complicated.  Many genomes are identical in sequence, but many more have missing information - parts of the genome that have not been sequenced.  Since we can't be 100% certain two genomes with missing parts are identical, we randomly re-sample genomes 100 times (non-parametric bootstrap) and evaluate how often they are separated in our analysis.">genomas idénticos</span>
+      Las círculos dibujados a través de las líneas indican la fecha de colección de la variante.
+      Si no hay más círculos en la línea y ésta es gris, esto representa una variante que no ha sido colectada:
+      dos o m'as variantes colectadas descienden de una variante ancestral que no ha sido 
+      directamente observada.
     </p>
     <p>
       The area of the bead is scaled in proportion to the number of times the variant
