@@ -101,7 +101,7 @@ req = $.getJSON("data/dbstats.json", function(data) {
 });
 req.done(function() {
   $("#div-last-update").text(`Last update: ${dbstats.lastupdate}`);
-  $("#div-number-genomes").text(`Number of genomes: ${dbstats.noseqs}`);
+  $("#div-number-genomes").text(`High-quality genomes: ${dbstats.noseqs}`);
 });
 
 // colors from https://personal.sron.nl/~pault/#sec:qualitative
