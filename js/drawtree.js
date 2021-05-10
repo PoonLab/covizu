@@ -51,9 +51,6 @@ function draw_cluster_box(rect) {
   vis.append("rect")
     .attr('class', "clickedH")
     .attr("x", function() {
-      if (rectWidth < minRectWidth) 
-        return xAxisTree(d.first_date) - 2 - minRectWidth
-      else
         return xAxisTree(d.first_date) - 2
     })
     .attr("y", yMap(d) - 2)
@@ -161,8 +158,8 @@ function drawtree(df) {
     .enter().append("line")
     .attr("class", "lines")
     .attr("x1", function(d) {
-      if (d.last_date!==undefined && d.y1 === d.y2) {
-        return xAxisTree(d.last_date) - 6;
+      if (d.first_date!==undefined && d.y1 === d.y2) {
+        return xAxisTree(d.first_date);
       }
 
       // Moves the time scaled tree to the left
@@ -348,10 +345,6 @@ function draw_clusters(tips) {
     .append("rect")
     //.attr("selected", false)
     .attr("x", function(d) { 
-      var rectWidth = xAxisTree(d.last_date) - xAxisTree(d.first_date);
-      if (rectWidth < minRectWidth) 
-        return xAxisTree(d.first_date) - minRectWidth
-      else
         return xAxisTree(d.first_date)
     })
     .attr("y", yMap)
@@ -409,6 +402,9 @@ function draw_clusters(tips) {
       .attr("alignment-baseline", "middle")
       .attr("cursor", "default")
       .attr("x", function(d) {
+        if (xAxisTree(d.last_date) - xAxisTree(d.first_date) < minRectWidth)
+          return(xAxisTree(d.first_date) + minRectWidth - 6);
+         
         return(xAxisTree(d.last_date) - 6);
       })
       .attr("y", function(d) {
