@@ -182,13 +182,17 @@ function edges(df, rectangular=false) {
           pair = {
               x1: row.x, y1: row.y, id1: row.thisId,
               x2: parent.x, y2: row.y, id2: undefined,
-              last_date: row.isTip ? row.last_date : undefined
+              last_date: row.isTip ? row.last_date : undefined,
+              first_date: row.isTip ? row.first_date : undefined
+
           };
           result.push(pair);
           pair = {
               x1: parent.x, y1: row.y, id1: undefined,
               x2: parent.x, y2: parent.y, id2: row.parentId,
-              last_date: row.isTip ? row.last_date : undefined
+              last_date: row.isTip ? row.last_date : undefined,
+              first_date: row.isTip ? row.first_date : undefined
+
           };
           result.push(pair);
         }
@@ -196,7 +200,8 @@ function edges(df, rectangular=false) {
           pair = {
               x1: row.x, y1: row.y, id1: row.thisId,
               x2: parent.x, y2: parent.y, id2: row.parentId,
-              last_date: row.isTip ? row.last_date : undefined
+              last_date: row.isTip ? row.last_date : undefined,
+              first_date: row.isTip ? row.first_date : undefined
           };
           result.push(pair);
         }
