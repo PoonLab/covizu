@@ -403,9 +403,9 @@ function draw_clusters(tips) {
       .attr("cursor", "default")
       .attr("x", function(d) {
         if (xAxisTree(d.last_date) - xAxisTree(d.first_date) < minRectWidth)
-          return(xAxisTree(d.first_date) + minRectWidth - 6);
+          return(xAxisTree(d.first_date) + minRectWidth );
          
-        return(xAxisTree(d.last_date) - 6);
+        return(xAxisTree(d.last_date));
       })
       .attr("y", function(d) {
         return(yScale(d.y-0.15));
