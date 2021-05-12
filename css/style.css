@@ -339,7 +339,7 @@ circle.default{
 }
 
 rect.default{
-  fill-opacity: 0.5;
+  fill-opacity: 0.8;
 }
 
 rect.SelectedCluster{
@@ -352,6 +352,8 @@ rect.not_SelectedCluster{
 
 rect.clicked{
   fill-opacity: 1;
+  filter: 
+    saturate(1.2) brightness(0.85) contrast(135%)
 }
 
 rect.SelectedCluster:hover{
@@ -368,7 +370,9 @@ rect:hover{
 }
 
 rect[txt_hover="yes"]{
-  fill-opacity: 1 !important;
+  /* fill-opacity: 1 !important; */
+  filter: 
+    saturate(1.2) brightness(0.85) contrast(135%)
 }
 
 rect.SelectedCluster[txt_hover="yes"]{
