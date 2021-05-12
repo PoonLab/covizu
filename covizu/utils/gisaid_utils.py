@@ -1,6 +1,4 @@
-import lzma
 import json
-from datetime import date
 import argparse
 import os
 import sys
@@ -12,80 +10,6 @@ import covizu
 from covizu.minimap2 import minimap2, encode_diffs
 from covizu.utils.seq_utils import *
 from covizu.utils.progress_utils import Callback
-
-
-def download_feed(url, user, password):
-    """
-    Download xz file from GISAID.  Note this requires confidential URL, user and password
-    information that we are not distributing with the source code.
-    :param url:  str, address to retrieve xz-compressed provisioning file
-    :param user:  str, GISAID username
-    :param password:  str, access credentials - if None, query user
-    :return:  str, path to time-stamped download file
-    """
-    if user is None:
-        user = getpass.getpass("GISAID username: ")
-    if password is None:
-        password = getpass.getpass()
-    timestamp = datetime.now().isoformat().split('.')[0]
-    outfile = "data/provision.{}.json.xz".format(timestamp)
-    subprocess.check_call(["wget", "--user", user, "--password", password, "-O", outfile, url])
-    return outfile
-
-
-def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None):
-    """
-    Read in GISAID feed as xz compressed JSON, applying some basic filters
-
-    :param path:  str, path to xz-compressed JSON
-    :param minlen:  int, minimum genome length
-    :param mindate:  datetime.date, earliest reasonable sample collection date
-    :param callback:  function, optional callback function
-    :yield:  dict, contents of each GISAID record
-    """
-    mindate = fromisoformat(mindate)
-    rejects = {'short': 0, 'baddate': 0, 'nonhuman': 0, 'nolineage': 0}
-    with lzma.open(path, 'rb') as handle:
-        for line in handle:
-            record = json.loads(line)
-            if record['covv_lineage'] is None:
-                # exclude unassigned genome
-                rejects['nolineage'] += 1
-                continue
-
-            qname = record['covv_virus_name'].strip().replace(',', '_')  # issue #206
-            country = qname.split('/')[1]
-            if country == '' or country[0].islower():
-                # reject mangled labels and non-human isolates
-                rejects['nonhuman'] += 1
-                continue
-
-            record['covv_virus_name'] = qname  # in case we removed whitespace
-
-            seq = record['sequence'].replace('\n', '')
-            if len(seq) < minlen:
-                # reject sequences that are too short
-                rejects['short'] += 1
-                continue
-            record['sequence'] = seq
-
-            if record['covv_collection_date'].count('-') != 2:
-                # reject sequences without complete collection date
-                rejects['baddate'] += 1
-                continue
-            coldate = fromisoformat(record['covv_collection_date'])
-            if coldate < mindate or coldate > date.today():
-                # reject sequences with nonsense collection date
-                rejects['baddate'] += 1
-                continue
-
-            yield record
-
-    if callback:
-        callback("Rejected {short} short genomes\n"
-                 "         {nolineage} with no lineage assignment\n"
-                 "         {baddate} records with bad dates\n"
-                 "         {nonhuman} non-human genomes".format(**rejects))
 
 
 def batch_fasta(gen, size=100):

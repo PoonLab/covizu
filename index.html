@@ -201,13 +201,6 @@
           <div style="padding-top: 10px; padding-right: 6px;">
             <h3>Near real-time visualization of SARS-CoV-2 (hCoV-19) genomic variation</h3>
           </div>
-          <span style="width: 250px">
-            <div class="gisaid">Enabled by data from&nbsp;<a href="https://gisaid.org" target="_new">
-                <img src="https://www.gisaid.org/fileadmin/gisaid/img/schild.png"
-                     height="24px"/>
-              </a>
-            </div>
-          </span>
           <p>
             <div style="font-size: 0.9em;" id="div-last-update"></div>
             <div style="font-size: 0.9em;" id="div-number-genomes"></div>
@@ -224,9 +217,6 @@
               <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="country-table"></div>
             </div>
             <div id="tabs-2">
-              <div id="seqtable-hint" class="hint">
-                Hover over accession (EPI_ISL_#) to display laboratory and author info.
-              </div>
               <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="seq-table"></div>
             </div>
           </div>
@@ -238,8 +228,7 @@
   <div id="splash" title="Welcome">
     <p>
       <b>CoVizu</b> is an <a href="https://github.com/PoonLab/CoVizu" target="_new">open source project</a>
-      endeavouring to visualize the global diversity of SARS-CoV-2 genomes, which are provided by
-      the <a href="https://gisaid.org" target="_new">GISAID Initiative</a>.
+      endeavouring to visualize the global diversity of SARS-CoV-2 genomes.
     </p>
     <p>
       This web page provides two interactive visualizations of these data.
@@ -343,44 +332,6 @@
       button to reset the search interface.
     </p>
   </div>
-
-  <div id="dialog" title="Acknowledgements">
-    <p>
-      We would like to thank the GISAID Initiative and are grateful to all of the data contributors,
-      i.e. the Authors, the Originating laboratories responsible for obtaining the specimens, and
-      the Submitting laboratories for generating the genetic sequence and metadata and sharing via
-      the GISAID Initiative, on which this research is based.
-    </p>
-    <p>
-      Elbe, S., and Buckland-Merrett, G. (2017)
-      Data, disease and diplomacy: GISAID’s innovative contribution to global health.
-      <i>Global Challenges</i>, 1:33-46.<br/>
-      DOI: <a href="https://doi.org/10.1002/gch2.1018" target=“_new”>10.1002/gch2.1018</a>&nbsp;&nbsp;
-      PMCID: <a href="https://pubmed.ncbi.nlm.nih.gov/31565258/" target=“_new”>31565258</a>
-    </p>
-    <p>
-      Note: When using results from these analyses in your manuscript, ensure that you also
-      acknowledge the Contributors of data, i.e. “We gratefully acknowledge all the Authors,
-      the Originating laboratories responsible for obtaining the specimens, and the Submitting
-      laboratories for generating the genetic sequence and metadata and sharing via the GISAID
-      Initiative, on which this research is based.”
-    </p>
-    <p>
-      Also, cite the following reference:
-      Shu, Y., McCauley, J. (2017) GISAID: From vision to reality. <i>EuroSurveillance</i>, 22(13)<br/>
-      DOI: <a href="https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2017.22.13.30494" target=“_new”>10.2807/1560-7917.ES.2017.22.13.30494</a>&nbsp;&nbsp;
-      PMCID: <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5388101/" target=“_new”>PMC5388101</a>
-    </p>
-  </div>
-
-
-  <footer class="footer">
-    GISAID data provided on this website are subject to GISAID’s
-    <a href="https://www.gisaid.org/DAA/" target=“_new”>Terms and Conditions</a>
-    &emsp;&emsp;
-    <button class="ack" id="ack-open" onclick="console.log('click');">Acknowledgements</button>
-
-  </footer>
 
   <script src="js/beadplot.js"></script>
   <script src="js/utils.js"></script>
