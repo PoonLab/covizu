@@ -62,7 +62,7 @@ function draw_cluster_box(rect) {
     })
     .attr("height", 14)
     .attr("fill", "white")
-    .attr("stroke", "black")
+    .attr("stroke", "grey")
     .attr("fill-opacity", 1)
     .attr("stroke-width", 2);
 
@@ -403,9 +403,9 @@ function draw_clusters(tips) {
       .attr("cursor", "default")
       .attr("x", function(d) {
         if (xAxisTree(d.last_date) - xAxisTree(d.first_date) < minRectWidth)
-          return(xAxisTree(d.first_date) + minRectWidth );
+          return(xAxisTree(d.first_date) + minRectWidth + 3);
          
-        return(xAxisTree(d.last_date));
+        return(xAxisTree(d.last_date) + 3);
       })
       .attr("y", function(d) {
         return(yScale(d.y-0.15));
