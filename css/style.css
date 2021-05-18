@@ -101,6 +101,16 @@ div.floattitle {
   z-index:11;
   width: 100%;
   background-color: rgba(255,255,255,0.9);
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+/* Keeps the entire "Edge cutoff" section together */
+div.edge-cuttoff {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 3px;
 }
 
 div.app {
@@ -269,7 +279,7 @@ footer {
   font-size: 0.8em;
 }
 
-span.clicker {
+.clicker {
   background-color: #999;
   color: white;
   font-size: 8pt;
@@ -279,7 +289,7 @@ span.clicker {
   display: inline-block;
 }
 
-span.clicker:hover {
+.clicker:hover {
   background-color: #777;
 }
 
@@ -554,4 +564,33 @@ a.sort-by:after {
   vertical-align: middle;
   padding-right: 5px;
   width: 18px;
+}
+
+
+/*** Slider ***/
+.arrow {
+  text-decoration: none;
+  background-color: #f1f1f1;
+  color: black;
+  height: 18px;
+  margin-top: -0.1em;
+  font-weight: 400;
+  font-size: 22px;
+  width: 20px;
+  text-align: center;
+  user-select:none;
+}
+
+.arrow:hover{
+  background-color: #ddd;
+  cursor: pointer;
+}
+
+.arrow.clicked {
+  background-color: #ddd;
+  cursor: pointer;
+}
+
+.ui-slider-active {
+  outline: -webkit-focus-ring-color auto 1px;
 }

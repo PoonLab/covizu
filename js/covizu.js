@@ -13,6 +13,10 @@ $( function() {
     min: 0.5,
     step: 0.01
   });
+
+  // Prevents the default action when keydown event is detected
+  handle.unbind('keydown')
+
 } );
 
 $(document).tooltip({show: null});
@@ -213,6 +217,19 @@ req.done(function() {
       $('#previous_button').attr("disabled", true);
       $('#search_stats').addClass("disabled_stats");
     }
+  }
+
+  // Changes the value of the slider and triggers a change event
+  function move_slider(direction) {
+    var slider = $("#vedge-slider");
+
+    if (direction === "LEFT")
+      slider.slider("value", slider.slider("value") - slider.slider("option", "step"))
+    else 
+      slider.slider("value", slider.slider("value") + slider.slider("option", "step"))
+    
+    $("#custom-handle").text( slider.slider( "value" ) );
+    slider.trigger('change');
   }
 
   disable_buttons();
@@ -424,9 +441,58 @@ req.done(function() {
     }
   });
 
+  // Moves the slider to the left/right when the arrow buttons are clicked
+  $('#left-arrow').click(function() {
+    $("#custom-handle").addClass("ui-slider-active")
+    move_slider("LEFT");
+  });
+
+  $('#right-arrow').click(function() {
+    $("#custom-handle").addClass("ui-slider-active")
+    move_slider("RIGHT");
+  });
+
+  // Adds/Removes the selected/active state of the slider depending on where the user clicks
+  $(document).on('mousedown', function(e) {
+    if (e.target.matches("div.larrow")) 
+      $('.larrow').addClass("selected")
+    else if (e.target.matches("div.rarrow")) 
+      $('.rarrow').addClass("selected")
+    else {
+      $('.rarrow').removeClass("selected")
+      $('.larrow').removeClass("selected")
+      $("#custom-handle").removeClass("ui-slider-active")
+    }
+  });
+
+  // Listens to the keyup event to change the background of the arrow buttons to the default color
+  $(document).on('keyup', function(e) {
+    if(e.target.matches("div.ui-slider-handle") || $('.larrow').hasClass('selected') || $('.rarrow').hasClass('selected')) {
+      if (e.keyCode == 37) 
+        $('#left-arrow').removeClass("clicked");
+      else if (e.keyCode == 39) 
+        $('#right-arrow').removeClass("clicked");
+      
+      return;
+    }
+  });
+
   $(document).on('keydown', function(e) {
     // Ignore event if its inside an input field
     if (e.target.matches('input')) {
+      return;
+    }
+
+    // If the slider or the arrow buttons are selected, then the arrow button's background color is changed and the slider is moved
+    if(e.target.matches("div.ui-slider-handle") || $('.larrow').hasClass('selected') || $('.rarrow').hasClass('selected')) {
+      if (e.keyCode == 37) {
+        $('#left-arrow').addClass("clicked");
+        move_slider("LEFT");
+      }
+      else if (e.keyCode == 39) {
+        $('#right-arrow').addClass("clicked");
+        move_slider("RIGHT");
+      }
       return;
     }
 

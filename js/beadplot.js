@@ -899,6 +899,11 @@ function beadplot(cid) {
       redraw();
     }
   });
+
+  // Arrow buttons trigger a change event
+  slider.on("change", function(event, ui) {
+    redraw();
+  });
 }
 
 
