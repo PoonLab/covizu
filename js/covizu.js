@@ -8,7 +8,11 @@ $( function() {
       handle.text( $( this ).slider( "value" ) );
     },
     slide: function( event, ui ) {
+      move_arrow();
       handle.text( ui.value );
+    },
+    stop: function (event, ui) {
+      move_arrow();
     },
     min: 0.5,
     step: 0.01
@@ -229,6 +233,7 @@ req.done(function() {
       slider.slider("value", slider.slider("value") + slider.slider("option", "step"))
     
     $("#custom-handle").text( slider.slider( "value" ) );
+    move_arrow();
     slider.trigger('change');
   }
 

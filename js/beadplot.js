@@ -501,7 +501,8 @@ function beadplot(cid) {
   let max_dist = Math.max(...edgelist.map(x => x.dist));
   let slider = $("#vedge-slider");
   slider.slider("value", 2.0)
-        .slider("option", "max", max_dist);
+        .slider("option", "max", max_dist )
+  move_arrow();
   $( "#custom-handle" ).text("2.0");
 
   function redraw() {
@@ -1289,4 +1290,15 @@ function select_next_bead(next_node) {
       update_search_stats(stats);
     }
   }
+}
+
+/*********************** Moving Arrow Key Button ***********************/
+function move_arrow() {
+  var style = parseFloat($( "#custom-handle" ).css("left").split("px")[0]);
+
+  if (style > 121) {
+    $("#right-arrow").css("margin-left", style-121);
+  }
+  else
+    $("#right-arrow").css("margin-left", 0);
 }
