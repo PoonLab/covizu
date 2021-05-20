@@ -216,6 +216,33 @@ def encode_diffs(iter, reflen, alphabet='ACGT'):
         yield qname, diffs, missing
 
 
+def extract_features(batcher, ref_file, binpath='minimap2', nthread=3, minlen=29000):
+    """
+    Stream output from JSON.xz file via load_gisaid() into minimap2
+    via subprocess.
+
+    :param batcher:  generator, returned by batch_fasta()
+    :param ref_file:  str, path to reference genome (FASTA format)
+    :param binpath:  str, path to minimap2 binary executable
+    :param nthread:  int, number of threads to run minimap2
+    :param minlen:  int, minimum genome length
+
+    :yield:  dict, record augmented with genetic differences and missing sites;
+    """
+    with open(ref_file) as handle:
+        reflen = len(convert_fasta(handle)[0][1])
+
+    for fasta, batch in batcher:
+        mm2 = minimap2(fasta, ref_file, stream=True, path=binpath, nthread=nthread,
+                       minlen=minlen)
+        result = list(encode_diffs(mm2, reflen=reflen))
+        for row, record in zip(result, batch):
+            # reconcile minimap2 output with GISAID record
+            qname, diffs, missing = row
+            record.update({'diffs': diffs, 'missing': missing})
+            yield record
+
+
 def parse_args():
     parser = argparse.ArgumentParser("Wrapper script for minimap2")
     parser.add_argument('infile', type=argparse.FileType('r'),

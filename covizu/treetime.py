@@ -165,7 +165,7 @@ def retrieve_genomes(by_lineage, ref_file):
 
     # retrieve unaligned genomes from database
     for lineage, records in by_lineage.items():
-        intermed = [(r['covv_collection_date'], r['diffs'], r['missing']) for r in records]
+        intermed = [(r['coldate'], r['diffs'], r['missing']) for r in records]
         intermed.sort(reverse=True)  # descending order
         coldate, diffs, missing = intermed[0]
 

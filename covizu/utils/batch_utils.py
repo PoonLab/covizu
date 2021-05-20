@@ -143,3 +143,19 @@ def get_mutations(by_lineage):
         result.update({lineage: common})
     return result
 
+
+def sort_by_lineage(records, callback=None):
+    """
+    Resolve stream into a dictionary keyed by Pangolin lineage
+    :param records:  generator, return value of extract_features()
+    :return:  dict, lists of records keyed by lineage
+    """
+    result = {}
+    for i, record in enumerate(records):
+        if callback and i % 1000 == 0:
+            callback('aligned {} records'.format(i))
+        lineage = record['lineage']
+        if lineage not in result:
+            result.update({lineage: []})
+        result[lineage].append(record)
+    return result
