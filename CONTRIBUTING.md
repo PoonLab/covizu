@@ -53,3 +53,8 @@ Most web development is tested in Google Chrome.
 * Please try to write concise and informative [commit messages](https://xkcd.com/1296/).
 
 
+## Front-end Testing 
+
+* Front-end testing is carried out using [Cypress](https://www.cypress.io/). 
+* For the purposes of this project, Cypress needs to be installed via direct download. An installation guide can be found [here](https://docs.cypress.io/guides/getting-started/installing-cypress#Direct-download). 
+* The `baseUrl` is currently set as `filogeneti.ca/covizu/`. Changes to it can be made in `Cypress.json`.

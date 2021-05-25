@@ -1,6 +1,8 @@
 import unittest
 from argparse import Namespace
-from covizu.utils.batch_utils import beadplot_serial, import_labels, make_beadplots
+from covizu.utils.batch_utils import beadplot_serial, import_labels, make_beadplots, get_mutations
+
+# Build TimeTree - Tests in test_timetree.py
 
 
 class TestBeadplotSerial(unittest.TestCase):
@@ -9,12 +11,11 @@ class TestBeadplotSerial(unittest.TestCase):
             'lineage' : 'B.1.1.171',
             'nodes' : {
                 'EPI_ISL_465679' :
-                [{
-                    'accession' : 'EPI_ISL_465679',
-                    'label1' : 'hCoV-19/Canada/Qc-L00240569/2020',
-                    'country' : 'Canada',
-                    'coldate' : '2020-03-27'
-                }]
+                [[
+                    '2020-03-27',
+                    'EPI_ISL_465679',
+                    'hCoV-19/Canada/Qc-L00240569/2020'
+                ]]
             },
             'edges' : []
         }
@@ -52,6 +53,58 @@ class TestBeadplotSerial(unittest.TestCase):
         args = Namespace(boot_cuttoff=0.5)
         result = beadplot_serial(lineage, features, args)
         self.assertEqual(self.expected, result)
+
+
+class TestGetMutations(unittest.TestCase):
+    def setUp(self):
+        self.expected = {
+            'B.1.1.171': [('~', 240, 'T'), ('~', 1436, 'T')],
+            'B.1.265': [('~', 240, 'T'), ('~', 1436, 'T')]
+        }
+
+    def testGetMutations(self):
+        by_lineage = {
+            'B.1.1.171': [{
+                'covv_virus_name' : '',
+                'covv_accession_id' : '',
+                'covv_collection_date': '',
+                'covv_lineage' : 'B.1.1.171',
+                'diffs' : [
+                    tuple(['~', 240, 'T']),
+                    tuple(['~', 1436, 'T']),
+                ],
+                'missing' : []
+            }],
+            'B.1.265': [
+                {
+                    'covv_virus_name' : '',
+                    'covv_accession_id' : '',
+                    'covv_collection_date': '',
+                    'covv_lineage' : 'B.1.265',
+                    'diffs' : [
+                        tuple(['~', 240, 'T']),
+                        tuple(['~', 240, 'T']),
+                        tuple(['~', 240, 'T']),
+                        tuple(['~', 1436, 'T']),
+                    ],
+                    'missing' : []
+                },
+                {
+                    'covv_virus_name' : '',
+                    'covv_accession_id' : '',
+                    'covv_collection_date': '',
+                    'covv_lineage' : 'B.1.1.171',
+                    'diffs' : [
+                        tuple(['~', 240, 'T']),
+                        tuple(['~', 1436, 'T']),
+                    ],
+                    'missing' : []
+                }
+            ]
+        }
+
+        results = get_mutations(by_lineage)
+        self.assertEqual(self.expected, results)
 
 
 if __name__ == '__main__':

@@ -222,7 +222,7 @@ function main_search(all_bead_data, text_query, start_date, end_date) {
  * This function handles search by lineage
  * @param {String} text_query 
  */
-function lineage_search(text_query, start_date, end_date) {
+function lineage_search(text_query) {
   var cidx = lineage_to_cid[text_query.toUpperCase()];
 
   // Terminates if there is no match
