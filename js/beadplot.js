@@ -836,6 +836,7 @@ function beadplot(cid) {
 
     // draw x-axis
     visBaxis.append("g")
+        .attr("class", "treeaxis")
         .attr("transform", "translate(0,20)")
         .call(
           d3.axisTop(xAxis)

@@ -143,6 +143,7 @@ req.done(function() {
 
   beaddata = parse_clusters(clusters);
   tips = map_clusters_to_tips(df, clusters);
+  drawtree(df);
   //spinner.stop();
   draw_clusters(tips);
 
