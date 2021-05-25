@@ -233,15 +233,23 @@ def parse_args():
                         help="<option> use -f to force this script to accept "
                              "headers with spaces, which will be truncated "
                              "by minimap2")
+    parser.add_argument('--filter', action='store_true',
+                        help="<option> filter problematic sites")
 
     path = covizu.__path__[0]
     if '.egg' in path:
         import pkg_resources
         ref_file = pkg_resources.resource_filename('covizu', 'data/NC_045512.fa')
+        vcf_file = pkg_resources.resource_filename('covizu', "data/problematic_sites_sarsCov2.vcf")
     else:
         ref_file = os.path.join(path, "data", "NC_045512.fa")
+        vcf_file = os.path.join(path, "data", "problematic_sites_sarsCov2.vcf")
+
     parser.add_argument('--ref', type=str, default=ref_file,
                         help="<input> path to target FASTA (reference)")
+    parser.add_argument("--vcf", type=str, default=vcf_file,
+                        help="Path to VCF file of problematic sites in SARS-COV-2 genome. "
+                             "Source: https://github.com/W-L/ProblematicSites_SARS-CoV2")
 
     parser.add_argument('--minlen', help="<option> minimum sequence length, "
                                          "defaults to 29000nt.",
@@ -250,6 +258,7 @@ def parse_args():
 
 
 if __name__ == '__main__':
+    from covizu.utils.seq_utils import *
     args = parse_args()
     if args.outfile is None:
         args.outfile = sys.stdout
@@ -268,9 +277,17 @@ if __name__ == '__main__':
                    minlen=args.minlen)
 
     # get length of reference
-    reflen = len(convert_fasta(open(args.ref))[0][1])
+    refseq = convert_fasta(open(args.ref))[0][1]
+    reflen = len(refseq)
     if args.align:
-        output_fasta(mm2, reflen=reflen, outfile=args.outfile)
+        if args.filter:
+            vcf = load_vcf(args.vcf)
+            encoded = encode_diffs(mm2, reflen=reflen)
+            for qname, diffs, missing in filter_problematic(encoded, mask=vcf):
+                seq = apply_features(diffs, missing, refseq=refseq)
+                args.outfile.write(">{}\n{}\n".format(qname, seq))
+        else:
+            output_fasta(mm2, reflen=reflen, outfile=args.outfile)
     else:
         # serialize feature vectors as JSON
         res = []

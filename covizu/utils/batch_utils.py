@@ -6,7 +6,8 @@ from csv import DictReader
 
 def build_timetree(by_lineage, args, callback=None):
     """ Generate time-scaled tree of Pangolin lineages """
-    fasta = treetime.retrieve_genomes(by_lineage, ref_file=args.ref)
+    fasta = treetime.retrieve_genomes(by_lineage, ref_file=args.ref, 
+                                      earliest=args.earliest)
 
     if callback:
         callback("Reconstructing tree with {}".format(args.ft2bin))
