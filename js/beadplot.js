@@ -810,8 +810,7 @@ function beadplot(cid) {
         })
         .on("click", function(d) {
           clear_selection();
-          this.remove();
-          d3.selectAll("div#svg-cluster > svg > g").node().append(this);
+          d3.select(this).raise();
           draw_halo_front(d);
 
           gentable(d);
@@ -1211,9 +1210,10 @@ function serialize_beadplot(cidx) {
 
 function select_next_bead(next_node) {
   var select_bead = d3.selectAll('circle[id="'+next_node.id+'"]');
-  select_bead.node().classList.add("currBead");
-  select_bead.remove();
-  d3.selectAll("div#svg-cluster > svg > g").node().append(select_bead.node());
+
+  // Moves the selected bead (circle) to the bottom of the list
+  select_bead.raise();
+  
   var working_bead = select_bead.nodes()[0];
   working_bead.scrollIntoView({block: "center"});
   update_table_individual_bead_front(d3.select(working_bead).datum());

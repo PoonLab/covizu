@@ -311,11 +311,6 @@ circle.default{
   stroke: black;
 }
 
-.currBead {
-  fill-opacity: 1 !important;
-  stroke: black;
-}
-
 rect.default{
   fill-opacity: 0.8;
 }
