@@ -12,8 +12,9 @@ function isAccn(string) {
  * Retruns true if the string is a lineage 
  */
 function isLineage(string) {
-  const lin_pat = /[A-Z]\.[0-9]+/i;
-  return lin_pat.test(string);
+  // const lin_pat = /[A-Z]\.[0-9]+/i;
+  // return lin_pat.test(string);
+  return lineage_to_cid[string.toUpperCase()] != undefined;
 }
 
 /**
