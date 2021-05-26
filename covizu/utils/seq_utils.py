@@ -377,7 +377,6 @@ class SC2Locator:
         return None
 
 
-
 def batch_fasta(gen, size=100):
     """
     Concatenate sequence records in stream into FASTA-formatted text in batches of

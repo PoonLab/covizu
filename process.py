@@ -81,9 +81,9 @@ def parse_args():
     return parser.parse_args()
 
 
-def analyze_feed(feed, args, callback=None):
+def analyze_feed(handle, args, callback=None):
     """
-    :param feed:  dict, combining sequences and metadata, e.g., from stream_local()
+    :param handle:  file stream in read mode, from lzma.open()
     :param args:  Namespace
     :param callback:  optional progress monitoring, see progress_utils.py
     """
@@ -97,6 +97,7 @@ def analyze_feed(feed, args, callback=None):
         sys.exit()
 
     # pre-processing feed
+    feed = map(json.loads, handle)
     batcher = seq_utils.batch_fasta(feed, size=args.batchsize)
     aligned = extract_features(batcher, ref_file=args.ref, binpath=args.mmbin,
                                nthread=args.mmthreads, minlen=args.minlen)
@@ -134,7 +135,7 @@ def analyze_feed(feed, args, callback=None):
             ndiffs = [len(x['diffs']) for x in samples]
             val['lineages'][lineage] = {
                 'nsamples': len(samples),
-                'lastcoldate': max(x['covv_collection_date'] for x in samples),
+                'lastcoldate': max(x['coldate'] for x in samples),
                 'residual': residuals[lineage],
                 'max_ndiffs': max(ndiffs),
                 'mean_ndiffs': sum(ndiffs) / len(ndiffs)
@@ -148,5 +149,5 @@ def analyze_feed(feed, args, callback=None):
 if __name__ == '__main__':
     cb = Callback()
     args = parse_args()
-    feed = lzma.open(args.infile, 'rb')
-    analyze_feed(feed, args, callback=cb.callback)
+    handle = lzma.open(args.infile, 'rb')
+    analyze_feed(handle, args, callback=cb.callback)
