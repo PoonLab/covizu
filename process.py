@@ -28,6 +28,7 @@ def parse_args():
                         help='filtering outlying genomes whose distance exceeds the upper '
                              'quantile of Poisson distribution (molecular clock).  Default 0.001 '
                              'corresponds to 99.9%% cutoff.')
+    parser.add_argument('--minlen', type=int, default=29000, help='minimum genome length (nt)')
 
     parser.add_argument('--batchsize', type=int, default=500,
                         help='number of records to batch process with minimap2')
