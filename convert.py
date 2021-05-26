@@ -29,7 +29,7 @@ def parse_args():
     outputs.add_argument('-o', '--outfile', type=str,
                         help="path to output file to write xz-compressed JSON; otherwise "
                              "write to standard output to redirect to xz.")
-    outputs.add_argument('--a', '--append', type=str,
+    outputs.add_argument('-a', '--append', type=str,
                         help="path to optionally append output to existing xz-compressed JSON "
                              "file.")
 
@@ -175,8 +175,7 @@ def combine(handle, lineage_file, metadata, minlen=29000, mindate='2019-12-01', 
 if __name__ == "__main__":
     args = parse_args()
     cb = Callback()
-
-    metadata = parse_metadata(args.metadata, args.delimiter, cb.callback)
+    callback = cb.callback
 
     # determine how to handle input FASTA file
     if args.gzip:
@@ -189,12 +188,15 @@ if __name__ == "__main__":
     # determine how to output results
     if args.outfile:
         outfile = lzma.open(args.outfile, 'wt')
-    elif args.outfile:
+    elif args.append:
         outfile = lzma.open(args.append, 'at')
     else:
         outfile = sys.stdout  # default
+        sys.stderr.write("Streaming results to standard output, deactivating callback.")
+        callback = None  # deactivate callback
 
+    metadata = parse_metadata(args.metadata, args.delimiter, callback=callback)
     feed = combine(handle, args.lineages, metadata, minlen=args.minlen, mindate=args.mindate,
-                   callback=cb.callback)
+                   callback=callback)
     for record in feed:
         outfile.write(str(record)+'\n')  # serialize dict object, equivalent to JSON
