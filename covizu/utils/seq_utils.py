@@ -248,11 +248,12 @@ def load_vcf(vcf_file="data/problematic_sites_sarsCov2.vcf"):
     return mask
 
 
-def filter_problematic(obj, mask, callback=None):
+def filter_problematic_sites(obj, mask, callback=None):
     """
     Apply problematic sites annotation from de Maio et al.,
     https://virological.org/t/issues-with-sars-cov-2-sequencing-data/473
     which are published and maintained as a VCF-formatted file.
+    Note this duplicates some functionality of filter_problematic().
 
     :param obj:  list, entries are (1) dicts returned by import_json or (2) tuples
     :param mask:  dict, problematic site index from load_vcf()
