@@ -79,6 +79,18 @@ class TestTotalMissing(unittest.TestCase):
         self.assertEqual(84, res)
 
 
+class TestApplyFeatures(unittest.TestCase):
+    def setUp(self):
+        self.expected = 'NNNNNTGTTTNTNNCCTTCCCAGGTTNTNTAGCAAACAAC'
+
+    def testApplyFeatures(self):
+        diffs = [('~', 5, 'T'), ('~', 7, 'T'), ('~', 9, 'T'), ('~', 11, 'T'), ('~', 25, 'T'), ('~', 27, 'T'), ('~', 29, 'T'), ('~', 31, 'G'), ('~', 35, 'A')]
+        missing = [(0, 6), (10, 14), (25, 29)]
+        refseq = "ATTAAAGGTTTATACCTTCCCAGGTAACAAACCAACCAAC"
+        result = apply_features(diffs, missing, refseq)
+        self.assertEqual(self.expected, result)
+
+
 class TestQPois(unittest.TestCase):
     def setUp(self):
         self.qp = QPois(quantile=1-0.005, rate=0.0655, maxtime=1e3, origin='2019-12-01')
@@ -101,18 +113,11 @@ class TestQPois(unittest.TestCase):
         result = self.qp.is_outlier(coldate, ndiffs)
         self.assertEqual(result, True)
 
+# Load VCF
 
-class TestApplyFeatures(unittest.TestCase):
-    def setUp(self):
-        self.expected = 'NNNNNTGTTTNTNNCCTTCCCAGGTTNTNTAGCAAACAAC'
+# Filter Problematic
 
-    def testApplyFeatures(self):
-        diffs = [('~', 5, 'T'), ('~', 7, 'T'), ('~', 9, 'T'), ('~', 11, 'T'), ('~', 25, 'T'), ('~', 27, 'T'), ('~', 29, 'T'), ('~', 31, 'G'), ('~', 35, 'A')]
-        missing = [(0, 6), (10, 14), (25, 29)]
-        refseq = "ATTAAAGGTTTATACCTTCCCAGGTAACAAACCAACCAAC"
-        result = apply_features(diffs, missing, refseq)
-        self.assertEqual(self.expected, result)
-
+# SC2Locator
 
 if __name__ == '__main__':
     unittest.main()

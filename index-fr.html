@@ -92,7 +92,7 @@
             <option value="Region">R&eacute;gion</option>
             <option value="No. samples">T. de l'&eacute;chantillon</option>
             <option value="Collection date">Date de collecte</option>
-            <option value="Divergence">Divergence</option>
+            <option value="Divergence" selected>Divergence</option>
           </select>
           <div class="legend" id="div-region-legend"></div>
           <div class="legend" id="svg-sample-legend"></div>
@@ -153,22 +153,23 @@
 
         <div class="middlebox">
           <div class="floattitle">
-            Diagramme en perle
-            <span class="clicker" title="T&eacute;l&eacute;charger comme un arbre" onclick="save_beadplot();">
-              &nbsp;&nbsp;NWK&nbsp;&nbsp;
-            </span>
-            <!--<button type="button" id="save_svg">Export SVG</button>-->
-            <span class="clicker" title="T&eacute;l&eacute;charger le SVG" onclick="export_svg();">
-              &nbsp;&nbsp;SVG&nbsp;&nbsp;
-            </span>
-            <span title="Aide avec le diagramme en perle" onclick="$('#help-beadplot').dialog('open');" style="cursor: help">&#128304;</span>
+            <div>Diagramme en perle</div>
+            <div class="clicker" title="T&eacute;l&eacute;charger comme un arbre" onclick="save_beadplot();">&nbsp;&nbsp;NWK&nbsp;&nbsp;</div>
+            <div class="clicker" title="T&eacute;l&eacute;charger le SVG" onclick="export_svg();">&nbsp;&nbsp;SVG&nbsp;&nbsp;</div>
+            <div title="Aide avec le diagramme en perle" onclick="$('#help-beadplot').dialog('open');" style="cursor: help">&#128304;</div>
 
-            <span style="width: 150px;">
+            <div class="edge-cuttoff">
               <label style="vertical-align: middle;" for="vedge-slider">Limite de liens:&nbsp;&nbsp;</label>
+              <div id="left-arrow" class="arrow">
+                <div style="transform: translateY(-25%);" class="larrow">&#8249;</div>
+              </div>
               <div id="vedge-slider">
                 <div id="custom-handle" class="ui-slider-handle"></div>
               </div>
-            </span>
+              <div id="right-arrow" class="arrow">
+                <div style="transform: translateY(-25%);" class="rarrow">&#8250;</div>
+              </div>
+            </div>
           </div>
           <div class="floattitle" id="svg-clusteraxis" style="top: 58px; z-index: 14"></div>
           <div class="beadplot-content" id="svg-cluster"></div>

@@ -147,7 +147,7 @@ def parse_nexus(nexus_file, fasta, callback=None):
     return phy, residuals
 
 
-def retrieve_genomes(by_lineage, ref_file):
+def retrieve_genomes(by_lineage, ref_file, earliest=True):
     """
     Identify most recent sampled genome sequence for each Pangolin lineage.
     Export as FASTA for TreeTime analysis.
@@ -168,7 +168,7 @@ def retrieve_genomes(by_lineage, ref_file):
     for lineage, records in by_lineage.items():
         intermed = [(r['covv_collection_date'], r['diffs'], r['missing']) for r in records]
         intermed.sort(reverse=True)  # descending order
-        coldate, diffs, missing = intermed[0]
+        coldate, diffs, missing = intermed[-1] if earliest else intermed[0]
 
         # update lists
         lineages.append(lineage)
@@ -205,6 +205,9 @@ def parse_args():
     parser.add_argument('--clock', type=float, default=8e-4,
                         help='optional, specify molecular clock rate for '
                              'constraining Treetime analysis (default 8e-4).')
+    parser.add_argument('--earliest', action='store_true', 
+                        help="option, select earliest genome per lineage; otherwise"
+                             " default to most recent samples.")
 
     parser.add_argument('--outdir', default='data/',
                         help='optional, directory to write TreeTime output files')
@@ -225,7 +228,7 @@ if __name__ == '__main__':
     cb.callback("Retrieving genomes")
     with open(args.json) as handle:
         by_lineage = json.load(handle)
-    fasta = retrieve_genomes(by_lineage, ref_file=args.ref)
+    fasta = retrieve_genomes(by_lineage, ref_file=args.ref, earliest=args.earliest)
 
     cb.callback("Reconstructing tree with {}".format(args.ft2bin))
     nwk = fasttree(fasta, binpath=args.ft2bin)

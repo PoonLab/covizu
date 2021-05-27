@@ -44,11 +44,11 @@ var gisaid = gisaid || (function () {
 	}
 	
 	var generateAckLinkFromAccessionId = function(accessionId) {
-		let accessionIdNumber = accessionId.split("_")[2];
+		let accessionIdNumber = accessionId.split("_")[2].slice(-4);
 		
-		return "https://www.epicov.org/acknowledgement/" + accessionIdNumber.charAt(2)
-				+ accessionIdNumber.charAt(3) + "/" + accessionIdNumber.charAt(4)
-				+ accessionIdNumber.charAt(5) + "/" + accessionId + ".json"
+		return "https://www.epicov.org/acknowledgement/" + accessionIdNumber.substring(0, 2)
+				 + "/" + accessionIdNumber.substring(2, 4)
+				 + "/" + accessionId + ".json"
 	}
 	
 	var hidePopup = function(wrappedElement) {
