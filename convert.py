@@ -6,6 +6,7 @@ from csv import DictReader
 from covizu.utils import seq_utils
 from covizu.utils.progress_utils import Callback
 
+import json
 import gzip
 import lzma
 import codecs
@@ -199,4 +200,4 @@ if __name__ == "__main__":
     feed = combine(handle, args.lineages, metadata, minlen=args.minlen, mindate=args.mindate,
                    callback=callback)
     for record in feed:
-        outfile.write(str(record)+'\n')  # serialize dict object, equivalent to JSON
+        outfile.write(json.dumps(record)+'\n')

@@ -23,6 +23,8 @@ def parse_args():
 
     parser.add_argument("--outdir", type=str, default='data/',
                         help="option, path to write output files")
+    parser.add_argument("--bylineage", type=str, default='data/by_lineage.json',
+                        help="path to write JSON of features by lineage")
 
     parser.add_argument('--poisson-cutoff', type=float, default=0.001,
                         help='filtering outlying genomes whose distance exceeds the upper '
