@@ -6,7 +6,6 @@ import os
 import json
 
 import covizu
-from covizu.utils.seq_utils import convert_fasta
 
 
 def apply_cigar(seq, rpos, cigar):
@@ -283,7 +282,7 @@ if __name__ == '__main__':
         if args.filter:
             vcf = load_vcf(args.vcf)
             encoded = encode_diffs(mm2, reflen=reflen)
-            for qname, diffs, missing in filter_problematic(encoded, mask=vcf):
+            for qname, diffs, missing in filter_problematic2(encoded, mask=vcf):
                 seq = apply_features(diffs, missing, refseq=refseq)
                 args.outfile.write(">{}\n{}\n".format(qname, seq))
         else:
