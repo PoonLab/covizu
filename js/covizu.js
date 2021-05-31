@@ -160,6 +160,7 @@ req.done(function() {
   // d3.select(node).dispatch("click");
   cindex = node.__data__.cluster_idx;
   d3.select(node).attr("class", "clicked");
+  d3.select('#cidx-' + cindex).attr("class", "clicked")
   beadplot(node.__data__.cluster_idx);
   $("#barplot").text(null);
   gentable(node.__data__);

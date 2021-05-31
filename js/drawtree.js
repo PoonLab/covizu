@@ -401,6 +401,7 @@ function draw_clusters(tips) {
       .attr("text-anchor", "start")
       .attr("alignment-baseline", "middle")
       .attr("cursor", "default")
+      .attr("id", function(d) { return "cidx-" + d.cluster_idx; })
       .attr("x", function(d) {
         if (xAxisTree(d.last_date) - xAxisTree(d.first_date) < minRectWidth)
           return(xAxisTree(d.first_date) + minRectWidth + 3);
@@ -663,15 +664,18 @@ function click_cluster(d, cluster_info) {
   if (search_results.get().total_points > 0 || isLineage($('#search-input').val())) {
     d3.selectAll(".SelectedCluster.clicked").attr('class', 'SelectedCluster'); 
     d3.selectAll("rect.clicked").attr('class', "not_SelectedCluster");
+    d3.selectAll("text.clicked").attr('class', null);
   }
   else
     d3.selectAll("rect.clicked").attr('class', "default");
-
+    d3.selectAll("text.clicked").attr('class', null);
+    
   beadplot(d.cluster_idx);
 
   // reset all rectangles to high transparency
   if ($('#search-input').val() === "") {
     vis.selectAll("rect.clicked").attr('class', "default");
+    vis.selectAll("text.clicked").attr('class', null);
   }
 
 
@@ -679,6 +683,7 @@ function click_cluster(d, cluster_info) {
     if (cluster_info.className.baseVal !== "SelectedCluster"){
       deselect_all_beads();
       d3.select(cluster_info).attr("class", "not_SelectedCluster clicked");
+      d3.select("#cidx-" + cindex).attr("class", "clicked");
     }
 
     gentable(d);
@@ -705,9 +710,11 @@ function click_cluster(d, cluster_info) {
       });
       update_search_stats(stats);
       d3.select(cluster_info).attr("class", "not_SelectedCluster clicked");
+      d3.select("#cidx-" + cindex).attr("class", "clicked");
     }
     else 
       d3.select(cluster_info).attr("class", "clicked");
+      d3.select("#cidx-" + cindex).attr("class", "clicked");
 
     $("#barplot").text(null);
 
@@ -721,6 +728,7 @@ function click_cluster(d, cluster_info) {
   else {
     // If the selected cluster is a SelectedCluster, then the search_results need to be updated to point to the first bead in the cluster
     d3.select(cluster_info).attr("class", "SelectedCluster clicked");
+    d3.select("#cidx-" + cindex).attr("class", "clicked");
     var bead_hits = search_results.get().beads;
     var current_id = (search_results.get().clusters_first_bead)['cidx-' + d.cluster_idx]
     var bead_id_to_accession = Object.keys(bead_hits);
