@@ -218,6 +218,10 @@ function map_clusters_to_tips(df, clusters) {
 
     var first_date = new Date(coldates[0]),
         last_date = new Date(coldates[coldates.length-1]);
+    
+    // Calculate the mean collection date
+    let date_diffs = coldates.map(x => d3.timeDay.count(first_date, new Date(x))),
+        mean_date = Math.round(date_diffs.reduce((a, b) => a + b, 0) / date_diffs.length);
 
     // augment data frame with cluster data
     tips[root_idx].cluster_idx = cidx;
@@ -251,6 +255,7 @@ function map_clusters_to_tips(df, clusters) {
         rate = 0.0655342,  // subs per genome per day
         exp_diffs = rate * mean_time;  // expected number of differences
     tips[root_idx].residual = tip_stats.mean_ndiffs - exp_diffs;  // tip_stats.residual;
+    tips[root_idx].mcoldate = d3.timeDay.offset(first_date, mean_date);
   }
   return tips;
 }

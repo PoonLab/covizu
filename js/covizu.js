@@ -579,3 +579,14 @@ function export_svg() {
   svg_beadplot.removeAttribute("xmlns");
   svg_beadplot.removeAttribute("xmlns:xlink");
 }
+
+function export_csv() {
+  var csvFile = 'Lineage, Mean diffs from root, Deviation from clock, Number of cases, Number of variants, Collection dates, Mean Collection Date';
+  var lineage_info = []
+  for (tip of tips) {
+    lineage_info.push([`${tip.thisLabel}, ${Math.round(100*tip.mean_ndiffs)/100.}, ${Math.round(100*tip.residual)/100.}, ${tip.nsamples}, ${tip.varcount}, ${formatDate(tip.first_date)} / ${formatDate(tip.last_date)}, ${formatDate(tip.mcoldate)}`]);
+  }
+  csvFile = csvFile + "\n" + lineage_info.join("\n");
+  blob = new Blob([csvFile], {type: "text/csv"});
+  saveAs(blob, "lineage_stats.csv");
+}
