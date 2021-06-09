@@ -8,6 +8,6 @@ debug/*
 build/*
 dist/*
 venv/*
-cypress/fixtures
-cypress/plugins
-cypress/support
+cypress/fixtures/
+cypress/plugins/
+cypress/support/
