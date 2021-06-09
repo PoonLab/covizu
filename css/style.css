@@ -101,6 +101,16 @@ div.floattitle {
   z-index:11;
   width: 100%;
   background-color: rgba(255,255,255,0.9);
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+/* Keeps the entire "Edge cutoff" section together */
+div.edge-cuttoff {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 3px;
 }
 
 div.app {
@@ -269,7 +279,7 @@ footer {
   font-size: 0.8em;
 }
 
-span.clicker {
+.clicker {
   background-color: #999;
   color: white;
   font-size: 8pt;
@@ -279,7 +289,7 @@ span.clicker {
   display: inline-block;
 }
 
-span.clicker:hover {
+.clicker:hover {
   background-color: #777;
 }
 
@@ -339,7 +349,7 @@ circle.default{
 }
 
 rect.default{
-  fill-opacity: 0.5;
+  fill-opacity: 0.8;
 }
 
 rect.SelectedCluster{
@@ -352,6 +362,8 @@ rect.not_SelectedCluster{
 
 rect.clicked{
   fill-opacity: 1;
+  filter: 
+    saturate(1.2) brightness(0.85) contrast(135%)
 }
 
 rect.SelectedCluster:hover{
@@ -365,15 +377,24 @@ rect.not_SelectedCluster.clicked {
 
 rect:hover{
   fill-opacity: 1;
+  filter: 
+    saturate(1.2) brightness(0.85) contrast(135%)
 }
 
 rect[txt_hover="yes"]{
   fill-opacity: 1 !important;
+  filter: 
+    saturate(1.2) brightness(0.85) contrast(135%)
 }
 
 rect.SelectedCluster[txt_hover="yes"]{
   stroke: gray;
   stroke-width: 2;
+}
+
+text.clicked{
+  font-weight: 900;
+  font-size: 0.8em !important;
 }
 
 #search-bar {
@@ -548,4 +569,33 @@ a.sort-by:after {
   vertical-align: middle;
   padding-right: 5px;
   width: 18px;
+}
+
+
+/*** Slider ***/
+.arrow {
+  text-decoration: none;
+  background-color: #f1f1f1;
+  color: black;
+  height: 18px;
+  margin-top: -0.1em;
+  font-weight: 400;
+  font-size: 22px;
+  width: 20px;
+  text-align: center;
+  user-select:none;
+}
+
+.arrow:hover{
+  background-color: #ddd;
+  cursor: pointer;
+}
+
+.arrow.clicked {
+  background-color: #ddd;
+  cursor: pointer;
+}
+
+.ui-slider-active {
+  outline: -webkit-focus-ring-color auto 1px;
 }

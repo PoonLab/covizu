@@ -191,6 +191,7 @@ function main_search(all_bead_data, text_query, start_date, end_date) {
 
   // The current cluster is also given the "clicked" class
   cluster.attr("class", "SelectedCluster clicked");
+  d3.select("#" + selected_cidx).attr("class", "clicked");
   beadplot(cluster.datum().cluster_idx);
 
   // Beads in Cluster
@@ -222,7 +223,7 @@ function main_search(all_bead_data, text_query, start_date, end_date) {
  * This function handles search by lineage
  * @param {String} text_query 
  */
-function lineage_search(text_query, start_date, end_date) {
+function lineage_search(text_query) {
   var cidx = lineage_to_cid[text_query.toUpperCase()];
 
   // Terminates if there is no match
@@ -237,8 +238,10 @@ function lineage_search(text_query, start_date, end_date) {
   d3.select("#svg-timetree")
     .selectAll("rect:not(.clicked):not(.clickedH)")
     .attr("class","not_SelectedCluster");
-
+  
   cluster.attr("class", "SelectedCluster clicked");
+  d3.select("#cidx-"+cidx).attr("class", "clicked");
+  
   var cluster_info = cluster.datum();
   beadplot(cluster_info.cluster_idx);
   gentable(cluster_info);
@@ -266,6 +269,7 @@ function accession_search(text_query) {
     .attr("class","not_SelectedCluster");
 
   cluster.attr("class", "SelectedCluster clicked");
+  d3.select("#cidx-"+cidx).attr("class", "clicked");
   
   beadplot(cluster.datum().cluster_idx);
 
@@ -303,6 +307,7 @@ function accession_search(text_query) {
 function select_cluster(cidx) {
   d3.selectAll("rect.clicked").attr('class', "default");
   d3.selectAll("rect.clickedH").remove();
+  d3.selectAll("text.clicked").attr("class", null);
 
   d3.selectAll("circle").dispatch("mouseout");
   var cluster = d3.selectAll('rect[cidx="'+cidx+'"]');
@@ -339,8 +344,10 @@ function select_next_prev_bead(bead_id_to_accession, curr_bead) {
 
   var next_cluster = d3.selectAll('rect[cidx="cidx-'+accn_to_cid[bead_id_to_accession[curr_bead]]+'"]');
   d3.selectAll("rect.clickedH").remove();
-  d3.selectAll(".SelectedCluster.clicked").attr('class', 'SelectedCluster'); 
+  d3.selectAll(".SelectedCluster.clicked").attr('class', 'SelectedCluster');
+  d3.selectAll("text.clicked").attr('class', null)
   next_cluster.attr("class", "SelectedCluster clicked");
+  d3.select('#cidx-' + accn_to_cid[bead_id_to_accession[curr_bead]]).attr("class", "clicked")
   draw_cluster_box(next_cluster);
   next_cluster.nodes()[0].scrollIntoView({block: "center"});
 
@@ -377,6 +384,8 @@ function select_clusters(rects) {
     // new search, jump to first matching cluster
     cluster = d3.select(rects.nodes().pop());  // last element in array
     cluster.attr("class", "clicked");
+    d3.select("#cidx-"+cidx).attr("class", "clicked");
+    
     draw_cluster_box(cluster);
 
     // switch to beadplot for this cluster

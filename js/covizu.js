@@ -8,11 +8,19 @@ $( function() {
       handle.text( $( this ).slider( "value" ) );
     },
     slide: function( event, ui ) {
+      move_arrow();
       handle.text( ui.value );
+    },
+    stop: function (event, ui) {
+      move_arrow();
     },
     min: 0.5,
     step: 0.01
   });
+
+  // Prevents the default action when keydown event is detected
+  handle.unbind('keydown')
+
 } );
 
 $(document).tooltip({show: null});
@@ -141,6 +149,7 @@ req.done(function() {
 
   beaddata = parse_clusters(clusters);
   tips = map_clusters_to_tips(df, clusters);
+  drawtree(df);
   //spinner.stop();
   draw_clusters(tips);
 
@@ -151,6 +160,7 @@ req.done(function() {
   // d3.select(node).dispatch("click");
   cindex = node.__data__.cluster_idx;
   d3.select(node).attr("class", "clicked");
+  d3.select('#cidx-' + cindex).attr("class", "clicked")
   beadplot(node.__data__.cluster_idx);
   $("#barplot").text(null);
   gentable(node.__data__);
@@ -214,6 +224,20 @@ req.done(function() {
     }
   }
 
+  // Changes the value of the slider and triggers a change event
+  function move_slider(direction) {
+    var slider = $("#vedge-slider");
+
+    if (direction === "LEFT")
+      slider.slider("value", slider.slider("value") - slider.slider("option", "step"))
+    else 
+      slider.slider("value", slider.slider("value") + slider.slider("option", "step"))
+    
+    $("#custom-handle").text( slider.slider( "value" ) );
+    move_arrow();
+    slider.trigger('change');
+  }
+
   disable_buttons();
 
   // Enables "search" and "clear" buttons if the input fields are not empty
@@ -231,7 +255,8 @@ req.done(function() {
 
   $('#search-input, #start-date, #end-date').on('keydown', function(e) {
     $('#error_message').text(``);
-    if (search_results.get().total_points > 0) {
+    // Only resets search results if the backspace key is pressed
+    if (search_results.get().total_points > 0 && (e.keyCode == 8)) {
       clear_selection();
       disable_buttons();
     }
@@ -422,7 +447,61 @@ req.done(function() {
     }
   });
 
+  // Moves the slider to the left/right when the arrow buttons are clicked
+  $('#left-arrow').click(function() {
+    $("#custom-handle").addClass("ui-slider-active")
+    move_slider("LEFT");
+  });
+
+  $('#right-arrow').click(function() {
+    $("#custom-handle").addClass("ui-slider-active")
+    move_slider("RIGHT");
+  });
+
+  // Adds/Removes the selected/active state of the slider depending on where the user clicks
+  $(document).on('mousedown', function(e) {
+    if (e.target.matches("div.larrow")) 
+      $('.larrow').addClass("selected")
+    else if (e.target.matches("div.rarrow")) 
+      $('.rarrow').addClass("selected")
+    else {
+      $('.rarrow').removeClass("selected")
+      $('.larrow').removeClass("selected")
+      $("#custom-handle").removeClass("ui-slider-active")
+    }
+  });
+
+  // Listens to the keyup event to change the background of the arrow buttons to the default color
+  $(document).on('keyup', function(e) {
+    if(e.target.matches("div.ui-slider-handle") || $('.larrow').hasClass('selected') || $('.rarrow').hasClass('selected')) {
+      if (e.keyCode == 37) 
+        $('#left-arrow').removeClass("clicked");
+      else if (e.keyCode == 39) 
+        $('#right-arrow').removeClass("clicked");
+      
+      return;
+    }
+  });
+
   $(document).on('keydown', function(e) {
+    // Ignore event if its inside an input field
+    if (e.target.matches('input')) {
+      return;
+    }
+
+    // If the slider or the arrow buttons are selected, then the arrow button's background color is changed and the slider is moved
+    if(e.target.matches("div.ui-slider-handle") || $('.larrow').hasClass('selected') || $('.rarrow').hasClass('selected')) {
+      if (e.keyCode == 37) {
+        $('#left-arrow').addClass("clicked");
+        move_slider("LEFT");
+      }
+      else if (e.keyCode == 39) {
+        $('#right-arrow').addClass("clicked");
+        move_slider("RIGHT");
+      }
+      return;
+    }
+
     // User presses the left arrow key (37) or right arrow key (39)
     if (e.keyCode == 37 || e.keyCode == 39) {
       var selected_bead = d3.selectAll(".selectionH").nodes();
@@ -499,4 +578,15 @@ function export_svg() {
   svg_beadplot.removeAttribute("version");
   svg_beadplot.removeAttribute("xmlns");
   svg_beadplot.removeAttribute("xmlns:xlink");
+}
+
+function export_csv() {
+  var csvFile = 'lineage,mean.diffs,clock.residual,num.cases,num.variants,min.coldate,max.coldate,mean.coldate';
+  var lineage_info = []
+  for (tip of tips) {
+    lineage_info.push([`${tip.thisLabel},${Math.round(100*tip.mean_ndiffs)/100.},${Math.round(100*tip.residual)/100.},${tip.nsamples},${tip.varcount},${formatDate(tip.first_date)},${formatDate(tip.last_date)},${formatDate(tip.mcoldate)}`]);
+  }
+  csvFile = csvFile + "\n" + lineage_info.join("\n");
+  blob = new Blob([csvFile], {type: "text/csv"});
+  saveAs(blob, "lineage_stats.csv");
 }
