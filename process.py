@@ -74,8 +74,13 @@ def parse_args():
     parser.add_argument('--mincount', type=int, default=500,
                         help='minimum number of variants in lineage '
                              'above which MPI processing will be used.')
-    parser.add_argument('--machine_file', type=str, default='mfile',
-                        help='path to machine file for MPI.')
+
+    # leave both to None for serial execution
+    parser.add_argument('--machine_file', type=str, default=None,
+                        help='optional, path to machine file for MPI.')
+    parser.add_argument('-np', type=int, default=None,
+                        help='optional, number of processes for MPI')
+
     parser.add_argument("-n", "--nboot", type=int, default=100,
                         help="Number of bootstrap samples, default 100.")
 

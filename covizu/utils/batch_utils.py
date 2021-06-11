@@ -72,7 +72,7 @@ def import_labels(handle, callback=None):
 
 def make_beadplots(by_lineage, args, callback=None, t0=None):
     """
-    Wrapper for beadplot_serial - divert to clustering.py in MPI mode if
+    Wrapper for beadplot_serial.  Divert to clustering.py in MPI mode if
     lineage has too many genomes.
 
     :param by_lineage:  dict, feature vectors stratified by lineage
@@ -85,7 +85,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None):
         if callback:
             callback('start {}, {} entries'.format(lineage, len(features)))
 
-        if len(features) < args.mincount:
+        if len(features) < args.mincount or (args.machine_file is None and args.np is None):
             # serial processing
             if len(features) == 0:
                 continue  # empty lineage, skip (should never happen)
