@@ -97,7 +97,6 @@ def analyze_feed(handle, args, callback=None):
     :param args:  Namespace
     :param callback:  optional progress monitoring, see progress_utils.py
     """
-
     # check that user has loaded openmpi module
     try:
         subprocess.check_call(['mpirun', '-np', '2', 'ls'], stdout=subprocess.DEVNULL)
@@ -121,13 +120,14 @@ def analyze_feed(handle, args, callback=None):
 
     # reconstruct time-scaled tree
     timetree, residuals = build_timetree(by_lineage, args, callback)
-    timestamp = datetime.now().isoformat().split('.')[0]
+    t0 = datetime.now()
+    timestamp = t0.isoformat().split('.')[0]
     nwk_file = os.path.join(args.outdir, 'timetree.{}.nwk'.format(timestamp))
     with open(nwk_file, 'w') as handle:
         Phylo.write(timetree, file=handle, format='newick')
 
     # generate beadplots and serialize to file
-    result = make_beadplots(by_lineage, args, callback, t0=timestamp)
+    result = make_beadplots(by_lineage, args, callback, t0=t0.timestamp())
     outfile = open(os.path.join(args.outdir, 'clusters.{}.json'.format(timestamp)), 'w')
     outfile.write(json.dumps(result))  # serialize results to JSON
     outfile.close()
