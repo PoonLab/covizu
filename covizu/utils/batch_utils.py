@@ -1,6 +1,7 @@
 import subprocess
 from Bio import Phylo
 from covizu import clustering, treetime, beadplot
+import sys
 
 
 def build_timetree(by_lineage, args, callback=None):
@@ -97,14 +98,24 @@ def make_beadplots(by_lineage, args, callback=None, t0=None):
             beaddict = beadplot_serial(lineage, features, args)
         else:
             # call out to MPI
-            cmd = [
-                "mpirun", "--machinefile", args.machine_file,
+            cmd = ["mpirun"]
+            if args.machine_file:
+                cmd.extend(["--machinefile", args.machine_file])
+            elif args.np:
+                cmd.extend(['-np', args.np])
+            else:
+                if callback:
+                    callback("No --machine_file or -np specified in make_beadplots()", level='ERROR')
+                    sys.exit()
+            
+            cmd.extend([
                 "python3", "covizu/clustering.py",
                  args.bylineage, lineage,  # positional arguments <JSON file>, <str>
                  "--nboot", str(args.nboot), "--outdir", "data"
-            ]
+            ])
             if t0:
                 cmd.extend(["--timestamp", str(t0)])
+
             subprocess.check_call(cmd)
 
             # import trees
