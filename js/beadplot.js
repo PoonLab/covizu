@@ -150,7 +150,7 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
   }
   else {
     // parse samples within variant, i.e., "beads"
-    var label = variant[0][2].replace(pat, "$1"),
+    var label = variant[0][1].replace(pat, "$1"),
         coldates = variant.map(x => x[0]),
         isodate, samples, regions;
 
@@ -163,7 +163,6 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
     country = country.map(x => x.replace(/_/g," "));
 
     vdata = {
-      'accession': accn,
       'label': label,
       'x1': new Date(coldates[0]),  // min date
       'x2': new Date(coldates[coldates.length-1]),  // max date

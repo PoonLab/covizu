@@ -139,10 +139,10 @@ def serialize_tree(tree):
     us_count = 0  # number of unsampled variants
     for node in tree.find_clades(order='level'):
         if node.labels:
-            # sort samples by [coldate, accession, label]
+            # sort samples by [coldate, ..., label]
             intermed = [label.split('|')[::-1] for label in node.labels]
             intermed.sort()  # ISO dates sort in increasing order
-            variant = intermed[0][1]  # use accession of earliest sample to ID variant
+            variant = intermed[0][-1]  # use label of earliest sample to ID variant
 
             # populate list with samples
             obj['nodes'].update({variant: intermed})
