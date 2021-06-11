@@ -98,12 +98,13 @@ def analyze_feed(handle, args, callback=None):
     :param callback:  optional progress monitoring, see progress_utils.py
     """
     # check that user has loaded openmpi module
-    try:
-        subprocess.check_call(['mpirun', '-np', '2', 'ls'], stdout=subprocess.DEVNULL)
-    except FileNotFoundError:
-        if callback:
-            callback("mpirun not loaded - run `module load openmpi/gnu`", level='ERROR')
-        sys.exit()
+    if args.machine_file or args.np:
+        try:
+            subprocess.check_call(['mpirun', '-np', '2', 'ls'], stdout=subprocess.DEVNULL)
+        except FileNotFoundError:
+            if callback:
+                callback("mpirun not loaded - run `module load openmpi/gnu`", level='ERROR')
+            sys.exit()
 
     # pre-processing feed
     feed = map(json.loads, handle)

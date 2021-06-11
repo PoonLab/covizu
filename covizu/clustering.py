@@ -31,7 +31,7 @@ def recode_features(records, callback=None, limit=10000):
     # compress genomes with identical feature vectors
     fvecs = {}
     for record in records:
-        label = '{label}|{region}|{country}|{district}|{coldate}'.format(**record)
+        label = '{label}|{region}|{country}|{division}|{coldate}'.format(**record)
         key = tuple([tuple(x) for x in record['diffs']])
         if key not in fvecs:
             fvecs.update({key: []})
@@ -217,7 +217,7 @@ def build_trees(records, args, callback=None):
     union, labels, indexed = recode_features(records, callback=callback)
     if len(indexed) == 1:
         # only one variant, no meaningful tree
-        return None, labels
+        trees = None
     else:
         trees = [bootstrap(union, indexed, args.binpath, callback=callback)
                  for _ in range(args.nboot)]
