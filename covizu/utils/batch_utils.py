@@ -33,16 +33,11 @@ def beadplot_serial(lineage, features, args, callback=None):
         # use earliest sample as variant label
         intermed = [label.split('|')[::-1] for label in labels[0]]
         intermed.sort()
-        variant = intermed[0][1]
+        variant = intermed[0][-1]
         beaddict['nodes'].update({variant: []})
 
-        try:
-            for coldate, label1 in intermed:
-                beaddict['nodes'][variant].append([coldate, label1])
-        except ValueError:
-            print(intermed)
-            raise
-
+        for coldate, label1 in intermed:
+            beaddict['nodes'][variant].append([coldate, label1])
         return beaddict
 
     # generate majority consensus tree
