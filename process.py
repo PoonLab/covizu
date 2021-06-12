@@ -59,9 +59,6 @@ def parse_args():
     parser.add_argument('--clock', type=float, default=8e-4,
                         help='specify molecular clock rate for '
                              'constraining Treetime analysis (default 8e-4).')
-    parser.add_argument('--earliest', action='store_true',
-                        help='option, use earliest sample per lineage for time-scaled '
-                             'tree; otherwise defaults to most recent samples.')
 
     parser.add_argument('--datetol', type=float, default=0.1,
                         help='exclude tips from time-scaled tree '

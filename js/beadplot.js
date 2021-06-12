@@ -35,10 +35,6 @@ var visBaxis = d3.select("div#svg-clusteraxis")
   .append("g");
 
 
-// regular expression to remove redundant sequence name components
-const pat = /^hCoV-19\/(.+\/.+)\/20[0-9]{2}$/gi;
-
-
 /**
  * Returns unique elements in given array.
  * @param {Array} arr
@@ -150,13 +146,13 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
   }
   else {
     // parse samples within variant, i.e., "beads"
-    var label = variant[0][1].replace(pat, "$1"),
+    var label = variant[0][4],
         coldates = variant.map(x => x[0]),
         isodate, samples, regions;
 
     coldates.sort();
     //Retrieving countries from variants?
-    var country = variant.map(x => x[2].split('/')[1]),
+    var country = variant.map(x => x[2]),
         isodates = unique(coldates);
 
     // remove underscores in country names
@@ -170,7 +166,7 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
       'y2': y,
       'count': coldates.length,
       'country': tabulate(country),
-      'region': country.map(x => countries[x]),
+      'region': variant.map(x => x[3]),
       'numBeads': isodates.length,
       'parent': null,
       'dist': 0,
@@ -180,9 +176,9 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
     for (var i=0; i<isodates.length; i++) {
       isodate = isodates[i];
       samples = variant.filter(x => x[0] === isodate);
-      country = samples.map(x => x[2].split('/')[1]);
+      country = samples.map(x => x[2]);
       country = country.map(x => x.replace(/_/g," "));
-      regions = country.map(x => countries[x]);
+      regions = country.map(x => x[3]);
 
       // warn developers if no region for country
       if (regions.includes(undefined)) {
@@ -202,8 +198,7 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
         'x': new Date(isodate),
         'y': y,
         'count': samples.length,
-        'accessions': samples.map(x => x[1]),
-        'labels': samples.map(x => x[2].replace(pat, "$1")),
+        'labels': samples.map(x => x[4]),
         'region1': mode(regions),
         'region': regions,
         'country': tabulate(country),
@@ -452,7 +447,7 @@ function draw_halo_front(bead) {
     .attr("stroke", "grey")
     .attr("fill-opacity", 1)
     .attr("stroke-width", 5)
-    .attr("bead", bead.accessions[0]);
+    .attr("bead", bead.labels[0]);
 }
 
 /**
@@ -788,13 +783,13 @@ function beadplot(cid) {
         .attr("cx", xMapB)
         .attr("cy", yMapB)
         .attr("class", "default")
-        .attr("id", function(d) { return d.accessions[0]; })
+        .attr("id", function(d) { return d.labels[0]; })
         .attr("idx", function(d, i) { return i; })
         .attr("search_hit", function(d) {
           if (search_results.get().beads.length == 0){
             return null;
           } else {
-      return search_results.get().beads[d.accessions[0]] === undefined ? false : true;
+      return search_results.get().beads[d.labels[0]] === undefined ? false : true;
           }
         })
         .attr("fill", function(d) {
@@ -945,12 +940,12 @@ function gen_details_table(obj) {
     for (let j = 0; j < obj.length; j++) {
 
       // "zip" the sequence details of each sample
-      for (let i = 0; i < obj[j].accessions.length; i++) {
+      for (let i = 0; i < obj[j].labels.length; i++) {
         let sample_details = [
-          obj[j].accessions[i],
+          obj[j].labels[i],
           obj[j].labels[i],
           formatDate(obj[j].x),
-          obj[j].accessions[0]  // variant labeled by accession
+          obj[j].labels[0]  // variant labeled by accession
         ];
         details.push(sample_details);
       }
@@ -959,12 +954,12 @@ function gen_details_table(obj) {
 
   else {
     // "zip" the sequence details of each sample
-    for (let i = 0; i < obj.accessions.length; i++) {
+    for (let i = 0; i < obj.labels.length; i++) {
       let sample_details = [
-        obj.accessions[i],
+        obj.labels[i],
         obj.labels[i],
         formatDate(obj.x),
-        obj.accessions[0]
+        obj.labels[0]
       ];
       details.push(sample_details);
     }

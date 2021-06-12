@@ -205,9 +205,6 @@ def parse_args():
     parser.add_argument('--clock', type=float, default=8e-4,
                         help='optional, specify molecular clock rate for '
                              'constraining Treetime analysis (default 8e-4).')
-    parser.add_argument('--earliest', action='store_true', 
-                        help="option, select earliest genome per lineage; otherwise"
-                             " default to most recent samples.")
 
     parser.add_argument('--outdir', default='data/',
                         help='optional, directory to write TreeTime output files')
@@ -228,7 +225,7 @@ if __name__ == '__main__':
     cb.callback("Retrieving genomes")
     with open(args.json) as handle:
         by_lineage = json.load(handle)
-    fasta = retrieve_genomes(by_lineage, ref_file=args.ref, earliest=args.earliest)
+    fasta = retrieve_genomes(by_lineage, ref_file=args.ref, earliest=True)
 
     cb.callback("Reconstructing tree with {}".format(args.ft2bin))
     nwk = fasttree(fasta, binpath=args.ft2bin)
