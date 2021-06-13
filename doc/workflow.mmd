@@ -1,10 +1,11 @@
 %% This is a https://mermaid-js.github.io/ document
-flowchart LR
-  data[(GISAID Database)]
+flowchart TB
 
   %% download and parse data from GISAID
   subgraph process_feed
     direction TB
+    data[(GISAID Database)]
+    data-->|gisaid_utils.download_feed|xz
     xz(xz-compressed JSON)
     loader(generator, dict)
     xz-->|gisaid_utils.load_gisaid|loader
@@ -14,54 +15,87 @@ flowchart LR
     batch-->|gisaid_utils.extract_features|features
     filtered(generator, dict)
     features-->|gisaid_utils.filter_problematic|filtered
-    sorted(dict)
+    sorted(dict, lineage:features)
     filtered-->|gisaid_utils.sort_by_lineage|sorted
+
+    sorted-->|serialize|by_lineage.json
+
+    style sorted stroke:#00F,stroke-width:3px
+    style by_lineage.json stroke:#000,stroke-width:3px
   end
 
-  data-->|gisaid_utils.download_feed|process_feed
-  bylineagejson(JSON)
-  process_feed-->|serialize|bylineagejson
-  process_feed-->build_timetree
+  %%process_feed-->build_timetree
 
   subgraph build_timetree
     direction TB
-    by_lineage(dict)
+
+    by_lineage(dict, lineage:features)
+    style by_lineage stroke:#00F,stroke-width:3px
+
     repgenomes(dict, header:sequence)
     by_lineage-->|treetime.retrieve_genomes|repgenomes
     newick(Newick tree string)
     repgenomes-->|treetime.fasttree|newick
     nexus(NEXUS tree)
     newick-->|treetime.build_timetree|nexus
-    repgenomes-->nexus
+    repgenomes-->|treetime.build_timetree|nexus
     phylo(Phylo.BaseTree)
     residuals(float, clock residuals)
     nexus-->residuals
     nexus-->|treetime.parse_nexus|phylo
+    phylo-->|serialize|treetime.nwk
   end
+  style treetime.nwk stroke:#F00,stroke-width:2px
 
-  treetime.nwk(treetime.nwk)
-  build_timetree-->treetime.nwk
+  %%build_timetree-->treetime.nwk
 
 
   subgraph make_beadplots
     direction TB
-    by_lineage2(dict)
+
+    by_lineage2(dict, lineage:features)
+    style by_lineage2 stroke:#00F,stroke-width:3px
+
     do_MPI{N>500?}
-    by_lineage2-->do_MPI
+    by_lineage2-->|for each lineage|do_MPI
     do_MPI-->|no|beadplot_serial
+
     subgraph beadplot_serial
       direction TB
-      serial1(trees, labels)
-      dict-->|clustering.build_trees|serial1
+      bsdict(lineage, features)
+      bsdict-->|recode_features|Sunion,indexed
+      Sunion,indexed(union, indexed)
+      bsdict-->|recode_features|Slabels
+      Slabels(labels)
+      Sunion,indexed-->|bootstrap|Strees
+      Strees(trees)
+      Strees-->|consensus|Sctree
+      Sctree(ctree)
+      Slabels & Sctree-->|annotate_tree|Sctree2
+      Sctree2(ctree2)  
     end
+    Sctree2-->|serialize_tree|beaddict
 
-    subgraph mpi
+    subgraph clustering.py/MPI
       direction TB
-      bylineagejson-->|recode_features|union,labels,indexed
+
+      JSON(by_lineage.json)
+      JSON-->|recode_features|labels
+      JSON-->|recode_features|union,indexed
+      style JSON stroke:#000,stroke-width:3px
+
+      union,indexed-->|bootstrap|bootstrap
+      bootstrap(trees)
     end
-    do_MPI-->|yes|mpi
+    do_MPI-->|yes|clustering.py/MPI
+    labels-->CSV
+    bootstrap-->|serialize|NWK
+    style clustering.py/MPI fill:#7F7
 
-
-
+    NWK-->|consensus|ctree
+    ctree & CSV-->|annotate_tree|ctree2
+    ctree2-->|serialize_tree|beaddict
+    beaddict-->|serialize|clusters.json
+    style clusters.json stroke:#F00,stroke-width:2px
   end
-  process_feed-->make_beadplots
+  %%process_feed-->make_beadplots
