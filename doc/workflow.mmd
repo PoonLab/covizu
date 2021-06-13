@@ -1,0 +1,67 @@
+%% This is a https://mermaid-js.github.io/ document
+flowchart LR
+  data[(GISAID Database)]
+
+  %% download and parse data from GISAID
+  subgraph process_feed
+    direction TB
+    xz(xz-compressed JSON)
+    loader(generator, dict)
+    xz-->|gisaid_utils.load_gisaid|loader
+    batch(generator, list of dicts)
+    loader-->|gisaid_utils.batch_fasta|batch
+    features(generator, dict)
+    batch-->|gisaid_utils.extract_features|features
+    filtered(generator, dict)
+    features-->|gisaid_utils.filter_problematic|filtered
+    sorted(dict)
+    filtered-->|gisaid_utils.sort_by_lineage|sorted
+  end
+
+  data-->|gisaid_utils.download_feed|process_feed
+  bylineagejson(JSON)
+  process_feed-->|serialize|bylineagejson
+  process_feed-->build_timetree
+
+  subgraph build_timetree
+    direction TB
+    by_lineage(dict)
+    repgenomes(dict, header:sequence)
+    by_lineage-->|treetime.retrieve_genomes|repgenomes
+    newick(Newick tree string)
+    repgenomes-->|treetime.fasttree|newick
+    nexus(NEXUS tree)
+    newick-->|treetime.build_timetree|nexus
+    repgenomes-->nexus
+    phylo(Phylo.BaseTree)
+    residuals(float, clock residuals)
+    nexus-->residuals
+    nexus-->|treetime.parse_nexus|phylo
+  end
+
+  treetime.nwk(treetime.nwk)
+  build_timetree-->treetime.nwk
+
+
+  subgraph make_beadplots
+    direction TB
+    by_lineage2(dict)
+    do_MPI{N>500?}
+    by_lineage2-->do_MPI
+    do_MPI-->|no|beadplot_serial
+    subgraph beadplot_serial
+      direction TB
+      serial1(trees, labels)
+      dict-->|clustering.build_trees|serial1
+    end
+
+    subgraph mpi
+      direction TB
+      bylineagejson-->|recode_features|union,labels,indexed
+    end
+    do_MPI-->|yes|mpi
+
+
+
+  end
+  process_feed-->make_beadplots
