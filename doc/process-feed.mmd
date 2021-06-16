@@ -1,0 +1,25 @@
+%% This is a https://mermaid-js.github.io/ document
+%% e.g., to compile PNG, run `mmdc -i process-feed.mmd -o process-feed.png`
+flowchart TB
+  %% download and parse data from GISAID
+  subgraph process_feed
+    direction TB
+    data[(GISAID Database)]
+    data-->|gisaid_utils.download_feed|xz
+    xz(xz-compressed JSON)
+    loader(generator, dict)
+    xz-->|gisaid_utils.load_gisaid|loader
+    batch(generator, list of dicts)
+    loader-->|gisaid_utils.batch_fasta|batch
+    features(generator, dict)
+    batch-->|gisaid_utils.extract_features|features
+    filtered(generator, dict)
+    features-->|gisaid_utils.filter_problematic|filtered
+    sorted(dict, lineage:features)
+    filtered-->|gisaid_utils.sort_by_lineage|sorted
+
+    sorted-->|serialize|by_lineage.json
+
+    style sorted stroke:#00F,stroke-width:3px
+    style by_lineage.json stroke:#000,stroke-width:3px
+  end

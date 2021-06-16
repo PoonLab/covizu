@@ -1,0 +1,52 @@
+%% This is a https://mermaid-js.github.io/ document
+%% to compile into an SVG, run `mmdc -i make-beadplots.mmd -o make-beadplots.svg`
+flowchart TB
+  subgraph make_beadplots
+    direction TB
+
+    by_lineage2(dict, lineage:features)
+    style by_lineage2 stroke:#00F,stroke-width:3px
+
+    do_MPI{N>500?}
+    by_lineage2-->|for each lineage|do_MPI
+    do_MPI-->|no|beadplot_serial
+
+    subgraph beadplot_serial
+      direction TB
+      bsdict(lineage, features)
+      bsdict-->|recode_features|Sunion,indexed
+      Sunion,indexed(union, indexed)
+      bsdict-->|recode_features|Slabels
+      Slabels(labels)
+      Sunion,indexed-->|bootstrap|Strees
+      Strees(trees)
+      Strees-->|consensus|Sctree
+      Sctree(ctree)
+      Slabels & Sctree-->|annotate_tree|Sctree2
+      Sctree2(ctree2)
+    end
+    Sctree2-->|serialize_tree|beaddict
+
+    subgraph clustering.py/MPI
+      direction TB
+
+      JSON(by_lineage.json)
+      JSON-->|recode_features|labels
+      JSON-->|recode_features|union,indexed
+      style JSON stroke:#000,stroke-width:3px
+
+      union,indexed-->|bootstrap|bootstrap
+      bootstrap(trees)
+    end
+    do_MPI-->|yes|clustering.py/MPI
+    labels-->CSV
+    bootstrap-->|serialize|NWK
+    style clustering.py/MPI fill:#7F7
+
+    NWK-->|consensus|ctree
+    ctree & CSV-->|annotate_tree|ctree2
+    ctree2-->|serialize_tree|beaddict
+    beaddict-->|serialize|clusters.json
+    style clusters.json stroke:#F00,stroke-width:2px
+  end
+  %%process_feed-->make_beadplots
