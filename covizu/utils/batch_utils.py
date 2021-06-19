@@ -103,11 +103,12 @@ def make_beadplots(by_lineage, args, callback=None, t0=None):
             subprocess.check_call(cmd)
 
             # import trees
-            outfile = open('data/{}.nwk'.format(lineage))
+            lineage_name = lineage.replace('/', '_')  # issue #297
+            outfile = open('data/{}.nwk'.format(lineage_name))
             trees = Phylo.parse(outfile, 'newick')  # note this returns a generator
 
             # import label map
-            with open('data/{}.labels.csv'.format(lineage)) as handle:
+            with open('data/{}.labels.csv'.format(lineage_name)) as handle:
                 label_dict = import_labels(handle)
 
             # generate beadplot data

@@ -284,15 +284,16 @@ if __name__ == "__main__":
     union, labels, indexed = recode_features(records, callback=cb.callback, limit=args.max_variants)
 
     # export map of sequence labels to tip indices
+    lineage = args.lineage.replace('/', '_')  # issue #297
     if my_rank == 0:
-        csvfile = os.path.join(args.outdir, "{}.labels.csv".format(args.lineage))
+        csvfile = os.path.join(args.outdir, "{}.labels.csv".format(lineage))
         with open(csvfile, 'w') as handle:
             handle.write("name,index\n")
             for i, names in enumerate(labels):
                 for nm in names:
                     handle.write('{},{}\n'.format(nm, i))
 
-    outfile = os.path.join(args.outdir, '{}.nwk'.format(args.lineage))
+    outfile = os.path.join(args.outdir, '{}.nwk'.format(lineage))
 
     if len(indexed) == 1:
         # lineage only has one variant, no meaningful tree
@@ -313,3 +314,4 @@ if __name__ == "__main__":
         if my_rank == 0:
             trees = [phy for batch in result for phy in batch]  # flatten nested lists
             Phylo.write(trees, file=outfile, format='newick')
+
