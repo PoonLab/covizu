@@ -70,7 +70,7 @@ def import_labels(handle, callback=None):
     return result
 
 
-def make_beadplots(by_lineage, args, callback=None, t0=None):
+def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_lineages.txt'):
     """
     Wrapper for beadplot_serial - divert to clustering.py in MPI mode if
     lineage has too many genomes.
@@ -78,44 +78,67 @@ def make_beadplots(by_lineage, args, callback=None, t0=None):
     :param by_lineage:  dict, feature vectors stratified by lineage
     :param args:  Namespace, from argparse.ArgumentParser()
     :param t0:  float, datetime.timestamp.
+    :param txtfile:  str, path to file to write minor lineage names
     :return:  list, beadplot data by lineage
     """
-    result = []
-    for lineage, features in by_lineage.items():
+    # partition lineages into major and minor categories
+    major = set([lineage for lineage, features in by_lineage.items()
+                 if len(features) > args.mincount])
+
+    # export minor lineages to text file
+    with open(txtfile, 'w') as handle:
+        for lineage in by_lineage:
+            if by_lineage not in major:
+                handle.write('{}\n'.format(lineage))
+
+    # launch MPI job across minor lineages
+    if callback:
+        callback("start MPI on minor lineages")
+    cmd = ["mpirun", "--machinefile", args.machine_file, "python3", "covizu/clustering.py",
+           args.bylineage, txtfile,  # positional arguments <JSON file>, <str>
+           "--mode", "flat",
+           "--nboot", str(args.nboot), "--outdir", "data"
+           ]
+    if t0:
+        cmd.extend(["--timestamp", str(t0)])
+    subprocess.check_call(cmd)
+
+    # process major lineages
+    for lineage in major:
+        features = by_lineage[lineage]
         if callback:
             callback('start {}, {} entries'.format(lineage, len(features)))
-
-        if len(features) < args.mincount:
-            # serial processing
-            if len(features) == 0:
-                continue  # empty lineage, skip (should never happen)
-            beaddict = beadplot_serial(lineage, features, args)
-        else:
             # call out to MPI
             cmd = [
-                "mpirun", "--machinefile", args.machine_file,
-                "python3", "covizu/clustering.py",
-                 args.bylineage, lineage,  # positional arguments <JSON file>, <str>
-                 "--nboot", str(args.nboot), "--outdir", "data"
+                "mpirun", "--machinefile", args.machine_file, "python3", "covizu/clustering.py",
+                args.bylineage, lineage,  # positional arguments <JSON file>, <str>
+                "--mode", "deep",
+                "--nboot", str(args.nboot), "--outdir", "data"
             ]
             if t0:
                 cmd.extend(["--timestamp", str(t0)])
             subprocess.check_call(cmd)
 
-            # import trees
-            outfile = open('data/{}.nwk'.format(lineage))
-            trees = Phylo.parse(outfile, 'newick')  # note this returns a generator
+    # parse output files
+    if callback:
+        callback("Parsing output files")
+    result = []
+    for lineage in by_lineage:
+        # import trees
+        lineage_name = lineage.replace('/', '_')  # issue #297
+        outfile = open('data/{}.nwk'.format(lineage_name))
+        trees = Phylo.parse(outfile, 'newick')  # note this returns a generator
 
-            # import label map
-            with open('data/{}.labels.csv'.format(lineage)) as handle:
-                label_dict = import_labels(handle)
+        # import label map
+        with open('data/{}.labels.csv'.format(lineage_name)) as handle:
+            label_dict = import_labels(handle)
 
-            # generate beadplot data
-            ctree = clustering.consensus(trees, cutoff=args.boot_cutoff, callback=callback)
-            outfile.close()  # done with Phylo.parse generator
+        # generate beadplot data
+        ctree = clustering.consensus(trees, cutoff=args.boot_cutoff, callback=callback)
+        outfile.close()  # done with Phylo.parse generator
 
-            ctree = beadplot.annotate_tree(ctree, label_dict)
-            beaddict = beadplot.serialize_tree(ctree)
+        ctree = beadplot.annotate_tree(ctree, label_dict)
+        beaddict = beadplot.serialize_tree(ctree)
 
         beaddict.update({'lineage': lineage})
         result.append(beaddict)
