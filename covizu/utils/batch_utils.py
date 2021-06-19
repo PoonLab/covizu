@@ -97,7 +97,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
     cmd = ["mpirun", "--machinefile", args.machine_file, "python3", "covizu/clustering.py",
            args.bylineage, txtfile,  # positional arguments <JSON file>, <str>
            "--mode", "flat",
-           "--max-variants", args.max_variants,
+           "--max-variants", str(args.max_variants),
            "--nboot", str(args.nboot), "--outdir", "data"
            ]
     if t0:
@@ -114,7 +114,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
                 "mpirun", "--machinefile", args.machine_file, "python3", "covizu/clustering.py",
                 args.bylineage, lineage,  # positional arguments <JSON file>, <str>
                 "--mode", "deep",
-                "--max-variants", args.max_variants,
+                "--max-variants", str(args.max_variants),
                 "--nboot", str(args.nboot), "--outdir", "data"
             ]
             if t0:
