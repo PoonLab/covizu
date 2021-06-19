@@ -88,7 +88,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
     # export minor lineages to text file
     with open(txtfile, 'w') as handle:
         for lineage in by_lineage:
-            if by_lineage not in major:
+            if lineage not in major and lineage is not None:
                 handle.write('{}\n'.format(lineage))
 
     # launch MPI job across minor lineages
@@ -97,6 +97,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
     cmd = ["mpirun", "--machinefile", args.machine_file, "python3", "covizu/clustering.py",
            args.bylineage, txtfile,  # positional arguments <JSON file>, <str>
            "--mode", "flat",
+           "--max-variants", args.max_variants,
            "--nboot", str(args.nboot), "--outdir", "data"
            ]
     if t0:
@@ -113,6 +114,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
                 "mpirun", "--machinefile", args.machine_file, "python3", "covizu/clustering.py",
                 args.bylineage, lineage,  # positional arguments <JSON file>, <str>
                 "--mode", "deep",
+                "--max-variants", args.max_variants,
                 "--nboot", str(args.nboot), "--outdir", "data"
             ]
             if t0:

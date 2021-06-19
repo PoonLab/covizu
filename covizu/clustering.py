@@ -78,9 +78,6 @@ def bootstrap(union, indexed, binpath='rapidnj', callback=None, callfreq=1000):
     weights = dict([(y, sample.count(y)) for y in sample])
     n = len(indexed)
 
-    if callback:
-        callback("Writing distance matrix to temporary file")
-
     # TODO: this is the slowest step - port to C? cache results to traverse half matrix?
     outfile = tempfile.NamedTemporaryFile('w', prefix="cvz_boot_")
     outfile.write('{0:>5}\n'.format(n))
@@ -295,7 +292,7 @@ if __name__ == "__main__":
         # export map of sequence labels to tip indices
         lineage_name = args.lineage.replace('/', '_')  # issue #297
         if my_rank == 0:
-            csvfile = os.path.join(args.outdir, "{}.labels.csv".format(lineage))
+            csvfile = os.path.join(args.outdir, "{}.labels.csv".format(lineage_name))
             with open(csvfile, 'w') as handle:
                 handle.write("name,index\n")
                 for i, names in enumerate(labels):
@@ -326,7 +323,7 @@ if __name__ == "__main__":
     elif args.mode == 'flat':
         # load list of lineages from text file
         minor_lineages = []
-        with open(args.lineages) as handle:
+        with open(args.lineage) as handle:
             for line in handle:
                 minor_lineages.append(line.strip())
 
