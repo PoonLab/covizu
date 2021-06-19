@@ -135,14 +135,28 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
         with open('data/{}.labels.csv'.format(lineage_name)) as handle:
             label_dict = import_labels(handle)
 
-        # generate beadplot data
-        ctree = clustering.consensus(trees, cutoff=args.boot_cutoff, callback=callback)
-        outfile.close()  # done with Phylo.parse generator
+        if len(label_dict) == 1:
+            # handle case of only one variant
+            # lineage only has one variant, no meaningful tree
+            beaddict = {'lineage': lineage, 'nodes': {}, 'edges': []}
 
-        ctree = beadplot.annotate_tree(ctree, label_dict)
-        beaddict = beadplot.serialize_tree(ctree)
+            # use earliest sample as variant label
+            intermed = [label.split('|')[::-1] for label in label_dict['0']]
+            intermed.sort()
+            variant = intermed[0][1]
+            beaddict['nodes'].update({variant: []})
 
-        beaddict.update({'lineage': lineage})
+            for coldate, accn, label1 in intermed:
+                beaddict['nodes'][variant].append([coldate, accn, label1])
+        else:
+            # generate beadplot data
+            ctree = clustering.consensus(trees, cutoff=args.boot_cutoff, callback=callback)
+            outfile.close()  # done with Phylo.parse generator
+
+            ctree = beadplot.annotate_tree(ctree, label_dict)
+            beaddict = beadplot.serialize_tree(ctree)
+
+            beaddict.update({'lineage': lineage})
         result.append(beaddict)
 
     return result
