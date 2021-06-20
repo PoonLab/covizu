@@ -41,6 +41,8 @@ def parse_args():
    
     parser.add_argument('--batchsize', type=int, default=500,
                         help='option, number of records to batch process with minimap2')
+    parser.add_argument('--max-variants', type=int, default=5000,
+                        help='option, limit number of variants per lineage (default 5000)')
 
     parser.add_argument("--ref", type=str,
                         default=os.path.join(covizu.__path__[0], "data/NC_045512.fa"),
