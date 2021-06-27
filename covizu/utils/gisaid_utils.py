@@ -213,9 +213,10 @@ def sort_by_lineage(records, callback=None):
         if callback and i % 1000 == 0:
             callback('aligned {} records'.format(i))
         lineage = record['covv_lineage']
-        if lineage not in result:
-            result.update({lineage: []})
-        result[lineage].append(record)
+        if lineage is not None:
+            if lineage not in result:
+                result.update({lineage: []})
+            result[lineage].append(record)
     return result
 
 
