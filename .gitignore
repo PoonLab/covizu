@@ -10,4 +10,3 @@ dist/*
 venv/*
 cypress/fixtures/
 cypress/plugins/
-cypress/support/
