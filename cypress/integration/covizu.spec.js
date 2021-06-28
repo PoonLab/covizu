@@ -2,11 +2,7 @@
 // direct download of Cypress is required to run the tests
 
 describe('CoVizu page', () => {
-    it('Sucessfully loads', () => {
-        cy.visit("/")
-    })
     it('Language options redirect', () => {
-
         cy.contains('a', 'es').click()
         cy.url().should('include', '/index-es.html')
 
@@ -102,18 +98,43 @@ describe('Tooltips', () => {
         cy.get('@id').then(id => {
             var id_number = id.substring(3)
             cy.window().then((win) => {
+                // Number of variants
                 cy.get('.tooltip').contains(`Number of variants: ${win.tips[id_number]['varcount']}`)
+                // Mutations list
                 cy.wrap(win.tips[id_number]['mutations']).each(($el) => {
                     cy.get('.tooltip').contains($el)
                 })
+                // Regions: Num of Cases 
                 cy.wrap(Object.keys(win.tips[id_number]['allregions'])).each(($el, index) => {
                     cy.get('.tooltip').contains(`${$el}: ${Object.values(win.tips[id_number]['allregions'])[index]}`)
-                })        
+                })
+                // Mean diffs from root
+                cy.get('.tooltip').contains(`Mean diffs from root: ${win.tips[id_number]['mean_ndiffs'].toFixed(2)}`) 
+                // Deviation from clock
+                cy.get('.tooltip').contains(`Deviation from clock: ${win.tips[id_number]['residual'].toFixed(2)}`)
+                // Collection dates (UTC)
+                cy.get('.tooltip').contains(`${win.tips[id_number]['first_date'].toISOString().slice(0, 10)} / ${win.tips[id_number]['last_date'].toISOString().slice(0, 10)}`)
             })
         })
     })
     it('Appear on hover over bead', () => {
         cy.get('circle:visible').first().trigger('mouseover')
         cy.get('.tooltip').should('be.visible').should('have.length', 1)
+    })
+    it('Beadplot tooltips contain relevant information', () => {
+        cy.get('rect:visible').first().click().invoke('attr','id').as('lineage_id')
+        cy.get('@lineage_id').then(id => {
+            var lineage_id = id.substring(3)
+            cy.window().then((win) => {
+                // Tooltip for first line with stroke-width of 3 (Assuming that it is parent)
+                cy.get('[stroke-width="3"]').first().trigger('mouseover', {force: true})
+                cy.get('.tooltip').contains(`Unique collection dates: ${win.beaddata[win.tips[lineage_id]["cluster_idx"]]["variants"][0]["numBeads"]}`)
+                cy.get('.tooltip').contains(`${win.beaddata[win.tips[lineage_id]["cluster_idx"]]["variants"][0]["x1"].toISOString().slice(0, 10)} / ${win.beaddata[win.tips[lineage_id]["cluster_idx"]]["variants"][0]["x2"].toISOString().slice(0, 10)}`)
+                var regions = win.tabulate(win.beaddata[win.tips[lineage_id]["cluster_idx"]]["variants"][0]["region"])
+                cy.wrap(Object.keys(regions)).each(($el, index) => {
+                    cy.get('.tooltip').contains(`${$el}: ${Object.values(regions)[index]}`)
+                })
+            })
+        })
     })
 })
