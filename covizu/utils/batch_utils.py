@@ -82,14 +82,15 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
     :return:  list, beadplot data by lineage
     """
     # partition lineages into major and minor categories
-    major = set([lineage for lineage, features in by_lineage.items()
-                 if len(features) > args.mincount])
+    intermed = [(len(features), lineage) for lineage, features in by_lineage.items()
+                if len(features) < args.mincount]
+    intermed.sort(reverse=True)  # descending order
+    minor = dict([(lineage, None) for _, lineage in intermed if lineage is not None])
 
     # export minor lineages to text file
     with open(txtfile, 'w') as handle:
-        for lineage in by_lineage:
-            if lineage not in major and lineage is not None:
-                handle.write('{}\n'.format(lineage))
+        for lineage in minor:
+            handle.write('{}\n'.format(lineage))
 
     # launch MPI job across minor lineages
     if callback:
@@ -105,8 +106,9 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
     subprocess.check_call(cmd)
 
     # process major lineages
-    for lineage in major:
-        features = by_lineage[lineage]
+    for lineage, features in by_lineage.items():
+        if lineage in minor:
+            continue
         if callback:
             callback('start {}, {} entries'.format(lineage, len(features)))
             # call out to MPI
