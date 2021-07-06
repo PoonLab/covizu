@@ -33,6 +33,7 @@ def beadplot_serial(lineage, features, args, callback=None):
         intermed = [label.split('|')[::-1] for label in labels[0]]
         intermed.sort()
         variant = intermed[0][1]
+        beaddict.update({'sampled_variants': len(labels)})
         beaddict['nodes'].update({variant: []})
 
         for coldate, accn, label1 in intermed:
@@ -49,6 +50,7 @@ def beadplot_serial(lineage, features, args, callback=None):
     # convert to JSON format
     beaddict = beadplot.serialize_tree(ctree)
     beaddict.update({'lineage': lineage})
+    beaddict.update({'sampled_variants': len(labels)})
     return beaddict
 
 
@@ -117,7 +119,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
                 args.bylineage, lineage,  # positional arguments <JSON file>, <str>
                 "--mode", "deep",
                 "--max-variants", str(args.max_variants),
-                "--nboot", str(args.nboot), "--outdir", "data"
+                "--nboot", str(args.nboot), "--outdir", "data", "--binpath", args.binpath
             ]
             if t0:
                 cmd.extend(["--timestamp", str(t0)])
@@ -157,6 +159,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
 
             ctree = beadplot.annotate_tree(ctree, label_dict)
             beaddict = beadplot.serialize_tree(ctree)
+            beaddict.update({'sampled_variants': len(label_dict)})
 
             beaddict.update({'lineage': lineage})
         result.append(beaddict)
