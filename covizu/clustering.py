@@ -48,13 +48,15 @@ def recode_features(records, callback=None, limit=10000):
     union = {}
     labels = []
     indexed = []
-    for _, fvec in intermed[:limit]:
+    for count, item in enumerate(intermed):
+        fvec = item[1]
         labels.append(fvecs[fvec])
-        for feat in fvec:
-            if feat not in union:
-                union.update({feat: len(union)})
-        # recode feature vectors as integers (0-index)
-        indexed.append(set(union[feat] for feat in fvec))
+        if count < limit:
+            for feat in fvec:
+                if feat not in union:
+                    union.update({feat: len(union)})
+            # recode feature vectors as integers (0-index)
+            indexed.append(set(union[feat] for feat in fvec))
 
     return union, labels, indexed
 
