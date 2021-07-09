@@ -875,6 +875,12 @@ function beadplot(cid) {
     var tickCount = 0.005*currentWidth;
     if (tickCount <= 4) tickCount = 4;
 
+    // Ensures that there aren't extra ticks in the time axis of the beadplot when the first and last coldates are within a few days
+    var dateDiff = d3.timeDay.count(
+                    d3.min(variants, function(d) {return d.x1}), 
+                    d3.max(variants, function(d) {return d.x2}));
+    if (dateDiff !=0 && dateDiff < tickCount) tickCount = dateDiff;
+
     // draw x-axis
     visBaxis.append("g")
         .attr("class", "treeaxis")
