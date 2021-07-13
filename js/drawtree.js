@@ -1,4 +1,4 @@
-var margin = {top: 10, right: 20, bottom: 10, left: 0},
+var margin = {top: 10, right: 40, bottom: 10, left: 0},
   width = 250 - margin.left - margin.right,
   height = 1200 - margin.top - margin.bottom;
 
@@ -12,10 +12,8 @@ var xValue = function(d) { return d.x; },
   xMap2 = function(d) { return xScale(d.x2); },
   xWide = function(d) { return xScale(d.x2 - d.x1)};
 
-// Scale to plot rects and axis using Dates
-var xAxisTree = d3.scaleTime().range([0, width]),
-  minRectWidth = 7,
-  firstDate, lastDate;
+// define minimum width for rect elements (required in instances where first and last coldates are the same)
+var minRectWidth = 7;
 
 var yValue = function(d) { return d.y; },
   yScale = d3.scaleLinear().range([height, 40]),  // inversion
@@ -46,19 +44,17 @@ let cTooltip = d3.select("#tooltipContainer")
  */
 function draw_cluster_box(rect) {
   var d = rect.datum();
-  var rectWidth = xAxisTree(d.last_date) - xAxisTree(d.first_date);
+  var rectWidth = xScale(date_to_xaxis(d.last_date)) - xScale(d.x2);
+
   // draw a box around the cluster rectangle
   vis.append("rect")
     .attr('class', "clickedH")
-    .attr("x", function() {
-        return xAxisTree(d.first_date) - 2
-    })
+    .attr("x", xMap2(d) - 2)
     .attr("y", yMap(d) - 2)
     .attr("width", function() {
       if (rectWidth < minRectWidth)
         return minRectWidth + 4
-      else
-        return (xAxisTree(d.last_date) - xAxisTree(d.first_date)) + 4
+      return xScale(date_to_xaxis(d.last_date)) - xScale(d.x2) + 4
     })
     .attr("height", 14)
     .attr("fill", "white")
@@ -146,29 +142,14 @@ function drawtree(df) {
     d3.min(df, yValue)-1, d3.max(df, yValue)+1
   ]);
 
-  firstDate = d3.min(df, function(d) {return d.first_date});
-  firstDate = d3.timeDay.offset(firstDate, -70)
-  lastDate = d3.max(df, function(d) {return d.last_date});
-  lastDate = d3.timeDay.offset(lastDate, 60);
-  xAxisTree.domain([firstDate, lastDate]);
-
   // draw lines
   vis.selectAll("lines")
     .data(edgeset)
     .enter().append("line")
     .attr("class", "lines")
-    .attr("x1", function(d) {
-      if (d.first_date!==undefined && d.y1 === d.y2) {
-        return xAxisTree(d.first_date);
-      }
-
-      // Moves the time scaled tree to the left
-      return xScale(d.x1) - 7.2
-    })
+    .attr("x1", xMap1)
     .attr("y1", yMap1)
-    .attr("x2", function(d) {
-      return xScale(d.x2) - 7.2
-    })
+    .attr("x2", xMap2)
     .attr("y2", yMap2)
     .attr("stroke-width", 1.5)
     .attr("stroke", "#777");
@@ -265,9 +246,21 @@ function map_clusters_to_tips(df, clusters) {
  * @returns {string}  new date in ISO format (yyyy-mm-dd)
  */
 function xaxis_to_date(x, tip) {
-  var coldate = new Date(tip.coldate);  // collection date of reference tip
-  coldate.setDate(coldate.getDate() + 365.25*(x - tip.x));
+  var coldate = new Date(tip.first_date);  // collection date of reference tip
+  coldate = d3.timeDay.offset(coldate, 365.25*(x - tip.x));
   return (coldate.toISOString().split('T')[0]);
+}
+
+
+/**
+ * Converts Date to x-coordinate of the tree scale
+ * 
+ * @param {Date} coldate
+ * @returns {float} x-coordinate value 
+ */
+function date_to_xaxis(coldate) {
+  var numDays = d3.timeDay.count(tips[0].first_date, coldate)
+  return (numDays/365.25) + tips[0].x;
 }
 
 
@@ -277,29 +270,16 @@ function xaxis_to_date(x, tip) {
  */
 function draw_clusters(tips) {
 
-  // numTicks + 1 ticks for the time-scaled tree
-  var numTicks = 3,
-      stepValue = Math.floor(d3.timeDay.count(firstDate, lastDate) / numTicks),
-      currStep = stepValue,
-      tickValues = [];
-  
-  // Sets the values of the ticks
-  tickValues.push(firstDate);
-
-  for (i = 0 ; i < numTicks; i++) {
-    tickValues.push(d3.timeDay.offset(firstDate, currStep));
-    currStep += stepValue;
-  }
-
   // Draws the axis for the time scaled tree
   axis.append("g")
     .attr("class", "treeaxis")
     .attr("transform", "translate(0,20)")
-    .call(
-      d3.axisTop(xAxisTree)
-        .tickValues(tickValues)
-        .tickFormat(d3.timeFormat("%Y-%m-%d"))
-      );
+    .call(d3.axisTop(xScale)
+      .ticks(3)
+      .tickFormat(function(d) {
+        return xaxis_to_date(d, tips[0])
+      })
+    );
 
   function mouseover(d) {
     d3.select("[cidx=cidx-" + d.cluster_idx + "]")
@@ -334,16 +314,13 @@ function draw_clusters(tips) {
     .lower()
     .append("rect")
     //.attr("selected", false)
-    .attr("x", function(d) { 
-        return xAxisTree(d.first_date)
-    })
+    .attr("x", xMap2)
     .attr("y", yMap)
-    .attr("width", function(d) { 
-      var rectWidth = xAxisTree(d.last_date) - xAxisTree(d.first_date);
+    .attr("width", function(d) {
+      var rectWidth = xScale(date_to_xaxis(d.last_date)) - xScale(d.x2);
       if (rectWidth < minRectWidth)
-        return minRectWidth
-      else
-        return rectWidth 
+        return minRectWidth;
+      return rectWidth;
     })
     .attr("height", 10)
     .attr("class", "default")
@@ -392,10 +369,10 @@ function draw_clusters(tips) {
       .attr("alignment-baseline", "middle")
       .attr("cursor", "default")
       .attr("x", function(d) {
-        if (xAxisTree(d.last_date) - xAxisTree(d.first_date) < minRectWidth)
-          return(xAxisTree(d.first_date) + minRectWidth + 3);
-         
-        return(xAxisTree(d.last_date) + 3);
+        var rectWidth = xScale(date_to_xaxis(d.last_date)) - xScale(d.x2);
+        if (rectWidth < minRectWidth)
+          return xScale(d.x2) + minRectWidth + 3;
+        return xScale(d.x2) + rectWidth + 3;
       })
       .attr("y", function(d) {
         return(yScale(d.y-0.15));
