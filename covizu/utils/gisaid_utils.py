@@ -74,7 +74,7 @@ def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None):
                 rejects['baddate'] += 1
                 continue
             coldate = fromisoformat(record['covv_collection_date'])
-            if coldate < mindate or coldate > date.today():
+            if coldate is None or coldate < mindate or coldate > date.today():
                 # reject sequences with nonsense collection date
                 rejects['baddate'] += 1
                 continue
