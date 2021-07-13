@@ -527,6 +527,9 @@ function clear_selection() {
  * @param {Number} cid:  integer index of cluster to draw as beadplot
  */
 function beadplot(cid) {
+  // Update global cindex for SVG and NWK filenames
+  cindex = cid;
+  
   var variants = beaddata[cid].variants,
       edgelist = beaddata[cid].edgelist,
       points = beaddata[cid].points;

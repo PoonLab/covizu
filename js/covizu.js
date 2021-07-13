@@ -511,10 +511,16 @@ $('#save_svg').click(function(){
 */
 function export_svg() {
   var config = {filename: clusters[cindex].lineage};
-  var svg_beadplot = d3.select('#svg-cluster>svg').node();
-  d3_save_svg.save(svg_beadplot, config);
-  svg_beadplot.removeAttribute("style");
-  svg_beadplot.removeAttribute("version");
-  svg_beadplot.removeAttribute("xmlns");
-  svg_beadplot.removeAttribute("xmlns:xlink");
+
+  // Creates a duplicate of the beadplot
+  var svg_beadplot = d3.select('#svg-cluster>svg').clone(true);
+  var svg_axis = d3.select('#svg-clusteraxis>svg').clone(true);
+  svg_beadplot.select("g").attr("transform", "translate(0, 30)");
+  svg_axis.node().appendChild(svg_beadplot.selectAll("g").node())
+  svg_axis.attr("height", svg_beadplot.attr("height"))
+  
+  d3_save_svg.save(svg_axis.node(), config);
+
+  svg_axis.remove();
+  svg_beadplot.remove()
 }
