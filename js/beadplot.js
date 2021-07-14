@@ -519,20 +519,6 @@ function beadplot(cid) {
         min_y = d3.min(variants, yValue1B),
         max_y = d3.max(variants, yValue1B);
 
-    edgelist.forEach(function(d) {
-      d.x1.setHours(0,0,0);
-      d.x2.setHours(0,0,0);
-    });
-
-    points.forEach(function(d) {
-      d.x.setHours(0,0,0);
-    });
-
-    variants.forEach(function(d) {
-      d.x1.setHours(0,0,0);
-      d.x2.setHours(0,0,0);
-    });
-
     // update vertical range for consistent spacing between variants
     heightB = max_y * 10 + 40;
     $("#svg-cluster > svg").attr("height", heightB + marginB.top + marginB.bottom);
