@@ -33,6 +33,7 @@ def beadplot_serial(lineage, features, args, callback=None):
         intermed = [label.split('|')[::-1] for label in labels[0]]
         intermed.sort()
         variant = intermed[0][1]
+        beaddict.update({'sampled_variants': len(labels)})
         beaddict['nodes'].update({variant: []})
 
         for coldate, accn, label1 in intermed:
@@ -49,6 +50,7 @@ def beadplot_serial(lineage, features, args, callback=None):
     # convert to JSON format
     beaddict = beadplot.serialize_tree(ctree)
     beaddict.update({'lineage': lineage})
+    beaddict.update({'sampled_variants': len(labels)})
     return beaddict
 
 
@@ -82,14 +84,15 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
     :return:  list, beadplot data by lineage
     """
     # partition lineages into major and minor categories
-    major = set([lineage for lineage, features in by_lineage.items()
-                 if len(features) > args.mincount])
+    intermed = [(len(features), lineage) for lineage, features in by_lineage.items()
+                if len(features) < args.mincount]
+    intermed.sort(reverse=True)  # descending order
+    minor = dict([(lineage, None) for _, lineage in intermed if lineage is not None])
 
     # export minor lineages to text file
     with open(txtfile, 'w') as handle:
-        for lineage in by_lineage:
-            if lineage not in major and lineage is not None:
-                handle.write('{}\n'.format(lineage))
+        for lineage in minor:
+            handle.write('{}\n'.format(lineage))
 
     # launch MPI job across minor lineages
     if callback:
@@ -105,8 +108,9 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
     subprocess.check_call(cmd)
 
     # process major lineages
-    for lineage in major:
-        features = by_lineage[lineage]
+    for lineage, features in by_lineage.items():
+        if lineage in minor:
+            continue
         if callback:
             callback('start {}, {} entries'.format(lineage, len(features)))
             # call out to MPI
@@ -115,7 +119,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
                 args.bylineage, lineage,  # positional arguments <JSON file>, <str>
                 "--mode", "deep",
                 "--max-variants", str(args.max_variants),
-                "--nboot", str(args.nboot), "--outdir", "data"
+                "--nboot", str(args.nboot), "--outdir", "data", "--binpath", args.binpath
             ]
             if t0:
                 cmd.extend(["--timestamp", str(t0)])
@@ -155,6 +159,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
 
             ctree = beadplot.annotate_tree(ctree, label_dict)
             beaddict = beadplot.serialize_tree(ctree)
+            beaddict.update({'sampled_variants': len(label_dict)})
 
             beaddict.update({'lineage': lineage})
         result.append(beaddict)
