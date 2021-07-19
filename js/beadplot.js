@@ -892,6 +892,10 @@ function beadplot(cid) {
   slider.on(edgelist.length < 200 ? "slide" : "slidechange", function(event, ui) {
     if (ui.valueOf().value !== 2.0) {
       // avoid drawing beadplot twice on load
+
+      // Update slider value before redrawing beadplot
+      slider.slider("value", ui.valueOf().value);
+
       redraw();
     }
   });
