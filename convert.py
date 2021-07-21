@@ -17,7 +17,7 @@ def unescaped_str(arg_str):
     return codecs.decode(str(arg_str), 'unicode_escape')
 
 
-def parse_metadata(handle, delimiter=',', callback=None):
+def parse_metadata(handle, set_region=None, delimiter=',', callback=None):
     """
     Parse CSV metadata input to dictionary
 
@@ -29,9 +29,12 @@ def parse_metadata(handle, delimiter=',', callback=None):
     reader = DictReader(handle, delimiter=delimiter)
 
     # check fieldnames
-    fieldnames = [args.name, args.coldate, args.region, args.country]
+    fieldnames = [args.name, args.accession, args.coldate, args.country]
+    if args.region:
+        fieldnames.append(args.region)
     if args.division:
         fieldnames.append(args.division)
+
     for field in fieldnames:
         if field not in reader.fieldnames:
             if callback:
@@ -42,8 +45,9 @@ def parse_metadata(handle, delimiter=',', callback=None):
     metadata = {}
     for row in reader:
         metadata.update({row[args.name]: {
+            'accession': row[args.accession],
             'coldate': row[args.coldate],
-            'region': row[args.region],
+            'region': row.get(args.region, set_region),
             'country': row[args.country],
             'division': row.get(args.division, None)
         }})
@@ -109,6 +113,7 @@ def combine(handle, lineage_file, metadata, minlen=29000, mindate='2019-12-01', 
 
         record = {
             'label': label,
+            'accession': metadata[label]['accession'],
             'sequence': seq,
             'coldate': coldate,
             'region': metadata[label]['region'],
@@ -149,13 +154,22 @@ def parse_args():
                         help="input, CSV containing metadata")
 
     parser.add_argument("--delimiter", type=unescaped_str, default=',',
-                        help="delimiter character for metadata CSV; use '\t' if tab-delimited")
+                        help="delimiter character for metadata CSV; "
+                             "use '\t' if tab-delimited")
     parser.add_argument("--name", type=str, default="name",
-                        help="column label for virus sample name in metadata CSV; must match FASTA")
+                        help="column label for virus sample name in metadata CSV; "
+                             "required, must match FASTA")
+    parser.add_argument("--accession", type=str, default="accession",
+                        help="column label for accession number; required")
     parser.add_argument("--coldate", type=str, default="date",
-                        help="column label for collection date in metadata CSV")
-    parser.add_argument("--region", type=str, default="region",
-                        help="column label for continent/region (e.g., Africa) in metadata CSV")
+                        help="column label for collection date in metadata CSV; required")
+
+    # geographical metadata
+    parser.add_argument("--region", type=str, default=None,
+                        help="column label for continent/region (e.g., Africa) in metadata CSV;"
+                             "defaults to None (no region)")
+    parser.add_argument("--set-region", type=str, default=None,
+                        help="use if --region not specified; applies same region label to all records.")
     parser.add_argument("--country", type=str, default="country",
                         help="column label for country in metadata CSV")
     parser.add_argument("--division", type=str, default=None,
@@ -196,7 +210,9 @@ if __name__ == "__main__":
         sys.stderr.write("Streaming results to standard output, deactivating callback.")
         callback = None  # deactivate callback
 
-    metadata = parse_metadata(args.metadata, args.delimiter, callback=callback)
+    metadata = parse_metadata(args.metadata, set_region=args.set_region, delimiter=args.delimiter,
+                              callback=callback)
+
     feed = combine(handle, args.lineages, metadata, minlen=args.minlen, mindate=args.mindate,
                    callback=callback)
     for record in feed:

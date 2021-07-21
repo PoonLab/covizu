@@ -32,15 +32,17 @@ def parse_args():
                              'corresponds to 99.9%% cutoff.')
     parser.add_argument('--minlen', type=int, default=29000, help='minimum genome length (nt)')
 
-    parser.add_argument('--batchsize', type=int, default=500,
+    parser.add_argument('--batchsize', type=int, default=2000,
                         help='number of records to batch process with minimap2')
+    parser.add_argument("--max-variants", type=int, default=5000,
+                        help="option, limit number of variants per lineage (default 5,000)")
 
     parser.add_argument("--ref", type=str,
                         default=os.path.join(covizu.__path__[0], "data/NC_045512.fa"),
                         help="path to FASTA file with reference genome")
     parser.add_argument('--mmbin', type=str, default='minimap2',
                         help="path to minimap2 binary executable")
-    parser.add_argument('-mmt', "--mmthreads", type=int, default=8,
+    parser.add_argument('-mmt', "--mmthreads", type=int, default=16,
                         help="number of threads for minimap2.")
 
     parser.add_argument('--misstol', type=int, default=300,
@@ -59,9 +61,6 @@ def parse_args():
     parser.add_argument('--clock', type=float, default=8e-4,
                         help='specify molecular clock rate for '
                              'constraining Treetime analysis (default 8e-4).')
-    parser.add_argument('--earliest', action='store_true',
-                        help='option, use earliest sample per lineage for time-scaled '
-                             'tree; otherwise defaults to most recent samples.')
 
     parser.add_argument('--datetol', type=float, default=0.1,
                         help='exclude tips from time-scaled tree '
