@@ -31,7 +31,7 @@ def recode_features(records, callback=None, limit=10000):
     # compress genomes with identical feature vectors
     fvecs = {}
     for record in records:
-        label = '{label}|{accession}|{region}|{country}|{division}|{coldate}'.format(**record)
+        label = '{label}|{accession}|{coldate}'.format(**record)
         key = tuple([tuple(x) for x in record['diffs']])
         if key not in fvecs:
             fvecs.update({key: []})
@@ -47,13 +47,15 @@ def recode_features(records, callback=None, limit=10000):
     union = {}
     labels = []
     indexed = []
-    for _, fvec in intermed[:limit]:
-        labels.append(fvecs[fvec])
-        for feat in fvec:
-            if feat not in union:
-                union.update({feat: len(union)})
-        # recode feature vectors as integers (0-index)
-        indexed.append(set(union[feat] for feat in fvec))
+    for count, item in enumerate(intermed):
+        key = item[1]
+        labels.append(fvecs[key])
+        if count < limit:
+            for feat in key:
+                if feat not in union:
+                    union.update({feat: len(union)})
+            # recode feature vectors as integers (0-index)
+            indexed.append(set(union[feat] for feat in key))
 
     return union, labels, indexed
 
@@ -232,7 +234,14 @@ def parse_args():
     )
     parser.add_argument("json", type=str,
                         help="input, JSON file")
-    parser.add_argument("lineage", type=str, help="input, lineage to process")
+    parser.add_argument("lineage", type=str,
+                        help="input, name of lineage to process ('deep' mode) or path to "
+                             "text file of minor lineage names ('flat' mode)")
+
+    parser.add_argument("--mode", type=str, default='deep',
+                        help="'flat' mode distributes many lineages across MPI nodes, whereas"
+                             "'deep' mode distributes bootstrap replicates for a single lineage "
+                             "across MPI nodes.  Defaults to 'deep'.")
 
     parser.add_argument("-o", "--outdir", type=str, default=os.getcwd(),
                         help="output, directory to export trees (one file per lineage). "
@@ -270,45 +279,87 @@ if __name__ == "__main__":
     cb = Callback(t0=args.timestamp, my_rank=my_rank, nprocs=nprocs)
 
     # import lineage data from file
+    # FIXME: this consumes a few minutes to load the entire data set
     cb.callback('loading JSON')
     with open(args.json) as handle:
         by_lineage = json.load(handle)
 
-    records = by_lineage.get(args.lineage, None)
-    if records is None:
-        cb.callback("ERROR: JSON did not contain lineage {}".format(args.lineage))
-        sys.exit()
+    if args.mode == 'deep':
+        records = by_lineage.get(args.lineage, None)
+        if records is None:
+            cb.callback("ERROR: JSON did not contain lineage {}".format(args.lineage))
+            sys.exit()
 
-    # generate distance matrices from bootstrap samples [[ MPI ]]
-    union, labels, indexed = recode_features(records, callback=cb.callback, limit=args.max_variants)
+        # generate distance matrices from bootstrap samples [[ MPI ]]
+        union, labels, indexed = recode_features(records, callback=cb.callback, limit=args.max_variants)
 
-    # export map of sequence labels to tip indices
-    if my_rank == 0:
-        csvfile = os.path.join(args.outdir, "{}.labels.csv".format(args.lineage))
-        with open(csvfile, 'w') as handle:
-            handle.write("name,index\n")
-            for i, names in enumerate(labels):
-                for nm in names:
-                    handle.write('{},{}\n'.format(nm, i))
-
-    outfile = os.path.join(args.outdir, '{}.nwk'.format(args.lineage))
-
-    if len(indexed) == 1:
-        # lineage only has one variant, no meaningful tree
+        # export map of sequence labels to tip indices
+        lineage_name = args.lineage.replace('/', '_')  # issue #297
         if my_rank == 0:
-            with open(outfile, 'w') as handle:
-                handle.write('({}:0);\n'.format(labels[0][0]))
+            csvfile = os.path.join(args.outdir, "{}.labels.csv".format(lineage_name))
+            with open(csvfile, 'w') as handle:
+                handle.write("name,index\n")
+                for i, names in enumerate(labels):
+                    for nm in names:
+                        handle.write('{},{}\n'.format(nm, i))
+
+        outfile = os.path.join(args.outdir, '{}.nwk'.format(lineage_name))
+        if len(indexed) == 1:
+            # lineage only has one variant, no meaningful tree
+            if my_rank == 0:
+                with open(outfile, 'w') as handle:
+                    handle.write('({}:0);\n'.format(labels[0][0]))
+        else:
+            # MPI processing
+            trees = []
+            for bn in range(args.nboot):
+                if bn % nprocs == my_rank:
+                    phy = bootstrap(union, indexed, args.binpath, callback=cb.callback)
+                    trees.append(phy)
+            comm.Barrier()  # wait for other processes to finish
+            result = comm.gather(trees, root=0)
+
+            # only head node exports trees
+            if my_rank == 0:
+                trees = [phy for batch in result for phy in batch]  # flatten nested lists
+                Phylo.write(trees, file=outfile, format='newick')
+
+    elif args.mode == 'flat':
+        # load list of lineages from text file
+        minor_lineages = []
+        with open(args.lineage) as handle:
+            for line in handle:
+                minor_lineages.append(line.strip())
+
+        for li, lineage in enumerate(minor_lineages):
+            if li % nprocs != my_rank:
+                continue
+
+            records = by_lineage.get(lineage, None)
+            if records is None:
+                cb.callback("ERROR: JSON did not contain lineage {}".format(args.lineage))
+                sys.exit()
+
+            union, labels, indexed = recode_features(records, callback=cb.callback, limit=args.max_variants)
+
+            # export map of sequence labels to tip indices
+            lineage_name = lineage.replace('/', '_')  # issue #297
+            csvfile = os.path.join(args.outdir, "{}.labels.csv".format(lineage_name))
+            with open(csvfile, 'w') as handle:
+                handle.write("name,index\n")
+                for i, names in enumerate(labels):
+                    for nm in names:
+                        handle.write('{},{}\n'.format(nm, i))
+
+            outfile = os.path.join(args.outdir, '{}.nwk'.format(lineage_name))
+            if len(indexed) == 1:
+                # lineage only has one variant, no meaningful tree
+                with open(outfile, 'w') as handle:
+                    handle.write('({}:0);\n'.format(labels[0][0]))
+            else:
+                trees = [bootstrap(union, indexed, args.binpath, callback=cb.callback)
+                         for _ in range(args.nboot)]
+                Phylo.write(trees, file=outfile, format='newick')
     else:
-        # MPI processing
-        trees = []
-        for bn in range(args.nboot):
-            if bn % nprocs == my_rank:
-                phy = bootstrap(union, indexed, args.binpath, callback=cb.callback)
-                trees.append(phy)
-        comm.Barrier()  # wait for other processes to finish
-        result = comm.gather(trees, root=0)
-
-        # only head node exports trees
-        if my_rank == 0:
-            trees = [phy for batch in result for phy in batch]  # flatten nested lists
-            Phylo.write(trees, file=outfile, format='newick')
+        cb.callback("Unexpected mode argument {} in clustering.py".format(args.mode))
+        sys.exit()
