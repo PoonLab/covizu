@@ -70,7 +70,7 @@ def parse_args():
 
     parser.add_argument('--binpath', type=str, default='rapidnj',
                         help='path to RapidNJ binary executable')
-    parser.add_argument('--mincount', type=int, default=500,
+    parser.add_argument('--mincount', type=int, default=5000,
                         help='minimum number of variants in lineage '
                              'above which MPI processing will be used.')
 

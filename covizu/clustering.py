@@ -314,7 +314,7 @@ if __name__ == "__main__":
             trees = []
             for bn in range(args.nboot):
                 if bn % nprocs == my_rank:
-                    phy = bootstrap(union, indexed, args.binpath, callback=cb.callback)
+                    phy = bootstrap(union, indexed, args.binpath)
                     trees.append(phy)
             comm.Barrier()  # wait for other processes to finish
             result = comm.gather(trees, root=0)
@@ -357,7 +357,7 @@ if __name__ == "__main__":
                 with open(outfile, 'w') as handle:
                     handle.write('({}:0);\n'.format(labels[0][0]))
             else:
-                trees = [bootstrap(union, indexed, args.binpath, callback=cb.callback)
+                trees = [bootstrap(union, indexed, args.binpath)
                          for _ in range(args.nboot)]
                 Phylo.write(trees, file=outfile, format='newick')
     else:

@@ -94,23 +94,24 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
     # launch MPI job across minor lineages
     if callback:
         callback("start MPI on minor lineages")
-    cmd = ["mpirun"]
+    mpirun = ["mpirun"]
     if args.machine_file:
-        cmd.extend(["--machinefile", args.machine_file])
+        mpirun.extend(["--machinefile", args.machine_file])
     elif args.np:
-        cmd.extend(["-np", args.np])
+        mpirun.extend(["-np", str(args.np)])
     else:
+        mpirun = [""]  # serial mode
         sys.exit()
 
-    cmd.extend(["python3", "covizu/clustering.py",
+    cmd = ["python3", "covizu/clustering.py",
            args.bylineage, txtfile,  # positional arguments <JSON file>, <str>
            "--mode", "flat",
            "--max-variants", str(args.max_variants),
-           "--nboot", str(args.nboot), "--outdir", "data"
-                ])
+           "--nboot", str(args.nboot), "--outdir", "data"]
     if t0:
         cmd.extend(["--timestamp", str(t0)])
-    subprocess.check_call(cmd)
+
+    subprocess.check_call(mpirun+cmd)
 
     # process major lineages
     for lineage, features in by_lineage.items():
@@ -120,7 +121,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
             callback('start {}, {} entries'.format(lineage, len(features)))
             # call out to MPI
             cmd = [
-                "mpirun", "--machinefile", args.machine_file, "python3", "covizu/clustering.py",
+                "python3", "covizu/clustering.py",
                 args.bylineage, lineage,  # positional arguments <JSON file>, <str>
                 "--mode", "deep",
                 "--max-variants", str(args.max_variants),
@@ -128,7 +129,8 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
             ]
             if t0:
                 cmd.extend(["--timestamp", str(t0)])
-            subprocess.check_call(cmd)
+
+            subprocess.check_call(mpirun+cmd)
 
     # parse output files
     if callback:
