@@ -8,6 +8,7 @@ import covizu
 
 from covizu.utils import seq_utils
 from covizu.utils.batch_utils import *
+from covizu.utils.seq_utils import SC2Locator
 from covizu.utils.progress_utils import Callback
 from covizu.minimap2 import extract_features
 
@@ -132,6 +133,13 @@ def analyze_feed(handle, args, callback=None):
     outfile.write(json.dumps(result))  # serialize results to JSON
     outfile.close()
 
+    # get mutation info
+    locator = SC2Locator()
+    mutations = {}
+    for lineage, features in get_mutations(by_lineage).items():
+        annots = [locator.parse_mutation(f) for f in features]
+        mutations.update({lineage: [a for a in annots if a is not None]})
+
     # write data stats
     dbstat_file = os.path.join(args.outdir, 'dbstats.{}.json'.format(timestamp))
     with open(dbstat_file, 'w') as handle:
@@ -148,7 +156,8 @@ def analyze_feed(handle, args, callback=None):
                 'lastcoldate': max(x['coldate'] for x in samples),
                 'residual': residuals[lineage],
                 'max_ndiffs': max(ndiffs),
-                'mean_ndiffs': sum(ndiffs) / len(ndiffs)
+                'mean_ndiffs': sum(ndiffs)/len(ndiffs),
+                'mutations': mutations[lineage]
             }
         json.dump(val, handle)
 

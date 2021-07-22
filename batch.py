@@ -39,7 +39,7 @@ def parse_args():
                              'quantile of Poisson distribution (molecular clock).  Default 0.001 '
                              'corresponds to 99.9%% cutoff.')
    
-    parser.add_argument('--batchsize', type=int, default=500,
+    parser.add_argument('--batchsize', type=int, default=2000,
                         help='option, number of records to batch process with minimap2')
 
     parser.add_argument("--ref", type=str,
@@ -47,7 +47,7 @@ def parse_args():
                         help="option, path to FASTA file with reference genome")
     parser.add_argument('--mmbin', type=str, default='minimap2',
                         help="option, path to minimap2 binary executable")
-    parser.add_argument('-mmt', "--mmthreads", type=int, default=8,
+    parser.add_argument('-mmt', "--mmthreads", type=int, default=16,
                         help="option, number of threads for minimap2.")
 
     parser.add_argument('--misstol', type=int, default=300,
