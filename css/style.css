@@ -392,6 +392,11 @@ rect.SelectedCluster[txt_hover="yes"]{
   stroke-width: 2;
 }
 
+text.clicked{
+  font-weight: 900;
+  font-size: 0.8em !important;
+}
+
 #search-bar {
     display: inline-block;
 }

@@ -130,7 +130,7 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
     }
     vdata = {
       'accession': accn,
-      'label': accn,
+      'label': accn,  // unsampled variant has no meaningful label
       'x1': new Date(mindate),  // cluster min date
       'x2': new Date(maxdate),  // cluster max date
       'y1': y,
@@ -156,6 +156,7 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
         isodates = unique(coldates);
 
     vdata = {
+      'accession': accn,
       'label': label,
       'x1': new Date(coldates[0]),  // min date
       'x2': new Date(coldates[coldates.length-1]),  // max date
@@ -194,6 +195,7 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
         'x': new Date(isodate),
         'y': y,
         'count': samples.length,
+        'accessions': samples.map(x => x[3]),
         'labels': samples.map(x => x[4]),
         'region1': mode(regions),
         'region': regions,
@@ -443,7 +445,7 @@ function draw_halo_front(bead) {
     .attr("stroke", "grey")
     .attr("fill-opacity", 1)
     .attr("stroke-width", 5)
-    .attr("bead", bead.labels[0]);
+    .attr("bead", bead.accessions[0]);
 }
 
 /**
@@ -483,6 +485,9 @@ function clear_selection() {
  * @param {Number} cid:  integer index of cluster to draw as beadplot
  */
 function beadplot(cid) {
+  // Update global cindex for SVG and NWK filenames
+  cindex = cid;
+
   var variants = beaddata[cid].variants,
       edgelist = beaddata[cid].edgelist,
       points = beaddata[cid].points;
@@ -779,13 +784,13 @@ function beadplot(cid) {
         .attr("cx", xMapB)
         .attr("cy", yMapB)
         .attr("class", "default")
-        .attr("id", function(d) { return d.labels[0]; })
+        .attr("id", function(d) { return d.accessions[0]; })
         .attr("idx", function(d, i) { return i; })
         .attr("search_hit", function(d) {
           if (search_results.get().beads.length == 0){
             return null;
           } else {
-      return search_results.get().beads[d.labels[0]] === undefined ? false : true;
+      return search_results.get().beads[d.accessions[0]] === undefined ? false : true;
           }
         })
         .attr("fill", function(d) {
@@ -862,6 +867,12 @@ function beadplot(cid) {
     var tickCount = 0.005*currentWidth;
     if (tickCount <= 4) tickCount = 4;
 
+    // Ensures that there aren't extra ticks in the time axis of the beadplot when the first and last coldates are within a few days
+    var dateDiff = d3.timeDay.count(
+        d3.min(variants, function(d) {return d.x1}),
+        d3.max(variants, function(d) {return d.x2}));
+    if (dateDiff !=0 && dateDiff < tickCount) tickCount = dateDiff;
+
     // draw x-axis
     visBaxis.append("g")
         .attr("class", "treeaxis")
@@ -936,12 +947,12 @@ function gen_details_table(obj) {
     for (let j = 0; j < obj.length; j++) {
 
       // "zip" the sequence details of each sample
-      for (let i = 0; i < obj[j].labels.length; i++) {
+      for (let i = 0; i < obj[j].accessions.length; i++) {
         let sample_details = [
-          obj[j].labels[i],
+          obj[j].accessions[i],
           obj[j].labels[i],
           formatDate(obj[j].x),
-          obj[j].labels[0]  // variant labeled by accession
+          obj[j].accessions[0]  // variant labeled by accession
         ];
         details.push(sample_details);
       }
@@ -950,12 +961,12 @@ function gen_details_table(obj) {
 
   else {
     // "zip" the sequence details of each sample
-    for (let i = 0; i < obj.labels.length; i++) {
+    for (let i = 0; i < obj.accessions.length; i++) {
       let sample_details = [
-        obj.labels[i],
+        obj.accessions[i],
         obj.labels[i],
         formatDate(obj.x),
-        obj.labels[0]
+        obj.accessions[0]
       ];
       details.push(sample_details);
     }

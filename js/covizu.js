@@ -160,6 +160,7 @@ req.done(function() {
   // d3.select(node).dispatch("click");
   cindex = node.__data__.cluster_idx;
   d3.select(node).attr("class", "clicked");
+  d3.select('#cidx-' + cindex).attr("class", "clicked");
   beadplot(node.__data__.cluster_idx);
   $("#barplot").text(null);
   gentable(node.__data__);
@@ -571,10 +572,27 @@ function save_beadplot() {
 
 function export_svg() {
   var config = {filename: clusters[cindex].lineage};
-  var svg_beadplot = d3.select('#svg-cluster>svg').node();
-  d3_save_svg.save(svg_beadplot, config);
-  svg_beadplot.removeAttribute("style");
-  svg_beadplot.removeAttribute("version");
-  svg_beadplot.removeAttribute("xmlns");
-  svg_beadplot.removeAttribute("xmlns:xlink");
+
+  // Creates a duplicate of the beadplot
+  var svg_beadplot = d3.select('#svg-cluster>svg').clone(true);
+  var svg_axis = d3.select('#svg-clusteraxis>svg').clone(true);
+  svg_beadplot.select("g").attr("transform", "translate(0, 30)");
+  svg_axis.node().appendChild(svg_beadplot.selectAll("g").node())
+  svg_axis.attr("height", svg_beadplot.attr("height"))
+
+  d3_save_svg.save(svg_axis.node(), config);
+
+  svg_axis.remove();
+  svg_beadplot.remove()
+}
+
+function export_csv() {
+  var csvFile = 'lineage,mean.diffs,clock.residual,num.cases,num.variants,min.coldate,max.coldate,mean.coldate';
+  var lineage_info = []
+  for (tip of tips) {
+    lineage_info.push([`${tip.thisLabel},${Math.round(100*tip.mean_ndiffs)/100.},${Math.round(100*tip.residual)/100.},${tip.nsamples},${tip.varcount},${formatDate(tip.first_date)},${formatDate(tip.last_date)},${formatDate(tip.mcoldate)}`]);
+  }
+  csvFile = csvFile + "\n" + lineage_info.join("\n");
+  blob = new Blob([csvFile], {type: "text/csv"});
+  saveAs(blob, "lineage_stats.csv");
 }

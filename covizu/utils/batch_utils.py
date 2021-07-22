@@ -29,10 +29,10 @@ def beadplot_serial(lineage, features, args, callback=None):
         # lineage only has one variant, no meaningful tree
         beaddict = {'lineage': lineage, 'nodes': {}, 'edges': []}
 
-        # use earliest sample as variant label
-        intermed = [(label['coldate'], label) for label in labels[0]]
+        # use earliest sample as variant label (# coldate, country, region, accession, label)
+        intermed = [label.split('|')[::-1] for label in labels[0]]
         intermed.sort()
-        variant = intermed[0]['accession']
+        variant = intermed[0][3]  # accession
         beaddict['nodes'].update({variant: []})
 
         for items in intermed:
@@ -49,6 +49,7 @@ def beadplot_serial(lineage, features, args, callback=None):
     # convert to JSON format
     beaddict = beadplot.serialize_tree(ctree)
     beaddict.update({'lineage': lineage})
+    beaddict.update({'sampled_variants': len(labels)})
     return beaddict
 
 
@@ -90,6 +91,8 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
     with open(txtfile, 'w') as handle:
         for lineage in minor:
             handle.write('{}\n'.format(lineage))
+
+    # TODO: if args.np is None and args.machine_file is None, run in serial mode
 
     # launch MPI job across minor lineages
     if callback:
