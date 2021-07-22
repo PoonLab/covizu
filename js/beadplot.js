@@ -152,11 +152,8 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
 
     coldates.sort();
     //Retrieving countries from variants?
-    var country = variant.map(x => x[2]),
+    var country = variant.map(x => x[1]),
         isodates = unique(coldates);
-
-    // remove underscores in country names
-    country = country.map(x => x.replace(/_/g," "));
 
     vdata = {
       'label': label,
@@ -166,7 +163,7 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
       'y2': y,
       'count': coldates.length,
       'country': tabulate(country),
-      'region': variant.map(x => x[3]),
+      'region': variant.map(x => x[2]),
       'numBeads': isodates.length,
       'parent': null,
       'dist': 0,
@@ -176,9 +173,8 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
     for (var i=0; i<isodates.length; i++) {
       isodate = isodates[i];
       samples = variant.filter(x => x[0] === isodate);
-      country = samples.map(x => x[2]);
-      country = country.map(x => x.replace(/_/g," "));
-      regions = country.map(x => x[3]);
+      country = samples.map(x => x[1]);
+      regions = samples.map(x => x[2]);
 
       // warn developers if no region for country
       if (regions.includes(undefined)) {

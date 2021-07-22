@@ -158,7 +158,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
             beaddict['nodes'].update({variant: []})
 
             for values in intermed:
-                beaddict['nodes'][variant].append([values])
+                beaddict['nodes'][variant].append(values)
         else:
             # generate beadplot data
             ctree = clustering.consensus(trees, cutoff=args.boot_cutoff, callback=callback)
