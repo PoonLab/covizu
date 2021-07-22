@@ -31,7 +31,7 @@ def recode_features(records, callback=None, limit=10000):
     # compress genomes with identical feature vectors
     fvecs = {}
     for record in records:
-        label = '{label}|{accession}|{coldate}'.format(**record)
+        label = '{label}|{accession}|{region}|{country}|{coldate}'.format(**record)
         key = tuple([tuple(x) for x in record['diffs']])
         if key not in fvecs:
             fvecs.update({key: []})
@@ -48,7 +48,7 @@ def recode_features(records, callback=None, limit=10000):
     labels = []
     indexed = []
     for count, item in enumerate(intermed):
-        key = item[1]
+        _, key = item  # discard max coldate
         labels.append(fvecs[key])
         if count < limit:
             for feat in key:

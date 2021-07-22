@@ -146,7 +146,7 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
   }
   else {
     // parse samples within variant, i.e., "beads"
-    var label = variant[0][4],
+    var label = variant[0][4],  // coldate, country, region, accession, name
         coldates = variant.map(x => x[0]),
         isodate, samples, regions;
 

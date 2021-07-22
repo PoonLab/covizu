@@ -154,11 +154,11 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
             # use earliest sample as variant label
             intermed = [label.split('|')[::-1] for label in label_dict['0']]
             intermed.sort()
-            variant = intermed[0][1]
+            variant = intermed[0][3]  # coldate, country, region, _ACCESSION_, label
             beaddict['nodes'].update({variant: []})
 
-            for coldate, accn, label1 in intermed:
-                beaddict['nodes'][variant].append([coldate, accn, label1])
+            for values in intermed:
+                beaddict['nodes'][variant].append([values])
         else:
             # generate beadplot data
             ctree = clustering.consensus(trees, cutoff=args.boot_cutoff, callback=callback)
