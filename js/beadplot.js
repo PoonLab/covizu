@@ -34,6 +34,9 @@ var visBaxis = d3.select("div#svg-clusteraxis")
   .attr("height", 25)
   .append("g");
 
+// regular expression to remove redundant sequence name components
+const pat = /^hCoV-19\/(.+\/.+)\/20[0-9]{2}$/gi;
+
 
 /**
  * Returns unique elements in given array.
@@ -146,7 +149,8 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
   }
   else {
     // parse samples within variant, i.e., "beads"
-    var label = variant[0][4],  // coldate, country, region, accession, name
+    // coldate, country, region, accession, name
+    var label = variant[0][4].replace(pat, "$1"),
         coldates = variant.map(x => x[0]),
         isodate, samples, regions;
 
@@ -196,7 +200,7 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
         'y': y,
         'count': samples.length,
         'accessions': samples.map(x => x[3]),
-        'labels': samples.map(x => x[4]),
+        'labels': samples.map(x => x[4].replace(pat, "$1")),
         'region1': mode(regions),
         'region': regions,
         'country': tabulate(country),
