@@ -105,6 +105,34 @@ function tabulate(arr) {
 
 
 /**
+ * Generate a map of country to region (continent).  In case of discordant region,
+ * track all cases.
+ * @param country
+ * @param regions
+ * @returns {{}}
+ */
+function map_country_to_region(country, regions) {
+  // Compile map of country to region
+  let c2r = {}, ci, ri;
+  for (let i=0; i<country.length; i++) {
+    ci = country[i];
+    ri = regions[i];
+    if (ci in c2r) {
+      if (ri in c2r[ci]) {
+        c2r[ci][ri] += 1;
+      } else {
+        c2r[ci][ri] = 1;
+      }
+    } else {
+      c2r[ci] = {};
+      c2r[ci][ri] = 1;
+    }
+  }
+  return(c2r);
+}
+
+
+/**
  * Parse nodes that belong to the same variant.
  * A variant is a collection of genomes that are indistinguishable with respect to
  * (1) differences from the reference or (2) placement in the phylogenetic tree.
@@ -152,11 +180,12 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
     // coldate, country, region, accession, name
     var label = variant[0][4].replace(pat, "$1"),
         coldates = variant.map(x => x[0]),
-        isodate, samples, regions;
+        isodate, samples;
 
     coldates.sort();
     //Retrieving countries from variants?
     var country = variant.map(x => x[1]),
+        regions = variant.map(x => x[2]),
         isodates = unique(coldates);
 
     vdata = {
@@ -168,7 +197,8 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
       'y2': y,
       'count': coldates.length,
       'country': tabulate(country),
-      'region': variant.map(x => x[2]),
+      'region': regions,
+      'c2r': map_country_to_region(country, regions),
       'numBeads': isodates.length,
       'parent': null,
       'dist': 0,
@@ -181,18 +211,6 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
       country = samples.map(x => x[1]);
       regions = samples.map(x => x[2]);
 
-      // warn developers if no region for country
-      if (regions.includes(undefined)) {
-        //console.log("Developer msg, need to update countries.json:");
-        for (const j in regions.filter(x => x===undefined)) {
-          let this_country = samples[j].country;
-          // unsampled lineages have undefined country fields
-          if (this_country !== undefined) {
-            console.log(`Need to add "${samples[j].country}" to countries.json`);
-          }
-        }
-      }
-
       pdata.push({
         cidx,
         'variant': accn,
@@ -204,6 +222,7 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
         'region1': mode(regions),
         'region': regions,
         'country': tabulate(country),
+        'c2r': map_country_to_region(country, regions),
         'parent': null,
         'dist': 0
       })
@@ -308,7 +327,9 @@ function parse_edgelist(cluster, variants, points) {
 
 
 /**
- *
+ * Combine Object attributes that entabulate data like countries
+ * @param {Array} tables: an array of Objects to combine
+ * @return Object
  */
 function merge_tables(tables) {
   var total = {};
@@ -321,6 +342,28 @@ function merge_tables(tables) {
         total[key] = 0;
       }
       total[key] += tab[key];
+    }
+  }
+  return(total);
+}
+
+function merge_maps(maps) {
+  var total = {};
+  for (m of maps) {
+    // e.g., {'Canada': {'North America': 65}, 'USA': {'North America': 1}}
+    if (m === null) {
+      continue;
+    }
+    for (key of Object.keys(m)) {  // 'Canada'
+      if (total[key] === undefined) {
+        total[key] = {};
+      }
+      for (subkey of Object.keys(m[key])) {
+        if (total[key][subkey] === undefined) {
+          total[key][subkey] = 0;
+        }
+        total[key][subkey] += m[key][subkey];
+      }
     }
   }
   return(total);
@@ -404,6 +447,7 @@ function parse_clusters(clusters) {
 
     // collect all countries
     cluster['country'] = merge_tables(variants.map(x => x.country));
+    cluster['c2r'] = merge_maps(variants.map(x => x.c2r).filter(x => x!==undefined));
   }
   return beaddata;
 }
@@ -1080,10 +1124,24 @@ function gentable(obj) {
   var my_countries = Object.entries(obj.country),
       row, region;
 
+  // resolve majority region for country
+  let resolved = {};
+  for (let co in obj.c2r) {  // country
+    let maxcount = 0,
+        maxregion = null;
+    for (let re in obj.c2r[co]) {  // region
+      if (obj.c2r[co][re] > maxcount) {
+        maxcount = obj.c2r[co][re];
+        maxregion = re;
+      }
+    }
+    resolved[co] = maxregion;
+  }
+
   // annotate with region (continent)
   for (const i in my_countries) {
     row = my_countries[i];
-    region = countries[row[0]];
+    region = resolved[row[0]];
     my_countries[i] = [region].concat(row);
   }
 
@@ -1148,7 +1206,7 @@ function gentable(obj) {
  * @param {{}} my_regions: associative list of region and case count pairs
  */
 function draw_region_distribution(my_regions) {
-  const regions = unique(Object.values(countries)).sort();
+  const regions = ["Africa", "Asia", "Europe", "North America", "Oceania", "South America"];
   var counts = [], count;
 
   regions.forEach(function(r) {

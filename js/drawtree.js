@@ -209,6 +209,7 @@ function map_clusters_to_tips(df, clusters) {
     tips[root_idx].region = cluster.region;
     tips[root_idx].allregions = cluster.allregions;
     tips[root_idx].country = cluster.country;
+    tips[root_idx].c2r = cluster.c2r;
     tips[root_idx].searchtext = cluster.searchtext;
     tips[root_idx].label1 = cluster["lineage"];
     tips[root_idx].count = coldates.length;

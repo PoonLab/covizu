@@ -112,13 +112,38 @@ req.done(function() {
 
 var country_pal = {
   "Africa": "#EEDD88",
-  "Asia": "#BBCC33",
-  "China": "#EE8866",
+  "Asia": "#EE8866",
   "Europe": "#44BB99",
   "North America": "#99DDFF",
   "Oceania": "#FFAABB",
   "South America": "#77AADD"
 };
+
+// Tom Thomson - autumn birches 1916
+var province_pal = {
+  "BC": '#DB8433',  // British Columbia
+  "ON": '#9E3C2A',  // Ontario
+  "QC": '#5D776A',  // Quebec
+  "NS": '#254617',  // Nova Scotia
+  "NL": '#7E7327',  // Newfoundland and Labrador
+  "NB": '#557332',  // New Brunswick
+  "MB": '#867570',  // Manitoba
+  "AB": '#B29F7D'   // Alberta
+}
+
+/*
+// Tom Thomson - Jack Pine
+var province_pal = {
+  "BC": '#373724',  // British Columbia
+  "ON": '#A4AC77',  // Ontario
+  "QC": '#CDA872',  // Quebec
+  "AB": '#5C2F29',  // Alberta
+  "NL": '#1F294F',  // Newfoundland and Labrador
+  "NB": '#90918F',  // New Brunswick
+  "MB": '#808A9B',  // Manitoba
+  "NS": '#1A1C2E'   // Nova Scotia
+}
+*/
 
 // load time-scaled phylogeny from server
 var nwk, df, countries;
