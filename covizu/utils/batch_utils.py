@@ -29,10 +29,10 @@ def beadplot_serial(lineage, features, args, callback=None):
         # lineage only has one variant, no meaningful tree
         beaddict = {'lineage': lineage, 'nodes': {}, 'edges': []}
 
-        # use earliest sample as variant label (# coldate, country, region, accession, label)
+        # use earliest sample as variant label (coldate, division, country, region, accession, label)
         intermed = [label.split('|')[::-1] for label in labels[0]]
         intermed.sort()
-        variant = intermed[0][3]  # accession
+        variant = intermed[0][4]  # accession
         beaddict['nodes'].update({variant: []})
 
         for items in intermed:
@@ -157,7 +157,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
             # use earliest sample as variant label
             intermed = [label.split('|')[::-1] for label in label_dict['0']]
             intermed.sort()
-            variant = intermed[0][3]  # coldate, country, region, _ACCESSION_, label
+            variant = intermed[0][4]  # coldate, division, country, region, _ACCESSION_, label
             beaddict['nodes'].update({variant: []})
 
             for values in intermed:
