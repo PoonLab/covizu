@@ -121,14 +121,14 @@ var country_pal = {
 
 // Tom Thomson - autumn birches 1916
 var province_pal = {
-  "BC": '#DB8433',  // British Columbia
-  "ON": '#9E3C2A',  // Ontario
-  "QC": '#5D776A',  // Quebec
-  "NS": '#254617',  // Nova Scotia
-  "NL": '#7E7327',  // Newfoundland and Labrador
-  "NB": '#557332',  // New Brunswick
-  "MB": '#867570',  // Manitoba
-  "AB": '#B29F7D'   // Alberta
+  "British Columbia": '#DB8433',
+  "Ontario": '#9E3C2A',
+  "Quebec": '#5D776A',
+  "Nova Scotia": '#254617',
+  "Newfoundland and Labrador": '#7E7327',
+  "New Brunswick": '#557332',
+  "Manitoba": '#867570',
+  "Alberta": '#B29F7D'
 }
 
 /*

@@ -177,15 +177,16 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
   }
   else {
     // parse samples within variant, i.e., "beads"
-    // coldate, country, region, accession, name
-    var label = variant[0][4].replace(pat, "$1"),
+    // coldate, division, country, region, accession, name
+    var label = variant[0][2]+"/"+variant[0][1]+"/"+variant[0][4].replace(pat, "$1"),
         coldates = variant.map(x => x[0]),
         isodate, samples;
 
     coldates.sort();
     //Retrieving countries from variants?
-    var country = variant.map(x => x[1]),
-        regions = variant.map(x => x[2]),
+    var country = variant.map(x => x[2]),
+        regions = variant.map(x => x[3]),
+        divisions = variant.map(x => x[1]),
         isodates = unique(coldates);
 
     vdata = {
@@ -196,6 +197,7 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
       'y1': y,
       'y2': y,
       'count': coldates.length,
+      'division': tabulate(divisions),
       'country': tabulate(country),
       'region': regions,
       'c2r': map_country_to_region(country, regions),
@@ -208,8 +210,11 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
     for (var i=0; i<isodates.length; i++) {
       isodate = isodates[i];
       samples = variant.filter(x => x[0] === isodate);
-      country = samples.map(x => x[1]);
-      regions = samples.map(x => x[2]);
+      divisions = samples.map(x => x[1]);
+      country = samples.map(x => x[2]);
+      regions = samples.map(x => x[3]);
+
+      let provinces = divisions.filter(x => Object.keys(province_pal).includes(x));
 
       pdata.push({
         cidx,
@@ -218,10 +223,12 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
         'y': y,
         'count': samples.length,
         'accessions': samples.map(x => x[3]),
-        'labels': samples.map(x => x[4].replace(pat, "$1")),
+        'labels': samples.map(x => x[2]+"/"+x[1]+"/"+x[4].replace(pat, "$1")),
         'region1': mode(regions),
         'region': regions,
         'country': tabulate(country),
+        'division': tabulate(divisions),
+        'division1': mode(provinces),
         'c2r': map_country_to_region(country, regions),
         'parent': null,
         'dist': 0
@@ -447,6 +454,18 @@ function parse_clusters(clusters) {
 
     // collect all countries
     cluster['country'] = merge_tables(variants.map(x => x.country));
+    cluster['division'] = merge_tables(variants.map(x => x.division).filter(x => x !== undefined));
+    let province_counts = Object.keys(province_pal).map(x => {
+      let pcount = cluster["division"][x];
+      if (pcount === undefined) {
+        return (0);
+      } else {
+        return (pcount);
+      }
+    });
+    let which_max = province_counts.indexOf(province_counts.reduce((a,b) => a>b?a:b));
+    cluster['province'] = which_max>0 ? Object.keys(province_pal)[which_max] : null;
+
     cluster['c2r'] = merge_maps(variants.map(x => x.c2r).filter(x => x!==undefined));
   }
   return beaddata;
@@ -838,14 +857,16 @@ function beadplot(cid) {
           if (search_results.get().beads.length == 0){
             return null;
           } else {
-      return search_results.get().beads[d.accessions[0]] === undefined ? false : true;
+            return search_results.get().beads[d.accessions[0]] === undefined ? false : true;
           }
         })
         .attr("fill", function(d) {
-          return(country_pal[d.region1]);
+          let col = province_pal[d.division1];
+          return(col===undefined ? "#eee" : col);
         })
         .attr("stroke", function(d) {
-          return(country_pal[d.region1]);
+          let col = province_pal[d.division1];
+          return(col===undefined ? "#eee" : col);
         })
         .on("mouseover", function(d) {
           d3.select(this).attr("stroke-width", 2)
@@ -1058,15 +1079,15 @@ function gen_details_table(obj) {
       .enter()
       .append('tr')
       .on("mouseover", function (x) {
-        //console.log(x);
-        let circle = d3.select("circle#"+x[3]).attr("stroke-width", 2);
+        // ID by accession
+        let circle = d3.select("circle#"+x[4]).attr("stroke-width", 2);
         circle.attr("r", 4*Math.sqrt(circle.datum().count)+3);
 
         // Highlight row on mouseover
         d3.select(this).style("background-color", "#e2e2e2");
       })
       .on("mouseout", function (x) {
-        let circle = d3.select("circle#"+x[3]).attr("stroke-width", 1);
+        let circle = d3.select("circle#"+x[4]).attr("stroke-width", 1);
         circle.attr("r", 4*Math.sqrt(circle.datum().count));
         // Remove highlighting on mouseout
         d3.select(this).style("background-color", null);

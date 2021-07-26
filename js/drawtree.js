@@ -210,6 +210,8 @@ function map_clusters_to_tips(df, clusters) {
     tips[root_idx].allregions = cluster.allregions;
     tips[root_idx].country = cluster.country;
     tips[root_idx].c2r = cluster.c2r;
+    tips[root_idx].division = cluster.division;
+    tips[root_idx].province = cluster.province;
     tips[root_idx].searchtext = cluster.searchtext;
     tips[root_idx].label1 = cluster["lineage"];
     tips[root_idx].count = coldates.length;
@@ -412,6 +414,7 @@ function draw_clusters(tips) {
 function changeTreeColour() {
   // hide legends, not knowing which one is showing
   $("#div-region-legend").hide();
+  $("#div-province-legend").hide();
   $("div#svg-sample-legend").hide();
   $("div#svg-coldate-legend").hide();
   $("div#svg-diverge-legend").hide();
@@ -425,6 +428,12 @@ function changeTreeColour() {
           if (opt === "Region") {
             $("#div-region-legend").show();
             return(country_pal[d.region]);
+          }
+          else if (opt === "Province (Canada)") {
+            $("#div-province-legend").show();
+            let col = province_pal[d.province];
+            if (col === undefined) col = "#eee";
+            return(col);
           }
           else if (opt === "No. samples") {
             $("div#svg-sample-legend").show();
