@@ -198,22 +198,47 @@ describe('Parse Functions', () => {
             expect(win.merge_tables(beaddata[0].variants.map(x => x.country))).to.eql({'USA': 13})
         })
     })
-    it('Beadplot function', () => {
+    it('Beadplot components', () => {
         cy.window().then((win) => {
-            // TODO: Check beadplot component
-            // Checks that clicking lineage brings up corresponding beadplot
-            win.beadplot(786)
-            cy.get('#svg-clusteraxis>svg>g').then(($axis) => {
-                cy.get('.beadplot-content>svg>g').then(($beadplot) => {
-                    cy.get('[cidx="cidx-786"]').click()
-                    cy.get($axis).children().each(($el) => {
-                        cy.get('#svg-clusteraxis>svg>g').find($el)
-                    })
-                    cy.get($beadplot).children().each(($el) => {
-                        cy.get('.beadplot-content>svg>g').find($el)
-                    })
-                })
-            })
+            // Checks beadplot components
+            var lg_beaddata = win.beaddata
+            win.beaddata = beaddata
+
+            win.beadplot(0)
+            cy.get('.beadplot-content>svg>g').find('#USA-TX-HMH-1371').should('have.attr', 'stroke', '#777')
+            cy.get('.beadplot-content>svg>g').find('#USA-TX-HMH-MCoV-10847').should('have.attr', 'stroke', '#777')
+            cy.get('.beadplot-content>svg>g').find('#unsampled0').should('have.attr', 'stroke', '#ccc')
+            cy.get('[stroke="#bbd"]').should('have.length', 4)
+
+            cy.get('.beadplot-content>svg>g>text').should(($text) => {
+                expect($text).to.have.length(9)
+                expect($text.eq(0)).to.contain('USA/TX-HMH-1371')
+                expect($text.eq(1)).to.contain('USA/TX-HMH-4019')
+                expect($text.eq(2)).to.contain('unsampled0')
+                expect($text.eq(3)).to.contain('USA/TX-HMH-2649')
+                expect($text.eq(4)).to.contain('USA/TX-HMH-MCoV-10847')
+                expect($text.eq(5)).to.contain('USA/TX-HMH-2767')
+                expect($text.eq(6)).to.contain('USA/TX-DSHS-1864')
+                expect($text.eq(7)).to.contain('USA/TX-HMH-MCoV-8639')
+                expect($text.eq(8)).to.contain('USA/TX-HMH-MCoV-10410')
+            }) 
+
+            cy.get('.beadplot-content>svg>g>circle').then(($circ) => {
+                expect($circ).to.have.length(12)
+                cy.get($circ.eq(1)).should('have.attr', 'r', `${4*Math.sqrt(2)}`)
+                for (let i = 0; i < 4; i++) {
+                    cy.get($circ.eq(i)).should('have.attr', 'cy', 20)
+                }
+
+                cy.get($circ.eq(4)).should('have.attr', 'cy', 33.75)
+                cy.get($circ.eq(5)).should('have.attr', 'cy', 61.25)
+                cy.get($circ.eq(6)).should('have.attr', 'cy', 75)
+                cy.get($circ.eq(7)).should('have.attr', 'cy', 75)
+                cy.get($circ.eq(8)).should('have.attr', 'cy', 88.75)
+                cy.get($circ.eq(9)).should('have.attr', 'cy', 102.5)
+                cy.get($circ.eq(10)).should('have.attr', 'cy', 116.25)
+                cy.get($circ.eq(11)).should('have.attr', 'cy', 130)
+            })                 
         })
     })
 })
@@ -225,15 +250,94 @@ describe('Tables', () => {
         })
     })
     it('Sequence details: gen_details_table', () => {
-        cy.contains('B.1.511').click()
-        cy.get('circle:visible').first().click().invoke('attr','id').as('lineage_id')
-        cy.get('@lineage_id').then(id => {
-            cy.get('.selectionH').should('have.attr', 'bead', `${id}`)
-        })
-
         cy.get('#tabs').contains('Samples').click()
-        cy.get('#tabs-2').contains('2020-05-02')
-        cy.get('#tabs-2').contains('USA/TX-HMH-1371')
-        cy.get('#tabs-2').contains('EPI_ISL_542678')
+
+        cy.window().then((win) => {
+            win.gen_details_table(win.beaddata[0].points)
+
+            cy.wrap(win.beaddata[0].points).each(($el) => {
+                cy.get('#tabs-2').contains(`${$el.variant}`)
+                cy.get('#tabs-2').contains(`${$el.labels[0]}`)
+                cy.get('#tabs-2').contains(`${new Date($el.x).toISOString().slice(0, 10)}`)
+            })
+        })
     }) 
+    it('Country details: gentable', () => {
+        cy.get('#tabs').contains('Countries').click()
+        var tips = {'allregions': {'North America': 13}, 'country': {'Canada': 8, 'USA': 5}}
+
+        cy.window().then((win) => {
+            win.gentable(tips)
+        })
+        cy.get('table:visible>tbody>tr').should('have.length', 2)
+        cy.get('table:visible>tbody>tr').eq(0).contains('North America')
+        cy.get('table:visible>tbody>tr').eq(0).contains('Canada')
+        cy.get('table:visible>tbody>tr').eq(0).contains('8')
+
+        cy.get('table:visible>tbody>tr').eq(1).contains('North America')
+        cy.get('table:visible>tbody>tr').eq(1).contains('USA')
+        cy.get('table:visible>tbody>tr').eq(1).contains('5')
+    })
+})
+
+describe('Edge slider', () => {
+    var targetValue, currentValue, steps, arrows = 0
+    const increment = 0.01
+
+    it('Arrows increment slider by 0.01', () => {
+        cy.get('#left-arrow').click()
+        cy.get('#custom-handle').contains('1.99')
+
+        cy.get('#right-arrow').click()
+        cy.get('#custom-handle').contains('2')
+    })
+    it('Max slider value is equal to max edge length in cluster', () => {
+
+        // https://stackoverflow.com/questions/64855669/moving-slider-with-cypress
+
+        targetValue = 3.36
+        currentValue = 2
+        steps = (targetValue - currentValue) / increment + 1
+        arrows = '{rightarrow}'.repeat(steps)
+
+        cy.get('#custom-handle').contains(2).type(arrows)
+        cy.get('#custom-handle').should('contain', 3.36)
+
+        // Number displayed should not increase once max is reached
+        cy.get('#custom-handle').type('{rightarrow}')
+        cy.get('#custom-handle').should('contain', 3.36)
+    })
+    it('All edges are visible on max slider value ', () => {
+        cy.get('[stroke="#bbd"]').should('have.length', 8)
+    })
+    it('6 edges are visible on slider value of 2.8 ', () => {
+        targetValue = 2.8
+        currentValue  = 3.36
+        steps = (currentValue - targetValue) / increment 
+        arrows = '{leftarrow}'.repeat(steps)
+
+        cy.get('#custom-handle').type(arrows)
+        cy.get('#custom-handle').should('contain', 2.8)
+        cy.get('[stroke="#bbd"]').should('have.length', 6)
+    })
+    it('3 edges are visible on slider value of 1.24 ', () => {
+        targetValue = 1.24
+        currentValue  = 2.8
+        steps = (currentValue - targetValue) / increment + 1
+        arrows = '{leftarrow}'.repeat(steps)
+
+        cy.get('#custom-handle').type(arrows)
+        cy.get('#custom-handle').should('contain', 1.24)
+        cy.get('[stroke="#bbd"]').should('have.length', 3)
+    })
+    it('No edges are visible on slider value of 0 ', () => {
+        targetValue = 0
+        currentValue  = 1.24
+        steps = (currentValue - targetValue) / increment
+        arrows = '{leftarrow}'.repeat(steps)
+
+        cy.get('#custom-handle').type(arrows)
+        cy.get('#custom-handle').should('contain', 0)
+        cy.get('[stroke="#bbd"]').should('not.exist')
+    })
 })
