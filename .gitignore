@@ -9,3 +9,4 @@ build/*
 dist/*
 venv/*
 cypress/plugins/
+cypress/fixtures/
