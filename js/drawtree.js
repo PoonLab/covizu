@@ -212,7 +212,8 @@ function map_clusters_to_tips(df, clusters) {
     tips[root_idx].searchtext = cluster.searchtext;
     tips[root_idx].label1 = cluster["lineage"];
     tips[root_idx].count = coldates.length;
-    tips[root_idx].varcount = labels.length;
+    tips[root_idx].varcount = cluster["sampled_variants"]; // Number for sampled variants
+    tips[root_idx].sampled_varcount = labels.filter(x => x.substring(0,9) !== "unsampled").length;
     tips[root_idx].first_date = first_date;
     tips[root_idx].last_date = last_date;
     tips[root_idx].pdist = cluster.pdist;
@@ -307,7 +308,8 @@ function draw_clusters(tips) {
     ctooltipText += `<b>${i18n_text.tip_residual}:</b> ${Math.round(100*d.residual)/100.}<br>`;
     ctooltipText += mutations_to_string(d.mutations);
     ctooltipText += region_to_string(d.allregions);
-    ctooltipText += `<b>${i18n_text.tip_varcount}:</b> ${d.varcount}<br>`;
+    ctooltipText += `<b>${i18n_text.tip_varcount}:</b><br>`;
+    ctooltipText += `&nbsp;&nbsp; ${i18n_text.displayed}: ${d.sampled_varcount}<br>`;
     ctooltipText += `<b>${i18n_text.tip_coldates}:</b><br>${formatDate(d.first_date)} / ${formatDate(d.last_date)}`;
 
     // Tooltip appears 10 pixels left of the cursor
