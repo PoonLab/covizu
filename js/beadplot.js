@@ -633,8 +633,8 @@ function beadplot(cid) {
           var edge = d3.select(this);
           edge.attr("stroke-width", 3);
 
-          let parent_variant = d3.select(".lines#"+d.parent.replace('/', '-').replace(' ', '_')),
-              child_variant = d3.select(".lines#"+d.child.replace('/', '-').replace(' ', '_'));
+          let parent_variant = d3.select(".lines#"+d.parent.replaceAll('/', '-').replaceAll(' ', '_')),
+              child_variant = d3.select(".lines#"+d.child.replaceAll('/', '-').replaceAll(' ', '_'));
 
           if (!parent_variant.empty()) {
             if (parent_variant.datum().count > 0) {
@@ -699,8 +699,8 @@ function beadplot(cid) {
         .on("mouseout", function(d) {
           d3.select(this).attr("stroke-width", 1);
 
-          let parent_variant = d3.select(".lines#"+d.parent.replace('/', '-').replace(' ', '_')),
-              child_variant = d3.select(".lines#"+d.child.replace('/', '-').replace(' ', '_'));
+          let parent_variant = d3.select(".lines#"+d.parent.replaceAll('/', '-').replaceAll(' ', '_')),
+              child_variant = d3.select(".lines#"+d.child.replaceAll('/', '-').replaceAll(' ', '_'));
 
           if (!parent_variant.empty()) {
             if (parent_variant.datum().count > 0) {
@@ -743,7 +743,7 @@ function beadplot(cid) {
         .enter().append("line")
         .attr("class", "lines")
         .attr("id", function(d) {
-          return d.label.replace('/', '-').replace(' ', '_');
+          return d.label.replaceAll('/', '-').replaceAll(' ', '_');
         })
         .attr("x1", xMap1B)
         .attr("x2", xMap2B)
