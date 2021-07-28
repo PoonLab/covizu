@@ -178,7 +178,9 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
   else {
     // parse samples within variant, i.e., "beads"
     // coldate, division, country, region, accession, name
-    var label = variant[0][2]+"/"+variant[0][1]+"/"+variant[0][4].replace(pat, "$1"),
+    var label = variant[0][2] === variant[0][1] ? 
+                variant[0][1]+"/"+variant[0][4].replace(pat, "$1") : 
+                variant[0][2]+"/"+variant[0][1]+"/"+variant[0][4].replace(pat, "$1"), //Issue #323: avoid double tagging
         coldates = variant.map(x => x[0]),
         isodate, samples;
 
@@ -223,7 +225,7 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
         'y': y,
         'count': samples.length,
         'accessions': samples.map(x => x[3]),
-        'labels': samples.map(x => x[2]+"/"+x[1]+"/"+x[4].replace(pat, "$1")),
+        'labels': samples.map(x => x[2] === x[1] ? x[1]+"/"+x[4].replace(pat, "$1") : x[2]+"/"+x[1]+"/"+x[4].replace(pat, "$1")), // Issue #323
         'region1': mode(regions),
         'region': regions,
         'country': tabulate(country),
