@@ -502,6 +502,9 @@ function beadplot(cid) {
 
   // rescale slider
   let max_dist = Math.max(...edgelist.map(x => x.dist));
+  if (isFinite(max_dist) == false) {
+    max_dist = 2.0;
+  }
   let slider = $("#vedge-slider");
   slider.slider("value", 2.0)
         .slider("option", "max", max_dist )
