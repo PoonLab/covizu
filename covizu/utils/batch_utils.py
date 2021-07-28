@@ -210,7 +210,11 @@ def sort_by_lineage(records, callback=None):
         if callback and i % 1000 == 0:
             callback('aligned {} records'.format(i))
         lineage = record['lineage']
+        if lineage is None or lineage == '':
+            continue  # discard unclassified genomes
+
         if lineage not in result:
             result.update({lineage: []})
         result[lineage].append(record)
+
     return result
