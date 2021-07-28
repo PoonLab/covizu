@@ -136,7 +136,8 @@ function drawtree(df) {
 
   // adjust d3 scales to data frame
   xScale.domain([
-    d3.min(df, xValue)-0.05, d3.max(df, xValue)+0.2
+    d3.min(df, xValue)-0.05, 
+    date_to_xaxis(d3.max(df, function(d) {return d.last_date})) 
   ]);
   yScale.domain([
     d3.min(df, yValue)-1, d3.max(df, yValue)+1
