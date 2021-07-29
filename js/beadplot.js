@@ -224,7 +224,7 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
         'x': new Date(isodate),
         'y': y,
         'count': samples.length,
-        'accessions': samples.map(x => x[3]),
+        'accessions': samples.map(x => x[4]),
         'labels': samples.map(x => x[2] === x[1] ? x[1]+"/"+x[4].replace(pat, "$1") : x[2]+"/"+x[1]+"/"+x[4].replace(pat, "$1")), // Issue #323
         'region1': mode(regions),
         'region': regions,
@@ -1082,14 +1082,14 @@ function gen_details_table(obj) {
       .append('tr')
       .on("mouseover", function (x) {
         // ID by accession
-        let circle = d3.select("circle#"+x[4]).attr("stroke-width", 2);
+        let circle = d3.select("circle#"+x[3]).attr("stroke-width", 2);
         circle.attr("r", 4*Math.sqrt(circle.datum().count)+3);
 
         // Highlight row on mouseover
         d3.select(this).style("background-color", "#e2e2e2");
       })
       .on("mouseout", function (x) {
-        let circle = d3.select("circle#"+x[4]).attr("stroke-width", 1);
+        let circle = d3.select("circle#"+x[3]).attr("stroke-width", 1);
         circle.attr("r", 4*Math.sqrt(circle.datum().count));
         // Remove highlighting on mouseout
         d3.select(this).style("background-color", null);
