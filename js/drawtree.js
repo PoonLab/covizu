@@ -310,6 +310,7 @@ function draw_clusters(tips) {
     ctooltipText += mutations_to_string(d.mutations);
     ctooltipText += region_to_string(d.allregions);
     ctooltipText += `<b>${i18n_text.tip_varcount}:</b><br>`;
+    ctooltipText += `&nbsp;&nbsp; ${i18n_text.sampled}: ${d.varcount}<br>`;
     ctooltipText += `&nbsp;&nbsp; ${i18n_text.displayed}: ${d.sampled_varcount}<br>`;
     ctooltipText += `<b>${i18n_text.tip_coldates}:</b><br>${formatDate(d.first_date)} / ${formatDate(d.last_date)}`;
 
