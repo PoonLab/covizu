@@ -15,20 +15,29 @@ from covizu.utils.seq_utils import *
 from covizu.utils.progress_utils import Callback
 
 
-def fasttree(fasta, binpath='fasttree2', seed=1):
+def fasttree(fasta, binpath='fasttree2', seed=1, gtr=True):
     """
     Wrapper for FastTree2, passing FASTA as stdin and capturing the
     resulting Newick tree string as stdout.
-    :param fasta: dict, header: sequence pairs
+
+    :param fasta:  dict, header: sequence pairs
+    :param binpath:  str, path to Fasttree2 binary executable
+    :param seed:  int, initialize random number generator
+    :param gtr:  if True, use generalized time reversible model; otherwise JC
+
     :return: str, Newick tree string
     """
+    # convert dict to FASTA-formatted string
     in_str = ''
     for h, s in fasta.items():
         accn = h.split('|')[1]
         in_str += '>{}\n{}\n'.format(accn, s)
-    p = Popen([binpath, '-nt', '-quote', '-seed', str(seed)],
-              stdin=PIPE, stdout=PIPE)
-    # TODO: exception handling with stderr?
+
+    cmd = [binpath, '-nt', '-quote', '-seed', str(seed)]
+    if gtr:
+        cmd.append('-gtr')
+
+    p = Popen(cmd, stdin=PIPE, stdout=PIPE)
     stdout, stderr = p.communicate(input=in_str.encode('utf-8'))
     return stdout.decode('utf-8')
 
@@ -157,6 +166,7 @@ def retrieve_genomes(by_lineage, known_seqs, ref_file, earliest=True, callback=N
     :param known_seqs:  dict, sequences used in Pango lineage designations
     :param ref_file:  str, path to FASTA file containing reference genome
     :param earliest:  bool, if False then use most recent genome as lineage representative
+    :param callback:  optional, callback function
 
     :return:  dict, aligned genome keyed by header "|{lineage}|{coldate}"
     """
@@ -178,7 +188,7 @@ def retrieve_genomes(by_lineage, known_seqs, ref_file, earliest=True, callback=N
         if len(curated) == 0:
             if callback:
                 callback("Error in retrieve_genomes(): no sequence names for lineage {} in designated "
-                         "list; may need to update data/lineages.csv".format(lineage))
+                         "list; may need to update data/lineages.csv".format(lineage), level='WARN')
             curated = records
 
         intermed = [(r['covv_collection_date'], r['diffs'], r['missing']) for r in curated]
@@ -259,7 +269,8 @@ if __name__ == '__main__':
         lineages.update({taxon: lineage})
 
     cb.callback("Identifying lineage representative genomes")
-    fasta = retrieve_genomes(by_lineage, known_seqs=lineages, ref_file=args.ref, earliest=args.earliest)
+    fasta = retrieve_genomes(by_lineage, known_seqs=lineages, ref_file=args.ref, earliest=args.earliest,
+                             callback=cb.callback)
 
     cb.callback("Reconstructing tree with {}".format(args.ft2bin))
     nwk = fasttree(fasta, binpath=args.ft2bin)
