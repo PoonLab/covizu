@@ -178,7 +178,9 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
   else {
     // parse samples within variant, i.e., "beads"
     // coldate, division, country, region, accession, name
-    var label = variant[0][2]+"/"+variant[0][1]+"/"+variant[0][4].replace(pat, "$1"),
+    var label = variant[0][2] === variant[0][1] ? 
+                variant[0][1]+"/"+variant[0][4].replace(pat, "$1") : 
+                variant[0][2]+"/"+variant[0][1]+"/"+variant[0][4].replace(pat, "$1"), //Issue #323: avoid double tagging
         coldates = variant.map(x => x[0]),
         isodate, samples;
 
@@ -222,8 +224,8 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
         'x': new Date(isodate),
         'y': y,
         'count': samples.length,
-        'accessions': samples.map(x => x[3]),
-        'labels': samples.map(x => x[2]+"/"+x[1]+"/"+x[4].replace(pat, "$1")),
+        'accessions': samples.map(x => x[4]),
+        'labels': samples.map(x => x[2] === x[1] ? x[1]+"/"+x[4].replace(pat, "$1") : x[2]+"/"+x[1]+"/"+x[4].replace(pat, "$1")), // Issue #323
         'region1': mode(regions),
         'region': regions,
         'country': tabulate(country),
@@ -633,8 +635,8 @@ function beadplot(cid) {
           var edge = d3.select(this);
           edge.attr("stroke-width", 3);
 
-          let parent_variant = d3.select(".lines#"+d.parent.replace('/', '-').replace(' ', '_')),
-              child_variant = d3.select(".lines#"+d.child.replace('/', '-').replace(' ', '_'));
+          let parent_variant = d3.select(".lines#"+d.parent.replaceAll('/', '-').replaceAll(' ', '_')),
+              child_variant = d3.select(".lines#"+d.child.replaceAll('/', '-').replaceAll(' ', '_'));
 
           if (!parent_variant.empty()) {
             if (parent_variant.datum().count > 0) {
@@ -699,8 +701,8 @@ function beadplot(cid) {
         .on("mouseout", function(d) {
           d3.select(this).attr("stroke-width", 1);
 
-          let parent_variant = d3.select(".lines#"+d.parent.replace('/', '-').replace(' ', '_')),
-              child_variant = d3.select(".lines#"+d.child.replace('/', '-').replace(' ', '_'));
+          let parent_variant = d3.select(".lines#"+d.parent.replaceAll('/', '-').replaceAll(' ', '_')),
+              child_variant = d3.select(".lines#"+d.child.replaceAll('/', '-').replaceAll(' ', '_'));
 
           if (!parent_variant.empty()) {
             if (parent_variant.datum().count > 0) {
@@ -743,7 +745,7 @@ function beadplot(cid) {
         .enter().append("line")
         .attr("class", "lines")
         .attr("id", function(d) {
-          return d.label.replace('/', '-').replace(' ', '_');
+          return d.label.replaceAll('/', '-').replaceAll(' ', '_');
         })
         .attr("x1", xMap1B)
         .attr("x2", xMap2B)
@@ -1080,14 +1082,14 @@ function gen_details_table(obj) {
       .append('tr')
       .on("mouseover", function (x) {
         // ID by accession
-        let circle = d3.select("circle#"+x[4]).attr("stroke-width", 2);
+        let circle = d3.select("circle#"+x[3]).attr("stroke-width", 2);
         circle.attr("r", 4*Math.sqrt(circle.datum().count)+3);
 
         // Highlight row on mouseover
         d3.select(this).style("background-color", "#e2e2e2");
       })
       .on("mouseout", function (x) {
-        let circle = d3.select("circle#"+x[4]).attr("stroke-width", 1);
+        let circle = d3.select("circle#"+x[3]).attr("stroke-width", 1);
         circle.attr("r", 4*Math.sqrt(circle.datum().count));
         // Remove highlighting on mouseout
         d3.select(this).style("background-color", null);
