@@ -182,7 +182,10 @@ def retrieve_genomes(by_lineage, known_seqs, ref_file, earliest=True, callback=N
     # retrieve unaligned genomes from database
     for lineage, records in by_lineage.items():
         # filter records for lineage-defining genomes
-        curated = filter(lambda r: r['covv_virus_name'].replace('hCoV-19/', '') in known_seqs, records)
+        curated = filter(
+            lambda r: r['covv_virus_name'].replace('hCoV-19/', '').replace(' ', '_')  # issue #313
+                      in known_seqs,
+            records)
 
         curated = list(curated)  # resolve generator
         if len(curated) == 0:
