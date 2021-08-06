@@ -121,29 +121,22 @@ var country_pal = {
 
 // Tom Thomson - autumn birches 1916
 var province_pal = {
-  "British Columbia": '#DB8433',
-  "Ontario": '#9E3C2A',
-  "Quebec": '#5D776A',
-  "Nova Scotia": '#254617',
-  "Newfoundland and Labrador": '#7E7327',
-  "New Brunswick": '#557332',
-  "Manitoba": '#867570',
-  "Alberta": '#B29F7D'
-}
+  "British Columbia": '#254617',
+  "Alberta": "#557332",
+  "Saskatchewan": '#5D776A',
+  "Manitoba": '#7E7327',
+  "Ontario": '#DB8433',
+  "Quebec": '#9E3C2A',
 
-/*
-// Tom Thomson - Jack Pine
-var province_pal = {
-  "BC": '#373724',  // British Columbia
-  "ON": '#A4AC77',  // Ontario
-  "QC": '#CDA872',  // Quebec
-  "AB": '#5C2F29',  // Alberta
-  "NL": '#1F294F',  // Newfoundland and Labrador
-  "NB": '#90918F',  // New Brunswick
-  "MB": '#808A9B',  // Manitoba
-  "NS": '#1A1C2E'   // Nova Scotia
+  "Newfoundland and Labrador": '#867570',
+  "New Brunswick": '#867570',
+  "Nova Scotia": '#867570',
+  "Prince Edward Island": '#867570',
+
+  "Nunavut": '#B29F7D',
+  "Yukon": '#B29F7D',
+  "Northwest Territories": '#B29F7D'
 }
-*/
 
 // load time-scaled phylogeny from server
 var nwk, df, countries;
