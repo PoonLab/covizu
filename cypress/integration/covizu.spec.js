@@ -121,20 +121,5 @@ describe('Tooltips', () => {
         cy.get('circle:visible').first().trigger('mouseover')
         cy.get('.tooltip').should('be.visible').should('have.length', 1)
     })
-    it('Beadplot tooltips contain relevant information', () => {
-        cy.get('rect:visible').first().click().invoke('attr','id').as('lineage_id')
-        cy.get('@lineage_id').then(id => {
-            var lineage_id = id.substring(3)
-            cy.window().then((win) => {
-                // Tooltip for first line with stroke-width of 3 (Assuming that it is parent)
-                cy.get('[stroke-width="3"]').first().trigger('mouseover', {force: true})
-                cy.get('.tooltip').contains(`Unique collection dates: ${win.beaddata[win.tips[lineage_id]["cluster_idx"]]["variants"][0]["numBeads"]}`)
-                cy.get('.tooltip').contains(`${win.beaddata[win.tips[lineage_id]["cluster_idx"]]["variants"][0]["x1"].toISOString().slice(0, 10)} / ${win.beaddata[win.tips[lineage_id]["cluster_idx"]]["variants"][0]["x2"].toISOString().slice(0, 10)}`)
-                var regions = win.tabulate(win.beaddata[win.tips[lineage_id]["cluster_idx"]]["variants"][0]["region"])
-                cy.wrap(Object.keys(regions)).each(($el, index) => {
-                    cy.get('.tooltip').contains(`${$el}: ${Object.values(regions)[index]}`)
-                })
-            })
-        })
-    })
+    
 })

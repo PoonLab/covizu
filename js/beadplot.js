@@ -493,13 +493,18 @@ function clear_selection() {
  * @param {Number} cid:  integer index of cluster to draw as beadplot
  */
 function beadplot(cid) {
-
+  // Update global cindex for SVG and NWK filenames
+  cindex = cid;
+  
   var variants = beaddata[cid].variants,
       edgelist = beaddata[cid].edgelist,
       points = beaddata[cid].points;
 
   // rescale slider
   let max_dist = Math.max(...edgelist.map(x => x.dist));
+  if (isFinite(max_dist) == false) {
+    max_dist = 2.0;
+  }
   let slider = $("#vedge-slider");
   slider.slider("value", 2.0)
         .slider("option", "max", max_dist )
@@ -516,20 +521,6 @@ function beadplot(cid) {
         spandate = maxdate-mindate,  // in milliseconds
         min_y = d3.min(variants, yValue1B),
         max_y = d3.max(variants, yValue1B);
-
-    edgelist.forEach(function(d) {
-      d.x1.setHours(0,0,0);
-      d.x2.setHours(0,0,0);
-    });
-
-    points.forEach(function(d) {
-      d.x.setHours(0,0,0);
-    });
-
-    variants.forEach(function(d) {
-      d.x1.setHours(0,0,0);
-      d.x2.setHours(0,0,0);
-    });
 
     // update vertical range for consistent spacing between variants
     heightB = max_y * 10 + 40;
@@ -873,6 +864,12 @@ function beadplot(cid) {
     var tickCount = 0.005*currentWidth;
     if (tickCount <= 4) tickCount = 4;
 
+    // Ensures that there aren't extra ticks in the time axis of the beadplot when the first and last coldates are within a few days
+    var dateDiff = d3.timeDay.count(
+                    d3.min(variants, function(d) {return d.x1}), 
+                    d3.max(variants, function(d) {return d.x2}));
+    if (dateDiff !=0 && dateDiff < tickCount) tickCount = dateDiff;
+
     // draw x-axis
     visBaxis.append("g")
         .attr("class", "treeaxis")
@@ -898,6 +895,10 @@ function beadplot(cid) {
   slider.on(edgelist.length < 200 ? "slide" : "slidechange", function(event, ui) {
     if (ui.valueOf().value !== 2.0) {
       // avoid drawing beadplot twice on load
+
+      // Update slider value before redrawing beadplot
+      slider.slider("value", ui.valueOf().value);
+
       redraw();
     }
   });

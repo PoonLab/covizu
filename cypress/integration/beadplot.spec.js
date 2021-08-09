@@ -243,43 +243,6 @@ describe('Parse Functions', () => {
     })
 })
 
-describe('Tables', () => {
-    it('region_to_string', () => {
-        cy.window().then((win) => {
-            expect(win.region_to_string({'North America':5,'Asia':10})).to.eq("<b>Number of cases:</b><br>&nbsp;&nbsp;North America: 5<br>&nbsp;&nbsp;Asia: 10<br>Total: 15<br>")
-        })
-    })
-    it('Sequence details: gen_details_table', () => {
-        cy.get('#tabs').contains('Samples').click()
-
-        cy.window().then((win) => {
-            win.gen_details_table(win.beaddata[0].points)
-
-            cy.wrap(win.beaddata[0].points).each(($el) => {
-                cy.get('#tabs-2').contains(`${$el.variant}`)
-                cy.get('#tabs-2').contains(`${$el.labels[0]}`)
-                cy.get('#tabs-2').contains(`${new Date($el.x).toISOString().slice(0, 10)}`)
-            })
-        })
-    }) 
-    it('Country details: gentable', () => {
-        cy.get('#tabs').contains('Countries').click()
-        var tips = {'allregions': {'North America': 13}, 'country': {'Canada': 8, 'USA': 5}}
-
-        cy.window().then((win) => {
-            win.gentable(tips)
-        })
-        cy.get('table:visible>tbody>tr').should('have.length', 2)
-        cy.get('table:visible>tbody>tr').eq(0).contains('North America')
-        cy.get('table:visible>tbody>tr').eq(0).contains('Canada')
-        cy.get('table:visible>tbody>tr').eq(0).contains('8')
-
-        cy.get('table:visible>tbody>tr').eq(1).contains('North America')
-        cy.get('table:visible>tbody>tr').eq(1).contains('USA')
-        cy.get('table:visible>tbody>tr').eq(1).contains('5')
-    })
-})
-
 describe('Edge slider', () => {
     var targetValue, currentValue, steps, arrows = 0
     const increment = 0.01
@@ -310,34 +273,84 @@ describe('Edge slider', () => {
     it('All edges are visible on max slider value ', () => {
         cy.get('[stroke="#bbd"]').should('have.length', 8)
     })
-    it('6 edges are visible on slider value of 2.8 ', () => {
-        targetValue = 2.8
+    it('3 edges are visible on slider value of 1.50 ', () => {
+        targetValue = 1.50
         currentValue  = 3.36
-        steps = (currentValue - targetValue) / increment 
-        arrows = '{leftarrow}'.repeat(steps)
-
-        cy.get('#custom-handle').type(arrows)
-        cy.get('#custom-handle').should('contain', 2.8)
-        cy.get('[stroke="#bbd"]').should('have.length', 6)
-    })
-    it('3 edges are visible on slider value of 1.24 ', () => {
-        targetValue = 1.24
-        currentValue  = 2.8
         steps = (currentValue - targetValue) / increment + 1
         arrows = '{leftarrow}'.repeat(steps)
 
         cy.get('#custom-handle').type(arrows)
-        cy.get('#custom-handle').should('contain', 1.24)
+        cy.get('#custom-handle').should('contain', 1.50)
         cy.get('[stroke="#bbd"]').should('have.length', 3)
     })
-    it('No edges are visible on slider value of 0 ', () => {
-        targetValue = 0
-        currentValue  = 1.24
+    it('No edges are visible on slider value of 0.86 ', () => {
+        targetValue = 0.86
+        currentValue  = 1.50
         steps = (currentValue - targetValue) / increment
         arrows = '{leftarrow}'.repeat(steps)
 
         cy.get('#custom-handle').type(arrows)
-        cy.get('#custom-handle').should('contain', 0)
+        cy.get('#custom-handle').should('contain', 0.86)
         cy.get('[stroke="#bbd"]').should('not.exist')
     })
+})
+
+describe('Tooltips', () => {
+    it('Parent, child, vertical edge and bead', () => {
+        cy.get('[stroke-width="3"]').first().trigger('mouseover')
+        cy.get('.tooltip').contains('North America: 5')
+        cy.get('.tooltip').contains('Unique collection dates: 4')
+        cy.get('.tooltip').contains('2020-05-02 / 2020-07-05')
+ 
+        cy.get('[stroke="#ccc"]').first().trigger('mouseover')
+        cy.get('.tooltip').contains('Parent: USA/TX-HMH-1371')
+        cy.get('.tooltip').contains('Genomic distance: 1.61')
+
+        cy.get('#right-arrow').click()
+        cy.get('[stroke="#bbd"]').trigger('mouseover', {force: true})
+        cy.get('.tooltip').contains('Parent: USA/TX-HMH-MCoV-10847')
+        cy.get('.tooltip').contains('Child: USA/TX-HMH-MCoV-8639')
+        cy.get('.tooltip').contains('Genomic distance: 0.87')
+        cy.get('.tooltip').contains('Support: n/a')
+        cy.get('.tooltip').contains('Collection date: 2020-07-01')
+
+        cy.get('circle:visible').first().trigger('mouseover')
+        cy.get('.tooltip').contains('North America: 1')
+        cy.get('.tooltip').contains('Collection date: 2020-05-02')
+    })
+})
+
+describe('Tables', () => {
+    it('region_to_string', () => {
+        cy.window().then((win) => {
+            expect(win.region_to_string({'North America':5,'Asia':10})).to.eq("<b>Number of cases:</b><br>&nbsp;&nbsp;North America: 5<br>&nbsp;&nbsp;Asia: 10<br>Total: 15<br>")
+        })
+    })
+    it('Country details: gentable', () => {
+        cy.get('#tabs').contains('Countries').click()
+        var tips = {'allregions': {'North America': 13}, 'country': {'Canada': 8, 'USA': 5}}
+
+        cy.window().then((win) => {
+            win.gentable(tips)
+        })
+        cy.get('table:visible>tbody>tr').should('have.length', 2)
+        cy.get('table:visible>tbody>tr').eq(0).contains('North America')
+        cy.get('table:visible>tbody>tr').eq(0).contains('Canada')
+        cy.get('table:visible>tbody>tr').eq(0).contains('8')
+
+        cy.get('table:visible>tbody>tr').eq(1).contains('North America')
+        cy.get('table:visible>tbody>tr').eq(1).contains('USA')
+        cy.get('table:visible>tbody>tr').eq(1).contains('5')
+    })
+    it('Sequence details: gen_details_table', () => {
+        cy.get('#tabs').contains('Samples').click()
+
+        cy.window().then((win) => {
+            win.gen_details_table(win.beaddata[0].points[0])
+
+            cy.get('#tabs-2').contains(`${win.beaddata[0].points[0].variant}`)
+            cy.get('#tabs-2').contains(`${win.beaddata[0].points[0].labels[0]}`)
+            cy.get('#tabs-2').contains(`${new Date(win.beaddata[0].points[0].x).toISOString().slice(0, 10)}`)
+        })
+    }) 
 })
