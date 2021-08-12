@@ -2,13 +2,8 @@
 // direct download of Cypress is required to run the tests
 
 import clusters from '../fixtures/clusters.json'
-import countries from '../fixtures/countries.json'
-import dbstats from '../fixtures/dbstats.json'
 
 describe('Selected Lineage', () => {
-    it('Default open rectangle around first lineage', () => {
-        cy.get('rect').last().should('have.attr', 'class', 'clicked')
-    })
     it('Draw an open rectangle around a clicked lineage', () => {
         cy.get('rect:visible').first().click().invoke('attr','id').as('id')
         cy.get('@id').then(id => {
@@ -19,10 +14,10 @@ describe('Selected Lineage', () => {
     })
 })
 
-describe('drawtree', () => {
+describe('Tree', () => {
     var df = []
 
-    it('No negative branch lengths', () => {
+    it('drawtree: Verify that there are the correct number of lines', () => {
         df = [{'parentId': 16, 'parentLabel': 'NODE_0000001', 'thisId': 0, 'thisLabel': 'B.1.116', 'children': [], 'branchLength': 0.12477, 'angle': undefined, 'x': 0.12477, 'y': 0, "isTip": true},
         {'parentId': 15, 'parentLabel': 'NODE_0000002', 'thisId': 1, 'thisLabel': 'B.1.422', 'children': [], 'branchLength': 0.06739, 'angle': undefined, 'x': 0.06739, 'y': 1, "isTip": true},
         {'parentId': 4, 'parentLabel': 'NODE_0000003', 'thisId': 2, 'thisLabel': 'B.1.576', 'children': [], 'branchLength': 0, 'angle': undefined, 'x': 0.06193, 'y': 2, "isTip": true},
@@ -40,9 +35,60 @@ describe('drawtree', () => {
         {'parentId': 15, 'parentLabel': 'NODE_0000002', 'thisId': 14, 'thisLabel': 'NODE_0000000', 'children': [4,7,10,13], 'branchLength': 0.02553, 'angle': undefined, 'x': 0.02553, 'y': 5.5, "isTip": false},
         {'parentId': 16, 'parentLabel': 'NODE_0000001', 'thisId': 15, 'thisLabel': 'NODE_0000002', 'children': [1,14], 'branchLength': 0, 'angle': undefined, 'x': 0, 'y': 3.25, "isTip": false},
         {'parentId': null, 'parentLabel': null, 'thisId': 16, 'thisLabel': 'NODE_0000001', 'children': [0,15], 'branchLength': 0, 'angle': undefined, 'x': 0, 'y': 1.625, "isTip": false}]
-    })
 
-    cy.window().then((win) => {
-        win.drawtree(df)
+        cy.document().then((doc) => {
+            // Clear svg from pre-existing tree
+            doc.querySelector("#svg-timetree > svg").innerHTML = ''
+        })
+
+        cy.window().then((win) => {
+            // Draw tree 
+            win.drawtree(df)
+        })
+
+        cy.get("#svg-timetree > svg > line:visible").should('have.length', 32)
+    })
+    it('map_clusters_to_tips', () => {
+        let tip = {
+                "parentId": 4,
+                "parentLabel": "NODE_0000003",
+                "thisId": 3,
+                "thisLabel": "B.1.363",
+                "children": [],
+                "branchLength": 0.29781,
+                "x": 0.35974,
+                "y": 3,
+                "isTip": true,
+                "cluster_idx": "4",
+                "label1": "B.1.363",
+                "count": 8,
+                "varcount": 8,
+                "sampled_varcount": 8,
+                "first_date": new Date("2020-07-03 "),
+                "last_date": new Date("2020-09-29 "),
+                "coldate": new Date("2020-09-29 "),
+                "x1": 0.11867468611287255,
+                "x2": 0.35974,
+                "max_ndiffs": 23,
+                "mean_ndiffs": 17,
+                "nsamples": 6,
+                "mutations": [
+                    "aa:orf1a:R24C",
+                    "aa:orf1a:T265I",
+                    "aa:orf1a:L3930F",
+                    "aa:orf1b:P314L",
+                    "aa:orf1b:S1391L",
+                    "aa:S:D614G",
+                    "aa:orf3a:Q57H",
+                    "aa:E:P71S"
+                ],
+                "residual": -1.079247425000002,
+                "mcoldate": new Date("2020-09-02 ")
+        }
+
+        cy.window().then((win) => {
+            expect(win.map_clusters_to_tips(df, clusters)).to.have.lengthOf(10)
+            expect(win.map_clusters_to_tips(df, clusters)[3]).to.eql(tip)
+        })
     })
 })
