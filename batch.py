@@ -63,6 +63,9 @@ def parse_args():
     parser.add_argument('--ft2bin', default='fasttree2',
                         help='option, path to fasttree2 binary executable')
 
+    parser.add_argument('--lineages', type=str,
+                        default=os.path.join(covizu.__path__[0], "data/lineages.csv"),
+                        help="optional, path to CSV file containing Pango lineage designations.")
     parser.add_argument('--ttbin', default='treetime',
                         help='option, path to treetime binary executable')
     parser.add_argument('--clock', type=float, default=8e-4,
