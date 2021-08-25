@@ -153,13 +153,13 @@ def parse_args():
     parser.add_argument("metadata", type=argparse.FileType('r'),
                         help="input, CSV containing metadata")
 
-    parser.add_argument("--delimiter", type=unescaped_str, default=',',
-                        help="delimiter character for metadata CSV; "
-                             "use '\t' if tab-delimited")
-    parser.add_argument("--name", type=str, default="name",
-                        help="column label for virus sample name in metadata CSV; "
+    parser.add_argument("--delimiter", type=unescaped_str, default='\t',
+                        help="delimiter character for metadata TSV; "
+                             "use ',' if comma-delimited")
+    parser.add_argument("--name", type=str, default="strain",
+                        help="column label for virus sample name in metadata; "
                              "required, must match FASTA")
-    parser.add_argument("--accession", type=str, default="accession",
+    parser.add_argument("--accession", type=str, default="genbank_accession",
                         help="column label for accession number; required")
     parser.add_argument("--coldate", type=str, default="date",
                         help="column label for collection date in metadata CSV; required")

@@ -90,13 +90,11 @@
           <label for="select-tree-colours">Colour tree by:</label>
           <select name="tree-colours" id="select-tree-colours">
             <option value="Region">Region</option>
-            <option value="Province (Canada)" selected>Province (Canada)</option>
             <option value="No. samples">No. samples</option>
             <option value="Collection date">Collection date</option>
-            <option value="Divergence">Divergence</option>
+            <option value="Divergence" selected>Divergence</option>
           </select>
           <div class="legend" id="div-region-legend"></div>
-          <div class="legend" id="div-province-legend"></div>
           <div class="legend" id="svg-sample-legend"></div>
           <div class="legend" id="svg-coldate-legend"></div>
           <div class="legend" id="svg-diverge-legend"></div>
@@ -194,7 +192,7 @@
         </div>
         <div class="rightbox">
           <div style="padding-top: 10px; cursor: help;">
-            <h1><span onclick="$('#splash').dialog('open');">CoVizu<sup><i>ca</i></sup></span></h1>
+            <h1><span onclick="$('#splash').dialog('open');"><small><i>open</i></small>CoVizu</span></h1>
           </div>
           <div style="font-size: 8pt;">
             <a href="index.html">en</a>
