@@ -1,11 +1,28 @@
 import subprocess
 from Bio import Phylo
 from covizu import clustering, treetime, beadplot
+import sys
 
 
 def build_timetree(by_lineage, args, callback=None):
     """ Generate time-scaled tree of Pangolin lineages """
-    fasta = treetime.retrieve_genomes(by_lineage, ref_file=args.ref, 
+
+    if callback:
+        callback("Parsing Pango lineage designations")
+    handle = open(args.lineages)
+    header = next(handle)
+    if header != 'taxon,lineage\n':
+        if callback:
+            callback("Error: {} does not contain expected header row 'taxon,lineage'".format(args.lineages))
+        sys.exit()
+    lineages = {}
+    for line in handle:
+        taxon, lineage = line.strip().split(',')
+        lineages.update({taxon: lineage})
+
+    if callback:
+        callback("Identifying lineage representative genomes")
+    fasta = treetime.retrieve_genomes(by_lineage, known_seqs=lineages, ref_file=args.ref,
                                       earliest=True)
 
     if callback:

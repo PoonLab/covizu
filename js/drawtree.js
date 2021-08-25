@@ -136,7 +136,8 @@ function drawtree(df) {
 
   // adjust d3 scales to data frame
   xScale.domain([
-    d3.min(df, xValue)-0.05, d3.max(df, xValue)+0.2
+    d3.min(df, xValue)-0.05, 
+    date_to_xaxis(d3.max(df, function(d) {return d.last_date})) 
   ]);
   yScale.domain([
     d3.min(df, yValue)-1, d3.max(df, yValue)+1
@@ -197,11 +198,11 @@ function map_clusters_to_tips(df, clusters) {
     }
     coldates.sort();  // in place, ascending order
 
-    var first_date = new Date(coldates[0]),
-        last_date = new Date(coldates[coldates.length-1]);
+    var first_date = new Date(coldates[0] + ' '),
+        last_date = new Date(coldates[coldates.length-1] + ' ');
     
     // Calculate the mean collection date
-    let date_diffs = coldates.map(x => d3.timeDay.count(first_date, new Date(x))),
+    let date_diffs = coldates.map(x => d3.timeDay.count(first_date, new Date(x + ' '))),
         mean_date = Math.round(date_diffs.reduce((a, b) => a + b, 0) / date_diffs.length);
 
     // augment data frame with cluster data
@@ -212,7 +213,8 @@ function map_clusters_to_tips(df, clusters) {
     tips[root_idx].searchtext = cluster.searchtext;
     tips[root_idx].label1 = cluster["lineage"];
     tips[root_idx].count = coldates.length;
-    tips[root_idx].varcount = labels.length;
+    tips[root_idx].varcount = cluster["sampled_variants"]; // Number for sampled variants
+    tips[root_idx].sampled_varcount = labels.filter(x => x.substring(0,9) !== "unsampled").length;
     tips[root_idx].first_date = first_date;
     tips[root_idx].last_date = last_date;
     tips[root_idx].pdist = cluster.pdist;
@@ -230,7 +232,7 @@ function map_clusters_to_tips(df, clusters) {
     tips[root_idx].mutations = tip_stats.mutations;
 
     // calculate residual from mean differences and mean collection date - fixes #241
-    let times = coldates.map(x => new Date(x).getTime()),
+    let times = coldates.map(x => new Date(x + ' ').getTime()),
         origin = 18231,  // days between 2019-12-01 and UNIX epoch (1970-01-01)
         mean_time = times.reduce((x, y)=>x+y) / times.length / 8.64e7 - origin,
         rate = 0.0655342,  // subs per genome per day
@@ -307,7 +309,9 @@ function draw_clusters(tips) {
     ctooltipText += `<b>${i18n_text.tip_residual}:</b> ${Math.round(100*d.residual)/100.}<br>`;
     ctooltipText += mutations_to_string(d.mutations);
     ctooltipText += region_to_string(d.allregions);
-    ctooltipText += `<b>${i18n_text.tip_varcount}:</b> ${d.varcount}<br>`;
+    ctooltipText += `<b>${i18n_text.tip_varcount}:</b><br>`;
+    ctooltipText += `&nbsp;&nbsp; ${i18n_text.sampled}: ${d.varcount}<br>`;
+    ctooltipText += `&nbsp;&nbsp; ${i18n_text.displayed}: ${d.sampled_varcount}<br>`;
     ctooltipText += `<b>${i18n_text.tip_coldates}:</b><br>${formatDate(d.first_date)} / ${formatDate(d.last_date)}`;
 
     // Tooltip appears 10 pixels left of the cursor

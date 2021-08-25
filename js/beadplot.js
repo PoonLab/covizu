@@ -135,8 +135,8 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
     vdata = {
       'accession': accn,
       'label': accn,
-      'x1': new Date(mindate),  // cluster min date
-      'x2': new Date(maxdate),  // cluster max date
+      'x1': new Date(mindate + ' '),  // cluster min date
+      'x2': new Date(maxdate + ' '),  // cluster max date
       'y1': y,
       'y2': y,
       'count': 0,
@@ -165,8 +165,8 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
     vdata = {
       'accession': accn,
       'label': label,
-      'x1': new Date(coldates[0]),  // min date
-      'x2': new Date(coldates[coldates.length-1]),  // max date
+      'x1': new Date(coldates[0] + ' '),  // min date
+      'x2': new Date(coldates[coldates.length-1] + ' '),  // max date
       'y1': y,
       'y2': y,
       'count': coldates.length,
@@ -200,7 +200,7 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
       pdata.push({
         cidx,
         'variant': accn,
-        'x': new Date(isodate),
+        'x': new Date(isodate + ' '),
         'y': y,
         'count': samples.length,
         'accessions': samples.map(x => x[1]),
@@ -502,6 +502,9 @@ function beadplot(cid) {
 
   // rescale slider
   let max_dist = Math.max(...edgelist.map(x => x.dist));
+  if (isFinite(max_dist) == false) {
+    max_dist = 2.0;
+  }
   let slider = $("#vedge-slider");
   slider.slider("value", 2.0)
         .slider("option", "max", max_dist )
@@ -518,20 +521,6 @@ function beadplot(cid) {
         spandate = maxdate-mindate,  // in milliseconds
         min_y = d3.min(variants, yValue1B),
         max_y = d3.max(variants, yValue1B);
-
-    edgelist.forEach(function(d) {
-      d.x1.setHours(0,0,0);
-      d.x2.setHours(0,0,0);
-    });
-
-    points.forEach(function(d) {
-      d.x.setHours(0,0,0);
-    });
-
-    variants.forEach(function(d) {
-      d.x1.setHours(0,0,0);
-      d.x2.setHours(0,0,0);
-    });
 
     // update vertical range for consistent spacing between variants
     heightB = max_y * 10 + 40;
@@ -906,6 +895,10 @@ function beadplot(cid) {
   slider.on(edgelist.length < 200 ? "slide" : "slidechange", function(event, ui) {
     if (ui.valueOf().value !== 2.0) {
       // avoid drawing beadplot twice on load
+
+      // Update slider value before redrawing beadplot
+      slider.slider("value", ui.valueOf().value);
+
       redraw();
     }
   });
