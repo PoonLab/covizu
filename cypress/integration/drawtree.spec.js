@@ -50,45 +50,47 @@ describe('Tree', () => {
     })
     it('map_clusters_to_tips', () => {
         let tip = {
-                "parentId": 4,
-                "parentLabel": "NODE_0000003",
-                "thisId": 3,
-                "thisLabel": "B.1.363",
-                "children": [],
-                "branchLength": 0.29781,
-                "x": 0.35974,
-                "y": 3,
-                "isTip": true,
-                "cluster_idx": "4",
-                "label1": "B.1.363",
-                "count": 8,
-                "varcount": 8,
-                "sampled_varcount": 8,
-                "first_date": new Date("2020-07-03 "),
-                "last_date": new Date("2020-09-29 "),
-                "coldate": new Date("2020-09-29 "),
-                "x1": 0.11867468611287255,
-                "x2": 0.35974,
-                "max_ndiffs": 23,
-                "mean_ndiffs": 17,
-                "nsamples": 6,
-                "mutations": [
-                    "aa:orf1a:R24C",
-                    "aa:orf1a:T265I",
-                    "aa:orf1a:L3930F",
-                    "aa:orf1b:P314L",
-                    "aa:orf1b:S1391L",
-                    "aa:S:D614G",
-                    "aa:orf3a:Q57H",
-                    "aa:E:P71S"
-                ],
-                "residual": -1.079247425000002,
-                "mcoldate": new Date("2020-09-02 ")
+            "parentId": 4,
+            "parentLabel": "NODE_0000003",
+            "thisId": 3,
+            "thisLabel": "B.1.363",
+            "children": [],
+            "branchLength": 0.29781,
+            "x": 0.35974,
+            "y": 3,
+            "isTip": true,
+            "cluster_idx": "4",
+            "label1": "B.1.363",
+            "count": 8,
+            "varcount": 8,
+            "sampled_varcount": 8,
+            "first_date": new Date("2020-07-03 "),
+            "last_date": new Date("2020-09-29 "),
+            "coldate": new Date("2020-09-29 "),
+            "x1": 0.11867468611287255,
+            "x2": 0.35974,
+            "max_ndiffs": 23,
+            "mean_ndiffs": 17,
+            "nsamples": 6,
+            "mutations": [
+                "aa:orf1a:R24C",
+                "aa:orf1a:T265I",
+                "aa:orf1a:L3930F",
+                "aa:orf1b:P314L",
+                "aa:orf1b:S1391L",
+                "aa:S:D614G",
+                "aa:orf3a:Q57H",
+                "aa:E:P71S"
+            ],
+            "residual": -1.0901697916667459,
+            "mcoldate": new Date("2020-09-02 ")
         }
 
         cy.window().then((win) => {
             expect(win.map_clusters_to_tips(df, clusters)).to.have.lengthOf(10)
-            expect(win.map_clusters_to_tips(df, clusters)[3]).to.eql(tip)
+            
+            // Test fails 
+            expect(win.map_clusters_to_tips(df, clusters)[3]).to.deep.equal(tip)
         })
     })
 })

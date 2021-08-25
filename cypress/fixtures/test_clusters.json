@@ -1,135 +1,135 @@
 [
   {
     "nodes": {
-      "EPI_ISL_542678": [
+      "EPI_ISL_123456": [
         [
-          "2020-05-02",
-          "EPI_ISL_542678",
-          "hCoV-19/USA/TX-HMH-1371/2020"
+          "2020-05-01",
+          "EPI_ISL_123456",
+          "hCoV-19/USA/TX-HMH-0000/2020"
         ],
         [
-          "2020-05-15",
-          "EPI_ISL_545194",
-          "hCoV-19/USA/TX-HMH-2234/2020"
+          "2020-05-18",
+          "EPI_ISL_223456",
+          "hCoV-19/USA/TX-HMH-0001/2020"
         ],
         [
-          "2020-05-15",
-          "EPI_ISL_545201",
-          "hCoV-19/USA/TX-HMH-2246/2020"
+          "2020-05-18",
+          "EPI_ISL_323456",
+          "hCoV-19/USA/TX-HMH-0002/2020"
         ],
         [
-          "2020-05-26",
-          "EPI_ISL_545290",
-          "hCoV-19/USA/TX-HMH-2403/2020"
+          "2020-05-22",
+          "EPI_ISL_423456",
+          "hCoV-19/USA/TX-HMH-0003/2020"
         ],
         [
-          "2020-06-10",
-          "EPI_ISL_543906",
-          "hCoV-19/USA/TX-HMH-2976/2020"
+          "2020-06-09",
+          "EPI_ISL_523456",
+          "hCoV-19/USA/TX-HMH-0004/2020"
         ]
       ],
-      "EPI_ISL_543301": [
+      "EPI_ISL_623456": [
         [
-          "2020-06-16",
-          "EPI_ISL_543301",
-          "hCoV-19/USA/TX-HMH-4019/2020"
+          "2020-06-18",
+          "EPI_ISL_623456",
+          "hCoV-19/USA/TX-HMH-0005/2020"
         ]
       ],
       "unsampled0": [],
-      "EPI_ISL_545450": [
+      "EPI_ISL_723456": [
         [
           "2020-06-05",
-          "EPI_ISL_545450",
-          "hCoV-19/USA/TX-HMH-2649/2020"
+          "EPI_ISL_723456",
+          "hCoV-19/USA/TX-HMH-0006/2020"
         ]
       ],
-      "EPI_ISL_789657": [
-        [
-          "2020-07-05",
-          "EPI_ISL_789657",
-          "hCoV-19/USA/TX-HMH-MCoV-10847/2020"
-        ],
-        [
-          "2020-07-07",
-          "EPI_ISL_784276",
-          "hCoV-19/USA/TX-HMH-MCoV-8225/2020"
-        ]
-      ],
-      "EPI_ISL_545540": [
-        [
-          "2020-06-03",
-          "EPI_ISL_545540",
-          "hCoV-19/USA/TX-HMH-2767/2020"
-        ]
-      ],
-      "EPI_ISL_745299": [
-        [
-          "2020-06-24",
-          "EPI_ISL_745299",
-          "hCoV-19/USA/TX-DSHS-1864/2020"
-        ]
-      ],
-      "EPI_ISL_780668": [
+      "EPI_ISL_823456": [
         [
           "2020-07-01",
-          "EPI_ISL_780668",
-          "hCoV-19/USA/TX-HMH-MCoV-8639/2020"
+          "EPI_ISL_823456",
+          "hCoV-19/USA/TX-HMH-MCoV-00000/2020"
+        ],
+        [
+          "2020-07-10",
+          "EPI_ISL_923456",
+          "hCoV-19/USA/TX-HMH-MCoV-0001/2020"
         ]
       ],
-      "EPI_ISL_789458": [
+      "EPI_ISL_133456": [
         [
-          "2020-07-08",
-          "EPI_ISL_789458",
-          "hCoV-19/USA/TX-HMH-MCoV-10410/2020"
+          "2020-06-07",
+          "EPI_ISL_133456",
+          "hCoV-19/USA/TX-HMH-0007/2020"
+        ]
+      ],
+      "EPI_ISL_143456": [
+        [
+          "2020-06-21",
+          "EPI_ISL_143456",
+          "hCoV-19/USA/TX-DSHS-0008/2020"
+        ]
+      ],
+      "EPI_ISL_153456": [
+        [
+          "2020-07-01",
+          "EPI_ISL_153456",
+          "hCoV-19/USA/TX-HMH-MCoV-0009/2020"
+        ]
+      ],
+      "EPI_ISL_163456": [
+        [
+          "2020-07-07",
+          "EPI_ISL_163456",
+          "hCoV-19/USA/TX-HMH-MCoV-1000/2020"
         ]
       ]
     },
     "edges": [
       [
-        "EPI_ISL_542678",
-        "EPI_ISL_543301",
+        "EPI_ISL_123456",
+        "EPI_ISL_623456",
         3.12,
         null
       ],
       [
-        "EPI_ISL_542678",
+        "EPI_ISL_123456",
         "unsampled0",
         1.61,
-        0.62
+        0.43
       ],
       [
-        "EPI_ISL_542678",
-        "EPI_ISL_545450",
+        "EPI_ISL_123456",
+        "EPI_ISL_723456",
         2.67,
         null
       ],
       [
-        "EPI_ISL_542678",
-        "EPI_ISL_789657",
+        "EPI_ISL_123456",
+        "EPI_ISL_823456",
         3.36,
         0.94
       ],
       [
         "unsampled0",
-        "EPI_ISL_545540",
+        "EPI_ISL_133456",
         1.24,
         null
       ],
       [
         "unsampled0",
-        "EPI_ISL_745299",
+        "EPI_ISL_143456",
         2.72,
         null
       ],
       [
-        "EPI_ISL_789657",
-        "EPI_ISL_780668",
+        "EPI_ISL_823456",
+        "EPI_ISL_153456",
         0.87,
         null
       ],
       [
-        "EPI_ISL_789657",
-        "EPI_ISL_789458",
+        "EPI_ISL_823456",
+        "EPI_ISL_163456",
         1.12,
         null
       ]

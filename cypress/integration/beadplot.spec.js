@@ -1,5 +1,7 @@
 // beadplot.spec.js is created with Cypress, https://www.cypress.io/
 // direct download of Cypress is required to run the tests
+
+// test_clusters is composed of fake data
 import clusters from '../fixtures/test_clusters.json'
 
 describe('Array-input functions', () => {
@@ -7,20 +9,21 @@ describe('Array-input functions', () => {
     it('Unique', () => {
         cy.window().then((win) => {
             Object.values(clusters[0]["nodes"]).forEach(e => e.forEach(e => coldates.push(e[0])))
-            expect(win.unique(coldates).length).to.eq(12)
-            expect(win.unique(coldates)).to.eql(['2020-05-02','2020-05-15', '2020-05-26', '2020-06-10', '2020-06-16', 
-            '2020-06-05', '2020-07-05', '2020-07-07', '2020-06-03', '2020-06-24', '2020-07-01', '2020-07-08'])
+            expect(win.unique(coldates).length).to.eq(11)
+            expect(win.unique(coldates)).to.eql(["2020-05-01","2020-05-18","2020-05-22","2020-06-09","2020-06-18","2020-06-05",
+                "2020-07-01","2020-07-10","2020-06-07","2020-06-21","2020-07-07"
+            ])
         })
     })
     it('Mode', () => {
         cy.window().then((win) => {
-            expect(win.mode(coldates)).to.eq("2020-05-15")
+            expect(win.mode(coldates)).to.eq("2020-05-18")
         })
     })
     it('Tabulate', () => {
         cy.window().then((win) => {
-            expect(win.tabulate(coldates)).to.eql({'2020-05-02': 1,'2020-05-15': 2, '2020-05-26': 1, '2020-06-10': 1, '2020-06-16': 1, 
-            '2020-06-05': 1, '2020-07-05': 1, '2020-07-07': 1, '2020-06-03': 1, '2020-06-24': 1, '2020-07-01': 1, '2020-07-08': 1})
+            expect(win.tabulate(coldates)).to.eql({'2020-05-01': 1,'2020-05-18': 2, '2020-05-22': 1, '2020-06-09': 1, '2020-06-18': 1, 
+            '2020-06-05': 1, '2020-07-01': 2, '2020-07-10': 1, '2020-06-07': 1, '2020-06-21': 1, '2020-07-07': 1})
         })
     })
 })
@@ -35,10 +38,10 @@ describe('Parse Functions', () => {
             result = win.parse_variant(variant, 0, 0, accn, null, null); 
 
             expect(result.variant).to.eql({
-                'accession': "EPI_ISL_542678",
-                'label': "USA/TX-HMH-1371",
-                'x1': new Date('2020-05-02 '),  
-                'x2': new Date('2020-06-10 '),  
+                'accession': "EPI_ISL_123456",
+                'label': "USA/TX-HMH-0000",
+                'x1': new Date('2020-05-01 '),  
+                'x2': new Date('2020-06-09 '),  
                 'y1': 0,
                 'y2': 0,
                 'count': 5,
@@ -51,12 +54,12 @@ describe('Parse Functions', () => {
             })
             expect(result.points[1]).to.eql({
                 'cidx': 0,
-                'variant': "EPI_ISL_542678",
-                'x': new Date('2020-05-15 '),
+                'variant': "EPI_ISL_123456",
+                'x': new Date('2020-05-18 '),
                 'y': 0,
                 'count': 2,
-                'accessions': ["EPI_ISL_545194", "EPI_ISL_545201"],
-                'labels': ['USA/TX-HMH-2234', 'USA/TX-HMH-2246'],
+                'accessions': ["EPI_ISL_223456", "EPI_ISL_323456"],
+                'labels': ['USA/TX-HMH-0001', 'USA/TX-HMH-0002'],
                 'region1': 'North America',
                 'region': ['North America','North America'],
                 'country': {"USA": 2},
@@ -72,10 +75,10 @@ describe('Parse Functions', () => {
             // More than one variant
             let variants = [result.variant]
             variants.push({
-                'accession': "EPI_ISL_543301",
+                'accession': "EPI_ISL_623456",
                 'label': "TX-HMH-4019",
-                'x1': new Date('2020-06-16 '),  
-                'x2': new Date('2020-06-16 '),  
+                'x1': new Date('2020-06-18 '),  
+                'x2': new Date('2020-06-18 '),  
                 'y1': 0,
                 'y2': 0,
                 'count': 1,
@@ -90,12 +93,12 @@ describe('Parse Functions', () => {
             let points = [result.points]
             points = points.concat({
                 'cidx': 1,
-                'variant': "EPI_ISL_543301",
-                'x': new Date("2020-06-16 "),
+                'variant': "EPI_ISL_623456",
+                'x': new Date("2020-06-18 "),
                 'y': 0,
                 'count': 1,
-                'accessions': ["EPI_ISL_545450"],
-                'labels': ['USA/TX-HMH-2649'],
+                'accessions': ["EPI_ISL_723456"],
+                'labels': ['USA/TX-HMH-0006'],
                 'region1': 'North America',
                 'region': ['North America'],
                 'country': {"USA": 1},
@@ -107,9 +110,9 @@ describe('Parse Functions', () => {
                 {
                     'y1': 0,
                     'y2': 0,
-                    'x1': new Date("2020-06-16 "),  
-                    'x2': new Date("2020-06-16 "),
-                    'parent': "USA/TX-HMH-1371",
+                    'x1': new Date("2020-06-18 "),  
+                    'x2': new Date("2020-06-18 "),
+                    'parent': "USA/TX-HMH-0000",
                     'child': "TX-HMH-4019",
                     'dist': 3.12,
                     'support': undefined
@@ -120,71 +123,71 @@ describe('Parse Functions', () => {
     it('parse_clusters', () => {
         // Passing of the test is dependent on parse_edgelist and parse_variant functions
         cy.window().then((win) => {
-            let edgelist = [{'y1': 1, 'y2': 2, 'x1': new Date("2020-06-16 "), 'x2': new Date("2020-06-16 "), 'parent': "USA/TX-HMH-1371", 'child': "USA/TX-HMH-4019", 'dist': 3.12, 'support': undefined},
-            {'y1': 1, 'y2': 3, 'x1': new Date("2020-05-02 "), 'x2': new Date("2020-05-02 "), 'parent': "USA/TX-HMH-1371", 'child': "unsampled0", 'dist': 1.61, 'support': 0.62},
-            {'y1': 1, 'y2': 4, 'x1': new Date("2020-06-05 "), 'x2': new Date("2020-06-05 "), 'parent': "USA/TX-HMH-1371", 'child': "USA/TX-HMH-2649", 'dist': 2.67, 'support': undefined},
-            {'y1': 1, 'y2': 5, 'x1': new Date("2020-07-05 "), 'x2': new Date("2020-07-05 "), 'parent': "USA/TX-HMH-1371", 'child': "USA/TX-HMH-MCoV-10847", 'dist': 3.36, 'support': 0.94},
-            {'y1': 3, 'y2': 6, 'x1': new Date("2020-06-03 "), 'x2': new Date("2020-06-03 "), 'parent': "unsampled0", 'child': "USA/TX-HMH-2767", 'dist': 1.24, 'support': undefined},
-            {'y1': 3, 'y2': 7, 'x1': new Date("2020-06-24 "), 'x2': new Date("2020-06-24 "), 'parent': "unsampled0", 'child': "USA/TX-DSHS-1864", 'dist': 2.72, 'support': undefined},
-            {'y1': 5, 'y2': 8, 'x1': new Date("2020-07-01 "), 'x2': new Date("2020-07-01 "), 'parent': "USA/TX-HMH-MCoV-10847", 'child': "USA/TX-HMH-MCoV-8639", 'dist': 0.87, 'support': undefined},
-            {'y1': 5, 'y2': 9, 'x1': new Date("2020-07-08 "), 'x2': new Date("2020-07-08 "), 'parent': "USA/TX-HMH-MCoV-10847", 'child': "USA/TX-HMH-MCoV-10410", 'dist': 1.12, 'support': undefined}]
+            let edgelist = [{'y1': 1, 'y2': 2, 'x1': new Date("2020-06-18 "), 'x2': new Date("2020-06-18 "), 'parent': "USA/TX-HMH-0000", 'child': "USA/TX-HMH-0005", 'dist': 3.12, 'support': undefined},
+            {'y1': 1, 'y2': 3, 'x1': new Date("2020-05-01 "), 'x2': new Date("2020-05-01 "), 'parent': "USA/TX-HMH-0000", 'child': "unsampled0", 'dist': 1.61, 'support': 0.43},
+            {'y1': 1, 'y2': 4, 'x1': new Date("2020-06-05 "), 'x2': new Date("2020-06-05 "), 'parent': "USA/TX-HMH-0000", 'child': "USA/TX-HMH-0006", 'dist': 2.67, 'support': undefined},
+            {'y1': 1, 'y2': 5, 'x1': new Date("2020-07-01 "), 'x2': new Date("2020-07-01 "), 'parent': "USA/TX-HMH-0000", 'child': "USA/TX-HMH-MCoV-00000", 'dist': 3.36, 'support': 0.94},
+            {'y1': 3, 'y2': 6, 'x1': new Date("2020-06-07 "), 'x2': new Date("2020-06-07 "), 'parent': "unsampled0", 'child': "USA/TX-HMH-0007", 'dist': 1.24, 'support': undefined},
+            {'y1': 3, 'y2': 7, 'x1': new Date("2020-06-21 "), 'x2': new Date("2020-06-21 "), 'parent': "unsampled0", 'child': "USA/TX-DSHS-0008", 'dist': 2.72, 'support': undefined},
+            {'y1': 5, 'y2': 8, 'x1': new Date("2020-07-01 "), 'x2': new Date("2020-07-01 "), 'parent': "USA/TX-HMH-MCoV-00000", 'child': "USA/TX-HMH-MCoV-0009", 'dist': 0.87, 'support': undefined},
+            {'y1': 5, 'y2': 9, 'x1': new Date("2020-07-07 "), 'x2': new Date("2020-07-07 "), 'parent': "USA/TX-HMH-MCoV-00000", 'child': "USA/TX-HMH-MCoV-1000", 'dist': 1.12, 'support': undefined}]
 
-            let variants = [{"accession": "EPI_ISL_542678","label": "USA/TX-HMH-1371","x1": new Date("2020-05-02 "),"x2": new Date("2020-07-05 "),"y1": 1,"y2": 1,"count": 5,"country": {"USA": 5},
+            let variants = [{"accession": "EPI_ISL_123456","label": "USA/TX-HMH-0000","x1": new Date("2020-05-01 "),"x2": new Date("2020-07-01 "),"y1": 1,"y2": 1,"count": 5,"country": {"USA": 5},
                     "region": [ "North America", "North America", "North America", "North America", "North America"],"numBeads": 4,"parent": null,"dist": 0,"unsampled": false },
-                {"accession": "EPI_ISL_543301","label": "USA/TX-HMH-4019","x1": new Date("2020-06-16 "),"x2": new Date("2020-06-16 "),"y1": 2,"y2": 2,"count": 1,"country": {"USA": 1},
-                    "region": [ "North America"],"numBeads": 1,"parent": "USA/TX-HMH-1371","dist": 3.12,"unsampled": false},
-                {"accession": "unsampled0","label": "unsampled0","x1": new Date("2020-05-02 "),"x2": new Date("2020-07-08 "),"y1": 3,"y2": 3,"count": 0,"country": null,
-                    "region": null,"numBeads": 0,"parent": "USA/TX-HMH-1371","dist": 1.61,"unsampled": true},
-                {"accession": "EPI_ISL_545450","label": "USA/TX-HMH-2649","x1": new Date("2020-06-05 "),"x2": new Date("2020-06-05 "),"y1": 4,"y2": 4,"count": 1,"country": {"USA": 1},
-                    "region": ["North America"],"numBeads": 1,"parent": "USA/TX-HMH-1371","dist": 2.67,"unsampled": false },
-                {"accession": "EPI_ISL_789657","label": "USA/TX-HMH-MCoV-10847","x1": new Date("2020-07-01 "),"x2": new Date("2020-07-08 "),"y1": 5,"y2": 5,"count": 2,"country": {"USA": 2},
-                    "region": ["North America","North America"],"numBeads": 2,"parent": "USA/TX-HMH-1371","dist": 3.36,"unsampled": false},
-                {"accession": "EPI_ISL_545540","label": "USA/TX-HMH-2767","x1": new Date("2020-06-03 "),"x2": new Date("2020-06-03 "),"y1": 6,"y2": 6,"count": 1,"country": {"USA": 1},
+                {"accession": "EPI_ISL_623456","label": "USA/TX-HMH-0005","x1": new Date("2020-06-18 "),"x2": new Date("2020-06-18 "),"y1": 2,"y2": 2,"count": 1,"country": {"USA": 1},
+                    "region": [ "North America"],"numBeads": 1,"parent": "USA/TX-HMH-0000","dist": 3.12,"unsampled": false},
+                {"accession": "unsampled0","label": "unsampled0","x1": new Date("2020-05-01 "),"x2": new Date("2020-07-10 "),"y1": 3,"y2": 3,"count": 0,"country": null,
+                    "region": null,"numBeads": 0,"parent": "USA/TX-HMH-0000","dist": 1.61,"unsampled": true},
+                {"accession": "EPI_ISL_723456","label": "USA/TX-HMH-0006","x1": new Date("2020-06-05 "),"x2": new Date("2020-06-05 "),"y1": 4,"y2": 4,"count": 1,"country": {"USA": 1},
+                    "region": ["North America"],"numBeads": 1,"parent": "USA/TX-HMH-0000","dist": 2.67,"unsampled": false },
+                {"accession": "EPI_ISL_823456","label": "USA/TX-HMH-MCoV-00000","x1": new Date("2020-07-01 "),"x2": new Date("2020-07-10 "),"y1": 5,"y2": 5,"count": 2,"country": {"USA": 2},
+                    "region": ["North America","North America"],"numBeads": 2,"parent": "USA/TX-HMH-0000","dist": 3.36,"unsampled": false},
+                {"accession": "EPI_ISL_133456","label": "USA/TX-HMH-0007","x1": new Date("2020-06-07 "),"x2": new Date("2020-06-07 "),"y1": 6,"y2": 6,"count": 1,"country": {"USA": 1},
                     "region": ["North America"],"numBeads": 1,"parent": "unsampled0","dist": 1.24,"unsampled": false},
-                {"accession": "EPI_ISL_745299","label": "USA/TX-DSHS-1864","x1": new Date("2020-06-24 "),"x2": new Date("2020-06-24 "),"y1": 7,"y2": 7,"count": 1,"country": {    "USA": 1},
+                {"accession": "EPI_ISL_143456","label": "USA/TX-DSHS-0008","x1": new Date("2020-06-21 "),"x2": new Date("2020-06-21 "),"y1": 7,"y2": 7,"count": 1,"country": {    "USA": 1},
                     "region": ["North America"],"numBeads": 1,"parent": "unsampled0","dist": 2.72,"unsampled": false},
-                {"accession": "EPI_ISL_780668","label": "USA/TX-HMH-MCoV-8639","x1": new Date("2020-07-01 "),"x2": new Date("2020-07-01 "),"y1": 8,"y2": 8,"count": 1,"country": {    "USA": 1},
-                    "region": ["North America"],"numBeads": 1,"parent": "USA/TX-HMH-MCoV-10847","dist": 0.87,"unsampled": false},
-                {"accession": "EPI_ISL_789458","label": "USA/TX-HMH-MCoV-10410","x1": new Date("2020-07-08 "),"x2": new Date("2020-07-08 "),"y1": 9,"y2": 9,"count": 1,"country": {"USA": 1},
-                    "region": ["North America"],"numBeads": 1,"parent": "USA/TX-HMH-MCoV-10847","dist": 1.12,"unsampled": false}
+                {"accession": "EPI_ISL_153456","label": "USA/TX-HMH-MCoV-0009","x1": new Date("2020-07-01 "),"x2": new Date("2020-07-01 "),"y1": 8,"y2": 8,"count": 1,"country": {    "USA": 1},
+                    "region": ["North America"],"numBeads": 1,"parent": "USA/TX-HMH-MCoV-00000","dist": 0.87,"unsampled": false},
+                {"accession": "EPI_ISL_163456","label": "USA/TX-HMH-MCoV-1000","x1": new Date("2020-07-07 "),"x2": new Date("2020-07-07 "),"y1": 9,"y2": 9,"count": 1,"country": {"USA": 1},
+                    "region": ["North America"],"numBeads": 1,"parent": "USA/TX-HMH-MCoV-00000","dist": 1.12,"unsampled": false}
             ]
 
-            let points = [{"cidx": "0","variant": "EPI_ISL_542678","x": new Date("2020-05-02 "),"y": 1,"count": 1,"accessions": [
-                        "EPI_ISL_542678"],"labels": ["USA/TX-HMH-1371"],"region1": "North America","region": ["North America"],"country": {"USA": 1},
+            let points = [{"cidx": "0","variant": "EPI_ISL_123456","x": new Date("2020-05-01 "),"y": 1,"count": 1,"accessions": [
+                        "EPI_ISL_123456"],"labels": ["USA/TX-HMH-0000"],"region1": "North America","region": ["North America"],"country": {"USA": 1},
                         "parent": null,"dist": 0},
-                        {"cidx": "0","variant": "EPI_ISL_542678","x": new Date("2020-05-15 "),"y": 1,"count": 2,"accessions": 
-                        ["EPI_ISL_545194","EPI_ISL_545201"],"labels": ["USA/TX-HMH-2234","USA/TX-HMH-2246"],"region1": "North America","region": ["North America","North America"],
+                        {"cidx": "0","variant": "EPI_ISL_123456","x": new Date("2020-05-18 "),"y": 1,"count": 2,"accessions": 
+                        ["EPI_ISL_223456","EPI_ISL_323456"],"labels": ["USA/TX-HMH-0001","USA/TX-HMH-0002"],"region1": "North America","region": ["North America","North America"],
                         "country": {"USA": 2},"parent": null,"dist": 0},
-                        {"cidx": "0","variant": "EPI_ISL_542678","x": new Date("2020-05-26 "),"y": 1,"count": 1,"accessions": 
-                        ["EPI_ISL_545290"],"labels": ["USA/TX-HMH-2403"],"region1": "North America","region": ["North America"],
+                        {"cidx": "0","variant": "EPI_ISL_123456","x": new Date("2020-05-22 "),"y": 1,"count": 1,"accessions": 
+                        ["EPI_ISL_423456"],"labels": ["USA/TX-HMH-0003"],"region1": "North America","region": ["North America"],
                         "country": {"USA": 1},"parent": null,"dist": 0},
-                        {"cidx": "0","variant": "EPI_ISL_542678","x": new Date("2020-06-10 "),"y": 1,"count": 1,"accessions": 
-                        ["EPI_ISL_543906"],"labels": ["USA/TX-HMH-2976"],"region1": "North America","region": ["North America"],
+                        {"cidx": "0","variant": "EPI_ISL_123456","x": new Date("2020-06-09 "),"y": 1,"count": 1,"accessions": 
+                        ["EPI_ISL_523456"],"labels": ["USA/TX-HMH-0004"],"region1": "North America","region": ["North America"],
                         "country": {"USA": 1}, "parent": null,"dist": 0},
-                        {"cidx": "0","variant": "EPI_ISL_543301","x": new Date("2020-06-16 "),"y": 2,"count": 1,"accessions": 
-                        ["EPI_ISL_543301"],"labels": ["USA/TX-HMH-4019"],"region1": "North America","region": ["North America"],
-                        "country": {"USA": 1},"parent": "USA/TX-HMH-1371","dist": 3.12},
-                        {"cidx": "0","variant": "EPI_ISL_545450","x": new Date("2020-06-05 "),"y": 4,"count": 1,"accessions": 
-                        ["EPI_ISL_545450"],"labels": ["USA/TX-HMH-2649"],"region1": "North America","region": ["North America"],
-                        "country": {"USA": 1},"parent": "USA/TX-HMH-1371","dist": 2.67},
-                        {"cidx": "0","variant": "EPI_ISL_789657","x": new Date("2020-07-05 "),"y": 5,"count": 1,"accessions": 
-                        ["EPI_ISL_789657"],"labels": ["USA/TX-HMH-MCoV-10847"],"region1": "North America","region": ["North America"],
-                        "country": {"USA": 1},"parent": "USA/TX-HMH-1371","dist": 3.36},
-                        {"cidx": "0","variant": "EPI_ISL_789657","x": new Date("2020-07-07 "),"y": 5,"count": 1,"accessions": 
-                        ["EPI_ISL_784276"],"labels": ["USA/TX-HMH-MCoV-8225"],"region1": "North America","region": ["North America"],
-                        "country": {"USA": 1},"parent": "USA/TX-HMH-1371","dist": 3.36},
-                        {"cidx": "0","variant": "EPI_ISL_545540","x": new Date("2020-06-03 "),"y": 6,"count": 1,"accessions": 
-                        ["EPI_ISL_545540"],"labels": ["USA/TX-HMH-2767"],"region1": "North America","region": ["North America"],
+                        {"cidx": "0","variant": "EPI_ISL_623456","x": new Date("2020-06-18 "),"y": 2,"count": 1,"accessions": 
+                        ["EPI_ISL_623456"],"labels": ["USA/TX-HMH-0005"],"region1": "North America","region": ["North America"],
+                        "country": {"USA": 1},"parent": "USA/TX-HMH-0000","dist": 3.12},
+                        {"cidx": "0","variant": "EPI_ISL_723456","x": new Date("2020-06-05 "),"y": 4,"count": 1,"accessions": 
+                        ["EPI_ISL_723456"],"labels": ["USA/TX-HMH-0006"],"region1": "North America","region": ["North America"],
+                        "country": {"USA": 1},"parent": "USA/TX-HMH-0000","dist": 2.67},
+                        {"cidx": "0","variant": "EPI_ISL_823456","x": new Date("2020-07-01 "),"y": 5,"count": 1,"accessions": 
+                        ["EPI_ISL_823456"],"labels": ["USA/TX-HMH-MCoV-00000"],"region1": "North America","region": ["North America"],
+                        "country": {"USA": 1},"parent": "USA/TX-HMH-0000","dist": 3.36},
+                        {"cidx": "0","variant": "EPI_ISL_823456","x": new Date("2020-07-10 "),"y": 5,"count": 1,"accessions": 
+                        ["EPI_ISL_923456"],"labels": ["USA/TX-HMH-MCoV-0001"],"region1": "North America","region": ["North America"],
+                        "country": {"USA": 1},"parent": "USA/TX-HMH-0000","dist": 3.36},
+                        {"cidx": "0","variant": "EPI_ISL_133456","x": new Date("2020-06-07 "),"y": 6,"count": 1,"accessions": 
+                        ["EPI_ISL_133456"],"labels": ["USA/TX-HMH-0007"],"region1": "North America","region": ["North America"],
                         "country": {"USA": 1},"parent": "unsampled0","dist": 1.24},
-                        {"cidx": "0","variant": "EPI_ISL_745299","x": new Date("2020-06-24 "),"y": 7,"count": 1,"accessions": 
-                        ["EPI_ISL_745299"],"labels": ["USA/TX-DSHS-1864"],"region1": "North America","region": ["North America"],
+                        {"cidx": "0","variant": "EPI_ISL_143456","x": new Date("2020-06-21 "),"y": 7,"count": 1,"accessions": 
+                        ["EPI_ISL_143456"],"labels": ["USA/TX-DSHS-0008"],"region1": "North America","region": ["North America"],
                         "country": {"USA": 1},"parent": "unsampled0","dist": 2.72},
-                        {"cidx": "0","variant": "EPI_ISL_780668","x": new Date("2020-07-01 "),"y": 8,"count": 1,"accessions": 
-                        ["EPI_ISL_780668"],"labels": ["USA/TX-HMH-MCoV-8639"],"region1": "North America","region": ["North America"],
-                        "country": {"USA": 1},"parent": "USA/TX-HMH-MCoV-10847","dist": 0.87},
-                        {"cidx": "0","variant": "EPI_ISL_789458","x": new Date("2020-07-08 "),"y": 9,"count": 1,"accessions": 
-                        ["EPI_ISL_789458"],"labels": ["USA/TX-HMH-MCoV-10410"],"region1": "North America","region": ["North America"],
-                        "country": {"USA": 1},"parent": "USA/TX-HMH-MCoV-10847","dist": 1.12}]
+                        {"cidx": "0","variant": "EPI_ISL_153456","x": new Date("2020-07-01 "),"y": 8,"count": 1,"accessions": 
+                        ["EPI_ISL_153456"],"labels": ["USA/TX-HMH-MCoV-0009"],"region1": "North America","region": ["North America"],
+                        "country": {"USA": 1},"parent": "USA/TX-HMH-MCoV-00000","dist": 0.87},
+                        {"cidx": "0","variant": "EPI_ISL_163456","x": new Date("2020-07-07 "),"y": 9,"count": 1,"accessions": 
+                        ["EPI_ISL_163456"],"labels": ["USA/TX-HMH-MCoV-1000"],"region1": "North America","region": ["North America"],
+                        "country": {"USA": 1},"parent": "USA/TX-HMH-MCoV-00000","dist": 1.12}]
 
             beaddata = win.parse_clusters(clusters)
             expect(beaddata[0].edgelist).to.eql(edgelist)
@@ -205,22 +208,22 @@ describe('Parse Functions', () => {
             win.beaddata = beaddata
 
             win.beadplot(0)
-            cy.get('.beadplot-content>svg>g').find('#USA-TX-HMH-1371').should('have.attr', 'stroke', '#777')
-            cy.get('.beadplot-content>svg>g').find('#USA-TX-HMH-MCoV-10847').should('have.attr', 'stroke', '#777')
+            cy.get('.beadplot-content>svg>g').find('#USA-TX-HMH-0000').should('have.attr', 'stroke', '#777')
+            cy.get('.beadplot-content>svg>g').find('#USA-TX-HMH-MCoV-00000').should('have.attr', 'stroke', '#777')
             cy.get('.beadplot-content>svg>g').find('#unsampled0').should('have.attr', 'stroke', '#ccc')
             cy.get('[stroke="#bbd"]').should('have.length', 4)
 
             cy.get('.beadplot-content>svg>g>text').should(($text) => {
                 expect($text).to.have.length(9)
-                expect($text.eq(0)).to.contain('USA/TX-HMH-1371')
-                expect($text.eq(1)).to.contain('USA/TX-HMH-4019')
+                expect($text.eq(0)).to.contain('USA/TX-HMH-0000')
+                expect($text.eq(1)).to.contain('USA/TX-HMH-0005')
                 expect($text.eq(2)).to.contain('unsampled0')
-                expect($text.eq(3)).to.contain('USA/TX-HMH-2649')
-                expect($text.eq(4)).to.contain('USA/TX-HMH-MCoV-10847')
-                expect($text.eq(5)).to.contain('USA/TX-HMH-2767')
-                expect($text.eq(6)).to.contain('USA/TX-DSHS-1864')
-                expect($text.eq(7)).to.contain('USA/TX-HMH-MCoV-8639')
-                expect($text.eq(8)).to.contain('USA/TX-HMH-MCoV-10410')
+                expect($text.eq(3)).to.contain('USA/TX-HMH-0006')
+                expect($text.eq(4)).to.contain('USA/TX-HMH-MCoV-00000')
+                expect($text.eq(5)).to.contain('USA/TX-HMH-0007')
+                expect($text.eq(6)).to.contain('USA/TX-DSHS-0008')
+                expect($text.eq(7)).to.contain('USA/TX-HMH-MCoV-0009')
+                expect($text.eq(8)).to.contain('USA/TX-HMH-MCoV-1000')
             }) 
 
             cy.get('.beadplot-content>svg>g>circle').then(($circ) => {
@@ -300,23 +303,23 @@ describe('Tooltips', () => {
         cy.get('[stroke-width="3"]').first().trigger('mouseover')
         cy.get('.tooltip').contains('North America: 5')
         cy.get('.tooltip').contains('Unique collection dates: 4')
-        cy.get('.tooltip').contains('2020-05-02 / 2020-07-05')
+        cy.get('.tooltip').contains('2020-05-01 / 2020-07-01')
  
         cy.get('[stroke="#ccc"]').first().trigger('mouseover')
-        cy.get('.tooltip').contains('Parent: USA/TX-HMH-1371')
+        cy.get('.tooltip').contains('Parent: USA/TX-HMH-0000')
         cy.get('.tooltip').contains('Genomic distance: 1.61')
 
         cy.get('#right-arrow').click()
         cy.get('[stroke="#bbd"]').trigger('mouseover', {force: true})
-        cy.get('.tooltip').contains('Parent: USA/TX-HMH-MCoV-10847')
-        cy.get('.tooltip').contains('Child: USA/TX-HMH-MCoV-8639')
+        cy.get('.tooltip').contains('Parent: USA/TX-HMH-MCoV-00000')
+        cy.get('.tooltip').contains('Child: USA/TX-HMH-MCoV-0009')
         cy.get('.tooltip').contains('Genomic distance: 0.87')
         cy.get('.tooltip').contains('Support: n/a')
         cy.get('.tooltip').contains('Collection date: 2020-07-01')
 
         cy.get('circle:visible').first().trigger('mouseover')
         cy.get('.tooltip').contains('North America: 1')
-        cy.get('.tooltip').contains('Collection date: 2020-05-02')
+        cy.get('.tooltip').contains('Collection date: 2020-05-01')
     })
 })
 
