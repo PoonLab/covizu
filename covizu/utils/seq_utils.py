@@ -121,7 +121,10 @@ def apply_features(diffs, missing, refseq):
 
 def fromisoformat(dt):
     """ Convert ISO date to Python datetime.date object to support Python <3.7 """
-    year, month, day = map(int, dt.split('-'))
+    try:
+        year, month, day = map(int, dt.split('-'))
+    except ValueError:
+        return None
     return date(year, month, day)
 
 

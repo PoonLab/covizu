@@ -74,7 +74,7 @@ def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None):
                 rejects['baddate'] += 1
                 continue
             coldate = fromisoformat(record['covv_collection_date'])
-            if coldate < mindate or coldate > date.today():
+            if coldate is None or coldate < mindate or coldate > date.today():
                 # reject sequences with nonsense collection date
                 rejects['baddate'] += 1
                 continue
@@ -212,11 +212,17 @@ def sort_by_lineage(records, callback=None):
     for i, record in enumerate(records):
         if callback and i % 1000 == 0:
             callback('aligned {} records'.format(i))
+
         lineage = record['covv_lineage']
-        if lineage is not None:
-            if lineage not in result:
-                result.update({lineage: []})
-            result[lineage].append(record)
+
+        if lineage is None or lineage == '':
+            # discard uncategorized genomes, #324
+            continue
+
+        if lineage not in result:
+            result.update({lineage: []})
+        result[lineage].append(record)
+
     return result
 
 
