@@ -214,6 +214,7 @@ def sort_by_lineage(records, callback=None):
             callback('aligned {} records'.format(i))
 
         lineage = record['covv_lineage']
+
         if lineage is None or lineage == '':
             # discard uncategorized genomes, #324
             continue
@@ -221,6 +222,7 @@ def sort_by_lineage(records, callback=None):
         if lineage not in result:
             result.update({lineage: []})
         result[lineage].append(record)
+
     return result
 
 
