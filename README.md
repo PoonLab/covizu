@@ -15,7 +15,7 @@ This `opendata` branch is a version of CoVizu that enables users to run the enti
 * [RapidNJ](https://birc.au.dk/software/rapidnj/)
 * [Pangolin](https://github.com/cov-lineages/pangolin/)
 
-## Usage
+## Example usage
 
 This sequence of commands demonstrates how to run the CoVizu pipeline using the [Open Data files](https://nextstrain.org/blog/2021-07-08-ncov-open-announcement) provided by the Nextstrain development team, which are derived from the NCBI Genbank database.
 
@@ -33,13 +33,25 @@ This sequence of commands demonstrates how to run the CoVizu pipeline using the 
    ```
    The `--xz` and `--mgz` flags tell the script that the FASTA and metadata files are xz- and gzip-compressed, respectively.
    Leaving these files in their compressed state while streaming data minimizes data storage requirements.
-   Converting these files (about 1.2 million genome records) consumed about 45 minutes on my Ubuntu workstation.
+   Converting these files (about 1.2 million genome records) consumed about an hour on my AMD/Ryzen workstation running Ubuntu.
 
 3. To run the analysis, we call the Python script `process.py` on the JSON file produced by `convert.py`:
    ```console
-   $ python3 process.py opendata.json.xz
+   $ python3 process.py opendata.2021-08-25.xz --ft2bin fasttree2-mp -np 8
    ```
+   The `-np` argument is used to set the number of cores for [MPI](https://en.wikipedia.org/wiki/Message_Passing_Interface) processing.
+   You should change this number according to your hardware (number of cores, RAM).
+
+4. The analysis script in step 3 writes three time-stamped output files to sub-directory `/data`.  To view these data in the CoVizu web interface, you need to copy these files as follows:
+   ```console
+   $ cp data/clusters.2021-08-25T17:24:55.json data/clusters.json
+   $ cp data/dbstats.2021-08-25T17:24:55.json data/dbstats.json
+   $ cp data/timetree.2021-08-25T17:24:55.nwk data/timetree.nwk
+   ```
+   Keeping the time-stamped data files is useful for revisiting results at a previous time, and they are relatively compact.
+
+5. Launch a local webserver with `bash run-server.sh` or `python3 -m http.server 8001 --bind 127.0.0.1`, and navigate your browser to `localhost:8001`.
 
 
 ## Acknowledgements
-The development and validation of these scripts was made possible by the labs who have generated and contributed SARS-COV-2 genomic sequence data that is curated and published by [GISAID](https://www.gisaid.org/).  We sincerely thank these labs for making this information available to the public and open science.
+The development and validation of these scripts was made possible by the labs who have generated and contributed SARS-COV-2 genomic sequence data, much of which has been curated and published by the [GISAID Initiative](https://www.gisaid.org/).  We sincerely thank these labs for making this information available to the public and open science.
