@@ -49,18 +49,18 @@ def parse_metadata(handle, set_region=None, delimiter=',', callback=None):
             'coldate': row[args.coldate],
             'region': row.get(args.region, set_region),
             'country': row[args.country],
-            'division': row.get(args.division, None)
+            'division': row.get(args.division, None),
+            'lineage': row[args.lineage]
         }})
 
     return metadata
 
 
-def combine(handle, lineage_file, metadata, minlen=29000, mindate='2019-12-01', callback=None):
+def combine(handle, metadata, minlen=29000, mindate='2019-12-01', callback=None):
     """
     Combine FASTA and metadata records into dictionary objects and do some basic filtering.
 
     :param handle:  file handle, open in read mode to FASTA
-    :param lineage_file:  file handle, open in read mode to Pangolin CSV output
     :param metadata:  dict, returned from parse_metadata()
     :param minlen:  int, minimum genome length
     :param mindate:  str, earliest sample collection date in ISO-8601 format
@@ -69,17 +69,6 @@ def combine(handle, lineage_file, metadata, minlen=29000, mindate='2019-12-01', 
     :yield:  dict, combined genome and metadata for one record
     """
     mindate = seq_utils.fromisoformat(mindate)
-
-    # parse CSV output from Pangolin
-    reader = DictReader(lineage_file)
-    if 'taxon' not in reader.fieldnames or 'lineage' not in reader.fieldnames:
-        if callback:
-            callback("Lineage CSV header does not match expected.", level='ERROR')
-        sys.exit()
-
-    lineages = {}
-    for row in reader:
-        lineages.update({row['taxon']: row['lineage']})
 
     rejects = {'short': 0, 'baddate': 0}
     for label, seq in seq_utils.iter_fasta(handle):
@@ -102,11 +91,11 @@ def combine(handle, lineage_file, metadata, minlen=29000, mindate='2019-12-01', 
             rejects['baddate'] += 1
             continue  # reject records with non-sensical collection date
 
-        lineage = lineages.get(label, None)
+        lineage = metadata[label]['lineage']
         if lineage is None:
             if callback:
                 callback(
-                    "Failed to retrieve lineage assignment for {}".format(header),
+                    "Failed to retrieve lineage assignment for {}".format(label),
                     level='ERROR'
                 )
             sys.exit()
@@ -223,7 +212,7 @@ if __name__ == "__main__":
         handle = lzma.open(args.infile, 'rt')
     else:
         handle = open(args.infile)
-    feed = combine(handle, args.lineages, metadata, minlen=args.minlen, mindate=args.mindate,
+    feed = combine(handle, metadata, minlen=args.minlen, mindate=args.mindate,
                    callback=callback)
     for record in feed:
         outfile.write(json.dumps(record)+'\n')
