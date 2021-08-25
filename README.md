@@ -2,83 +2,39 @@
 
 CoVizu is an open source project to develop a `near real time' SARS-CoV-2 genome analysis and visualization system that highlights potential cases of importation from other countries or ongoing community transmission.
 
-The current mode of visualization employed by CoVizu that we are tentatively referring to as a "beadplot":
+This `opendata` branch is a version of CoVizu that enables users to run the entire analysis and visualize results without the requirement of special access to any particular database.  
 
-<p align="center">
-<img src="doc/beadplot.png" width="500px"/>
-</p>
+## Requirements
+* [Python](https://www.python.org/) 3.3 or higher
+* [minimap2](https://github.com/lh3/minimap2)
+* [Fasttree 2.1](http://www.microbesonline.org/fasttree/)
+* [TreeTime 0.8+](https://github.com/neherlab/treetime)
+* 
 
-### How to read a beadplot:
+## Usage
 
-* Each horizontal line segment represents a unique SARS-CoV-2 genomic sequence variant.  The emergence of a single new mutation in an infection is sufficient to establish a new variant.  A given variant may be observed multiple times as identical genome sequences, where `identity' is loosely defined to accommodate genomes with incomplete coverage and ambiguous base calls.  (Following GISAID's definition of a "complete genome", we require a minimum sequence length of 29,000 nt.)
-* Each circle represents one or more cases of a variant that were sampled on a given date.  The size (area) of the circle is proportional to the number of sequences.
-* Cases are arranged in chronological order from left to right.
-* Vertical lines connect variants that are related by a minimum spanning tree, which gives a *rough* approximation of transmission links.  The variant at the bottom terminus of the vertical line is the putative source.  
-* The relative location of variants along the vertical axis does not convey any information.  The variants are sorted with respect to the vertical axis such that ancestral variants are always below their "descendant" variants.
+This sequence of commands demonstrates how to run the CoVizu pipeline using the [Open Data files](https://nextstrain.org/blog/2021-07-08-ncov-open-announcement) provided by the Nextstrain development team, which are derived from the NCBI Genbank database.
 
-**It is not feasible to reconstruct accurate links using only genomic data.**  However, our objective is to identify population-level events like importations into Canada, not to attribute a transmission to a specific source individual.
+1. First, we obtain the FASTA and metadata files from the Nextstrain data server:
+   ```console
+   $ wget https://data.nextstrain.org/files/ncov/open/sequences.fasta.xz
+   $ wget https://data.nextstrain.org/files/ncov/open/metadata.tsv.gz--2021-08-25 14:50:12--  
+   ```
+   Note, if you do not have the [`wget`](https://www.gnu.org/software/wget/) program then you can use a web browser to manually download the files at their respective URLs.
 
+2. Next, we use the Python script `convert.py` to combine and convert these data files into a single xz-compressed JSON file.
+   This script is designed to accommodate different tabular file formats for the metadata, *i.e.*, comma-separated, tab-separated, and different amounts of data.
+   ```console
+   $ python3 convert.py sequences.fasta.xz metadata.tsv.gz --xz --mgz --region region --division division --outfile opendata.json.xz
+   ```
+   The `--xz` and `--mgz` flags tell the script that the FASTA and metadata files are xz- and gzip-compressed, respectively.
+   Leaving these files in their compressed state while streaming data minimizes data storage requirements.
+   Converting these files (about 1.2 million genome records) consumed about 45 minutes on my Ubuntu workstation.
 
-## Rationale
-
-There is a rapidly accumulating number of genome sequences of severe acute 
-respiratory syndrome coronavirus 2 (SARS-CoV-2) collected at sites around 
-the world, predominantly available through the Global Intiative on Sharing 
-All Influenza Data (GISAID) database.
-The public release of these genome sequences in near real-time is an 
-unprecedented resource for molecular epidemiology and public health.
-For example, [nextstrain](http://nextstrain.org) has been at the forefront 
-of analyzing and communicating the global distribution of SARS-CoV-2 genomic 
-variation.
-
-The central feature of [nextstrain](nextstrain.org) is a reconstruction of 
-a time-scaled phylogeny (a tree-based model of how infections are related 
-by common ancestors back in time).
-Geographic locations of samples are mapped onto the tree by colour to 
-communicate the global distribution of the pandemic over time.
-However, it is not obvious how useful (actionable) information can be best 
-extracted from these data, particularly in the context of a regional public 
-health authority.
-
-A significant challenge in using a time-scaled tree to visualize the 
-evolutionary (and, to some approximation, epidemiological) relationships 
-among sampled infections is that most of the image is occupied by 
-ancestral lineages whose existence were reconstructed from the observed 
-infections.
-One of our basic assumptions in developing CoVizu is that ancestral genomes 
-are directly sampled --- we think this is not unreasonable given the 
-relatively slow rate of molecular evolution in comparison to the virus 
-transmission rate.
-
-Another limitation of the tree visualization is that it does not convey 
-information about observing the same genome sequence from multiple samples 
-over time.
-There is no means to differentiate identical sequences in a phylogeny 
-because there are no phylogenetically informative sites that separate them.
-One could extend the tips of the tree to span the time period of sample 
-collection and mark sampled genomes as in the beadplot above.
-However, the time scale of sampling identical genomes is relatively short 
-compared to the evolutionary history of the virus that is represented by 
-the tree.
-
-
-## Current workflow
-
-1. Sequences from the last 24 hours are bulk downloaded from the GISAID database.  All developers have signed the GISAID data access agreement, and sequences are not being re-distributed.
-
-2. Sequences are aligned pairwise against the SARS-COV-2 reference genome using the short read mapper [minimap2](https://github.com/lh3/minimap2) and a Python wrapper `minimap2.py` that applies the [CIGAR](https://samtools.github.io/hts-specs/SAMv1.pdf) string to each genome to either reconstitute the aligned sequence or extract all differences from the reference. 
-
-3. Genomes are classified into [Pangolin lineages](https://github.com/cov-lineages/pangolin) using the script `pangolearn.py`.
-
-3. A single representative genome is selected for each Pangolin lineage.  We take the most recent sample that pass all of our filtering criteria (<1% uncalled bases, genetic divergence consistent with molecular clock, with all [problematic sites](https://github.com/W-L/ProblematicSites_SARS-CoV2) filtered out).
-
-4. A time-scaled tree is reconstructed using a combination of [fasttree2](http://www.microbesonline.org/fasttree/) and [TreeTime](https://github.com/neherlab/treetime).
-
-5. For all genomes within each lineage, we extract all genetic differences from the reference genome as "features", which provides a highly compact representation of that genome.  We calculate the [symmetric difference](https://en.wikipedia.org/wiki/Symmetric_difference) of each genome to every other genome and cache the result on the filesystem.
-
-6. For each lineage, we generate 100 replicate bootstrap samples of the feature set union to convert the symmetric differences into distance matrices, treating every genetic difference equally (Manhattan distance).  Each distance matrix is used to reconstruct a [neighbor-joining](https://en.wikipedia.org/wiki/Neighbor_joining) tree using [RapidNJ](https://birc.au.dk/software/rapidnj/).
-
-7. For each lineage, a consensus tree is calculated from the set of bootstrap trees and converted into a beadplot.
+3. To run the analysis, we call the Python script `process.py` on the JSON file produced by `convert.py`:
+   ```console
+   $ python3 process.py opendata.json.xz
+   ```
 
 
 ## Acknowledgements
