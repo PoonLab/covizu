@@ -49,6 +49,7 @@ This sequence of commands demonstrates how to run the CoVizu pipeline using the 
    ```console
    nohup python3 process.py opendata.2021-08-25.xz -np 4 & disown
    ```
+   Running on four cores consumed about 18 Gb of RAM and took about 14 hours to complete for this database of 1.2 million genomes.
 
 4. The analysis script in step 3 writes three time-stamped output files to sub-directory `data/`.  To view these data in the CoVizu web interface, you need to copy these files as follows:
    ```console
