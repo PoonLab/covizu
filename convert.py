@@ -168,9 +168,6 @@ def parse_args():
                         help="column label for country division (e.g., province) in metadata CSV; "
                              "defaults to None")
 
-    parser.add_argument("--bylineage", type=str, default='data/by_lineage.json',
-                        help="path to write JSON of features by lineage")
-
     parser.add_argument('--minlen', type=int, default=29000, help='minimum genome length (nt)')
     parser.add_argument('--mindate', type=str, default='2019-12-01',
                         help='earliest possible sample collection date (ISO format, default '
