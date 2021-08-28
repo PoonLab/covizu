@@ -19,7 +19,7 @@ This `opendata` branch is a version of CoVizu that enables users to run the enti
 
 ## Example usage
 
-This sequence of commands demonstrates how to run the CoVizu pipeline using the [Open Data files](https://nextstrain.org/blog/2021-07-08-ncov-open-announcement) provided by the Nextstrain development team, which are derived from the NCBI Genbank database.
+This sequence of commands demonstrates how to run the CoVizu pipeline using the [Open Data files](https://nextstrain.org/blog/2021-07-08-ncov-open-announcement) provided by the [Nextstrain](https://nextstrain.org/) development team, which are derived from the NCBI Genbank database.
 
 1. First, we obtain the FASTA and metadata files from the Nextstrain data server:
    ```console
