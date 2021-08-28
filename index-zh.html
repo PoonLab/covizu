@@ -182,7 +182,7 @@
     <div class="app-right">
       <div class="sticky">
         <div style="top: 0; right: 0; z-index: 10; width: 270px">
-          <a href="https://github.com/PoonLab/covizu" target=“_new” class="github-corner" aria-label="View source on GitHub">
+          <a href="https://github.com/PoonLab/covizu/tree/opendata" target=“_new” class="github-corner" aria-label="View source on GitHub">
             <!-- https://github.com/tholman/github-corners -->
             <svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0; z-index: 21" aria-hidden="true">
               <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
@@ -193,7 +193,7 @@
         </div>
         <div class="rightbox">
           <div style="padding-top: 10px; cursor: help;">
-            <h1><span onclick="$('#splash').dialog('open');">CoVizu</span></h1>
+            <h1><span onclick="$('#splash').dialog('open');"><small><i>open</i></small>CoVizu</span></h1>
           </div>
           <div style="font-size: 8pt;">
             <a href="index.html">en</a>
@@ -204,13 +204,6 @@
           <div style="padding-top: 10px; padding-right: 6px;">
             <h3> SARS-CoV-2（hCoV-19）基因组变异的近实时可视化</h3>
           </div>
-          <span style="width: 250px">
-            <div class="gisaid">数据来源于&nbsp;<a href="https://gisaid.org" target="_new">
-                <img src="https://www.gisaid.org/fileadmin/gisaid/img/schild.png"
-                     height="24px"/>
-              </a>
-            </div>
-          </span>
           <p>
             <div style="font-size: 0.9em;" id="div-last-update"></div>
             <div style="font-size: 0.9em;" id="div-number-genomes"></div>
@@ -241,8 +234,7 @@
   <div id="splash" title="Welcome">
     <p>
       <b>CoVizu</b>  <a href="https://github.com/PoonLab/CoVizu" target="_new">开源项目</a>
-      致力于可视化SARS-CoV-2基因组的全球多样性，该基因组由
-      <a href="https://gisaid.org" target="_new">GISAID倡议</a>.
+      致力于可视化SARS-CoV-2基因组的全球多样性.
     </p>
     <p>
       该网页提供了这些数据的两种交互式可视化方式.
@@ -330,46 +322,11 @@
     </p>
   </div>
 
-  <div id="dialog" title="致谢">
-    <p>
-      我们要感谢GISAID计划，并感谢所有数据提供者，
-      即作者、负责获取标本的原始实验室、提交生成基因序列和元数据并通过GISAID计划(本研究的基础)进行共享的实验室.
-    <p>
-      Elbe, S., and Buckland-Merrett, G. (2017)
-      Data, disease and diplomacy: GISAID’s innovative contribution to global health.
-      <i>Global Challenges</i>, 1:33-46.<br/>
-      DOI: <a href="https://doi.org/10.1002/gch2.1018" target=“_new”>10.1002/gch2.1018</a>&nbsp;&nbsp;
-      PMCID: <a href="https://pubmed.ncbi.nlm.nih.gov/31565258/" target=“_new”>31565258</a>
-    </p>
-    <p>
-      使用这些分析的结果时，请确保您也致谢数据的贡献者，例如 - “We gratefully acknowledge all the Authors,
-      the Originating laboratories responsible for obtaining the specimens, and the Submitting
-      laboratories for generating the genetic sequence and metadata and sharing via the GISAID
-      Initiative, on which this research is based.”
-    </p>
-    <p>
-      另外，请引用以下参考资料：
-      Shu, Y., McCauley, J. (2017) GISAID: From vision to reality. <i>EuroSurveillance</i>, 22(13)<br/>
-      DOI: <a href="https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2017.22.13.30494" target=“_new”>10.2807/1560-7917.ES.2017.22.13.30494</a>&nbsp;&nbsp;
-      PMCID: <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5388101/" target=“_new”>PMC5388101</a>
-    </p>
-  </div>
-
-
-  <footer class="footer">
-    本网站提供的GISAID数据遵守GISAID的
-    <a href="https://www.gisaid.org/DAA/" target=“_new”>条款和条件</a>
-    &emsp;&emsp;
-    <button class="ack" id="ack-open" onclick="console.log('click');">致谢</button>
-
-  </footer>
-
   <script src="js/beadplot.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/drawtree.js"></script>
   <script src="js/phylo.js"></script>
   <script src="js/search.js"></script>
-  <script src="js/gisaid/gisaid.js?random=1"></script>
 
   <script src="js/covizu.js"></script>
 </body>
