@@ -15,7 +15,7 @@ from covizu.utils.seq_utils import *
 from covizu.utils.progress_utils import Callback
 
 
-def fasttree(fasta, binpath='fasttree2', seed=1, gtr=True):
+def fasttree(fasta, binpath='fasttree2', seed=1, gtr=True, collapse=True):
     """
     Wrapper for FastTree2, passing FASTA as stdin and capturing the
     resulting Newick tree string as stdout.
@@ -39,7 +39,15 @@ def fasttree(fasta, binpath='fasttree2', seed=1, gtr=True):
 
     p = Popen(cmd, stdin=PIPE, stdout=PIPE)
     stdout, stderr = p.communicate(input=in_str.encode('utf-8'))
-    return stdout.decode('utf-8')
+    nwk = stdout.decode('utf-8')
+
+    # collapse low support nodes into polytomies
+    if collapse:
+        phy = Phylo.read(StringIO(nwk), format='newick')
+        phy.collapse_all(lambda x: x.confidence is not None and
+                                   x.confidence < 0.5)
+        nwk = phy.format('newick')
+    return nwk
 
 
 def treetime(nwk, fasta, outdir, binpath='treetime', clock=None, verbosity=1):
@@ -71,7 +79,9 @@ def treetime(nwk, fasta, outdir, binpath='treetime', clock=None, verbosity=1):
             '--aln', alnfile.name, '--dates', datefile.name,
             '--outdir', outdir, '--verbose', str(verbosity),
             '--plot-rtt', 'none',  # see issue #66
-            '--clock-filter', '0']  # issue #245
+            '--clock-filter', '0',  # issue #245
+            '--keep-polytomies'  # issue #339
+    ]
     if clock:
         call.extend(['--clock-rate', str(clock)])
     check_call(call)

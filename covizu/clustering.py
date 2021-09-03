@@ -280,26 +280,19 @@ if __name__ == "__main__":
     # FIXME: this consumes a few minutes to load the entire data set
     cb.callback('loading JSON')
     with open(args.json) as handle:
-        by_lineage = json.load(handle)
+        recoded = json.load(handle)
 
     if args.mode == 'deep':
-        records = by_lineage.get(args.lineage, None)
-        if records is None:
+        rdata = recoded.get(args.lineage, None)
+        if rdata is None:
             cb.callback("ERROR: JSON did not contain lineage {}".format(args.lineage))
             sys.exit()
-
-        # generate distance matrices from bootstrap samples [[ MPI ]]
-        union, labels, indexed = recode_features(records, callback=cb.callback, limit=args.max_variants)
+        union = rdata['union']
+        labels = rdata['labels']
+        indexed = rdata['indexed']
 
         # export map of sequence labels to tip indices
         lineage_name = args.lineage.replace('/', '_')  # issue #297
-        if my_rank == 0:
-            csvfile = os.path.join(args.outdir, "{}.labels.csv".format(lineage_name))
-            with open(csvfile, 'w') as handle:
-                handle.write("name,index\n")
-                for i, names in enumerate(labels):
-                    for nm in names:
-                        handle.write('{},{}\n'.format(nm, i))
 
         outfile = os.path.join(args.outdir, '{}.nwk'.format(lineage_name))
         if len(indexed) == 1:

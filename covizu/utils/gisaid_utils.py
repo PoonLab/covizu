@@ -13,6 +13,9 @@ from covizu.minimap2 import minimap2, encode_diffs
 from covizu.utils.seq_utils import *
 from covizu.utils.progress_utils import Callback
 
+fields = ["covv_accession_id", "covv_virus_name", "covv_lineage", "covv_collection_date",
+          "covv_location", "sequence"]
+
 
 def download_feed(url, user, password):
     """
@@ -33,7 +36,8 @@ def download_feed(url, user, password):
     return outfile
 
 
-def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None):
+def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None,
+                fields=fields):
     """
     Read in GISAID feed as xz compressed JSON, applying some basic filters
 
@@ -48,6 +52,10 @@ def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None):
     with lzma.open(path, 'rb') as handle:
         for line in handle:
             record = json.loads(line)
+
+            # remove unused data
+            record = dict([(k, record[k]) for k in fields])
+
             if record['covv_lineage'] is None:
                 # exclude unassigned genome
                 rejects['nolineage'] += 1

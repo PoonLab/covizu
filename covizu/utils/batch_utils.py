@@ -2,6 +2,7 @@ import subprocess
 from Bio import Phylo
 from covizu import clustering, treetime, beadplot
 import sys
+import json
 
 
 def build_timetree(by_lineage, args, callback=None):
@@ -89,7 +90,8 @@ def import_labels(handle, callback=None):
     return result
 
 
-def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_lineages.txt'):
+def make_beadplots(by_lineage, args, callback=None, t0=None,
+                   txtfile='minor_lineages.txt', recode_file="recoded.json"):
     """
     Wrapper for beadplot_serial - divert to clustering.py in MPI mode if
     lineage has too many genomes.
@@ -100,6 +102,18 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
     :param txtfile:  str, path to file to write minor lineage names
     :return:  list, beadplot data by lineage
     """
+
+    # recode data into variants and serialize
+    recoded = {}
+    for lineage, records in by_lineage.items():
+        union, labels, indexed = clustering.recode_features(
+            records, callback=callback, limit = args.max_variants
+        )
+        recoded.update({lineage: {'union': union, 'labels': labels,
+                                  'indexed': indexed}})
+    with open(recode_file, 'w') as handle:
+        json.dump(recoded, handle)
+
     # partition lineages into major and minor categories
     intermed = [(len(features), lineage) for lineage, features in by_lineage.items()
                 if len(features) < args.mincount]
@@ -115,7 +129,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
     if callback:
         callback("start MPI on minor lineages")
     cmd = ["mpirun", "--machinefile", args.machine_file, "python3", "covizu/clustering.py",
-           args.bylineage, txtfile,  # positional arguments <JSON file>, <str>
+           recode_file, txtfile,  # positional arguments <JSON file>, <str>
            "--mode", "flat",
            "--max-variants", str(args.max_variants),
            "--nboot", str(args.nboot), "--outdir", "data"
