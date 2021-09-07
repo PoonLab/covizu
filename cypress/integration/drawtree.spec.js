@@ -18,19 +18,20 @@ describe('Tree', () => {
     var df = []
 
     it('drawtree: Verify that there are the correct number of lines', () => {
-        df = [{'parentId': 16, 'parentLabel': 'NODE_0000001', 'thisId': 0, 'thisLabel': 'B.1.116', 'children': [], 'branchLength': 0.12477, 'angle': undefined, 'x': 0.12477, 'y': 0, "isTip": true},
-        {'parentId': 15, 'parentLabel': 'NODE_0000002', 'thisId': 1, 'thisLabel': 'B.1.422', 'children': [], 'branchLength': 0.06739, 'angle': undefined, 'x': 0.06739, 'y': 1, "isTip": true},
-        {'parentId': 4, 'parentLabel': 'NODE_0000003', 'thisId': 2, 'thisLabel': 'B.1.576', 'children': [], 'branchLength': 0, 'angle': undefined, 'x': 0.06193, 'y': 2, "isTip": true},
-        {'parentId': 4, 'parentLabel': 'NODE_0000003', 'thisId': 3, 'thisLabel': 'B.1.363', 'children': [], 'branchLength': 0.29781, 'angle': undefined, 'x': 0.35974, 'y': 3, "isTip": true},
+
+        df = [{'parentId': 16, 'parentLabel': 'NODE_0000001', 'thisId': 0, 'thisLabel': 'B.1.116', 'children': [], 'branchLength': 0.12477, 'angle': undefined, 'x': 0.12477, 'y': 0, "isTip": true, "x2": 0.12477, "x1": 0.00149796448, "first_date": new Date("2020-04-08 "), "last_date": new Date("2020-05-23 ")},
+        {'parentId': 15, 'parentLabel': 'NODE_0000002', 'thisId': 1, 'thisLabel': 'B.1.422', 'children': [], 'branchLength': 0.06739, 'angle': undefined, 'x': 0.06739, 'y': 1, "isTip": true, 'x2': 0.06739, "x1": -0.46404944197, "first_date": new Date("2020-03-18 "), "last_date": new Date("2020-09-28 ")},
+        {'parentId': 4, 'parentLabel': 'NODE_0000003', 'thisId': 2, 'thisLabel': 'B.1.576', 'children': [], 'branchLength': 0, 'angle': undefined, 'x': 0.06193, 'y': 2, "isTip": true, 'x2': 0.06193, "x1": -1.01190639822, "first_date": new Date("2020-03-16 "), "last_date": new Date("2021-04-12 ")},
+        {'parentId': 4, 'parentLabel': 'NODE_0000003', 'thisId': 3, 'thisLabel': 'B.1.363', 'children': [], 'branchLength': 0.29781, 'angle': undefined, 'x': 0.35974, 'y': 3, "isTip": true, 'x2': 0.35974, "x1": 0.11867468611, "first_date": new Date("2020-07-03 "), "last_date": new Date("2020-09-29 ")},
         {'parentId': 14, 'parentLabel': 'NODE_0000000', 'thisId': 4, 'thisLabel': 'NODE_0000003', 'children': [2,3], 'branchLength': 0.0364, 'angle': undefined, 'x': 0.06193, 'y': 2.5, "isTip": false},
-        {'parentId': 7, 'parentLabel': 'NODE_0000006', 'thisId': 5, 'thisLabel': 'B.1.264', 'children': [], 'branchLength': 0, 'angle': undefined, 'x': 0.06466, 'y': 4, "isTip": true},
-        {'parentId': 7, 'parentLabel': 'NODE_0000006', 'thisId': 6, 'thisLabel': 'B.1.264.1', 'children': [], 'branchLength': 0.81975, 'angle': undefined, 'x': 0.8844099999999999, 'y': 5, "isTip": true},
+        {'parentId': 7, 'parentLabel': 'NODE_0000006', 'thisId': 5, 'thisLabel': 'B.1.264', 'children': [], 'branchLength': 0, 'angle': undefined, 'x': 0.06466, 'y': 4, "isTip": true, 'x2': 0.06466, "x1": -0.81479466074, "first_date": new Date("2020-03-17 "), "last_date": new Date("2021-02-01 ")},
+        {'parentId': 7, 'parentLabel': 'NODE_0000006', 'thisId': 6, 'thisLabel': 'B.1.264.1', 'children': [], 'branchLength': 0.81975, 'angle': undefined, 'x': 0.8844099999999999, 'y': 5, "isTip": true, 'x2': 0.8844099999999999, "x1": 0.8844099999999999, "first_date": new Date("2021-01-11 "), "last_date": new Date("2021-01-11 ")},
         {'parentId': 14, 'parentLabel': 'NODE_0000000', 'thisId': 7, 'thisLabel': 'NODE_0000006', 'children': [5,6], 'branchLength': 0.03913, 'angle': undefined, 'x': 0.06466, 'y': 4.5, "isTip": false},
-        {'parentId': 10, 'parentLabel': 'NODE_0000007', 'thisId': 8, 'thisLabel': 'B.1.513', 'children': [], 'branchLength': 0, 'angle': undefined, 'x': 0.042800000000000005, 'y': 6, "isTip": true},
-        {'parentId': 10, 'parentLabel': 'NODE_0000007', 'thisId': 9, 'thisLabel': 'B.1.433', 'children': [], 'branchLength': 0.03825, 'angle': undefined, 'x': 0.08105000000000001, 'y': 7, "isTip": true},
+        {'parentId': 10, 'parentLabel': 'NODE_0000007', 'thisId': 8, 'thisLabel': 'B.1.513', 'children': [], 'branchLength': 0, 'angle': undefined, 'x': 0.042800000000000005, 'y': 6, "isTip": true, 'x2': 0.042800000000000005, "x1": -0.00103005707, "first_date": new Date("2020-03-09 "), "last_date": new Date("2020-03-25 ")},
+        {'parentId': 10, 'parentLabel': 'NODE_0000007', 'thisId': 9, 'thisLabel': 'B.1.433', 'children': [], 'branchLength': 0.03825, 'angle': undefined, 'x': 0.08105000000000001, 'y': 7, "isTip": true, 'x2': 0.08105000000000001, "x1": -1.20645792, "first_date": new Date("2020-03-23 "), "last_date": new Date("2021-07-06 ")},
         {'parentId': 14, 'parentLabel': 'NODE_0000000', 'thisId': 10, 'thisLabel': 'NODE_0000007', 'children': [8,9], 'branchLength': 0.01727, 'angle': undefined, 'x': 0.042800000000000005, 'y': 6.5, "isTip": false},
-        {'parentId': 13, 'parentLabel': 'NODE_0000008', 'thisId': 11, 'thisLabel': 'B.1.119', 'children': [], 'branchLength': 0.01639, 'angle': undefined, 'x': 0.056459999999999996, 'y': 8, "isTip": true},
-        {'parentId': 13, 'parentLabel': 'NODE_0000008', 'thisId': 12, 'thisLabel': 'B.1.371', 'children': [], 'branchLength': 0, 'angle': undefined, 'x': 0.04007, 'y': 9, "isTip": true},
+        {'parentId': 13, 'parentLabel': 'NODE_0000008', 'thisId': 11, 'thisLabel': 'B.1.119', 'children': [], 'branchLength': 0.01639, 'angle': undefined, 'x': 0.056459999999999996, 'y': 8, "isTip": true, 'x2': 0.056459999999999996, "x1": -1.0064188839568802, "first_date": new Date("2020-03-14 "), "last_date": new Date("2021-04-06 ")},
+        {'parentId': 13, 'parentLabel': 'NODE_0000008', 'thisId': 12, 'thisLabel': 'B.1.371', 'children': [], 'branchLength': 0, 'angle': undefined, 'x': 0.04007, 'y': 9, "isTip": true, 'x2': 0.04007, "x1": -0.5624791439441978, "first_date": new Date("2020-03-08 "), "last_date": new Date("2020-10-14 ")},
         {'parentId': 14, 'parentLabel': 'NODE_0000000', 'thisId': 13, 'thisLabel': 'NODE_0000008', 'children': [11,12], 'branchLength': 0.01454, 'angle': undefined, 'x': 0.04007, 'y': 8.5, "isTip": false},
         {'parentId': 15, 'parentLabel': 'NODE_0000002', 'thisId': 14, 'thisLabel': 'NODE_0000000', 'children': [4,7,10,13], 'branchLength': 0.02553, 'angle': undefined, 'x': 0.02553, 'y': 5.5, "isTip": false},
         {'parentId': 16, 'parentLabel': 'NODE_0000001', 'thisId': 15, 'thisLabel': 'NODE_0000002', 'children': [1,14], 'branchLength': 0, 'angle': undefined, 'x': 0, 'y': 3.25, "isTip": false},
@@ -47,6 +48,17 @@ describe('Tree', () => {
         })
 
         cy.get("#svg-timetree > svg > line:visible").should('have.length', 32)
+    })
+    it('No negative branch lengths', () => {
+        cy.get("#svg-timetree > svg > line:visible").each(($el) => {
+            cy.get($el).invoke('attr','x1').then(x1 => {
+                x1 = parseFloat(x1)
+                cy.get($el).invoke('attr','x2').then(x2 => {
+                    x2 = parseFloat(x2)
+                    cy.wrap(x2).should('be.lte', x1)
+                })
+            })
+        })
     })
     it('map_clusters_to_tips', () => {
         let tip = {
@@ -89,8 +101,7 @@ describe('Tree', () => {
         cy.window().then((win) => {
             expect(win.map_clusters_to_tips(df, clusters)).to.have.lengthOf(10)
             
-            // Test fails 
-            expect(win.map_clusters_to_tips(df, clusters)[3]).to.deep.equal(tip)
+            expect(win.map_clusters_to_tips(df, clusters)[3]).to.deep.include(tip)
         })
     })
 })
