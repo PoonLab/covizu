@@ -100,6 +100,8 @@ def make_beadplots(by_lineage, args, callback=None, t0=None,
     :param args:  Namespace, from argparse.ArgumentParser()
     :param t0:  float, datetime.timestamp.
     :param txtfile:  str, path to file to write minor lineage names
+    :param recode_file:  str, path to JSON file to write recoded lineage data
+
     :return:  list, beadplot data by lineage
     """
 
@@ -107,7 +109,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None,
     recoded = {}
     for lineage, records in by_lineage.items():
         union, labels, indexed = clustering.recode_features(
-            records, callback=callback, limit = args.max_variants
+            records, callback=callback, limit=args.max_variants
         )
         recoded.update({lineage: {'union': union, 'labels': labels,
                                   'indexed': indexed}})

@@ -287,7 +287,7 @@ if __name__ == "__main__":
         if rdata is None:
             cb.callback("ERROR: JSON did not contain lineage {}".format(args.lineage))
             sys.exit()
-        union = rdata['union']
+        union = rdata['union']  # unpack JSON data
         labels = rdata['labels']
         indexed = rdata['indexed']
 
@@ -326,22 +326,15 @@ if __name__ == "__main__":
             if li % nprocs != my_rank:
                 continue
 
-            records = by_lineage.get(lineage, None)
-            if records is None:
+            rdata = recoded.get(args.lineage, None)
+            if rdata is None:
                 cb.callback("ERROR: JSON did not contain lineage {}".format(args.lineage))
                 sys.exit()
+            union = rdata['union']  # unpack JSON data
+            labels = rdata['labels']
+            indexed = rdata['indexed']
 
-            union, labels, indexed = recode_features(records, callback=cb.callback, limit=args.max_variants)
-
-            # export map of sequence labels to tip indices
             lineage_name = lineage.replace('/', '_')  # issue #297
-            csvfile = os.path.join(args.outdir, "{}.labels.csv".format(lineage_name))
-            with open(csvfile, 'w') as handle:
-                handle.write("name,index\n")
-                for i, names in enumerate(labels):
-                    for nm in names:
-                        handle.write('{},{}\n'.format(nm, i))
-
             outfile = os.path.join(args.outdir, '{}.nwk'.format(lineage_name))
             if len(indexed) == 1:
                 # lineage only has one variant, no meaningful tree
