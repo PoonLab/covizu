@@ -354,6 +354,7 @@ if __name__ == "__main__":
                 trees = [bootstrap(union, indexed, args.binpath, callback=cb.callback)
                          for _ in range(args.nboot)]
                 Phylo.write(trees, file=outfile, format='newick')
+            cb.callback("completed {}".format(lineage))
     else:
         cb.callback("Unexpected mode argument {} in clustering.py".format(args.mode))
         sys.exit()
