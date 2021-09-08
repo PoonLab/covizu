@@ -113,6 +113,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None,
         )
         # serialize tuple keys (features of union), #335
         union = [("{0}|{1}|{2}".format(*feat)) for feat, idx in union.items()]
+        indexed = [list(s) for s in indexed]  # sets cannot be serialized to JSON
         recoded.update({lineage: {'union': union, 'labels': labels,
                                   'indexed': indexed}})
 

@@ -275,7 +275,8 @@ def unpack_recoded(lineage, callback=None):
             key = tuple([typ, int(pos), length])
         union2.update({key: idx})
 
-    return union2, rdata['labels'], rdata['indexed']
+    indexed = [set(l) for l in rdata['indexed']]  # see #335
+    return union2, rdata['labels'], indexed
 
 
 if __name__ == "__main__":
