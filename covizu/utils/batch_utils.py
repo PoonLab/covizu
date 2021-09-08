@@ -111,10 +111,13 @@ def make_beadplots(by_lineage, args, callback=None, t0=None,
         union, labels, indexed = clustering.recode_features(
             records, callback=callback, limit=args.max_variants
         )
+        # serialize tuple keys (features of union), #335
+        union = [("{0}|{1}|{2}".format(*feat)) for feat, idx in union.items()]
         recoded.update({lineage: {'union': union, 'labels': labels,
                                   'indexed': indexed}})
+
     with open(recode_file, 'w') as handle:
-        handle.write(json.dumps(recoded))
+        json.dump(recoded, handle)
 
     # partition lineages into major and minor categories
     intermed = [(len(features), lineage) for lineage, features in by_lineage.items()

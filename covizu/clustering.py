@@ -257,6 +257,27 @@ def parse_args():
     return parser.parse_args()
 
 
+def unpack_recoded(lineage, callback=None):
+    rdata = recoded.get(lineage, None)
+    if rdata is None:
+        if callback:
+            callback("ERROR: JSON did not contain lineage {}".format(args.lineage))
+        sys.exit()
+
+    union = rdata['union']  # unpack JSON data
+    union2 = {}
+    for feat, idx in union.items():
+        typ, pos, length = feat.split('|')
+        if typ == '-':
+            # length of deletion is an integer
+            key = tuple([typ, int(pos), int(length)])
+        else:
+            key = tuple([typ, int(pos), length])
+        union2.update({key: idx})
+
+    return union2, rdata['labels'], rdata['indexed']
+
+
 if __name__ == "__main__":
     """
     Called by batch.py via subprocess to handle lineages with excessive
@@ -283,13 +304,7 @@ if __name__ == "__main__":
         recoded = json.load(handle)
 
     if args.mode == 'deep':
-        rdata = recoded.get(args.lineage, None)
-        if rdata is None:
-            cb.callback("ERROR: JSON did not contain lineage {}".format(args.lineage))
-            sys.exit()
-        union = rdata['union']  # unpack JSON data
-        labels = rdata['labels']
-        indexed = rdata['indexed']
+        union, labels, indexed = unpack_recoded(args.lineage, callback=cb.callback)
 
         # export map of sequence labels to tip indices
         lineage_name = args.lineage.replace('/', '_')  # issue #297
@@ -326,13 +341,7 @@ if __name__ == "__main__":
             if li % nprocs != my_rank:
                 continue
 
-            rdata = recoded.get(args.lineage, None)
-            if rdata is None:
-                cb.callback("ERROR: JSON did not contain lineage {}".format(args.lineage))
-                sys.exit()
-            union = rdata['union']  # unpack JSON data
-            labels = rdata['labels']
-            indexed = rdata['indexed']
+            union, labels, indexed = unpack_recoded(args.lineage, callback=cb.callback)
 
             lineage_name = lineage.replace('/', '_')  # issue #297
             outfile = os.path.join(args.outdir, '{}.nwk'.format(lineage_name))
