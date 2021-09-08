@@ -139,7 +139,9 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
            recode_file, txtfile,  # positional arguments <JSON file>, <str>
            "--mode", "flat",
            "--max-variants", str(args.max_variants),
-           "--nboot", str(args.nboot), "--outdir", "data"
+           "--nboot", str(args.nboot),
+           "--outdir", args.outdir,
+           "--binpath", args.binpath  # RapidNJ
            ]
     if t0:
         cmd.extend(["--timestamp", str(t0)])
@@ -149,19 +151,22 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
     for lineage, features in by_lineage.items():
         if lineage in minor:
             continue
+
         if callback:
             callback('start {}, {} entries'.format(lineage, len(features)))
-            # call out to MPI
-            cmd = [
-                "mpirun", "--machinefile", args.machine_file, "python3", "covizu/clustering.py",
-                args.bylineage, lineage,  # positional arguments <JSON file>, <str>
-                "--mode", "deep",
-                "--max-variants", str(args.max_variants),
-                "--nboot", str(args.nboot), "--outdir", "data", "--binpath", args.binpath
-            ]
-            if t0:
-                cmd.extend(["--timestamp", str(t0)])
-            subprocess.check_call(cmd)
+
+        cmd = [
+            "mpirun", "--machinefile", args.machine_file, "python3", "covizu/clustering.py",
+            recode_file, lineage,  # positional arguments <JSON file>, <str>
+            "--mode", "deep",
+            "--max-variants", str(args.max_variants),
+            "--nboot", str(args.nboot),
+            "--outdir", args.outdir,
+            "--binpath", args.binpath
+        ]
+        if t0:
+            cmd.extend(["--timestamp", str(t0)])
+        subprocess.check_call(cmd)
 
     # parse output files
     if callback:
