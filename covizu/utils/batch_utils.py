@@ -114,7 +114,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None,
         recoded.update({lineage: {'union': union, 'labels': labels,
                                   'indexed': indexed}})
     with open(recode_file, 'w') as handle:
-        json.dump(recoded, handle)
+        handle.write(json.dumps(recoded))
 
     # partition lineages into major and minor categories
     intermed = [(len(features), lineage) for lineage, features in by_lineage.items()
