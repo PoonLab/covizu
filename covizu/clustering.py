@@ -258,6 +258,12 @@ def parse_args():
 
 
 def unpack_recoded(recoded, lineage, callback=None):
+    """
+    Recover dictionary from JSON.
+    :param recoded:  dict, directly returned from json.load
+    :param lineage:  str, PANGO lineage specifier
+    :param callback:  optional callback function
+    """
     rdata = recoded.get(lineage, None)
     if rdata is None:
         if callback:
