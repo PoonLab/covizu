@@ -90,8 +90,8 @@ def import_labels(handle, callback=None):
     return result
 
 
-def make_beadplots(by_lineage, args, callback=None, t0=None,
-                   txtfile='minor_lineages.txt', recode_file="recoded.json"):
+def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_lineages.txt',
+                   recode_file="recoded.json"):
     """
     Wrapper for beadplot_serial - divert to clustering.py in MPI mode if
     lineage has too many genomes.
@@ -106,14 +106,15 @@ def make_beadplots(by_lineage, args, callback=None, t0=None,
     """
 
     # recode data into variants and serialize
+    if callback:
+        callback("Recoding features, compressing variants..")
     recoded = {}
     for lineage, records in by_lineage.items():
-        union, labels, indexed = clustering.recode_features(
-            records, callback=callback, limit=args.max_variants
-        )
+        union, labels, indexed = clustering.recode_features(records, limit=args.max_variants)
+
         # serialize tuple keys (features of union), #335
         union = [("{0}|{1}|{2}".format(*feat)) for feat, idx in union.items()]
-        indexed = [list(s) for s in indexed]  # sets cannot be serialized to JSON
+        indexed = [list(s) for s in indexed]  # sets cannot be serialized to JSON, #335
         recoded.update({lineage: {'union': union, 'labels': labels,
                                   'indexed': indexed}})
 

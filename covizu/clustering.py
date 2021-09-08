@@ -342,7 +342,7 @@ if __name__ == "__main__":
             if li % nprocs != my_rank:
                 continue
 
-            union, labels, indexed = unpack_recoded(args.lineage, callback=cb.callback)
+            union, labels, indexed = unpack_recoded(lineage, callback=cb.callback)
 
             lineage_name = lineage.replace('/', '_')  # issue #297
             outfile = os.path.join(args.outdir, '{}.nwk'.format(lineage_name))
