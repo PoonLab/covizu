@@ -257,7 +257,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def unpack_recoded(lineage, callback=None):
+def unpack_recoded(recoded, lineage, callback=None):
     rdata = recoded.get(lineage, None)
     if rdata is None:
         if callback:
@@ -305,7 +305,7 @@ if __name__ == "__main__":
         recoded = json.load(handle)
 
     if args.mode == 'deep':
-        union, labels, indexed = unpack_recoded(args.lineage, callback=cb.callback)
+        union, labels, indexed = unpack_recoded(recoded, args.lineage, callback=cb.callback)
 
         # export map of sequence labels to tip indices
         lineage_name = args.lineage.replace('/', '_')  # issue #297
@@ -342,7 +342,7 @@ if __name__ == "__main__":
             if li % nprocs != my_rank:
                 continue
 
-            union, labels, indexed = unpack_recoded(lineage, callback=cb.callback)
+            union, labels, indexed = unpack_recoded(recoded, lineage, callback=cb.callback)
 
             lineage_name = lineage.replace('/', '_')  # issue #297
             outfile = os.path.join(args.outdir, '{}.nwk'.format(lineage_name))
