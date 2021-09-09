@@ -132,21 +132,21 @@ if __name__ == "__main__":
 
     by_lineage = process_feed(args, cb.callback)
     with open(args.bylineage, 'w') as handle:
-        # export to file to process large lineages with MPI
+        # FIXME: exporting this to a JSON file is deprecated, #335
         json.dump(by_lineage, handle)
 
+    # reconstruct time-scaled tree relating lineages
     timetree, residuals = build_timetree(by_lineage, args, cb.callback)
-
     timestamp = datetime.now().isoformat().split('.')[0]
-    outfile = open(os.path.join(args.outdir, 'clusters.{}.json'.format(timestamp)), 'w')
-
     nwk_file = os.path.join(args.outdir, 'timetree.{}.nwk'.format(timestamp))
     with open(nwk_file, 'w') as handle:
         Phylo.write(timetree, file=handle, format='newick')
 
+    # clustering analysis of lineages
     result = make_beadplots(by_lineage, args, cb.callback, t0=cb.t0.timestamp())
-    outfile.write(json.dumps(result))  # serialize results to JSON
-    outfile.close()
+    clust_file = os.path.join(args.outdir, 'clusters.{}.json'.format(timestamp))
+    with open(clust_file, 'w') as handle:
+        json.dump(result, fp=handle)
 
     # get mutation info
     locator = SC2Locator()
@@ -180,7 +180,7 @@ if __name__ == "__main__":
     if not args.dry_run:
         server_root = 'filogeneti.ca:/var/www/html/covizu/data'
         subprocess.check_call(['scp', nwk_file, '{}/timetree.nwk'.format(server_root)])
-        subprocess.check_call(['scp', outfile.name, '{}/clusters.json'.format(server_root)])
+        subprocess.check_call(['scp', clust_file, '{}/clusters.json'.format(server_root)])
         subprocess.check_call(['scp', dbstat_file, '{}/dbstats.json'.format(server_root)])
 
         # upload files to EpiCoV server
@@ -189,7 +189,7 @@ if __name__ == "__main__":
         subprocess.check_call(['scp', dbstat_file, '{}/dbstats.json'.format(server_epicov)])
 
         # modify clusters JSON
-        epifile = open(outfile.name, 'r')
+        epifile = open(clust_file, 'r')
         epicov_data = gisaid_utils.convert_json(epifile, args.infile)
         fp = NamedTemporaryFile('w', delete=False)
         json.dump(epicov_data, fp=fp)  # serialize to temp file

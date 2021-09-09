@@ -13,9 +13,6 @@ from covizu.minimap2 import minimap2, encode_diffs
 from covizu.utils.seq_utils import *
 from covizu.utils.progress_utils import Callback
 
-fields = ["covv_accession_id", "covv_virus_name", "covv_lineage", "covv_collection_date",
-          "covv_location", "sequence"]
-
 
 def download_feed(url, user, password):
     """
@@ -37,7 +34,8 @@ def download_feed(url, user, password):
 
 
 def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None,
-                fields=fields):
+                fields=("covv_accession_id", "covv_virus_name", "covv_lineage",
+                        "covv_collection_date", "covv_location", "sequence")):
     """
     Read in GISAID feed as xz compressed JSON, applying some basic filters
 
@@ -45,6 +43,8 @@ def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None,
     :param minlen:  int, minimum genome length
     :param mindate:  datetime.date, earliest reasonable sample collection date
     :param callback:  function, optional callback function
+    :param fields:  tuple, fieldnames to keep
+
     :yield:  dict, contents of each GISAID record
     """
     mindate = fromisoformat(mindate)
@@ -55,11 +55,6 @@ def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None,
 
             # remove unused data
             record = dict([(k, record[k]) for k in fields])
-
-            if record['covv_lineage'] is None:
-                # exclude unassigned genome
-                rejects['nolineage'] += 1
-                continue
 
             qname = record['covv_virus_name'].strip().replace(',', '_')  # issue #206
             country = qname.split('/')[1]
@@ -209,22 +204,24 @@ def filter_problematic(records, origin='2019-12-01', rate=0.0655, cutoff=0.005,
         callback("         {} genomes with excess divergence".format(n_outlier))
 
 
-def sort_by_lineage(records, callback=None):
+def sort_by_lineage(records, callback=None, interval=1000):
     """
     Resolve stream into a dictionary keyed by Pangolin lineage
 
     :param records:  generator, return value of extract_features()
+    :param callback:  optional, progress monitoring
+    :param interval:  int, frequency to report alignment progress (genomes)
     :return:  dict, lists of records keyed by lineage
     """
     result = {}
     for i, record in enumerate(records):
-        if callback and i % 1000 == 0:
+        if callback and i % interval == 0:
             callback('aligned {} records'.format(i))
 
         lineage = record['covv_lineage']
 
-        if lineage is None or lineage == '':
-            # discard uncategorized genomes, #324
+        if str(lineage) == "None" or lineage == '':
+            # discard uncategorized genomes, #324, #335
             continue
 
         if lineage not in result:

@@ -347,7 +347,7 @@ if __name__ == "__main__":
         for li, lineage in enumerate(minor_lineages):
             if li % nprocs != my_rank:
                 continue
-
+            cb.callback("starting {}".format(lineage))
             union, labels, indexed = unpack_recoded(recoded, lineage, callback=cb.callback)
 
             lineage_name = lineage.replace('/', '_')  # issue #297
@@ -360,7 +360,6 @@ if __name__ == "__main__":
                 trees = [bootstrap(union, indexed, args.binpath, callback=cb.callback)
                          for _ in range(args.nboot)]
                 Phylo.write(trees, file=outfile, format='newick')
-            cb.callback("completed {}".format(lineage))
     else:
         cb.callback("Unexpected mode argument {} in clustering.py".format(args.mode))
         sys.exit()
