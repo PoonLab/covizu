@@ -145,7 +145,7 @@ def consensus(trees, cutoff=0.5, callback=None):
     ntips = len(tip_index)
 
     if callback:
-        callback("Recording splits and branch lengths")
+        callback("Recording splits and branch lengths", level='DEBUG')
     splits = {}
     terminals = dict([(tn, 0) for tn in tip_index.keys()])
 
@@ -182,7 +182,7 @@ def consensus(trees, cutoff=0.5, callback=None):
 
     # construct consensus tree
     if callback:
-        callback("Building consensus tree")
+        callback("Building consensus tree", level='DEBUG')
     orphans = dict([
         (tip_index[tname], Clade(name=tname, branch_length=totlen/ntrees))
         for tname, totlen in terminals.items()
@@ -305,8 +305,6 @@ if __name__ == "__main__":
     cb = Callback(t0=args.timestamp, my_rank=my_rank, nprocs=nprocs)
 
     # import lineage data from file
-    # FIXME: this consumes a few minutes to load the entire data set
-    cb.callback('loading JSON')
     with open(args.json) as handle:
         recoded = json.load(handle)
 
