@@ -130,10 +130,8 @@ if __name__ == "__main__":
         cb.callback("No input specified, downloading data from GISAID feed...")
         args.infile = gisaid_utils.download_feed(args.url, args.user, args.password)
 
+    # filter data, align genomes, extract features, sort by lineage
     by_lineage = process_feed(args, cb.callback)
-    with open(args.bylineage, 'w') as handle:
-        # FIXME: exporting this to a JSON file is deprecated, #335
-        json.dump(by_lineage, handle)
 
     # reconstruct time-scaled tree relating lineages
     timetree, residuals = build_timetree(by_lineage, args, cb.callback)
