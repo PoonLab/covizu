@@ -3,7 +3,8 @@
  */
 var marginB = {top: 50, right: 10, bottom: 50, left: 10},
     widthB = document.getElementById("svg-cluster").clientWidth - marginB.left - marginB.right,
-    heightB = 1000 - marginB.top - marginB.bottom;
+    heightB = 1000 - marginB.top - marginB.bottom,
+    pixelsPerDay = 20;
 
 // set up plotting scales
 var xValueB = function(d) { return d.x },
@@ -511,16 +512,40 @@ function beadplot(cid) {
   move_arrow();
   $( "#custom-handle" ).text("2.0");
 
-  function redraw() {
-    let currentWidth = document.getElementById("svg-cluster").clientWidth
-        - marginB.left -  marginB.right;
+  // Beadplots aren't expanded by default
+  if ($('#expand-option').attr('checked')) {
+    $('.switch').trigger('click');
+    $('#expand-option').removeAttr('checked')
+  }
 
+  function redraw() {
     // set plotting domain
     var mindate = d3.min(variants, xValue1B),
         maxdate = d3.max(variants, xValue2B),
         spandate = maxdate-mindate,  // in milliseconds
         min_y = d3.min(variants, yValue1B),
-        max_y = d3.max(variants, yValue1B);
+        max_y = d3.max(variants, yValue1B),
+        numDays = d3.timeDay.count(mindate, maxdate),
+        clientWidth = document.getElementById("svg-cluster").clientWidth;
+
+    // Don't give the user the option to scroll horizontally if the beadplot cannot expand 
+    if (numDays * pixelsPerDay > clientWidth) {
+      $('.expand').show();
+      $('.switch').show();
+    }
+    else {
+      $('.expand').hide();
+      $('.switch').hide();
+    }
+
+    let currentWidth = null;
+    if ($('#expand-option').attr('checked')) {
+       currentWidth = (numDays * pixelsPerDay > clientWidth ? numDays * pixelsPerDay : clientWidth)
+                      - marginB.left -  marginB.right;
+    }
+    else {
+      currentWidth = clientWidth - marginB.left -  marginB.right;
+    }
 
     // update vertical range for consistent spacing between variants
     heightB = max_y * 10 + 40;
@@ -542,7 +567,9 @@ function beadplot(cid) {
     visBaxis.selectAll('*').remove();
 
     $("#svg-cluster > svg").attr("width",currentWidth + marginB.left + marginB.right);
-    $("#svg-clusteraxis > svg").attr("width", currentWidth + 20);
+    
+    // Add 15px to account for the scrollbar for the beadplot
+    $("#svg-clusteraxis > svg").attr("width", currentWidth + marginB.left + marginB.right + 15);
 
 
     // draw vertical line segments that represent edges in NJ tree
