@@ -48,7 +48,7 @@ def beadplot_serial(lineage, features, args, callback=None):
         beaddict = {'lineage': lineage, 'nodes': {}, 'edges': []}
 
         # use earliest sample as variant label
-        intermed = [label.split('|')[::-1] for label in labels[0]]
+        intermed = [label.split('|')[::-1] for label in labels['0']]
         intermed.sort()
         variant = intermed[0][1]
         beaddict.update({'sampled_variants': len(labels)})
@@ -172,15 +172,13 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
     if callback:
         callback("Parsing output files")
     result = []
-    for lineage in by_lineage:
+    for lineage in recoded:
         # import trees
         lineage_name = lineage.replace('/', '_')  # issue #297
         outfile = open('data/{}.nwk'.format(lineage_name))
         trees = Phylo.parse(outfile, 'newick')  # note this returns a generator
 
-        # import label map
-        with open('data/{}.labels.csv'.format(lineage_name)) as handle:
-            label_dict = import_labels(handle)
+        label_dict = recoded[lineage]['labels']
 
         if len(label_dict) == 1:
             # handle case of only one variant

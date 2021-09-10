@@ -25,7 +25,7 @@ def recode_features(records, callback=None, limit=10000):
     :param callback:  optional, function for progress monitoring
     :param limit:  int, maximum number of variants to prevent memory allocation crashes
     :return:  dict, key-value pairs of all features indexed by integers
-              list, nested list of labels by variant (identical feature vectors)
+              dict, lists of labels by variant (identical feature vectors), keyed by index
               list, sets of feature vectors encoded by integers, by variant
     """
     # compress genomes with identical feature vectors
@@ -46,11 +46,11 @@ def recode_features(records, callback=None, limit=10000):
     if callback:
         callback("Reduced to {} variants; generating feature set union".format(len(fvecs)))
     union = {}
-    labels = []
+    labels = {}
     indexed = []
     for count, item in enumerate(intermed):
         fvec = item[1]
-        labels.append(fvecs[fvec])
+        labels.update({str(count): fvecs[fvec]})
         if count < limit:
             for feat in fvec:
                 if feat not in union:
@@ -319,7 +319,7 @@ if __name__ == "__main__":
             # lineage only has one variant, no meaningful tree
             if my_rank == 0:
                 with open(outfile, 'w') as handle:
-                    handle.write('({}:0);\n'.format(labels[0][0]))
+                    handle.write('({}:0);\n'.format(labels['0'][0]))
         else:
             # MPI processing
             trees = []
@@ -353,7 +353,7 @@ if __name__ == "__main__":
             if len(indexed) == 1:
                 # lineage only has one variant, no meaningful tree
                 with open(outfile, 'w') as handle:
-                    handle.write('({}:0);\n'.format(labels[0][0]))
+                    handle.write('({}:0);\n'.format(labels['0'][0]))
             else:
                 trees = [bootstrap(union, indexed, args.binpath, callback=cb.callback)
                          for _ in range(args.nboot)]
