@@ -27,8 +27,6 @@ def parse_args():
                              "download xz file from GISAID provision feed.")
     parser.add_argument("--outdir", type=str, default='data/',
                         help="option, path to write output files")
-    parser.add_argument("--bylineage", type=str, default='data/by_lineage.json',
-                        help="option, path to write JSON of features by lineage")
 
     parser.add_argument('--minlen', type=int, default=29000, help='option, minimum genome length (nt)')
     parser.add_argument('--mindate', type=str, default='2019-12-01', 

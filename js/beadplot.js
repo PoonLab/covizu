@@ -4,7 +4,7 @@
 var marginB = {top: 50, right: 10, bottom: 50, left: 10},
     widthB = document.getElementById("svg-cluster").clientWidth - marginB.left - marginB.right,
     heightB = 1000 - marginB.top - marginB.bottom,
-    pixelsPerDay = 20;
+    pixelsPerDay = 10;
 
 // set up plotting scales
 var xValueB = function(d) { return d.x },
