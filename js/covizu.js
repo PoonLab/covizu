@@ -403,6 +403,18 @@ req.done(function() {
     }
   });
 
+  $('#expand-option').on('change', function() {
+    if (!$('#expand-option').attr('checked'))
+      $('#expand-option').attr('checked', 'checked')
+    else
+      $('#expand-option').removeAttr('checked')
+    const event = new Event('resize');
+    window.dispatchEvent(event)
+  });
+
+  $('#svg-cluster').on('scroll', function() {
+    $('#svg-clusteraxis').scrollLeft($(this).scrollLeft());
+  });
 
   $('#previous_button').click(function(){
     var curr_bead = search_results.get().current_point;
