@@ -532,10 +532,12 @@ function beadplot(cid) {
     if (numDays * pixelsPerDay > clientWidth) {
       $('.expand').show();
       $('.switch').show();
+      if ($('#expand-option').attr('checked')) { $('#beadplot-horizontal').show(); }
     }
     else {
       $('.expand').hide();
       $('.switch').hide();
+      $('#beadplot-horizontal').hide();
     }
 
     let currentWidth = null;
@@ -567,6 +569,7 @@ function beadplot(cid) {
     visBaxis.selectAll('*').remove();
 
     $("#svg-cluster > svg").attr("width",currentWidth + marginB.left + marginB.right);
+    $("#beadplot-width").css("width",currentWidth + marginB.left + marginB.right);
     
     // Add 15px to account for the scrollbar for the beadplot
     $("#svg-clusteraxis > svg").attr("width", currentWidth + marginB.left + marginB.right + 15);

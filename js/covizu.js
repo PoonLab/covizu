@@ -26,6 +26,7 @@ $( function() {
 $(document).tooltip({show: null});
 $("#loading_text").text(``);
 $("#loading").hide();
+$('#beadplot-horizontal').hide();
 
 
 /*********************** DIALOGS ***********************/
@@ -404,15 +405,20 @@ req.done(function() {
   });
 
   $('#expand-option').on('change', function() {
-    if (!$('#expand-option').attr('checked'))
-      $('#expand-option').attr('checked', 'checked')
-    else
-      $('#expand-option').removeAttr('checked')
+    if (!$('#expand-option').attr('checked')) {
+      $('#expand-option').attr('checked', 'checked');
+      $('#beadplot-horizontal').show();
+    }
+    else {
+      $('#expand-option').removeAttr('checked');
+      $('#beadplot-horizontal').hide();
+    }
     const event = new Event('resize');
     window.dispatchEvent(event)
   });
 
-  $('#svg-cluster').on('scroll', function() {
+  $('#beadplot-horizontal').scroll(function() {
+    $("#svg-cluster").scrollLeft($(this).scrollLeft());
     $('#svg-clusteraxis').scrollLeft($(this).scrollLeft());
   });
 

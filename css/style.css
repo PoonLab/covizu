@@ -154,6 +154,7 @@ div.tree-beadplot {
 .beadplot-content {
   height: 81vh;
   overflow-y: scroll;
+  overflow-x: hidden;
   scrollbar-track-color: white;
 }
 
@@ -502,6 +503,17 @@ details + dl {
     overflow: hidden;
     display: block;
 }
+
+#beadplot-horizontal {
+  overflow-x: scroll;
+  overflow-y: hidden;
+  height: 20px;
+}
+
+#beadplot-width {
+  height: 20px;
+}
+
 .toplabel {
     top: 40px;
     /* background-color: #fffa; */
