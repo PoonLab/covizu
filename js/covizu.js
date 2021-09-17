@@ -312,7 +312,7 @@ req.done(function() {
   $('#start-date').datepicker({
     dateFormat,
     onSelect: function(date_text){
-      const start = new Date(date_text);
+      const start = utcDate(date_text);
       if ($('#start-date').val() != "") {
         $('#search-button').removeAttr("disabled");
         $('#clear_button').removeAttr("disabled");
@@ -327,7 +327,7 @@ req.done(function() {
   $('#end-date').datepicker({
     dateFormat,
     onSelect: function(date_text){
-      const end = new Date(date_text);
+      const end = utcDate(date_text);
       if ($('#end-date').val() != "") {
         $('#search-button').removeAttr("disabled");
         $('#clear_button').removeAttr("disabled");

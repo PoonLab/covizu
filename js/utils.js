@@ -34,3 +34,13 @@ function isDate(date) {
   const date_pat = /^\d{4}\-(0?[1-9]|1[012])\-(0?[1-9]|[12][0-9]|3[01])$/;
   return date_pat.test(date);
 }
+
+/**
+ * Returns a date in UTC 
+ *
+ * @param {String} date: The date to be converted
+ */
+function utcDate(date) {
+   const dateObj = new Date(date);
+   return new Date(dateObj.getTime() + dateObj.getTimezoneOffset() * 60000);
+}
