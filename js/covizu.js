@@ -236,7 +236,8 @@ req.done(function() {
     
     $("#custom-handle").text( slider.slider( "value" ) );
     move_arrow();
-    slider.trigger('change');
+    const event = new Event('resize');
+    window.dispatchEvent(event)
   }
 
   disable_buttons();

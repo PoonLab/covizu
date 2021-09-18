@@ -927,15 +927,11 @@ function beadplot(cid) {
       // avoid drawing beadplot twice on load
 
       // Update slider value before redrawing beadplot
-      slider.slider("value", ui.valueOf().value);
+      if (event.handleObj.type === "slide")
+        slider.slider("value", ui.valueOf().value);
 
       redraw();
     }
-  });
-
-  // Arrow buttons trigger a change event
-  slider.on("change", function(event, ui) {
-    redraw();
   });
 }
 
