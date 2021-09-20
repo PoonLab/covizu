@@ -1,25 +1,7 @@
 # CoVizu: Real-time visualization of SARS-COV-2 genomic diversity
 
 CoVizu is an open source project to develop a public interface to visualize and explore global diversity of SARS-CoV-2 genomes in near real time.
-
-The current mode of visualization employed by CoVizu that we are tentatively referring to as a "beadplot":
-
-<p align="center">
-<img src="doc/beadplot.png" width="500px"/>
-</p>
-
-### How to read a beadplot:
-
-* Each horizontal line segment represents a unique SARS-CoV-2 genomic sequence variant.  The emergence of a single new mutation in an infection is sufficient to establish a new variant.  A given variant may be observed multiple times as identical genome sequences, where `identity' is loosely defined to accommodate genomes with incomplete coverage and ambiguous base calls.  (Following GISAID's definition of a "complete genome", we require a minimum sequence length of 29,000 nt.)
-* Each circle represents one or more cases of a variant that were sampled on a given date.  The size (area) of the circle is proportional to the number of sequences.
-* Cases are arranged in chronological order from left to right.
-* Vertical lines connect variants that are related by a minimum spanning tree, which gives a *rough* approximation of transmission links.  The variant at the bottom terminus of the vertical line is the putative source.  
-* The relative location of variants along the vertical axis does not convey any information.  The variants are sorted with respect to the vertical axis such that ancestral variants are always below their "descendant" variants.
-
-**It is not feasible to reconstruct accurate links using only genomic data.**  However, our objective is to identify population-level events like importations into Canada, not to attribute a transmission to a specific source individual.
-
-
-## Rationale
+Currently, our analysis is updated every two days and published at https://filogeneti.ca/CoVizu.
 
 There is a rapidly accumulating number of genome sequences of severe acute 
 respiratory syndrome coronavirus 2 (SARS-CoV-2) collected at sites around 
@@ -31,35 +13,24 @@ For example, [nextstrain](http://nextstrain.org) has been at the forefront
 of analyzing and communicating the global distribution of SARS-CoV-2 genomic 
 variation.
 
-The central feature of [nextstrain](nextstrain.org) is a reconstruction of 
-a time-scaled phylogeny (a tree-based model of how infections are related 
-by common ancestors back in time).
-Geographic locations of samples are mapped onto the tree by colour to 
-communicate the global distribution of the pandemic over time.
-However, it is not obvious how useful (actionable) information can be best 
-extracted from these data, particularly in the context of a regional public 
-health authority.
 
-A significant challenge in using a time-scaled tree to visualize the 
-evolutionary (and, to some approximation, epidemiological) relationships 
-among sampled infections is that most of the image is occupied by 
-ancestral lineages whose existence were reconstructed from the observed 
-infections.
-One of our basic assumptions in developing CoVizu is that ancestral genomes 
-are directly sampled --- we think this is not unreasonable given the 
-relatively slow rate of molecular evolution in comparison to the virus 
-transmission rate.
+## Visualization concept
 
-Another limitation of the tree visualization is that it does not convey 
-information about observing the same genome sequence from multiple samples 
-over time.
-There is no means to differentiate identical sequences in a phylogeny 
-because there are no phylogenetically informative sites that separate them.
-One could extend the tips of the tree to span the time period of sample 
-collection and mark sampled genomes as in the beadplot above.
-However, the time scale of sampling identical genomes is relatively short 
-compared to the evolutionary history of the virus that is represented by 
-the tree.
+To visualize the evolutionary relationships among genomes, CoVizu employs a visual device that we call a "beadplot":
+
+<p align="center">
+<img src="doc/beadplot.png" width="500px"/>
+</p>
+
+* Each horizontal line segment represents a unique SARS-CoV-2 genomic sequence variant.  The emergence of a single new mutation in an infection is sufficient to establish a new variant.  A given variant may be observed multiple times as identical genome sequences, where `identity' is loosely defined to accommodate genomes with incomplete coverage and ambiguous base calls.  (Following GISAID's definition of a "complete genome", we require a minimum sequence length of 29,000 nt.)
+* Each circle represents one or more cases of a variant that were sampled on a given date.  The size (area) of the circle is proportional to the number of sequences.
+* Cases are arranged in chronological order from left to right.
+* Vertical lines connect variants that are related by a minimum spanning tree, which gives a *rough* approximation of transmission links.  The variant at the bottom terminus of the vertical line is the putative source.  
+* The relative location of variants along the vertical axis does not convey any information.  The variants are sorted with respect to the vertical axis such that ancestral variants are always below their "descendant" variants.
+
+**It is not feasible to reconstruct accurate links using only genomic data.**  However, our objective is to identify population-level events like importations into Canada, not to attribute a transmission to a specific source individual.
+
+
 
 
 ## Workflow
