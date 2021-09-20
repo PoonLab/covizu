@@ -1,6 +1,6 @@
 # CoVizu: Real-time visualization of SARS-COV-2 genomic diversity
 
-CoVizu is an open source project to develop a `near real time' SARS-CoV-2 genome analysis and visualization system that highlights potential cases of importation from other countries or ongoing community transmission.
+CoVizu is an open source project to develop a public interface to visualize and explore global diversity of SARS-CoV-2 genomes in near real time.
 
 The current mode of visualization employed by CoVizu that we are tentatively referring to as a "beadplot":
 
@@ -62,23 +62,17 @@ compared to the evolutionary history of the virus that is represented by
 the tree.
 
 
-## Current workflow
+## Workflow
 
-1. Sequences from the last 24 hours are bulk downloaded from the GISAID database.  All developers have signed the GISAID data access agreement, and sequences are not being re-distributed.
+1. Genome sequences are provisioned by the GISAID database.  All developers have signed the GISAID data access agreement, and sequences are not being re-distributed.
 
-2. Sequences are aligned pairwise against the SARS-COV-2 reference genome using the short read mapper [minimap2](https://github.com/lh3/minimap2) and a Python wrapper `minimap2.py` that applies the [CIGAR](https://samtools.github.io/hts-specs/SAMv1.pdf) string to each genome to either reconstitute the aligned sequence or extract all differences from the reference. 
+2. Sequences are aligned pairwise against the SARS-COV-2 reference genome using the short read mapper [minimap2](https://github.com/lh3/minimap2) and all genetic differences from the reference are extracted as "features", excluding [problematic sites](https://github.com/W-L/ProblematicSites_SARS-CoV2).  Genomes are filtered for <1% uncalled bases, divergence consistent with a molecular clock.  The end result is a compact representation of each genome as a feature set.
 
-3. Genomes are classified into [Pangolin lineages](https://github.com/cov-lineages/pangolin) using the script `pangolearn.py`.
+3. A single representative genome is selected for each [PANGO](https://cov-lineages.org/) lineage by selecting the earliest available genome from the curated list of genomes comprising the [PANGO lineage designations](https://github.com/cov-lineages/pango-designation).  A time-scaled tree is reconstructed the representative genomes using a combination of [fasttree2](http://www.microbesonline.org/fasttree/) and [TreeTime](https://github.com/neherlab/treetime).
 
-3. A single representative genome is selected for each Pangolin lineage.  We take the most recent sample that pass all of our filtering criteria (<1% uncalled bases, genetic divergence consistent with molecular clock, with all [problematic sites](https://github.com/W-L/ProblematicSites_SARS-CoV2) filtered out).
+4. We calculate the [symmetric difference](https://en.wikipedia.org/wiki/Symmetric_difference) between every pair of genomes in a lineage, and generate 100 replicate bootstrap samples from the lineage feature set union.  We apply the resulting samples to the symmetric differences to generate reweighted distance matrices.  Each distance matrix is used to reconstruct a [neighbor-joining](https://en.wikipedia.org/wiki/Neighbor_joining) tree using [RapidNJ](https://birc.au.dk/software/rapidnj/).
 
-4. A time-scaled tree is reconstructed using a combination of [fasttree2](http://www.microbesonline.org/fasttree/) and [TreeTime](https://github.com/neherlab/treetime).
-
-5. For all genomes within each lineage, we extract all genetic differences from the reference genome as "features", which provides a highly compact representation of that genome.  We calculate the [symmetric difference](https://en.wikipedia.org/wiki/Symmetric_difference) of each genome to every other genome and cache the result on the filesystem.
-
-6. For each lineage, we generate 100 replicate bootstrap samples of the feature set union to convert the symmetric differences into distance matrices, treating every genetic difference equally (Manhattan distance).  Each distance matrix is used to reconstruct a [neighbor-joining](https://en.wikipedia.org/wiki/Neighbor_joining) tree using [RapidNJ](https://birc.au.dk/software/rapidnj/).
-
-7. For each lineage, a consensus tree is calculated from the set of bootstrap trees and converted into a beadplot.
+5. For each lineage, a consensus tree is calculated from the set of bootstrap trees and converted into a beadplot.
 
 
 ## Acknowledgements
