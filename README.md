@@ -1,7 +1,6 @@
 # CoVizu: Real-time visualization of SARS-COV-2 genomic diversity
 
 CoVizu is an open source project to develop a public interface to visualize and explore global diversity of SARS-CoV-2 genomes in near real time.
-Currently, our analysis is updated every two days and published at https://filogeneti.ca/CoVizu.
 
 There is a rapidly accumulating number of genome sequences of severe acute 
 respiratory syndrome coronavirus 2 (SARS-CoV-2) collected at sites around 
@@ -12,6 +11,11 @@ unprecedented resource for molecular epidemiology and public health.
 For example, [nextstrain](http://nextstrain.org) has been at the forefront 
 of analyzing and communicating the global distribution of SARS-CoV-2 genomic 
 variation.
+
+## Installation
+
+For most users, the results of our analysis are updated every two days and displayed at https://filogeneti.ca/CoVizu.
+To run your own local instance of CoVizu, please refer to the installation instructions in the [opendata](https://github.com/PoonLab/covizu/tree/opendata) branch of this repository.
 
 
 ## Visualization concept
