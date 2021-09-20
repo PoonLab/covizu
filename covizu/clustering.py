@@ -25,7 +25,7 @@ def recode_features(records, callback=None, limit=10000):
     :param callback:  optional, function for progress monitoring
     :param limit:  int, maximum number of variants to prevent memory allocation crashes
     :return:  dict, key-value pairs of all features indexed by integers
-              list, nested list of labels by variant (identical feature vectors)
+              dict, lists of labels by variant (identical feature vectors), keyed by index
               list, sets of feature vectors encoded by integers, by variant
     """
     # compress genomes with identical feature vectors
@@ -46,11 +46,11 @@ def recode_features(records, callback=None, limit=10000):
     if callback:
         callback("Reduced to {} variants; generating feature set union".format(len(fvecs)))
     union = {}
-    labels = []
+    labels = {}
     indexed = []
     for count, item in enumerate(intermed):
         fvec = item[1]
-        labels.append(fvecs[fvec])
+        labels.update({str(count): fvecs[fvec]})
         if count < limit:
             for feat in fvec:
                 if feat not in union:
@@ -145,7 +145,7 @@ def consensus(trees, cutoff=0.5, callback=None):
     ntips = len(tip_index)
 
     if callback:
-        callback("Recording splits and branch lengths")
+        callback("Recording splits and branch lengths", level='DEBUG')
     splits = {}
     terminals = dict([(tn, 0) for tn in tip_index.keys()])
 
@@ -182,7 +182,7 @@ def consensus(trees, cutoff=0.5, callback=None):
 
     # construct consensus tree
     if callback:
-        callback("Building consensus tree")
+        callback("Building consensus tree", level='DEBUG')
     orphans = dict([
         (tip_index[tname], Clade(name=tname, branch_length=totlen/ntrees))
         for tname, totlen in terminals.items()
@@ -257,6 +257,34 @@ def parse_args():
     return parser.parse_args()
 
 
+def unpack_recoded(recoded, lineage, callback=None):
+    """
+    Recover dictionary from JSON.
+    :param recoded:  dict, directly returned from json.load
+    :param lineage:  str, PANGO lineage specifier
+    :param callback:  optional callback function
+    """
+    rdata = recoded.get(lineage, None)
+    if rdata is None:
+        if callback:
+            callback("ERROR: JSON did not contain lineage {}".format(args.lineage))
+        sys.exit()
+
+    union = rdata['union']  # unpack JSON data
+    union2 = {}
+    for feat, idx in union.items():
+        typ, pos, length = feat.split('|')
+        if typ == '-':
+            # length of deletion is an integer
+            key = tuple([typ, int(pos), int(length)])
+        else:
+            key = tuple([typ, int(pos), length])
+        union2.update({key: idx})
+
+    indexed = [set(l) for l in rdata['indexed']]  # see #335
+    return union2, rdata['labels'], indexed
+
+
 if __name__ == "__main__":
     """
     Called by batch.py via subprocess to handle lineages with excessive
@@ -277,36 +305,21 @@ if __name__ == "__main__":
     cb = Callback(t0=args.timestamp, my_rank=my_rank, nprocs=nprocs)
 
     # import lineage data from file
-    # FIXME: this consumes a few minutes to load the entire data set
-    cb.callback('loading JSON')
     with open(args.json) as handle:
-        by_lineage = json.load(handle)
+        recoded = json.load(handle)
 
     if args.mode == 'deep':
-        records = by_lineage.get(args.lineage, None)
-        if records is None:
-            cb.callback("ERROR: JSON did not contain lineage {}".format(args.lineage))
-            sys.exit()
-
-        # generate distance matrices from bootstrap samples [[ MPI ]]
-        union, labels, indexed = recode_features(records, callback=cb.callback, limit=args.max_variants)
+        union, labels, indexed = unpack_recoded(recoded, args.lineage, callback=cb.callback)
 
         # export map of sequence labels to tip indices
         lineage_name = args.lineage.replace('/', '_')  # issue #297
-        if my_rank == 0:
-            csvfile = os.path.join(args.outdir, "{}.labels.csv".format(lineage_name))
-            with open(csvfile, 'w') as handle:
-                handle.write("name,index\n")
-                for i, names in enumerate(labels):
-                    for nm in names:
-                        handle.write('{},{}\n'.format(nm, i))
 
         outfile = os.path.join(args.outdir, '{}.nwk'.format(lineage_name))
         if len(indexed) == 1:
             # lineage only has one variant, no meaningful tree
             if my_rank == 0:
                 with open(outfile, 'w') as handle:
-                    handle.write('({}:0);\n'.format(labels[0][0]))
+                    handle.write('({}:0);\n'.format(labels['0'][0]))
         else:
             # MPI processing
             trees = []
@@ -332,28 +345,15 @@ if __name__ == "__main__":
         for li, lineage in enumerate(minor_lineages):
             if li % nprocs != my_rank:
                 continue
+            cb.callback("starting {}".format(lineage))
+            union, labels, indexed = unpack_recoded(recoded, lineage, callback=cb.callback)
 
-            records = by_lineage.get(lineage, None)
-            if records is None:
-                cb.callback("ERROR: JSON did not contain lineage {}".format(args.lineage))
-                sys.exit()
-
-            union, labels, indexed = recode_features(records, callback=cb.callback, limit=args.max_variants)
-
-            # export map of sequence labels to tip indices
             lineage_name = lineage.replace('/', '_')  # issue #297
-            csvfile = os.path.join(args.outdir, "{}.labels.csv".format(lineage_name))
-            with open(csvfile, 'w') as handle:
-                handle.write("name,index\n")
-                for i, names in enumerate(labels):
-                    for nm in names:
-                        handle.write('{},{}\n'.format(nm, i))
-
             outfile = os.path.join(args.outdir, '{}.nwk'.format(lineage_name))
             if len(indexed) == 1:
                 # lineage only has one variant, no meaningful tree
                 with open(outfile, 'w') as handle:
-                    handle.write('({}:0);\n'.format(labels[0][0]))
+                    handle.write('({}:0);\n'.format(labels['0'][0]))
             else:
                 trees = [bootstrap(union, indexed, args.binpath, callback=cb.callback)
                          for _ in range(args.nboot)]

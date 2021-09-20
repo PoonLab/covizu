@@ -26,6 +26,7 @@ $( function() {
 $(document).tooltip({show: null});
 $("#loading_text").text(``);
 $("#loading").hide();
+$('#beadplot-horizontal').hide();
 
 
 /*********************** DIALOGS ***********************/
@@ -235,7 +236,8 @@ req.done(function() {
     
     $("#custom-handle").text( slider.slider( "value" ) );
     move_arrow();
-    slider.trigger('change');
+    const event = new Event('resize');
+    window.dispatchEvent(event)
   }
 
   disable_buttons();
@@ -312,7 +314,7 @@ req.done(function() {
   $('#start-date').datepicker({
     dateFormat,
     onSelect: function(date_text){
-      const start = new Date(date_text);
+      const start = utcDate(date_text);
       if ($('#start-date').val() != "") {
         $('#search-button').removeAttr("disabled");
         $('#clear_button').removeAttr("disabled");
@@ -327,7 +329,7 @@ req.done(function() {
   $('#end-date').datepicker({
     dateFormat,
     onSelect: function(date_text){
-      const end = new Date(date_text);
+      const end = utcDate(date_text);
       if ($('#end-date').val() != "") {
         $('#search-button').removeAttr("disabled");
         $('#clear_button').removeAttr("disabled");
@@ -403,6 +405,23 @@ req.done(function() {
     }
   });
 
+  $('#expand-option').on('change', function() {
+    if (!$('#expand-option').attr('checked')) {
+      $('#expand-option').attr('checked', 'checked');
+      $('#beadplot-horizontal').show();
+    }
+    else {
+      $('#expand-option').removeAttr('checked');
+      $('#beadplot-horizontal').hide();
+    }
+    const event = new Event('resize');
+    window.dispatchEvent(event)
+  });
+
+  $('#beadplot-horizontal').scroll(function() {
+    $("#svg-cluster").scrollLeft($(this).scrollLeft());
+    $('#svg-clusteraxis').scrollLeft($(this).scrollLeft());
+  });
 
   $('#previous_button').click(function(){
     var curr_bead = search_results.get().current_point;
