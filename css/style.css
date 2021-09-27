@@ -340,6 +340,11 @@ circle.default{
   stroke: black;
 }
 
+circle.selectionLC{
+  fill-opacity: 1;
+  stroke: black;
+}
+
 .not_SelectedBead{
   fill-opacity: 0.3;
 }

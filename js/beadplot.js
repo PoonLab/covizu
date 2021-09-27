@@ -485,6 +485,33 @@ function clear_selection() {
   d3.select('#svg-timetree').selectAll("rect:not(.clicked):not(.clickedH)")
       .attr("class", "default");
   d3.selectAll("circle.selectionH").remove();
+
+  // Clear vertical edge selection
+  d3.selectAll(".selectionLH").attr("stroke-width", function(d) {
+    if (d.unsampled) {
+      return 1;
+    } else {
+      return 3;
+    }
+  });
+  d3.selectAll(".selectionLC").attr("r", function(d) {
+    if (this.classList.contains("selectionH")) {
+      // draw_halo(d)
+      return 4*Math.sqrt(d.count)+4;
+    }
+    return 4 * Math.sqrt(d.count);   
+  });
+  d3.selectAll(".selectionLC").attr("stroke-width", function(d) {
+    if (this.classList.contains("selectionH")) {
+      return 5;
+    }
+    return 1;   
+  });
+  d3.selectAll(".selectionL").attr("stroke-width", 1);
+
+  d3.selectAll(".selectionLH").attr("class","lines");
+  d3.selectAll(".selectionL").attr("class","lines");
+  d3.selectAll(".selectionLC").attr("class","default");
 }
 
 
@@ -676,13 +703,13 @@ function beadplot(cid) {
                     return 1;
                   })
                   .attr("r", function(d) {
-                    if (this.classList.contains("selectionH selectionLC")) return 4*Math.sqrt(d.count)+7;
                     if (this.classList.contains("selectionH")) return 4*Math.sqrt(d.count)+4;
                     if (this.classList.contains("selectionLC")) return 4 * Math.sqrt(d.count) + 3;
                     return 4 * Math.sqrt(d.count);
                   });
             }
-            if(this.classList.contains("selectionL")||parent_variant.classList.contains("selectionLH")) {
+
+            if(this.classList.contains("selectionL") || parent_variant.node().classList.contains("selectionLH")) {
               parent_variant.attr("stroke-width", 5);
             }
             else {
@@ -699,12 +726,12 @@ function beadplot(cid) {
                     return 1;
                   })
                   .attr("r", function(d) {
-                    if (this.classList.contains("selectionH selectionLC")) return 4*Math.sqrt(d.count)+7;
-                    if (this.classList.contains("selectionLC")) return 4*Math.sqrt(d.count)+4;
+                    if (this.classList.contains("selectionH")) return 4*Math.sqrt(d.count)+4;
+                    if (this.classList.contains("selectionLC")) return 4*Math.sqrt(d.count)+3;
                     return 4 * Math.sqrt(d.count);
                   });
             }
-            if(this.classList.contains("selectionL")||child_variant.classList.contains("selectionLH")) {
+            if(this.classList.contains("selectionL") || child_variant.node().classList.contains("selectionLH")) {
               child_variant.attr("stroke-width", 5);
             }
             else {
@@ -718,31 +745,7 @@ function beadplot(cid) {
         })
         .on("click", function(d) {
           // Clear previous selections 
-          d3.selectAll(".selectionLH").attr("stroke-width", function(d) {
-            if (d.unsampled) {
-              return 1;
-            } else {
-              return 3;
-            }
-          });
-          d3.selectAll(".selectionLC").attr("r", function(d) {
-            if (this.classList.contains("selectionH")) {
-              // draw_halo(d)
-              return 4*Math.sqrt(d.count)+4;
-            }
-            return 4 * Math.sqrt(d.count);   
-          });
-          d3.selectAll(".selectionLC").attr("stroke-width", function(d) {
-            if (this.classList.contains("selectionH")) {
-              return 5;
-            }
-            return 1;   
-          });
-          d3.selectAll(".selectionL").attr("stroke-width", 1);
-
-          d3.selectAll(".selectionLH").attr("class","lines");
-          d3.selectAll(".selectionL").attr("class","lines");
-          d3.selectAll(".selectionLC").attr("class","default");
+          clear_selection();
 
           // Add attributes to keep track of line selection
           var edge = d3.select(this);
