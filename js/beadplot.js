@@ -528,16 +528,20 @@ function beadplot(cid) {
         numDays = d3.timeDay.count(mindate, maxdate),
         clientWidth = document.getElementById("svg-cluster").clientWidth;
 
+    // Sets margin top to align vertical scrollbar with the beadplot
+    $('#beadplot-vscroll').css('margin-top', document.getElementById("beadplot-title").clientHeight + document.getElementById("svg-clusteraxis").clientHeight +
+                                            ($('#expand-option').attr('checked') ? $('#inner-hscroll').height() : 0));
+
     // Don't give the user the option to scroll horizontally if the beadplot cannot expand 
     if (numDays * pixelsPerDay > clientWidth) {
       $('.expand').show();
       $('.switch').show();
-      if ($('#expand-option').attr('checked')) { $('#beadplot-horizontal').show(); }
+      if ($('#expand-option').attr('checked')) { $('#beadplot-hscroll').show(); }
     }
     else {
       $('.expand').hide();
       $('.switch').hide();
-      $('#beadplot-horizontal').hide();
+      $('#beadplot-hscroll').hide();
     }
 
     let currentWidth = null;
@@ -569,7 +573,7 @@ function beadplot(cid) {
     visBaxis.selectAll('*').remove();
 
     $("#svg-cluster > svg").attr("width",currentWidth + marginB.left + marginB.right);
-    $("#beadplot-width").css("width",currentWidth + marginB.left + marginB.right);
+    $("#inner-hscroll").css("width",currentWidth + marginB.left + marginB.right);
     
     // Add 15px to account for the scrollbar for the beadplot
     $("#svg-clusteraxis > svg").attr("width", currentWidth + marginB.left + marginB.right + 15);
@@ -909,6 +913,9 @@ function beadplot(cid) {
             .ticks(tickCount)
             .tickFormat(d3.timeFormat("%Y-%m-%d"))
         );
+
+    // Sets the height of the vertical scrollbar element to have the same height as the beadplot
+    $('#inner-vscroll').css('height', $('.beadplot-content > svg').height()); 
   }
   redraw();
   window.addEventListener("resize", redraw);

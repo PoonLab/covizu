@@ -155,7 +155,7 @@
         </div>
 
         <div class="middlebox">
-          <div class="floattitle">
+          <div class="floattitle" id="beadplot-title">
             <div>Beadplot</div>
             <div class="clicker" title="Download beadplot as tree" onclick="save_beadplot();">&nbsp;&nbsp;NWK&nbsp;&nbsp;</div>
             <div class="clicker" title="Save beadplot as SVG" onclick="export_svg();">&nbsp;&nbsp;SVG&nbsp;&nbsp;</div>
@@ -180,11 +180,14 @@
               <span class="slider round"></span>
             </label>
           </div>
-          <div id="beadplot-horizontal">
-            <div id="beadplot-width"></div>
-          </div>
           <div class="floattitle" id="svg-clusteraxis" style="top: 58px; z-index: 14"></div>
+          <div id="beadplot-hscroll">
+            <div id="inner-hscroll"></div>
+          </div>
           <div class="beadplot-content" id="svg-cluster"></div>
+        </div>
+        <div id="beadplot-vscroll">
+          <div id="inner-vscroll"></div>
         </div>
       </div>
     </div>
