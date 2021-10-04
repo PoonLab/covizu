@@ -1055,6 +1055,65 @@ function region_to_string(my_regions) {
   return regStr;
 }
 
+/**
+ * Creates a table that displays mutations details (Mutation label, frequency, phenotypic effects)
+ * @param obj: JS object or an array of JS Objects
+ */
+
+function gen_mut_table(obj) {
+  var mutations = [];
+
+  for (let i = 0; i < obj.length; i++) {
+    mutations.push(tips[i].mutations);
+  }
+
+  mut_thead.html(""); // clear table headers
+  var sort_ascending = true;
+
+  var headers = mut_thead.append('tr')
+      .selectAll('th')
+      .data(mut_theaders)
+      .enter()
+      .append('th')
+      .on('click', function (x, i) {
+        // Reset sorting arrows
+        mut_thead.selectAll('a').classed('hide-before', false);
+        mut_thead.selectAll('a').classed('hide-after', false);
+      })
+      .append('a')
+      .text(function (x) { return x; })
+      .classed('sort-by', true);
+
+  // Create a row for each sample
+  mut_tbody.html("");
+  var t_rows = mut_tbody.selectAll('tr')
+      .data(mutations)
+      .enter()
+      .append('tr')
+      .on("mouseover", function (x) {
+        // Highlight row on mouseover
+        d3.select(this).style("background-color", "#e2e2e2");
+      })
+      .on("mouseout", function (x) {
+        // Remove highlighting on mouseout
+        d3.select(this).style("background-color", null);
+      });
+
+  // Create a cell for every row in the column
+  t_rows.selectAll('td')
+      .data(mutations)
+      .enter()
+      .append('td')
+      .append('span')
+      .on("mouseout", function() {
+        cTooltip.transition()
+            .duration(50)
+            .style("opacity", 0);
+      })
+      .text(function (x) { return x; })
+      .style("font", "0.875em/1.2 Lato, sans-serif");
+}
+
 
 /**
  * Creates a table that displays sequence details (Sequence name, GISAID accession number, collection date)

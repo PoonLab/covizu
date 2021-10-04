@@ -78,6 +78,7 @@
       loading_json: "Loading JSON data from server (~10s)...",
       country_theaders: ["Region", "Country", "Count"],
       sample_theaders: ["Accession", "Name", "Date"],
+      mutation_threaders: ["Mutation", "Frequency", "Phenotype"]
     };
 
   </script>
@@ -220,7 +221,7 @@
           <span style="width: 250px">
             <div class="gisaid">Enabled by data from&nbsp;<a href="https://gisaid.org" target="_new">
                 <img src="https://www.gisaid.org/fileadmin/gisaid/img/schild.png"
-                     height="24px"/>
+                     height="24px"/> 
               </a>
             </div>
           </span>
@@ -232,8 +233,9 @@
 
           <div id="tabs">
             <ul>
-              <li><a href="#tabs-1">Countries</a></li>
-              <li><a href="#tabs-2">Samples</a></li>
+              <li style="font-size: 0.8em"><a href="#tabs-1">Countries</a></li>
+              <li style="font-size: 0.8em"><a href="#tabs-2">Samples</a></li>
+              <li style="font-size: 0.8em"><a href="#tabs-3">Mutations</a></li>
             </ul>
             <div id="tabs-1">
               <div class="breaker" id="barplot"></div>
@@ -244,6 +246,9 @@
                 Hover over accession (EPI_ISL_#) to display laboratory and author info.
               </div>
               <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="seq-table"></div>
+            </div>
+            <div id="tabs-3">
+              <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="mut-table"></div>
             </div>
           </div>
         </div>

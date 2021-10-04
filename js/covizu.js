@@ -167,6 +167,7 @@ req.done(function() {
   gentable(node.__data__);
   draw_region_distribution(node.__data__.allregions);
   gen_details_table(beaddata[node.__data__.cluster_idx].points);  // update details table with all samples
+  gen_mut_table(tips)
   draw_cluster_box(d3.select(node));
 
   /*
@@ -596,6 +597,12 @@ var seq_table = d3.select("#seq-table").append('table');
 var thead = seq_table.append('thead');
 var seq_theaders = i18n_text.sample_theaders;
 var seq_tbody = seq_table.append('tbody');
+
+// Populate mutation details table
+var mut_table = d3.select('#mut-table').append('table');
+var mut_thead = mut_table.append('thead')
+var mut_theaders = i18n_text.mutation_threaders;
+var mut_tbody = mut_table.append("tbody")
 
 // implement acknowledgements dialog
 $( "#dialog" ).dialog({ autoOpen: false });
