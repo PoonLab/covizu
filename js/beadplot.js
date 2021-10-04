@@ -136,8 +136,8 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
     vdata = {
       'accession': accn,
       'label': accn,
-      'x1': new Date(mindate + ' '),  // cluster min date
-      'x2': new Date(maxdate + ' '),  // cluster max date
+      'x1': utcDate(mindate),  // cluster min date
+      'x2': utcDate(maxdate),  // cluster max date
       'y1': y,
       'y2': y,
       'count': 0,
@@ -166,8 +166,8 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
     vdata = {
       'accession': accn,
       'label': label,
-      'x1': new Date(coldates[0] + ' '),  // min date
-      'x2': new Date(coldates[coldates.length-1] + ' '),  // max date
+      'x1': utcDate(coldates[0]),  // min date
+      'x2': utcDate(coldates[coldates.length-1]),  // max date
       'y1': y,
       'y2': y,
       'count': coldates.length,
@@ -201,7 +201,7 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
       pdata.push({
         cidx,
         'variant': accn,
-        'x': new Date(isodate + ' '),
+        'x': utcDate(isodate),
         'y': y,
         'count': samples.length,
         'accessions': samples.map(x => x[1]),
@@ -480,11 +480,38 @@ function clear_selection() {
 
   d3.select("#svg-cluster").selectAll("line")
       .attr("stroke-opacity", 1);
-  d3.selectAll("circle:not(.selectionH)")
+  d3.selectAll("circle:not(.selectionH):not(.selectionLC)")
       .attr("class", "default");
   d3.select('#svg-timetree').selectAll("rect:not(.clicked):not(.clickedH)")
       .attr("class", "default");
   d3.selectAll("circle.selectionH").remove();
+
+  // Clear vertical edge selection
+  d3.selectAll(".selectionLH").attr("stroke-width", function(d) {
+    if (d.unsampled) {
+      return 1;
+    } else {
+      return 3;
+    }
+  });
+  d3.selectAll(".selectionLC").attr("r", function(d) {
+    if (this.classList.contains("selectionH")) {
+      // draw_halo(d)
+      return 4*Math.sqrt(d.count)+4;
+    }
+    return 4 * Math.sqrt(d.count);   
+  });
+  d3.selectAll(".selectionLC").attr("stroke-width", function(d) {
+    if (this.classList.contains("selectionH")) {
+      return 5;
+    }
+    return 1;   
+  });
+  d3.selectAll(".selectionL").attr("stroke-width", 1);
+
+  d3.selectAll(".selectionLH").attr("class","lines");
+  d3.selectAll(".selectionL").attr("class","lines");
+  d3.selectAll(".selectionLC").attr("class","default");
 }
 
 
@@ -528,14 +555,20 @@ function beadplot(cid) {
         numDays = d3.timeDay.count(mindate, maxdate),
         clientWidth = document.getElementById("svg-cluster").clientWidth;
 
+    // Sets margin top to align vertical scrollbar with the beadplot
+    $('#beadplot-vscroll').css('margin-top', document.getElementById("beadplot-title").clientHeight + document.getElementById("svg-clusteraxis").clientHeight +
+                                            ($('#expand-option').attr('checked') ? $('#inner-hscroll').height() : 0));
+
     // Don't give the user the option to scroll horizontally if the beadplot cannot expand 
     if (numDays * pixelsPerDay > clientWidth) {
       $('.expand').show();
       $('.switch').show();
+      if ($('#expand-option').attr('checked')) { $('#beadplot-hscroll').show(); }
     }
     else {
       $('.expand').hide();
       $('.switch').hide();
+      $('#beadplot-hscroll').hide();
     }
 
     let currentWidth = null;
@@ -567,6 +600,7 @@ function beadplot(cid) {
     visBaxis.selectAll('*').remove();
 
     $("#svg-cluster > svg").attr("width",currentWidth + marginB.left + marginB.right);
+    $("#inner-hscroll").css("width",currentWidth + marginB.left + marginB.right);
     
     // Add 15px to account for the scrollbar for the beadplot
     $("#svg-clusteraxis > svg").attr("width", currentWidth + marginB.left + marginB.right + 15);
@@ -654,7 +688,12 @@ function beadplot(cid) {
               });
         })
         .on("mouseout", function(d) {
-          d3.select(this).attr("stroke-width", 1);
+          if(this.classList.contains("selectionL")) {
+            d3.select(this).attr("stroke-width", 3);
+          }
+          else {
+            d3.select(this).attr("stroke-width", 1);
+          }
 
           let parent_variant = d3.select(".lines#"+d.parent.replace('/', '-').replace(' ', '_')),
               child_variant = d3.select(".lines#"+d.child.replace('/', '-').replace(' ', '_'));
@@ -664,14 +703,22 @@ function beadplot(cid) {
               d3.selectAll("circle").filter(ci => ci.y === d.y1)
                   .attr("stroke-width", function() {
                     if (this.classList.contains("selectionH")) return 5;
+                    if (this.classList.contains("selectionLC")) return 1.5;
                     return 1;
                   })
                   .attr("r", function(d) {
                     if (this.classList.contains("selectionH")) return 4*Math.sqrt(d.count)+4;
+                    if (this.classList.contains("selectionLC")) return 4 * Math.sqrt(d.count) + 3;
                     return 4 * Math.sqrt(d.count);
                   });
             }
-            parent_variant.attr("stroke-width", 3);
+
+            if(this.classList.contains("selectionL") || parent_variant.node().classList.contains("selectionLH")) {
+              parent_variant.attr("stroke-width", 5);
+            }
+            else {
+              parent_variant.attr("stroke-width", 3);
+            }
           }
 
           if (!child_variant.empty()) {
@@ -679,19 +726,60 @@ function beadplot(cid) {
               d3.selectAll("circle").filter(ci => ci.y === d.y2)
                   .attr("stroke-width", function() {
                     if (this.classList.contains("selectionH")) return 5;
+                    if (this.classList.contains("selectionLC")) return 1.5;
                     return 1;
                   })
                   .attr("r", function(d) {
                     if (this.classList.contains("selectionH")) return 4*Math.sqrt(d.count)+4;
+                    if (this.classList.contains("selectionLC")) return 4*Math.sqrt(d.count)+3;
                     return 4 * Math.sqrt(d.count);
                   });
             }
-            child_variant.attr("stroke-width", 3);
+            if(this.classList.contains("selectionL") || child_variant.node().classList.contains("selectionLH")) {
+              child_variant.attr("stroke-width", 5);
+            }
+            else {
+              child_variant.attr("stroke-width", 3);
+            }
           }
 
           cTooltip.transition()     // Hide tooltip
               .duration(50)
               .style("opacity", 0);
+        })
+        .on("click", function(d) {
+          // Clear previous selections 
+          clear_selection();
+
+          // Add attributes to keep track of line selection
+          var edge = d3.select(this);
+          edge.attr("class", "lines selectionL");
+
+          let parent_variant = d3.select(".lines#"+d.parent.replace('/', '-').replace(' ', '_')),
+              child_variant = d3.select(".lines#"+d.child.replace('/', '-').replace(' ', '_'));
+
+          parent_variant.attr("class", "lines selectionLH");
+          child_variant.attr("class", "lines selectionLH");
+
+          if (!parent_variant.empty()) {
+            if (parent_variant.datum().count > 0) {
+              d3.selectAll("circle").filter(ci => ci.y === d.y1) 
+                  .attr("class", function() {
+                    if (this.classList.contains("selectionH")) return "selectionH selectionLC";
+                    return "selectionLC";
+                  })
+            }
+          }
+
+          if (!child_variant.empty()) {
+            if (child_variant.datum().count > 0) {
+              d3.selectAll("circle").filter(ci => ci.y === d.y2)
+                  .attr("class", function() {
+                    if (this.classList.contains("selectionH")) return "selectionH selectionLC";
+                    return "selectionLC";
+                  })
+            }
+          }
         });
 
     // draw horizontal line segments that represent variants in cluster
@@ -769,7 +857,9 @@ function beadplot(cid) {
           d3.select(this)
               .attr("stroke-width", function(d) {
                 // reset line width
-                if (d.unsampled) {
+                if (this.classList.contains("selectionLH")) {
+                  return 5;
+                } else if (d.unsampled) {
                   return 1;
                 } else {
                   return 3;
@@ -860,8 +950,14 @@ function beadplot(cid) {
               });
         })
         .on("mouseout", function(d) {
+          if (this.classList.contains("selectionLC")) {
+            d3.select(this).attr("stroke-width", 1.5)
+                .attr("r", 4*Math.sqrt(d.count) + 3);
+          } 
+          else {
             d3.select(this).attr("stroke-width", 1)
                 .attr("r", 4*Math.sqrt(d.count));
+          }
             cTooltip//.transition()     // Hide tooltip
                 //.duration(50)
                 .style("opacity", 0);
@@ -906,6 +1002,9 @@ function beadplot(cid) {
             .ticks(tickCount)
             .tickFormat(d3.timeFormat("%Y-%m-%d"))
         );
+
+    // Sets the height of the vertical scrollbar element to have the same height as the beadplot
+    $('#inner-vscroll').css('height', $('.beadplot-content > svg').height()); 
   }
   redraw();
   window.addEventListener("resize", redraw);
@@ -924,15 +1023,11 @@ function beadplot(cid) {
       // avoid drawing beadplot twice on load
 
       // Update slider value before redrawing beadplot
-      slider.slider("value", ui.valueOf().value);
+      if (event.handleObj.type === "slide")
+        slider.slider("value", ui.valueOf().value);
 
       redraw();
     }
-  });
-
-  // Arrow buttons trigger a change event
-  slider.on("change", function(event, ui) {
-    redraw();
   });
 }
 

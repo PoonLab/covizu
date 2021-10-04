@@ -152,12 +152,16 @@ div.tree-beadplot {
 }
 
 .beadplot-content {
-  height: 81vh;
-  overflow-y: scroll;
+  height: 79vh;
+  overflow: scroll;
   scrollbar-track-color: white;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
-
+.beadplot-content::-webkit-scrollbar {
+  display: none;
+}
 
 div.leftbox {
   overflow: auto;
@@ -339,6 +343,11 @@ circle.default{
   stroke: black;
 }
 
+circle.selectionLC{
+  fill-opacity: 1;
+  stroke: black;
+}
+
 .not_SelectedBead{
   fill-opacity: 0.3;
 }
@@ -502,6 +511,30 @@ details + dl {
     overflow: hidden;
     display: block;
 }
+
+/* Horizontal scrollbar for beadplot */
+#beadplot-hscroll {
+  overflow-x: scroll;
+  overflow-y: hidden;
+  height: 16px;
+}
+
+#inner-hscroll {
+  height: 16px;
+}
+
+/* Vertical scrollbar for beadplot */
+#beadplot-vscroll {
+  overflow-x: hidden;
+  overflow-y: scroll;
+  width: 20px;
+  height: 79vh;
+}
+
+#inner-vscroll {
+  width: 20px;
+}
+
 .toplabel {
     top: 40px;
     /* background-color: #fffa; */
