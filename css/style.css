@@ -85,6 +85,7 @@ div.tooltip{
   border: 1px solid #4f2683;
   border-radius: 8px;
   pointer-events: none;
+  z-index: 1;
 }
 
 
