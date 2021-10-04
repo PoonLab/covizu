@@ -200,9 +200,8 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
 
             ctree = beadplot.annotate_tree(ctree, label_dict)
             beaddict = beadplot.serialize_tree(ctree)
-            beaddict.update({'sampled_variants': len(label_dict)})
-
             beaddict.update({'lineage': lineage})
+        beaddict.update({'sampled_variants': len(label_dict)})
         result.append(beaddict)
 
     return result
