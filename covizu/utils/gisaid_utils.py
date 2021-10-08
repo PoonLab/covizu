@@ -143,7 +143,7 @@ def extract_features(batcher, ref_file, binpath='minimap2', nthread=3, minlen=29
 
 
 def filter_problematic(records, origin='2019-12-01', rate=0.0655, cutoff=0.005,
-                       maxtime=1e3, vcf_file='data/problematic_sites_sarsCov2.vcf',
+                       maxtime=1e3, vcf_file='data/ProblematicSites_SARS-CoV2/problematic_sites_sarsCov2.vcf',
                        misstol=300, callback=None):
     """
     Apply problematic sites annotation from de Maio et al.,
@@ -300,7 +300,7 @@ def parse_args():
                         help='option, number of threads to run minimap2. Defaults to 8.')
 
     parser.add_argument("--vcf_file", type=str,
-                        default=os.path.join(covizu.__path__[0], "data/problematic_sites_sarsCov2.vcf"),
+                        default=os.path.join(covizu.__path__[0], "data/ProblematicSites_SARS-CoV2/problematic_sites_sarsCov2.vcf"),
                         help="Path to VCF file of problematic sites in SARS-COV-2 genome. "
                              "Source: https://github.com/W-L/ProblematicSites_SARS-CoV2")
 

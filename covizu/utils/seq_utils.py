@@ -225,7 +225,7 @@ def filter_outliers(iter, origin='2019-12-01', rate=0.0655, cutoff=0.005, maxtim
         yield qname, diffs, missing
 
 
-def load_vcf(vcf_file="data/problematic_sites_sarsCov2.vcf"):
+def load_vcf(vcf_file="data/ProblematicSites_SARS-CoV2/problematic_sites_sarsCov2.vcf"):
     """
     Load VCF of problematic sites curated by Nick Goldman lab
     NOTE: The curators of this VCF used MN908947.3, which is identical to NC_045512.

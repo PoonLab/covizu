@@ -52,7 +52,7 @@ def parse_args():
                         help="maximum tolerated number of missing bases per "
                              "genome (default 300).")
     parser.add_argument("--vcf", type=str,
-                        default=os.path.join(covizu.__path__[0], "data/problematic_sites_sarsCov2.vcf"),
+                        default=os.path.join(covizu.__path__[0], "data/ProblematicSites_SARS-CoV2/problematic_sites_sarsCov2.vcf"),
                         help="Path to VCF file of problematic sites in SARS-COV-2 genome. "
                              "Source: https://github.com/W-L/ProblematicSites_SARS-CoV2")
 
