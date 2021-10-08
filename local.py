@@ -174,6 +174,22 @@ if __name__ == "__main__":
         cb.callback("mpirun not loaded - run `module load openmpi/gnu`", level='ERROR')
         sys.exit()
 
+    # check that the user has included submodules
+    if (not os.path.exists(os.path.join(covizu.__path__[0], "data/pango-designation/lineages.csv")) or 
+            not os.path.exists(os.path.join(covizu.__path__[0], "data/ProblematicSites_SARS-CoV2/problematic_sites_sarsCov2.vcf"))):
+        try:
+            subprocess.check_call("git submodule init; git submodule update", shell=True)
+        except:
+            cb.callback("Error adding the required submodules")
+            sys.exit()
+
+    # update submodules
+    try:
+        subprocess.check_call("git submodule foreach git pull origin master", shell=True)
+    except:
+        cb.callback("Error updating submodules")
+        sys.exit()
+
     by_lineage = process_local(args, cb.callback)
     with open(args.bylineage, 'w') as handle:
         # export to file to process large lineages with MPI
