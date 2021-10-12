@@ -1063,8 +1063,32 @@ function region_to_string(my_regions) {
 function gen_mut_table(obj) {
   var mutations = [];
 
-  for (let i = 0; i < obj.length; i++) {
-    mutations.push(tips[i].mutations);
+  // Check for a list of samples
+  if (Array.isArray(obj)) {
+    // Iterate over each sample in the list
+    for (let j = 0; j < obj.length; j++) {
+
+      // "zip" the sequence details of each sample
+      for (let i = 0; i < obj[j].mutations.length; i++) {
+        let sample_details = [
+          obj[j].mutations[i],
+          obj[j].frequency[i],
+          obj[j].phenotype[i]  
+        ];
+        mutations.push(sample_details);
+      }
+    } 
+  }
+  else {
+    // "zip" the sequence details of each sample
+    for (let i = 0; i < obj.mutations.length; i++) {
+      let sample_details = [
+        obj.mutations[i],
+        obj.frequency[i],
+        obj.phenotype[i]  
+      ];
+      mutations.push(sample_details);
+    }
   }
 
   mut_thead.html(""); // clear table headers
@@ -1101,7 +1125,7 @@ function gen_mut_table(obj) {
 
   // Create a cell for every row in the column
   t_rows.selectAll('td')
-      .data(mutations)
+      .data(function (r) { return r.slice(0,3); })
       .enter()
       .append('td')
       .append('span')

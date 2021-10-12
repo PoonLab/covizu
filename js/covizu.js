@@ -167,7 +167,7 @@ req.done(function() {
   gentable(node.__data__);
   draw_region_distribution(node.__data__.allregions);
   gen_details_table(beaddata[node.__data__.cluster_idx].points);  // update details table with all samples
-  gen_mut_table(tips)
+  gen_mut_table({'mutations': ['aa:S:A623T', 'aa:S:Y449P'], 'frequency': [4, 8], 'phenotype': ['convalescent_plasma_escape', 'gene_expression_increase']}) // currently hardcoded 
   draw_cluster_box(d3.select(node));
 
   /*
