@@ -83,8 +83,8 @@ def combine(handle, metadata, minlen=29000, mindate='2019-12-01', callback=None)
             continue  # sequence is too short
 
         coldate = metadata[label]['coldate']
-        if coldate.count('-') != 2:
-            rejects['baddate'] += 1
+        if coldate.count('-') != 2 or coldate.endswith('-00'):
+            rejects['baddate'] += 1  # issue #362
             continue  # incomplete collection date
         dt = seq_utils.fromisoformat(coldate)
         if dt < mindate or dt > date.today():
