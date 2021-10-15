@@ -80,6 +80,7 @@ def export_files(fasta_file, tsv_file, tmpfile):
 
     return xzfile, gzfile
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Download data from VirusSeq portal database,"
                                      "compressing streams to reduce file size.")
