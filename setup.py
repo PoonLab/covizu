@@ -21,8 +21,7 @@ setuptools.setup(
     ],
     package_data={'covizu': [
         'data/problematic_sites_sarsCov2.vcf',
-        'data/LR757995.fa',
-        'data/MT291829.fa',
+        'data/lineages.csv',
         'data/NC_045512.fa'
     ]}
 )

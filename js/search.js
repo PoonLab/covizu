@@ -75,18 +75,18 @@ function wrap_search() {
 
   var start_date, end_date;
   if (start_date_text === "") {
-    start_date = new Date("2020-01-01");
+    start_date = utcDate("2020-01-01");
     $('#start-date').val("2020-01-01");
   }
   else
-    start_date = new Date(start_date_text);
+    start_date = utcDate(start_date_text);
   
   if (end_date_text === "") {
     end_date = new Date();
     $('#end-date').val(formatDate(end_date));
   }
   else
-    end_date = new Date(end_date_text);
+    end_date = utcDate(end_date_text);
 
   // Exception handing
   if (start_date > end_date) {
@@ -238,7 +238,7 @@ function lineage_search(text_query) {
   d3.select("#svg-timetree")
     .selectAll("rect:not(.clicked):not(.clickedH)")
     .attr("class","not_SelectedCluster");
-
+  
   cluster.attr("class", "SelectedCluster clicked");
   d3.select("#cidx-"+cidx).attr("class", "clicked");
 
@@ -471,14 +471,14 @@ function select_beads_by_substring(substr) {
     return;
   }
   if (start == "") {
-    start_date = new Date("2019-01-01");
+    start_date = utcDate("2019-01-01");
   } else {
-    start_date = new Date(start);  // from ISO string
+    start_date = utcDate(start);  // from ISO string
   }
   if (end == "") {
     end_date = new Date();  // today
   } else {
-    end_date = new Date(end);
+    end_date = utcDate(end);
   }
 
   rects = d3.selectAll("#svg-timetree > svg > rect:not(.clickedH)")
