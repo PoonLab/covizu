@@ -142,8 +142,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
     elif args.np:
         mpirun.extend(["-np", str(args.np)])
     else:
-        mpirun = [""]  # serial mode
-        sys.exit()
+        mpirun = []  # serial mode
 
     cmd = ["python3", "covizu/clustering.py",
            recode_file, txtfile,  # positional arguments <JSON file>, <str>
