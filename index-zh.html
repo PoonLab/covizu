@@ -39,6 +39,8 @@
       coldate_legend: "最后收集日期",
       diverge_legend: "趋异 (严格分子钟)",
       total: "总计",
+      sampled: "采样",
+      displayed: "显示",
 
       // side bar data statistics
       last_update: "最新更新",
@@ -154,7 +156,7 @@
         </div>
 
         <div class="middlebox">
-          <div class="floattitle">
+          <div class="floattitle" id="beadplot-title">
             <div>珠图</div>
             <div class="clicker" title="Download beadplot as tree" onclick="save_beadplot();">&nbsp;&nbsp;NWK&nbsp;&nbsp;</div>
             <div class="clicker" title="Save beadplot as SVG" onclick="export_svg();">&nbsp;&nbsp;SVG&nbsp;&nbsp;</div>
@@ -172,9 +174,21 @@
                 <div style="transform: translateY(-25%);" class="rarrow">&#8250;</div>
               </div>
             </div>
+                        
+            <label class="expand" style="vertical-align: middle;">&nbsp;&nbsp;展开:&nbsp;</label>
+            <label class="switch">
+              <input type="checkbox" id="expand-option">
+              <span class="slider round"></span>
+            </label>
           </div>
           <div class="floattitle" id="svg-clusteraxis" style="top: 58px; z-index: 14"></div>
+          <div id="beadplot-hscroll">
+            <div id="inner-hscroll"></div>
+          </div>
           <div class="beadplot-content" id="svg-cluster"></div>
+        </div>
+        <div id="beadplot-vscroll">
+          <div id="inner-vscroll"></div>
         </div>
       </div>
     </div>

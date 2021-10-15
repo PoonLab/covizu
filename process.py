@@ -57,6 +57,9 @@ def parse_args():
     parser.add_argument('--ft2bin', default='fasttree2',
                         help='path to fasttree2 binary executable')
 
+    parser.add_argument('--lineages', type=str,
+                        default=os.path.join(covizu.__path__[0], "data/lineages.csv"),
+                        help="optional, path to CSV file containing Pango lineage designations.")
     parser.add_argument('--ttbin', default='treetime',
                         help='path to treetime binary executable')
     parser.add_argument('--clock', type=float, default=8e-4,
@@ -115,9 +118,6 @@ def analyze_feed(handle, args, callback=None):
                                             callback=callback)
     by_lineage = sort_by_lineage(filtered, callback=callback)
 
-    with open(args.bylineage, 'w') as handle:
-        # export to file to process large lineages with MPI
-        json.dump(by_lineage, handle)
 
     # reconstruct time-scaled tree
     timetree, residuals = build_timetree(by_lineage, args, callback)
@@ -129,9 +129,9 @@ def analyze_feed(handle, args, callback=None):
 
     # generate beadplots and serialize to file
     result = make_beadplots(by_lineage, args, callback, t0=t0.timestamp())
-    outfile = open(os.path.join(args.outdir, 'clusters.{}.json'.format(timestamp)), 'w')
-    outfile.write(json.dumps(result))  # serialize results to JSON
-    outfile.close()
+    clust_file = os.path.join(args.outdir, 'clusters.{}.json'.format(timestamp))
+    with open(clust_file, 'w') as handle:
+        json.dump(result, fp=handle)
 
     # get mutation info
     locator = SC2Locator()

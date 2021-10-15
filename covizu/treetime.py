@@ -3,6 +3,7 @@ from subprocess import Popen, PIPE, check_call
 import json
 from tempfile import NamedTemporaryFile
 import os
+import sys
 from io import StringIO
 import re
 import statistics  # Python 3.4+
@@ -14,22 +15,39 @@ from covizu.utils.seq_utils import *
 from covizu.utils.progress_utils import Callback
 
 
-def fasttree(fasta, binpath='fasttree2', seed=1):
+def fasttree(fasta, binpath='fasttree2', seed=1, gtr=True, collapse=True):
     """
     Wrapper for FastTree2, passing FASTA as stdin and capturing the
     resulting Newick tree string as stdout.
-    :param fasta: dict, header: sequence pairs
+
+    :param fasta:  dict, header: sequence pairs
+    :param binpath:  str, path to Fasttree2 binary executable
+    :param seed:  int, initialize random number generator
+    :param gtr:  if True, use generalized time reversible model; otherwise JC
+
     :return: str, Newick tree string
     """
+    # convert dict to FASTA-formatted string
     in_str = ''
     for h, s in fasta.items():
         accn = h.split('|')[1]
         in_str += '>{}\n{}\n'.format(accn, s)
-    p = Popen([binpath, '-nt', '-quote', '-seed', str(seed)],
-              stdin=PIPE, stdout=PIPE)
-    # TODO: exception handling with stderr?
+
+    cmd = [binpath, '-nt', '-quote', '-seed', str(seed)]
+    if gtr:
+        cmd.append('-gtr')
+
+    p = Popen(cmd, stdin=PIPE, stdout=PIPE)
     stdout, stderr = p.communicate(input=in_str.encode('utf-8'))
-    return stdout.decode('utf-8')
+    nwk = stdout.decode('utf-8')
+
+    # collapse low support nodes into polytomies
+    if collapse:
+        phy = Phylo.read(StringIO(nwk), format='newick')
+        phy.collapse_all(lambda x: x.confidence is not None and
+                                   x.confidence < 0.5)
+        nwk = phy.format('newick')
+    return nwk
 
 
 def treetime(nwk, fasta, outdir, binpath='treetime', clock=None, verbosity=1):
@@ -61,7 +79,9 @@ def treetime(nwk, fasta, outdir, binpath='treetime', clock=None, verbosity=1):
             '--aln', alnfile.name, '--dates', datefile.name,
             '--outdir', outdir, '--verbose', str(verbosity),
             '--plot-rtt', 'none',  # see issue #66
-            '--clock-filter', '0']  # issue #245
+            '--clock-filter', '0',  # issue #245
+            '--keep-polytomies'  # issue #339
+    ]
     if clock:
         call.extend(['--clock-rate', str(clock)])
     check_call(call)
@@ -147,13 +167,18 @@ def parse_nexus(nexus_file, fasta, callback=None):
     return phy, residuals
 
 
-def retrieve_genomes(by_lineage, ref_file, earliest=True):
+def retrieve_genomes(by_lineage, known_seqs, ref_file, earliest=True, callback=None):
     """
     Identify most recent sampled genome sequence for each Pangolin lineage.
     Export as FASTA for TreeTime analysis.
 
     :param by_lineage:  dict, return value from gisaid_utils::sort_by_lineage
-    :return:  list, (header, sequence) tuples
+    :param known_seqs:  dict, sequences used in Pango lineage designations
+    :param ref_file:  str, path to FASTA file containing reference genome
+    :param earliest:  bool, if False then use most recent genome as lineage representative
+    :param callback:  optional, callback function
+
+    :return:  dict, aligned genome keyed by header "|{lineage}|{coldate}"
     """
     # load and parse reference genome
     with open(ref_file) as handle:
@@ -166,7 +191,20 @@ def retrieve_genomes(by_lineage, ref_file, earliest=True):
 
     # retrieve unaligned genomes from database
     for lineage, records in by_lineage.items():
-        intermed = [(r['coldate'], r['diffs'], r['missing']) for r in records]
+        # filter records for lineage-defining genomes
+        curated = filter(
+            lambda r: r['label'].replace(' ', '_')  # issue #313
+                      in known_seqs,
+            records)
+
+        curated = list(curated)  # resolve generator
+        if len(curated) == 0:
+            if callback:
+                callback("Error in retrieve_genomes(): no sequence names for lineage {} in designated "
+                         "list; may need to update data/lineages.csv".format(lineage), level='WARN')
+            curated = records
+
+        intermed = [(r['coldate'], r['diffs'], r['missing']) for r in curated]
         intermed.sort(reverse=True)  # descending order
         coldate, diffs, missing = intermed[-1] if earliest else intermed[0]
 
@@ -212,6 +250,9 @@ def parse_args():
                         help='optional, path to fasttree2 binary executable')
     parser.add_argument('--ttbin', default='treetime',
                         help='optional, path to treetime binary executable')
+    parser.add_argument('--lineages', type=str,
+                        default=os.path.join(covizu.__path__[0], "data/lineages.csv"),
+                        help="optional, path to CSV file containing Pango lineage designations.")
 
     parser.add_argument('--outfile', default='data/timetree.nwk',
                         help='output, path to write Newick tree string')
@@ -225,7 +266,21 @@ if __name__ == '__main__':
     cb.callback("Retrieving genomes")
     with open(args.json) as handle:
         by_lineage = json.load(handle)
-    fasta = retrieve_genomes(by_lineage, ref_file=args.ref, earliest=True)
+
+    cb.callback("Parsing Pango lineage designations")
+    handle = open(args.lineages)
+    header = next(handle)
+    if header != 'taxon,lineage\n':
+        cb.callback("Error: {} does not contain expected header row 'taxon,lineage'".format(args.lineages))
+        sys.exit()
+    lineages = {}
+    for line in handle:
+        taxon, lineage = line.strip().split(',')
+        lineages.update({taxon: lineage})
+
+    cb.callback("Identifying lineage representative genomes")
+    fasta = retrieve_genomes(by_lineage, known_seqs=lineages, ref_file=args.ref, earliest=args.earliest,
+                             callback=cb.callback)
 
     cb.callback("Reconstructing tree with {}".format(args.ft2bin))
     nwk = fasttree(fasta, binpath=args.ft2bin)

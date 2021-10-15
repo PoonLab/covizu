@@ -2,11 +2,29 @@ import subprocess
 from Bio import Phylo
 from covizu import clustering, treetime, beadplot
 import sys
+import json
 
 
 def build_timetree(by_lineage, args, callback=None):
     """ Generate time-scaled tree of Pangolin lineages """
-    fasta = treetime.retrieve_genomes(by_lineage, ref_file=args.ref, earliest=True)
+
+    if callback:
+        callback("Parsing Pango lineage designations")
+    handle = open(args.lineages)
+    header = next(handle)
+    if header != 'taxon,lineage\n':
+        if callback:
+            callback("Error: {} does not contain expected header row 'taxon,lineage'".format(args.lineages))
+        sys.exit()
+    lineages = {}
+    for line in handle:
+        taxon, lineage = line.strip().split(',')
+        lineages.update({taxon: lineage})
+
+    if callback:
+        callback("Identifying lineage representative genomes")
+    fasta = treetime.retrieve_genomes(by_lineage, known_seqs=lineages, ref_file=args.ref,
+                                      earliest=True)
 
     if callback:
         callback("Reconstructing tree with {}".format(args.ft2bin))
@@ -29,10 +47,11 @@ def beadplot_serial(lineage, features, args, callback=None):
         # lineage only has one variant, no meaningful tree
         beaddict = {'lineage': lineage, 'nodes': {}, 'edges': []}
 
-        # use earliest sample as variant label (coldate, division, country, region, accession, label)
-        intermed = [label.split('|')[::-1] for label in labels[0]]
+        # use earliest sample as variant label
+        intermed = [label.split('|')[::-1] for label in labels['0']]
         intermed.sort()
         variant = intermed[0][4]  # accession
+        beaddict.update({'sampled_variants': len(labels)})
         beaddict['nodes'].update({variant: []})
 
         for items in intermed:
@@ -71,7 +90,8 @@ def import_labels(handle, callback=None):
     return result
 
 
-def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_lineages.txt'):
+def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_lineages.txt',
+                   recode_file="recoded.json"):
     """
     Wrapper for beadplot_serial - divert to clustering.py in MPI mode if
     lineage has too many genomes.
@@ -79,8 +99,27 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
     :param args:  Namespace, from argparse.ArgumentParser()
     :param t0:  float, datetime.timestamp.
     :param txtfile:  str, path to file to write minor lineage names
+    :param recode_file:  str, path to JSON file to write recoded lineage data
+
     :return:  list, beadplot data by lineage
     """
+
+    # recode data into variants and serialize
+    if callback:
+        callback("Recoding features, compressing variants..")
+    recoded = {}
+    for lineage, records in by_lineage.items():
+        union, labels, indexed = clustering.recode_features(records, limit=args.max_variants)
+
+        # serialize tuple keys (features of union), #335
+        union = dict([("{0}|{1}|{2}".format(*feat), idx) for feat, idx in union.items()])
+        indexed = [list(s) for s in indexed]  # sets cannot be serialized to JSON, #335
+        recoded.update({lineage: {'union': union, 'labels': labels,
+                                  'indexed': indexed}})
+
+    with open(recode_file, 'w') as handle:
+        json.dump(recoded, handle)
+
     # partition lineages into major and minor categories
     intermed = [(len(features), lineage) for lineage, features in by_lineage.items()
                 if len(features) < args.mincount]
@@ -103,14 +142,16 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
     elif args.np:
         mpirun.extend(["-np", str(args.np)])
     else:
-        mpirun = [""]  # serial mode
-        sys.exit()
+        mpirun = []  # serial mode
 
     cmd = ["python3", "covizu/clustering.py",
-           args.bylineage, txtfile,  # positional arguments <JSON file>, <str>
+           recode_file, txtfile,  # positional arguments <JSON file>, <str>
            "--mode", "flat",
            "--max-variants", str(args.max_variants),
-           "--nboot", str(args.nboot), "--outdir", "data"]
+           "--nboot", str(args.nboot), 
+           "--outdir", args.outdir,
+           "--binpath", args.binpath  # RapidNJ
+           ]
     if t0:
         cmd.extend(["--timestamp", str(t0)])
 
@@ -125,10 +166,12 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
             # call out to MPI
             cmd = [
                 "python3", "covizu/clustering.py",
-                args.bylineage, lineage,  # positional arguments <JSON file>, <str>
+                recode_file, lineage,  # positional arguments <JSON file>, <str>
                 "--mode", "deep",
                 "--max-variants", str(args.max_variants),
-                "--nboot", str(args.nboot), "--outdir", "data", "--binpath", args.binpath
+                "--nboot", str(args.nboot), 
+                "--outdir", args.outdir, 
+                "--binpath", args.binpath
             ]
             if t0:
                 cmd.extend(["--timestamp", str(t0)])
@@ -139,20 +182,18 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
     if callback:
         callback("Parsing output files")
     result = []
-    for lineage in by_lineage:
+    for lineage in recoded:
         # import trees
         lineage_name = lineage.replace('/', '_')  # issue #297
         outfile = open('data/{}.nwk'.format(lineage_name))
         trees = Phylo.parse(outfile, 'newick')  # note this returns a generator
 
-        # import label map
-        with open('data/{}.labels.csv'.format(lineage_name)) as handle:
-            label_dict = import_labels(handle)
+        label_dict = recoded[lineage]['labels']
 
         if len(label_dict) == 1:
             # handle case of only one variant
             # lineage only has one variant, no meaningful tree
-            beaddict = {'lineage': lineage, 'nodes': {}, 'edges': []}
+            beaddict = {'nodes': {}, 'edges': []}
 
             # use earliest sample as variant label
             intermed = [label.split('|')[::-1] for label in label_dict['0']]
@@ -169,9 +210,9 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
 
             ctree = beadplot.annotate_tree(ctree, label_dict)
             beaddict = beadplot.serialize_tree(ctree)
-            beaddict.update({'sampled_variants': len(label_dict)})
-
-            beaddict.update({'lineage': lineage})
+            
+        beaddict.update({'sampled_variants': len(label_dict)})
+        beaddict.update({'lineage': lineage})
         result.append(beaddict)
 
     return result
@@ -199,7 +240,7 @@ def get_mutations(by_lineage):
     return result
 
 
-def sort_by_lineage(records, callback=None):
+def sort_by_lineage(records, callback=None, interval=1000):
     """
     Resolve stream into a dictionary keyed by Pangolin lineage
     :param records:  generator, return value of extract_features()
@@ -207,10 +248,10 @@ def sort_by_lineage(records, callback=None):
     """
     result = {}
     for i, record in enumerate(records):
-        if callback and i % 1000 == 0:
+        if callback and i % interval == 0:
             callback('aligned {} records'.format(i))
         lineage = record['lineage']
-        if lineage is None or lineage == '':
+        if str(lineage) == "None" or lineage == '':
             continue  # discard unclassified genomes
 
         if lineage not in result:

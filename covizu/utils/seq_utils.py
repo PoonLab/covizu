@@ -121,7 +121,10 @@ def apply_features(diffs, missing, refseq):
 
 def fromisoformat(dt):
     """ Convert ISO date to Python datetime.date object to support Python <3.7 """
-    year, month, day = map(int, dt.split('-'))
+    try:
+        year, month, day = map(int, dt.split('-'))
+    except ValueError:
+        return None
     return date(year, month, day)
 
 
@@ -257,7 +260,7 @@ def filter_problematic_sites(obj, mask, callback=None):
 
     :param obj:  list, entries are (1) dicts returned by import_json or (2) tuples
     :param mask:  dict, problematic site index from load_vcf()
-    :param vcf_file:  str, path to VCF file
+    :param callback:  optional callback function for progress monitoring
     :return:
     """
     # apply filters to feature vectors
