@@ -90,13 +90,11 @@
           <label for="select-tree-colours">Colour tree by:</label>
           <select name="tree-colours" id="select-tree-colours">
             <option value="Region">Region</option>
-            <option value="Province (Canada)" selected>Province (Canada)</option>
             <option value="No. samples">No. samples</option>
             <option value="Collection date">Collection date</option>
-            <option value="Divergence">Divergence</option>
+            <option value="Divergence" selected>Divergence</option>
           </select>
           <div class="legend" id="div-region-legend"></div>
-          <div class="legend" id="div-province-legend"></div>
           <div class="legend" id="svg-sample-legend"></div>
           <div class="legend" id="svg-coldate-legend"></div>
           <div class="legend" id="svg-diverge-legend"></div>
@@ -183,7 +181,7 @@
     <div class="app-right">
       <div class="sticky">
         <div style="top: 0; right: 0; z-index: 10; width: 270px">
-          <a href="https://github.com/PoonLab/covizu" target=“_new” class="github-corner" aria-label="View source on GitHub">
+          <a href="https://github.com/PoonLab/covizu/tree/opendata" target=“_new” class="github-corner" aria-label="View source on GitHub">
             <!-- https://github.com/tholman/github-corners -->
             <svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0; z-index: 21" aria-hidden="true">
               <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
@@ -194,7 +192,7 @@
         </div>
         <div class="rightbox">
           <div style="padding-top: 10px; cursor: help;">
-            <h1><span onclick="$('#splash').dialog('open');">CoVizu<sup><i>ca</i></sup></span></h1>
+            <h1><span onclick="$('#splash').dialog('open');"><small><i>open</i></small>CoVizu</span></h1>
           </div>
           <div style="font-size: 8pt;">
             <a href="index.html">en</a>

@@ -192,7 +192,7 @@
         </div>
         <div class="rightbox">
           <div style="padding-top: 10px; cursor: help;">
-            <h1><span onclick="$('#splash').dialog('open');">CoVizu</span></h1>
+            <h1><span onclick="$('#splash').dialog('open');"><small><i>open</i></small>CoVizu</span></h1>
           </div>
           <div style="font-size: 8pt;">
             <a href="index.html">en</a>
@@ -203,13 +203,6 @@
           <div style="padding-top: 10px; padding-right: 6px;">
             <h3>Visulización en tiempo real de la variación genómica de SARS-CoV-2 (hCoV-19)</h3>
           </div>
-          <span style="width: 250px">
-            <div class="gisaid">Habilitado por datos de&nbsp;<a href="https://gisaid.org" target="_new">
-                <img src="https://www.gisaid.org/fileadmin/gisaid/img/schild.png"
-                     height="24px"/>
-              </a>
-            </div>
-          </span>
           <p>
             <div style="font-size: 0.9em;" id="div-last-update"></div>
             <div style="font-size: 0.9em;" id="div-number-genomes"></div>
@@ -240,8 +233,7 @@
   <div id="splash" title="Welcome">
     <p>
       <b>CoVizu</b> es un <a href="https://github.com/PoonLab/CoVizu" target="_new">proyecto de código abierto</a>
-      creado con el objetivo de visualizar la diversidad global de los genomas de SARS-CoV2, obtenidos
-      a partir de la <a href="https://gisaid.org" target="_new">iniciativa GISAID</a>.
+      creado con el objetivo de visualizar la diversidad global de los genomas de SARS-CoV2.
     </p>
     <p>
       Este sitio está compuesto de dos visualizaciones interactivas. 
@@ -345,51 +337,11 @@
     </p>
   </div>
 
-  <div id="dialog" title="Acknowledgements">
-    <p>
-      Nos gustaría agradecer a GISAID Initiative y a todas las personas que han contribuído con sus datos, 
-      i.e. Autores, laboratorios originarios responsables por la obtención de los especímenes, y 
-      laboratorios que han generado las secuencias genéticas y la metadata en la cual se basa esta investigación
-      y que ha sido compartida a través de GISAID Initiative.
-    </p>
-    <p>
-      Elbe, S., and Buckland-Merrett, G. (2017)
-      Data, disease and diplomacy: GISAID’s innovative contribution to global health.
-      <i>Global Challenges</i>, 1:33-46.<br/>
-      DOI: <a href="https://doi.org/10.1002/gch2.1018" target=“_new”>10.1002/gch2.1018</a>&nbsp;&nbsp;
-      PMCID: <a href="https://pubmed.ncbi.nlm.nih.gov/31565258/" target=“_new”>31565258</a>
-    </p>
-    <p>
-      Nota: En caso de compartir los resultados de éstos análisis en tu manuscrito, asegúrate 
-      de reconocer a los contribuidores, i.e. " Nos gustaría agradecer a GISAID Initiative y a todas 
-      las personas que han contribuído con sus datos, i.e. Autores, laboratorios originarios 
-      responsables por la obtención de los especímenes, y laboratorios que han generado las secuencias 
-      genéticas y la metadata en la cual se basa esta investigación y que ha sido compartida 
-      a través de GISAID Initiative."
-    </p>
-    <p>
-      Además, recuerda citar las siguientes referencias:
-      Shu, Y., McCauley, J. (2017) GISAID: From vision to reality. <i>EuroSurveillance</i>, 22(13)<br/>
-      DOI: <a href="https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2017.22.13.30494" target=“_new”>10.2807/1560-7917.ES.2017.22.13.30494</a>&nbsp;&nbsp;
-      PMCID: <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5388101/" target=“_new”>PMC5388101</a>
-    </p>
-  </div>
-
-
-  <footer class="footer">
-    Los datos proporcionados por GISAID en su página web están sujetos a
-    <a href="https://www.gisaid.org/DAA/" target=“_new”>Términos y Condiciones</a>
-    &emsp;&emsp;
-    <button class="ack" id="ack-open" onclick="console.log('click');">Agradecimientos</button>
-
-  </footer>
-
   <script src="js/beadplot.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/drawtree.js"></script>
   <script src="js/phylo.js"></script>
   <script src="js/search.js"></script>
-  <script src="js/gisaid/gisaid.js?random=1"></script>
 
   <script src="js/covizu.js"></script>
 </body>

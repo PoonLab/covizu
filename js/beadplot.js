@@ -863,12 +863,10 @@ function beadplot(cid) {
           }
         })
         .attr("fill", function(d) {
-          let col = province_pal[d.division1];
-          return(col===undefined ? "#eee" : col);
+          return(country_pal[d.region1]);
         })
         .attr("stroke", function(d) {
-          let col = province_pal[d.division1];
-          return(col===undefined ? "#eee" : col);
+          return(country_pal[d.region1]);
         })
         .on("mouseover", function(d) {
           d3.select(this).attr("stroke-width", 2)
