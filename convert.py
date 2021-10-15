@@ -144,7 +144,7 @@ def parse_args():
     meta_compress.add_argument("--mxz", action="store_true", help="metadata file is xz-compressed")
 
     parser.add_argument("--delimiter", type=unescaped_str, default='\t',
-                        help="delimiter character for metadata CSV; "
+                        help="delimiter character for metadata file; "
                              "use ',' if comma-delimited")
     parser.add_argument("--name", type=str, default="strain",
                         help="column label for virus sample name in metadata; "
@@ -202,7 +202,7 @@ if __name__ == "__main__":
                               callback=callback)
     handle.close()
 
-    # determine how to handle input FASTA file
+    # process input FASTA file
     if args.gz:
         handle = gzip.open(args.infile, 'rt')
     elif args.xz:
