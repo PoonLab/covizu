@@ -6,6 +6,7 @@ import gzip
 from io import BytesIO
 from datetime import datetime
 import argparse
+from csv import DictReader
 
 
 def progress(msg):
@@ -68,8 +69,8 @@ def export_files(fasta_file, tsv_file, tmpfile):
     tmpfile.seek(0)
     tf = tarfile.open(fileobj=tmpfile, mode="r:gz")
     fasta = tf.extractfile(fasta_file)
-    xzfile = "virusseq.{}.fasta.xz".format(timestamp)
-    with lzma.open(xzfile, 'w') as handle:
+    xzfile = "virusseq.{}.fasta.gzip".format(timestamp)
+    with gzip.open(xzfile, 'w') as handle:
         handle.write(fasta.read())
 
     progress("exporting metadata TSV to gzip-compressed file")
@@ -79,6 +80,47 @@ def export_files(fasta_file, tsv_file, tmpfile):
         handle.write(tsv.read())
 
     return xzfile, gzfile
+
+
+def process_virusseq(fasta_file, tsv_file, tmpfile, fieldnames, callback=None):
+    """
+    Parse VirusSeq sequence and metadata feeds
+
+    :param fasta_file:  str, file name of
+    """
+    # open metadata feed
+    tmpfile.seek(0)
+    tf = tarfile.open(fileobj=tmpfile, mode="r:gz")
+    handle = tf.extractfile(tsv_file)
+
+    # check fieldnames
+    reader = DictReader(handle, delimiter='\t')
+
+    for field in fieldnames:
+        if field not in reader.fieldnames:
+            if callback:
+                callback("Missing fieldname {} in metadata CSV".format(field), level='ERROR')
+                callback(reader.fieldnames, level='ERROR')
+            sys.exit()
+
+    # parse feed
+    metadata = {}
+    for row in reader:
+        metadata.update({row['strain']: {
+            'accession': row['genbank_accession'],
+            'coldate': row['date'],
+            'region': None,
+            'country': row['country'],
+            'division': None,
+            'lineage': row['pango_lineage']
+        }})
+
+    print(len(metadata))
+
+    fasta = tf.extractfile(fasta_file)
+    for line in handle:
+        print(line)
+        break
 
 
 if __name__ == "__main__":
@@ -97,3 +139,12 @@ if __name__ == "__main__":
     progress("Exporting compressed files")
     paths = export_files(fasta_file, tsv_file, tmpfile)
     progress("Wrote outputs to {0} and {1}".format(*paths))
+
+    sys.exit()
+    # for VirusSeq feed
+    fieldnames = ['isolate', 'specimen collector sample ID', 'sample collection date',
+                  'geo_loc_name (country)', 'pango_lineage']
+    process_virusseq(fasta_file, tsv_file, tmpfile, fieldnames)
+
+    # for Nextstrain feed
+    fieldnames = ['strain', 'genbank_accession', 'date', 'country', 'pango_lineage']
