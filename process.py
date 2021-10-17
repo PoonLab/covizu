@@ -261,4 +261,4 @@ if __name__ == '__main__':
     opendata = merge_data(fasta_file=args.opfasta, meta_file=args.opmeta, fields=op_fields,
                           callback=cb.callback)
     feed = itertools.chain(virusseq, opendata)
-    analyze_feed(feed, callback=cb.callback)
+    analyze_feed(feed, args=args, callback=cb.callback)
