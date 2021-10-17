@@ -6,7 +6,7 @@ import gzip
 from io import BytesIO
 from datetime import datetime
 import argparse
-from csv import DictReader
+import os
 
 
 def progress(msg):
@@ -58,69 +58,28 @@ def get_filenames(tmpfile):
     return fasta_file[0], tsv_file[0]
 
 
-def export_files(fasta_file, tsv_file, tmpfile):
+def export_files(fasta_file, tsv_file, tmpfile, outdir):
     """
     @param fasta_file:  str, name of FASTA file in tar
     @param tsv_file:  str, name of TSV file in tar
     @param tmpfile:  BytesIO, tarfile contents in memory
+    @param outdir:  str, destination directory
     @return str, str:  FASTA xz and TSV gz file names
     """
     timestamp = datetime.now().isoformat().split('.')[0]
     tmpfile.seek(0)
     tf = tarfile.open(fileobj=tmpfile, mode="r:gz")
     fasta = tf.extractfile(fasta_file)
-    xzfile = "virusseq.{}.fasta.gzip".format(timestamp)
-    with gzip.open(xzfile, 'w') as handle:
+    xzfile = os.path.join(outdir, "virusseq.{}.fasta.xz".format(timestamp))
+    with lzma.open(xzfile, 'w') as handle:
         handle.write(fasta.read())
 
-    progress("exporting metadata TSV to gzip-compressed file")
     tsv = tf.extractfile(tsv_file)
-    gzfile = "virusseq.{}.metadata.tsv.gz".format(timestamp)
+    gzfile = os.path.join(outdir, "virusseq.{}.metadata.tsv.gz".format(timestamp))
     with gzip.open(gzfile, 'wb') as handle:
         handle.write(tsv.read())
 
     return xzfile, gzfile
-
-
-def process_virusseq(fasta_file, tsv_file, tmpfile, fieldnames, callback=None):
-    """
-    Parse VirusSeq sequence and metadata feeds
-
-    :param fasta_file:  str, file name of
-    """
-    # open metadata feed
-    tmpfile.seek(0)
-    tf = tarfile.open(fileobj=tmpfile, mode="r:gz")
-    handle = tf.extractfile(tsv_file)
-
-    # check fieldnames
-    reader = DictReader(handle, delimiter='\t')
-
-    for field in fieldnames:
-        if field not in reader.fieldnames:
-            if callback:
-                callback("Missing fieldname {} in metadata CSV".format(field), level='ERROR')
-                callback(reader.fieldnames, level='ERROR')
-            sys.exit()
-
-    # parse feed
-    metadata = {}
-    for row in reader:
-        metadata.update({row['strain']: {
-            'accession': row['genbank_accession'],
-            'coldate': row['date'],
-            'region': None,
-            'country': row['country'],
-            'division': None,
-            'lineage': row['pango_lineage']
-        }})
-
-    print(len(metadata))
-
-    fasta = tf.extractfile(fasta_file)
-    for line in handle:
-        print(line)
-        break
 
 
 if __name__ == "__main__":
@@ -128,6 +87,7 @@ if __name__ == "__main__":
                                      "compressing streams to reduce file size.")
     parser.add_argument("--url", default="https://singularity.virusseq-dataportal.ca/download/archive/all",
                         type=str, help="URL to retrieve all data via VirusSeq API")
+    parser.add_argument("outdir", type=str, default='data', help="output directory")
     args = parser.parse_args()
 
     progress("Caching download in memory")
@@ -137,14 +97,5 @@ if __name__ == "__main__":
     fasta_file, tsv_file = get_filenames(tmpfile)
 
     progress("Exporting compressed files")
-    paths = export_files(fasta_file, tsv_file, tmpfile)
+    paths = export_files(fasta_file, tsv_file, tmpfile, args.outdir)
     progress("Wrote outputs to {0} and {1}".format(*paths))
-
-    sys.exit()
-    # for VirusSeq feed
-    fieldnames = ['isolate', 'specimen collector sample ID', 'sample collection date',
-                  'geo_loc_name (country)', 'pango_lineage']
-    process_virusseq(fasta_file, tsv_file, tmpfile, fieldnames)
-
-    # for Nextstrain feed
-    fieldnames = ['strain', 'genbank_accession', 'date', 'country', 'pango_lineage']
