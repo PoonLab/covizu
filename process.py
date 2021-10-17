@@ -1,13 +1,11 @@
 import argparse
 import os
-import sys
-import json
 from datetime import datetime
 import lzma
 import gzip
 import covizu
 from csv import DictReader
-from itertools import chain
+import itertools
 
 from covizu.utils import seq_utils
 from covizu.utils.batch_utils import *
@@ -171,7 +169,6 @@ def analyze_feed(feed, args, callback=None):
         callback("All done!")
 
 
-
 def parse_args():
     parser = argparse.ArgumentParser(
         description="CoVizu analysis pipeline automation for execution on local files"
@@ -263,7 +260,5 @@ if __name__ == '__main__':
                           lineage_file=args.vspango, region='North America', callback=cb.callback)
     opendata = merge_data(fasta_file=args.opfasta, meta_file=args.opmeta, fields=op_fields,
                           callback=cb.callback)
-    print(next(opendata))
-
-    # itertools.chain(virusseq, opendata)
-    #analyze_feed(args, callback=cb.callback)
+    feed = itertools.chain(virusseq, opendata)
+    analyze_feed(feed, callback=cb.callback)
