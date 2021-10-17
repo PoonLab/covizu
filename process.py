@@ -22,8 +22,8 @@ vs_fields = {'name': "fasta header name",
              'region': None,
              'country': "geo_loc_name (country)",
              'division': "geo_loc_name (state/province/territory)",
-             'lineage': None
-             }
+             'lineage': None}
+
 op_fields = {'name': 'strain',
              'accession': "genbank_accession",
              'coldate': "date",
@@ -261,7 +261,9 @@ if __name__ == '__main__':
     # parse VirusSeq
     virusseq = merge_data(fasta_file=args.vsfasta, meta_file=args.vsmeta, fields=vs_fields,
                           lineage_file=args.vspango, region='North America', callback=cb.callback)
-    print(next(virusseq))
+    opendata = merge_data(fasta_file=args.opfasta, meta_file=args.opmeta, fields=op_fields,
+                          callback=cb.callback)
+    print(next(opendata))
 
     # itertools.chain(virusseq, opendata)
     #analyze_feed(args, callback=cb.callback)
