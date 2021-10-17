@@ -60,7 +60,7 @@ def merge_data(fasta_file, meta_file, fields, lineage_file=None, region=None, ca
     # check metadata fieldnames
     handle = gzip.open(meta_file)
     reader = DictReader(handle, delimiter='\t')
-    for _, field in fields.items:
+    for _, field in fields.items():
         if field not in reader.fieldnames:
             if callback:
                 callback("Missing fieldname {} in VirusSeq metadata".format(field), level='ERROR')
@@ -262,4 +262,6 @@ if __name__ == '__main__':
     virusseq = merge_data(fasta_file=args.vsfasta, meta_file=args.vsmeta, fields=vs_fields,
                           lineage_file=args.vspango, region='North America', callback=cb.callback)
     print(next(virusseq))
+
+    # itertools.chain(virusseq, opendata)
     #analyze_feed(args, callback=cb.callback)
