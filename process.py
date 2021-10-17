@@ -16,7 +16,7 @@ from covizu.utils.progress_utils import Callback
 from covizu.minimap2 import extract_features
 
 
-vs_fields = {'name': "isolate",
+vs_fields = {'name': "fasta header name",
              'accession': "specimen collector sample ID",
              'coldate': "sample collection date",
              'region': None,
@@ -58,10 +58,10 @@ def merge_data(fasta_file, meta_file, fields, lineage_file=None, region=None, ca
             lineages.update({row['taxon']: row['lineage']})
 
     # check metadata fieldnames
-    handle = gzip.open(meta_file)
+    handle = gzip.open(meta_file, 'rt')
     reader = DictReader(handle, delimiter='\t')
     for _, field in fields.items():
-        if field not in reader.fieldnames:
+        if field is not None and field not in reader.fieldnames:
             if callback:
                 callback("Missing fieldname {} in VirusSeq metadata".format(field), level='ERROR')
                 callback(reader.fieldnames, level='ERROR')
