@@ -449,6 +449,15 @@ req.done(function() {
     $("#beadplot-vscroll").scrollTop($(this).scrollTop());
   });
 
+  // Vertical scrollbar for the time-scaled tree
+  $('#tree-vscroll').scroll(function() {
+    $("#svg-timetree").scrollTop($(this).scrollTop());
+  });
+
+  $('#svg-timetree').scroll(function() {
+    $("#tree-vscroll").scrollTop($(this).scrollTop());
+  });
+
   $('#previous_button').click(function(){
     var curr_bead = search_results.get().current_point;
     var bead_hits = search_results.get().beads;

@@ -536,6 +536,18 @@ details + dl {
   width: 20px;
 }
 
+/* Vertical scrollbar for time-scaled tree */
+#tree-vscroll {
+  overflow-x: hidden;
+  overflow-y: scroll;
+  width: 20px;
+  height: 81vh;
+}
+
+#tree-inner-vscroll {
+  width: 20px;
+}
+
 .toplabel {
     top: 40px;
     /* background-color: #fffa; */
