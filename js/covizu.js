@@ -549,6 +549,7 @@ req.done(function() {
 
     // User presses the left arrow key (37) or right arrow key (39)
     if (e.keyCode == 37 || e.keyCode == 39) {
+      e.preventDefault() //issue #352
       var selected_bead = d3.selectAll(".selectionH").nodes();
 
       if (selected_bead.length == 0) {
