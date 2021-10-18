@@ -1,0 +1,142 @@
+%% This is a https://mermaid-js.github.io/ document
+%% to compile into an SVG, run mmdc -i frontend-system-diagram.mmd -o frontend-system-diagram.png
+
+sequenceDiagram
+    activate User
+    User->>+Bead: Mouse Over
+    Bead-->>User: Display Tooltip
+    deactivate Bead
+
+    alt Bead Mouse Over
+        User->>+Bead: Mouse Out
+        Bead-->>User: Hide Tooltip
+        deactivate Bead
+        
+        User->>+Bead: Click
+        alt Regional Distribution Graph Selected
+            Bead->>+Side Tables: Generate Regional Distribution Graph
+            Side Tables-->>User: Display Regional Distribution Graph
+        else Sample Table Selected
+            Bead->>Side Tables: Generate Sample Tables
+            Side Tables-->>User: Display Sample Tables
+        end
+        deactivate Side Tables
+
+        alt Second Bead Highlighted
+            Bead-->>User: Stop Highlighting Old Bead
+        end
+
+        Bead-->>User: Highlight Bead
+        deactivate Bead
+        
+    end
+
+    User->>+Vertical Edge: Mouse Over
+    Vertical Edge->>+Bead: Highlight
+    Bead-->>User: Highlight Bead    
+    deactivate Bead
+    Vertical Edge->>+Horizontal Edge: Highlight
+    Horizontal Edge-->>User: Highlight Horizontal Edge   
+    deactivate Horizontal Edge
+    Vertical Edge-->>User: Display Tooltip
+    deactivate Vertical Edge 
+
+    alt Vertical Edge Mouse Over
+       
+        User->>+Vertical Edge: Click
+
+        alt Second Vertical Edge Highlighted
+            Vertical Edge-->>User: Stop Highlighting Old Vertical Edge
+        end
+
+        Vertical Edge-->>User: Highlight Vertical Edge
+        deactivate Vertical Edge
+        
+    end
+
+    User->>+Horizontal Edge: Mouse Over
+    Horizontal Edge->>+Bead: Highlight
+    Bead-->>User: Highlight Bead
+    deactivate Bead
+    Horizontal Edge-->>User: Display Tooltip
+    deactivate Horizontal Edge
+
+    alt Horizontal Edge Mouse Over
+        
+        User->>+Horizontal Edge: Click
+        alt Regional Distribution Graph Selected
+            Horizontal Edge->>+Side Tables: Generate Regional Distribution Graph
+            Side Tables-->>User: Display Regional Distribution Graph
+        else Sample Table Selected
+            Horizontal Edge->>Side Tables: Generate Sample Tables
+            Side Tables-->>User: Display Sample Tables
+        end
+        deactivate Side Tables
+        deactivate Horizontal Edge
+        
+    end
+
+    User->>+Tree: Mouse Over Tree Branch
+    Tree-->>User: Display Tooltip
+    deactivate Tree
+
+    alt Tree Branch Mouse Over
+       
+        User->>+Tree: Click
+        alt Regional Distribution Graph Selected
+            Tree->>+Side Tables: Generate Regional Distribution Graph
+            Side Tables-->>User: Display Regional Distribution Graph
+        else Sample Table Selected
+            Tree->>Side Tables: Generate Sample Tables
+            Side Tables-->>User: Display Sample Tables
+        end
+        deactivate Side Tables
+
+
+        Tree-->>User: Display Beadplot
+        deactivate Tree
+        
+    end
+
+    User->>+Tree: Change Tree Colour Button Click
+    Tree-->>User: Change Tree Tips Colours to Match Colouring Style
+    deactivate Tree
+
+
+    User->>+Search Bar: Search
+    Search Bar->>+Tree: Highlight
+    Tree-->>User: Hightlight Tree Branch
+    deactivate Tree
+
+    alt Search Is Accession ID or Country
+        Search Bar->>+Bead: Highlight
+        Bead-->>User: Hightlight Bead
+        deactivate Bead
+    end
+    alt Regional Distribution Graph Selected
+            Search Bar->>+Side Tables: Generate Regional Distribution Graph
+            Side Tables-->>User: Display Regional Distribution Graph
+        else Sample Table Selected
+            Search Bar->>Side Tables: Generate Sample Tables
+            Side Tables-->>User: Display Sample Tables
+        end
+    deactivate Side Tables
+    
+    deactivate Search Bar
+
+    User->>+Expand Button: Click
+    Expand Button->>+Horizontal Edge: Expand
+    Horizontal Edge-->>User: Resize Horizontal Bars
+    deactivate Horizontal Edge
+    Expand Button->>+Vertical Edge: Expand
+    Vertical Edge-->>User: Remove Hidden Vertical Bars
+    deactivate Vertical Edge
+    Expand Button-->>User: Display Scroll Bars
+    deactivate Expand Button
+
+    User->>+Cutoff Slider: Slide Slider
+    Cutoff Slider->+Vertical Edge: Hide Below Cutoff
+    deactivate Cutoff Slider
+    Vertical Edge-->>User: Remove Hidden Vertical Bars
+    deactivate Vertical Edge
+    deactivate User
