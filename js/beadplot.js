@@ -557,7 +557,7 @@ function beadplot(cid) {
 
     // Sets margin top to align vertical scrollbar with the beadplot
     $('#beadplot-vscroll').css('margin-top', document.getElementById("beadplot-title").clientHeight + document.getElementById("svg-clusteraxis").clientHeight +
-                                            ($('#expand-option').attr('checked') ? $('#inner-hscroll').height() : 0));
+                                            ($('#expand-option').attr('checked') ? $('#inner-hscroll').height() : $('#inner-hscroll').height() * 2));
 
     // Don't give the user the option to scroll horizontally if the beadplot cannot expand 
     if (numDays * pixelsPerDay > clientWidth) {
@@ -573,11 +573,14 @@ function beadplot(cid) {
 
     let currentWidth = null;
     if ($('#expand-option').attr('checked')) {
-       currentWidth = (numDays * pixelsPerDay > clientWidth ? numDays * pixelsPerDay : clientWidth)
+      currentWidth = (numDays * pixelsPerDay > clientWidth ? numDays * pixelsPerDay : clientWidth)
                       - marginB.left -  marginB.right;
+      $('#svg-clusteraxis').css('padding-bottom', 0)
     }
     else {
       currentWidth = clientWidth - marginB.left -  marginB.right;
+      $('#svg-clusteraxis').css('padding-bottom', $('#inner-hscroll').height())
+
     }
 
     // update vertical range for consistent spacing between variants
