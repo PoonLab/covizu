@@ -284,16 +284,18 @@ if __name__ == '__main__':
     args = parse_args()
 
     # parse VirusSeq
-    metadata = import_metadata(
-        meta_file=args.vsmeta, fields=vs_fields, lineage_file=args.vspango,
-        region='North America'
-    )
-    virusseq = merge_data(
-        fasta_file=args.vsfasta, metadata=metadata, callback=cb.callback
-    )
+    metadata = import_metadata(meta_file=args.vsmeta, fields=vs_fields,
+                               lineage_file=args.vspango,
+                               region='North America', callback=cb.callback)
+    virusseq = merge_data(fasta_file=args.vsfasta, metadata=metadata,
+                          callback=cb.callback)
 
     # parse Nextstrain open data
-    metadata = import_metadata(meta_file=args.opmeta, fields=op_fields)
-    opendata = merge_data(fasta_file=args.opfasta, callback=cb.callback)
+    metadata = import_metadata(meta_file=args.opmeta, fields=op_fields,
+                               callback=cb.callback)
+    opendata = merge_data(fasta_file=args.opfasta, metadata=metadata,
+                          callback=cb.callback)
+
+    # run analysis
     feed = itertools.chain(virusseq, opendata)
     analyze_feed(feed, args=args, callback=cb.callback)
