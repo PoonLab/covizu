@@ -94,7 +94,7 @@ def import_metadata(meta_file, fields, lineage_file=None, region=None, callback=
 
 
 def merge_data(fasta_file, metadata, minlen=29000, mindate=date(2019, 12, 1),
-               callback=None):
+               callback=None, limit=None):
     """
     :param fasta_file:  str, path to xz-compressed FASTA file
     :param metadata:  dict, returned from import_metadata()
@@ -102,10 +102,17 @@ def merge_data(fasta_file, metadata, minlen=29000, mindate=date(2019, 12, 1),
     :param mindate:  datetime.date object, earliest acceptable sample
                      collection date
     :param callback:  optional, progress_utils.Callback object
+    :param limit:  int, stop iteration at count (DEBUGGING)
+    :yield:  dict, record including label, sequence and metadata
     """
     # parse FASTA and do some basic QC
     handle = lzma.open(fasta_file, 'rt')
+    count = 0
     for label, sequence in seq_utils.iter_fasta(handle):
+        count += 1
+        if limit and count > limit:
+            break
+        
         if len(sequence) < minlen:
             if callback:
                 callback("Rejected short sequence: {}".format(label), level='WARN')
@@ -211,6 +218,7 @@ def parse_args():
 
     parser.add_argument("--outdir", type=str, default='data/',
                         help="option, path to write output files")
+    parser.add_argument("--limit", type=int, help="option, stop at number for debugging")
 
     parser.add_argument('--poisson-cutoff', type=float, default=0.001,
                         help='filtering outlying genomes whose distance exceeds the upper '
@@ -288,13 +296,13 @@ if __name__ == '__main__':
                                lineage_file=args.vspango,
                                region='North America', callback=cb.callback)
     virusseq = merge_data(fasta_file=args.vsfasta, metadata=metadata,
-                          callback=cb.callback)
+                          callback=cb.callback, limit=args.limit)
 
     # parse Nextstrain open data
     metadata = import_metadata(meta_file=args.opmeta, fields=op_fields,
                                callback=cb.callback)
     opendata = merge_data(fasta_file=args.opfasta, metadata=metadata,
-                          callback=cb.callback)
+                          callback=cb.callback, limit=args.limit)
 
     # run analysis
     feed = itertools.chain(virusseq, opendata)
