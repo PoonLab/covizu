@@ -1,6 +1,6 @@
 import argparse
 import os
-from datetime import datetime
+from datetime import datetime, date
 import lzma
 import gzip
 import covizu
@@ -31,18 +31,19 @@ op_fields = {'name': 'strain',
              'lineage': "pango_lineage"}
 
 
-def merge_data(fasta_file, meta_file, fields, lineage_file=None, region=None, callback=None):
+def import_metadata(meta_file, fields, lineage_file=None, region=None, callback=None):
     """
-    Append Pangolin lineage designations to metadata
+    Import metadata from file and append Pangolin lineage classifications
+    if necessary.
 
-    :param fasta_file:  str, path to xz-compressed FASTA file
     :param meta_file:  str, path to gz-compressed metadata file
     :param fields:  dict, map fieldnames to our keys
     :param lineage_file:  str, path to Pangolin CSV output; if None, assume lineages
                           are contained in metadata
     :param region:  str, default value if not present in metadata
     :param callback:  Callback function
-    :yield:  dict, merged data for each record
+
+    :yield:  dict, metadata keyed by sequence label
     """
     # parse Pangolin output, if provided
     lineages = {}
@@ -69,6 +70,8 @@ def merge_data(fasta_file, meta_file, fields, lineage_file=None, region=None, ca
     metadata = {}
     for row in reader:
         label = row[fields['name']]
+        coldate = row[fields['coldate']]
+
         if lineage_file:
             lineage = lineages.get(label, None)
             if lineage is None:
@@ -80,18 +83,43 @@ def merge_data(fasta_file, meta_file, fields, lineage_file=None, region=None, ca
 
         metadata.update({label: {
             'accession': row[fields['accession']],
-            'coldate': row[fields['coldate']],
+            'coldate': coldate,
             'region': row[fields['region']] if region is None else region,
             'country': row[fields['country']],
             'division': row[fields['division']],
             'lineage': lineage
         }})
 
-    # parse FASTA
+    return metadata
+
+
+def merge_data(fasta_file, metadata, minlen=29000, mindate=date(2019, 12, 1),
+               callback=None):
+    """
+    :param fasta_file:  str, path to xz-compressed FASTA file
+    :param metadata:  dict, returned from import_metadata()
+    :param minlen:  int, minimum sequence length
+    :param mindate:  datetime.date object, earliest acceptable sample
+                     collection date
+    :param callback:  optional, progress_utils.Callback object
+    """
+    # parse FASTA and do some basic QC
     handle = lzma.open(fasta_file, 'rt')
     for label, sequence in seq_utils.iter_fasta(handle):
+        if len(sequence) < minlen:
+            if callback:
+                callback("Rejected short sequence: {}".format(label), level='WARN')
+            continue
+
         record = {'label': label, 'sequence': sequence}
         if label in metadata:
+            # validate collection date
+            dt = metadata[label]['coldate']
+            coldate = seq_utils.fromisoformat(dt)
+            if coldate is None or coldate < mindate or coldate > date.today():
+                if callback:
+                    callback("Rejected record with bad date: {}".format(label), level="WARN")
+                continue
             record.update(metadata[label])
         else:
             if callback:
@@ -256,9 +284,16 @@ if __name__ == '__main__':
     args = parse_args()
 
     # parse VirusSeq
-    virusseq = merge_data(fasta_file=args.vsfasta, meta_file=args.vsmeta, fields=vs_fields,
-                          lineage_file=args.vspango, region='North America', callback=cb.callback)
-    opendata = merge_data(fasta_file=args.opfasta, meta_file=args.opmeta, fields=op_fields,
-                          callback=cb.callback)
+    metadata = import_metadata(
+        meta_file=args.vsmeta, fields=vs_fields, lineage_file=args.vspango,
+        region='North America'
+    )
+    virusseq = merge_data(
+        fasta_file=args.vsfasta, metadata=metadata, callback=cb.callback
+    )
+
+    # parse Nextstrain open data
+    metadata = import_metadata(meta_file=args.opmeta, fields=op_fields)
+    opendata = merge_data(fasta_file=args.opfasta, callback=cb.callback)
     feed = itertools.chain(virusseq, opendata)
     analyze_feed(feed, args=args, callback=cb.callback)

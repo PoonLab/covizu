@@ -123,9 +123,10 @@ def fromisoformat(dt):
     """ Convert ISO date to Python datetime.date object to support Python <3.7 """
     try:
         year, month, day = map(int, dt.split('-'))
+        result = date(year, month, day)
     except ValueError:
         return None
-    return date(year, month, day)
+    return result
 
 
 class QPois:
@@ -189,6 +190,8 @@ class QPois:
     def is_outlier(self, coldate, ndiffs):
         if type(coldate) is str:
             coldate = fromisoformat(coldate)
+        if coldate is None:
+            return True
         dt = (coldate - self.origin).days
         qmax = self.lookup(dt, self.timepoints_upper)
         qmin = self.lookup(dt, self.timepoints_lower)
