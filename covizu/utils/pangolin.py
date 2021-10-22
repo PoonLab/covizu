@@ -5,15 +5,11 @@ import csv
 import subprocess
 import tempfile
 import argparse
-from mpi4py import MPI
 
-comm = MPI.COMM_WORLD
-my_rank = comm.Get_rank()
-nprocs = comm.Get_size()
 tempdir = tempfile.gettempdir()
 fieldnames = ['taxon', 'lineage', 'conflict', 'ambiguity_score', 'scorpio_call',
-    'scorpio_support', 'scorpio_conflict', 'version', 'pangolin_version',
-    'pangoLEARN_version', 'pango_version', 'status', 'note']
+              'scorpio_support', 'scorpio_conflict', 'version', 'pangolin_version',
+              'pangoLEARN_version', 'pango_version', 'status', 'note']
 
 
 def pangolin(fasta):
@@ -69,28 +65,38 @@ def chunk_fasta(fasta, chunk_size=1000):
 
 
 if __name__ == "__main__":
+    try:
+        from mpi4py import MPI
+    except ModuleNotFoundError:
+        print("Script requires mpi4py - https://pypi.org/project/mpi4py/")
+        sys.exit()
+
+    comm = MPI.COMM_WORLD
+    my_rank = comm.Get_rank()
+    nprocs = comm.Get_size()
+
+    # command line interface
     parser = argparse.ArgumentParser("MPI wrapper for SARS-CoV-2 lineage classification with Pangolin")
     parser.add_argument('infile', type=str, help="<input> path to xz-compressed FASTA file")
+    parser.add_argument('outfile', type=str, help="<output> path to write CSV output; will be modified "
+                                                  "with MPI rank and .csv extension")
     parser.add_argument('-n', '--size', type=int, default=1000,
                         help="<option> chunk size for streaming from FASTA")
-    parser.add_argument('--outdir', type=str, default='.', help="<option> output directory")
-    parser.add_argument('--prefix', type=str, default='mangolin', help="<option> output filename prefix")
+    parser.add_argument('--quiet', action='store_true', help="option, suppress console messages")
     args = parser.parse_args()
 
     # create output file
-    opath = os.path.join(args.outdir, "{}.{}.csv".format(args.prefix, my_rank))
-    outfile = open(opath, 'w')
+    outfile = open("{}.{}.csv".format(args.outfile, my_rank), 'w')
     writer = csv.DictWriter(outfile, fieldnames=fieldnames)
     writer.writeheader()
 
     # stream input from FASTA file
-    handle = lzma.open(sys.argv[1], 'rt')
+    handle = lzma.open(args.infile, 'rt')
     for fasta in chunk_fasta(iter_fasta(handle), chunk_size=args.size):
-        sys.stdout.write("({}/{}) processing {} sequences\n".format(
-            my_rank, nprocs, len(fasta)))
+        if not args.quiet:
+            sys.stdout.write("({}/{}) processing {} sequences\n".format(
+                my_rank, nprocs, len(fasta)))
         results = pangolin(fasta)
         for row in results:
             writer.writerow(row)
     outfile.close()
-
-    # TODO: handle merging of output files into a single CSV
