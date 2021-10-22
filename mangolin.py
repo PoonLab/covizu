@@ -4,6 +4,7 @@ import os
 import csv
 import subprocess
 import tempfile
+import argparse
 from mpi4py import MPI
 
 comm = MPI.COMM_WORLD
@@ -16,12 +17,13 @@ fieldnames = ['taxon', 'lineage', 'conflict', 'ambiguity_score', 'scorpio_call',
 
 
 def pangolin(fasta):
-    # write sequences to temporary file
+    # write sequences to temporary file as input
     tmpfile = tempfile.NamedTemporaryFile(mode='wt', delete=False)
     for h, s in fasta:
         tmpfile.write(">{}\n{}\n".format(h, s))
     tmpfile.close()
 
+    # FIXME: can we capture the output stream?
     outfile = os.path.join(tempdir, 'mango{}.csv'.format(my_rank))
     subprocess.check_call(['pangolin', tmpfile.name, '--outfile', outfile],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -67,16 +69,23 @@ def chunk_fasta(fasta, chunk_size=1000):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: mpirun -np <number of processes> python3 mangolin.py <fasta.xz>")
-        sys.exit()
+    parser = argparse.ArgumentParser("MPI wrapper for SARS-CoV-2 lineage classification with Pangolin")
+    parser.add_argument('infile', type=str, help="<input> path to xz-compressed FASTA file")
+    parser.add_argument('-n', '--size', type=int, default=1000,
+                        help="<option> chunk size for streaming from FASTA")
+    parser.add_argument('--outdir', type=str, default='.', help="<option> output directory")
+    parser.add_argument('--prefix', type=str, default='mangolin', help="<option> output filename prefix")
+    args = parser.parse_args()
 
     # create output file
-    outfile = open("mangolin.{}.csv".format(my_rank), 'w')
+    opath = os.path.join(args.outdir, "{}.{}.csv".format(args.prefix, my_rank))
+    outfile = open(opath, 'w')
     writer = csv.DictWriter(outfile, fieldnames=fieldnames)
     writer.writeheader()
+
+    # stream input from FASTA file
     handle = lzma.open(sys.argv[1], 'rt')
-    for fasta in chunk_fasta(iter_fasta(handle)):
+    for fasta in chunk_fasta(iter_fasta(handle), chunk_size=args.size):
         sys.stdout.write("({}/{}) processing {} sequences\n".format(
             my_rank, nprocs, len(fasta)))
         results = pangolin(fasta)
@@ -84,3 +93,4 @@ if __name__ == "__main__":
             writer.writerow(row)
     outfile.close()
 
+    # TODO: handle merging of output files into a single CSV
