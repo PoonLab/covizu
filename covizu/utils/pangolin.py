@@ -65,33 +65,28 @@ def chunk_fasta(fasta, chunk_size=1000):
 
 
 if __name__ == "__main__":
+    try:
+        from mpi4py import MPI
+    except ModuleNotFoundError:
+        print("Script requires mpi4py - https://pypi.org/project/mpi4py/")
+        sys.exit()
+
+    comm = MPI.COMM_WORLD
+    my_rank = comm.Get_rank()
+    nprocs = comm.Get_size()
+
     # command line interface
     parser = argparse.ArgumentParser("MPI wrapper for SARS-CoV-2 lineage classification with Pangolin")
     parser.add_argument('infile', type=str, help="<input> path to xz-compressed FASTA file")
-    parser.add_argument('outfile', type=str, help="<output> path to write CSV output; will be modified "
-                                                  "with MPI rank and .csv extension")
-    parser.add_argument('--mpi', action='store_true', help="<option> run in MPI mode")
+    parser.add_argument('outfile', type=str, help="<output> path/prefix to write CSV output; will append "
+                                                  "MPI rank and .csv extension")
     parser.add_argument('-n', '--size', type=int, default=1000,
                         help="<option> chunk size for streaming from FASTA")
     parser.add_argument('--quiet', action='store_true', help="option, suppress console messages")
     args = parser.parse_args()
 
-    if args.mpi:
-        try:
-            from mpi4py import MPI
-        except ModuleNotFoundError:
-            print("Script requires mpi4py - https://pypi.org/project/mpi4py/")
-            sys.exit()
-
-        comm = MPI.COMM_WORLD
-        my_rank = comm.Get_rank()
-        nprocs = comm.Get_size()
-        outfile = open("{}.{}.csv".format(args.outfile, my_rank), 'w')
-    else:
-        my_rank = 0
-        nprocs = 1
-        outfile = open(args.outfile, 'w')
-
+    # prepare output file
+    outfile = open("{}.{}.csv".format(args.outfile, my_rank), 'w')
     writer = csv.DictWriter(outfile, fieldnames=fieldnames)
     writer.writeheader()
 
