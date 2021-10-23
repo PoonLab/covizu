@@ -90,7 +90,7 @@ if __name__ == "__main__":
     else:
         my_rank = 0
         nprocs = 1
-        outfile = sys.stdout
+        outfile = open(args.outfile, 'w')
 
     writer = csv.DictWriter(outfile, fieldnames=fieldnames)
     writer.writeheader()
