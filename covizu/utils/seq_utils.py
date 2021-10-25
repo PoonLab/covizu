@@ -123,10 +123,10 @@ def fromisoformat(dt):
     """ Convert ISO date to Python datetime.date object to support Python <3.7 """
     try:
         year, month, day = map(int, dt.split('-'))
+        pydate = date(year, month, day)
     except ValueError:
         return None
-    return date(year, month, day)
-
+    return pydate
 
 class QPois:
     """
