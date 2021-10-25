@@ -58,3 +58,14 @@ Most web development is tested in Google Chrome.
 * Front-end testing is carried out using [Cypress](https://www.cypress.io/). 
 * For the purposes of this project, Cypress needs to be installed via direct download. An installation guide can be found [here](https://docs.cypress.io/guides/getting-started/installing-cypress#Direct-download). 
 * The `baseUrl` is currently set as `"http://127.0.0.1:8001/`. Changes to it can be made in `Cypress.json`.
+
+## Semantic Versioning
+
+We follow [semantic versioning specifications](https://semver.org/). 
+
+The version number (`MAJOR.MINOR.PATCH`) consist of the:
+* `MAJOR` version - For changes that break backward compatibility. For example, modifying the JSON data structure required for running the front-end of CoVizu
+* `MINOR` version - For backwards compatible features additions and other minor changes such as modifying documentation
+* `PATCH` version - For backwards compatible bug fixes 
+
+When opening a pull request, please specify the type of change (`major`, `minor` or `patch`) in the title. _e.g_ `patch: bug fixes for the search interface`.
