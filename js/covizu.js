@@ -408,10 +408,12 @@ req.done(function() {
   $('#expand-option').on('change', function() {
     if (!$('#expand-option').attr('checked')) {
       $('#expand-option').attr('checked', 'checked');
+      $('#expand-option').removeAttr('expanded');
       $('#beadplot-hscroll').show();
     }
     else {
       $('#expand-option').removeAttr('checked');
+      $('#expand-option').attr('expanded', 'expanded');
       $('#beadplot-hscroll').hide();
     }
     const event = new Event('resize');
