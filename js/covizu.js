@@ -122,7 +122,7 @@ var country_pal = {
 };
 
 // load time-scaled phylogeny from server
-var nwk, df, countries;
+var nwk, df, countries, mut_annotations;
 $.ajax({
   url: "data/timetree.nwk",
   success: function(data) {
@@ -133,7 +133,9 @@ $.ajax({
 $.getJSON("data/countries.json", function(data) {
   countries = data;
 });
-
+$.getJSON("data/mut_annotations.json", function(data) {
+  mut_annotations = data;
+});
 
 var clusters, beaddata, tips,
     accn_to_cid, cindex, lineage_to_cid;
@@ -150,6 +152,7 @@ req.done(function() {
 
   beaddata = parse_clusters(clusters);
   tips = map_clusters_to_tips(df, clusters);
+  mutations = parse_mutation_annotations();
   drawtree(df);
   //spinner.stop();
   draw_clusters(tips);
@@ -167,7 +170,8 @@ req.done(function() {
   gentable(node.__data__);
   draw_region_distribution(node.__data__.allregions);
   gen_details_table(beaddata[node.__data__.cluster_idx].points);  // update details table with all samples
-  gen_mut_table({'mutations': ['aa:S:A623T', 'aa:S:Y449P'], 'frequency': [4, 8], 'phenotype': ['convalescent_plasma_escape', 'gene_expression_increase']}) // currently hardcoded 
+  console.log(node.__data__.cluster_idx)
+  gen_mut_table({'mutations': mutations[node.__data__.cluster_idx].mutation, 'frequency': [4, 8], 'phenotype': ["convalescent_plasma_escape", "transmissibility"]}) // currently hardcoded 
   draw_cluster_box(d3.select(node));
 
   /*

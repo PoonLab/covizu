@@ -147,6 +147,7 @@ if __name__ == "__main__":
     # get mutation info
     locator = SC2Locator()
     mutations = {}
+    print(get_mutations(by_lineage).items())
     for lineage, features in get_mutations(by_lineage).items():
         annots = [locator.parse_mutation(f) for f in features]
         mutations.update({lineage: [a for a in annots if a is not None]})

@@ -413,6 +413,23 @@ function parse_clusters(clusters) {
   return beaddata;
 }
 
+function parse_mutation_annotations() {
+  var mutations = [];
+  var mutation, frequency, phenotype = [] 
+
+  for (const tidx in tips) {
+    tip = tips[tidx];
+
+    mutations.push({
+      'mutation': tip.mutations,
+      // 'frequency': frequency,
+      // 'phenotype': phenotype
+    })
+  }
+
+  return mutations
+}
+
 
 function create_selection(selected_obj) {
   d3.select("div#svg-cluster").selectAll("line").attr("stroke-opacity", 0.3);
@@ -1103,6 +1120,19 @@ function gen_mut_table(obj) {
         // Reset sorting arrows
         mut_thead.selectAll('a').classed('hide-before', false);
         mut_thead.selectAll('a').classed('hide-after', false);
+
+        // Sort columns
+        if (sort_ascending) {
+          t_rows.sort(function(a, b) { return d3.ascending(b[i], a[i]); });
+          sort_ascending = false;
+          d3.select(this).select('a').classed('hide-after', true);
+          d3.select(this).select('a').classed('hide-before', false);
+        } else {
+          t_rows.sort(function(a, b) { return d3.descending(b[i], a[i]); });
+          sort_ascending = true;
+          d3.select(this).select('a').classed('hide-before', true);
+          d3.select(this).select('a').classed('hide-after', false);
+        }
       })
       .append('a')
       .text(function (x) { return x; })
