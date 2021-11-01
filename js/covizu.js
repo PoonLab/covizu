@@ -26,7 +26,7 @@ $( function() {
 $(document).tooltip({show: null});
 $("#loading_text").text(``);
 $("#loading").hide();
-$('#beadplot-horizontal').hide();
+$('#beadplot-hscroll').hide();
 
 
 /*********************** DIALOGS ***********************/
@@ -236,7 +236,8 @@ req.done(function() {
     
     $("#custom-handle").text( slider.slider( "value" ) );
     move_arrow();
-    slider.trigger('change');
+    const event = new Event('resize');
+    window.dispatchEvent(event)
   }
 
   disable_buttons();
@@ -313,7 +314,7 @@ req.done(function() {
   $('#start-date').datepicker({
     dateFormat,
     onSelect: function(date_text){
-      const start = new Date(date_text);
+      const start = utcDate(date_text);
       if ($('#start-date').val() != "") {
         $('#search-button').removeAttr("disabled");
         $('#clear_button').removeAttr("disabled");
@@ -328,7 +329,7 @@ req.done(function() {
   $('#end-date').datepicker({
     dateFormat,
     onSelect: function(date_text){
-      const end = new Date(date_text);
+      const end = utcDate(date_text);
       if ($('#end-date').val() != "") {
         $('#search-button').removeAttr("disabled");
         $('#clear_button').removeAttr("disabled");
@@ -407,19 +408,54 @@ req.done(function() {
   $('#expand-option').on('change', function() {
     if (!$('#expand-option').attr('checked')) {
       $('#expand-option').attr('checked', 'checked');
-      $('#beadplot-horizontal').show();
+      $('#beadplot-hscroll').show();
     }
     else {
       $('#expand-option').removeAttr('checked');
-      $('#beadplot-horizontal').hide();
+      $('#beadplot-hscroll').hide();
     }
-    const event = new Event('resize');
+    const event = new Event('expand');
     window.dispatchEvent(event)
   });
 
-  $('#beadplot-horizontal').scroll(function() {
+  // Sets the scrolling speed when scrolling through the beadplot
+  const element = document.querySelector("#svg-cluster");
+
+  element.addEventListener('wheel', (event) => {
+    event.preventDefault();
+
+    element.scrollBy({
+      top: Math.abs(event.deltaY) == 0 ? 0 : event.deltaY,
+      left: Math.abs(event.deltaX) == 0 ? 0 : event.deltaX
+    });
+  });
+
+  // Sets the beadplot and time axis to move when the horizontal scrollbar is moved
+  $('#beadplot-hscroll').scroll(function() {
     $("#svg-cluster").scrollLeft($(this).scrollLeft());
     $('#svg-clusteraxis').scrollLeft($(this).scrollLeft());
+  });
+
+  // Sets the beadplot and time axis to move when the vertical scrollbar is moved
+  $('#beadplot-vscroll').scroll(function() {
+    $("#svg-cluster").scrollTop($(this).scrollTop());
+    $('#svg-clusteraxis').scrollTop($(this).scrollTop());
+  });
+
+  // Sets the time axis, vertical and horizontal scrollbar to move when scrolling through the beadplot
+  $('#svg-cluster').scroll(function(e) {
+    $("#beadplot-hscroll").scrollLeft($(this).scrollLeft());
+    $('#svg-clusteraxis').scrollLeft($(this).scrollLeft());
+    $("#beadplot-vscroll").scrollTop($(this).scrollTop());
+  });
+
+  // Vertical scrollbar for the time-scaled tree
+  $('#tree-vscroll').scroll(function() {
+    $("#svg-timetree").scrollTop($(this).scrollTop());
+  });
+
+  $('#svg-timetree').scroll(function() {
+    $("#tree-vscroll").scrollTop($(this).scrollTop());
   });
 
   $('#previous_button').click(function(){
@@ -522,6 +558,7 @@ req.done(function() {
 
     // User presses the left arrow key (37) or right arrow key (39)
     if (e.keyCode == 37 || e.keyCode == 39) {
+      e.preventDefault() //issue #352
       var selected_bead = d3.selectAll(".selectionH").nodes();
 
       if (selected_bead.length == 0) {

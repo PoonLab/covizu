@@ -6,6 +6,7 @@ import os
 import json
 
 import covizu
+from covizu.utils import gisaid_utils
 
 
 def apply_cigar(seq, rpos, cigar):
@@ -280,9 +281,8 @@ if __name__ == '__main__':
     reflen = len(refseq)
     if args.align:
         if args.filter:
-            vcf = load_vcf(args.vcf)
             encoded = encode_diffs(mm2, reflen=reflen)
-            for qname, diffs, missing in filter_problematic2(encoded, mask=vcf):
+            for qname, diffs, missing in gisaid_utils.filter_problematic(encoded, vcf_file=args.vcf, encoded=True):
                 seq = apply_features(diffs, missing, refseq=refseq)
                 args.outfile.write(">{}\n{}\n".format(qname, seq))
         else:

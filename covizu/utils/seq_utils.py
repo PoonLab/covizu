@@ -251,44 +251,6 @@ def load_vcf(vcf_file="data/ProblematicSites_SARS-CoV2/problematic_sites_sarsCov
     return mask
 
 
-def filter_problematic2(obj, mask, callback=None):
-    """
-    Apply problematic sites annotation from de Maio et al.,
-    https://virological.org/t/issues-with-sars-cov-2-sequencing-data/473
-    which are published and maintained as a VCF-formatted file.
-    FIXME: this duplicates functionality of gisaid_utils:filter_problematic(), see issue #290.
-
-    :param obj:  list, entries are (1) dicts returned by import_json or (2) tuples
-    :param mask:  dict, problematic site index from load_vcf()
-    :param callback:  optional callback function for progress monitoring
-    :return:
-    """
-    # apply filters to feature vectors
-    count = 0
-    result = []
-    for row in obj:
-        if type(row) is dict:
-            qname, diffs, missing = row['qname'], row['diffs'], row['missing']
-        else:
-            qname, diffs, missing = row  # unpack tuple
-
-        filtered = []
-        for typ, pos, alt in diffs:
-            if typ == '~' and int(pos) in mask and alt in mask[pos]['alt']:
-                continue
-            if typ != '-' and 'N' in alt:
-                # drop substitutions and insertions with uncalled bases
-                continue
-            filtered.append(tuple([typ, pos, alt]))
-
-        count += len(diffs) - len(filtered)
-        result.append([qname, filtered, missing])
-
-    if callback:
-        callback('filtered {} problematic features'.format(count))
-    return result
-
-
 class SC2Locator:
     def __init__(self, ref_file=pkg_resources.resource_filename('covizu', 'data/NC_045512.fa')):
         self.gcode = {

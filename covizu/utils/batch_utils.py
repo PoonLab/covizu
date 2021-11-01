@@ -183,7 +183,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
         if len(label_dict) == 1:
             # handle case of only one variant
             # lineage only has one variant, no meaningful tree
-            beaddict = {'lineage': lineage, 'nodes': {}, 'edges': []}
+            beaddict = {'nodes': {}, 'edges': []}
 
             # use earliest sample as variant label
             intermed = [label.split('|')[::-1] for label in label_dict['0']]
@@ -200,9 +200,9 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
 
             ctree = beadplot.annotate_tree(ctree, label_dict)
             beaddict = beadplot.serialize_tree(ctree)
-            beaddict.update({'sampled_variants': len(label_dict)})
-
-            beaddict.update({'lineage': lineage})
+            
+        beaddict.update({'sampled_variants': len(label_dict)})
+        beaddict.update({'lineage': lineage})
         result.append(beaddict)
 
     return result

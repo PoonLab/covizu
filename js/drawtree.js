@@ -126,6 +126,10 @@ function getTimeTreeData(timetree) {
  */
 function drawtree(df) {
 
+  // Sets margin top to align vertical scrollbar with the time-scaled tree
+  $('#tree-vscroll').css('margin-top', document.getElementById("tree-title").clientHeight + document.getElementById("svg-timetreeaxis").clientHeight + $('#inner-hscroll').height() + 5);
+  $('#svg-timetreeaxis').css('padding-bottom', $('#inner-hscroll').height())
+
   var edgeset = edges(df, rectangular=true);
 
   // rescale SVG for size of tree
@@ -155,6 +159,7 @@ function drawtree(df) {
     .attr("stroke-width", 1.5)
     .attr("stroke", "#777");
 
+    $('#tree-inner-vscroll').css('height', $('.tree-content > svg').height()); 
 }
 
 
@@ -198,11 +203,11 @@ function map_clusters_to_tips(df, clusters) {
     }
     coldates.sort();  // in place, ascending order
 
-    var first_date = new Date(coldates[0] + ' '),
-        last_date = new Date(coldates[coldates.length-1] + ' ');
+    var first_date = utcDate(coldates[0]),
+        last_date = utcDate(coldates[coldates.length-1]);
     
     // Calculate the mean collection date
-    let date_diffs = coldates.map(x => d3.timeDay.count(first_date, new Date(x + ' '))),
+    let date_diffs = coldates.map(x => d3.timeDay.count(first_date, utcDate(x))),
         mean_date = Math.round(date_diffs.reduce((a, b) => a + b, 0) / date_diffs.length);
 
     // augment data frame with cluster data
@@ -232,7 +237,7 @@ function map_clusters_to_tips(df, clusters) {
     tips[root_idx].mutations = tip_stats.mutations;
 
     // calculate residual from mean differences and mean collection date - fixes #241
-    let times = coldates.map(x => new Date(x + ' ').getTime()),
+    let times = coldates.map(x => utcDate(x).getTime()),
         origin = 18231,  // days between 2019-12-01 and UNIX epoch (1970-01-01)
         mean_time = times.reduce((x, y)=>x+y) / times.length / 8.64e7 - origin,
         rate = 0.0655342,  // subs per genome per day

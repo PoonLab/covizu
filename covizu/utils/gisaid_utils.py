@@ -144,13 +144,14 @@ def extract_features(batcher, ref_file, binpath='minimap2', nthread=3, minlen=29
 
 def filter_problematic(records, origin='2019-12-01', rate=0.0655, cutoff=0.005,
                        maxtime=1e3, vcf_file='data/ProblematicSites_SARS-CoV2/problematic_sites_sarsCov2.vcf',
+                       encoded=False,
                        misstol=300, callback=None):
     """
     Apply problematic sites annotation from de Maio et al.,
     https://virological.org/t/issues-with-sars-cov-2-sequencing-data/473
     which are published and maintained as a VCF-formatted file.
 
-    :param records:  generator, records from extract_features()
+    :param records:  generator, records from extract_features() or encode_diffs()
     :param origin:  str, date of root sequence in ISO format (yyyy-mm-dd)
     :param rate:  float, molecular clock rate (subs/genome/day), defaults
                   to 8e-4 * 29900 / 365
@@ -158,21 +159,25 @@ def filter_problematic(records, origin='2019-12-01', rate=0.0655, cutoff=0.005,
                     distribution, defaults to 0.005
     :param maxtime:  int, maximum number of days to cache Poisson quantiles
     :param vcf_file:  str, path to VCF file
+    :param encoded: bool, flag to indicate if records are from encode_diffs() 
     :param misstol:  int, maximum tolerated number of uncalled bases
     :param callback:  function, option to print messages to console
     :yield:  generator, revised records
     """
     # load resources
     mask = load_vcf(vcf_file)
-    qp = QPois(quantile=1-cutoff, rate=rate, maxtime=maxtime, origin=origin)
 
     n_sites = 0
     n_outlier = 0
     n_ambig = 0
     for record in records:
+        if type(record) is not dict:
+            qname, diffs, missing = record  # unpack tuple
+        else:
+            diffs = record['diffs']
+
         # exclude problematic sites
         filtered = []
-        diffs = record['diffs']
         for typ, pos, alt in diffs:
             if typ == '~' and int(pos) in mask and alt in mask[pos]['alt']:
                 continue
@@ -183,20 +188,28 @@ def filter_problematic(records, origin='2019-12-01', rate=0.0655, cutoff=0.005,
 
         ndiffs = len(filtered)
         n_sites += len(diffs) - ndiffs
-        record['diffs'] = filtered
 
-        # exclude genomes with excessive divergence from reference
-        coldate = record['covv_collection_date']
-        if qp.is_outlier(coldate, ndiffs):
-            n_outlier += 1
-            continue
+        if not encoded:
+            record['diffs'] = filtered
 
-        # exclude genomes with too much missing data
-        if total_missing(record) > misstol:
-            n_ambig += 1
-            continue
+            qp = QPois(quantile=1-cutoff, rate=rate, maxtime=maxtime, origin=origin)
 
-        yield record
+            # exclude genomes with excessive divergence from reference
+            coldate = record['covv_collection_date']
+            if qp.is_outlier(coldate, ndiffs):
+                n_outlier += 1
+                continue
+
+            # exclude genomes with too much missing data
+            if total_missing(record) > misstol:
+                n_ambig += 1
+                continue
+            yield record
+        else:
+            if type(record) is dict:
+                qname, missing = record['qname'], record['missing']
+
+            yield [qname, filtered, missing]
 
     if callback:
         callback("filtered {} problematic features".format(n_sites))

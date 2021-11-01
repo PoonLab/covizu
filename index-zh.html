@@ -140,8 +140,11 @@
       </div>
     
       <div class="tree-beadplot">
+        <div id="tree-vscroll">
+          <div id="tree-inner-vscroll"></div>
+        </div>
         <div class="leftbox">
-          <div class="floattitle">
+          <div class="floattitle" id="tree-title">
             时间尺度的种系发生树
             <span class="clicker" title="Download time-scaled tree" onclick="save_timetree()">
               &nbsp;&nbsp;NWK&nbsp;&nbsp;
@@ -156,7 +159,7 @@
         </div>
 
         <div class="middlebox">
-          <div class="floattitle">
+          <div class="floattitle" id="beadplot-title">
             <div>珠图</div>
             <div class="clicker" title="Download beadplot as tree" onclick="save_beadplot();">&nbsp;&nbsp;NWK&nbsp;&nbsp;</div>
             <div class="clicker" title="Save beadplot as SVG" onclick="export_svg();">&nbsp;&nbsp;SVG&nbsp;&nbsp;</div>
@@ -181,11 +184,14 @@
               <span class="slider round"></span>
             </label>
           </div>
-          <div id="beadplot-horizontal">
-            <div id="beadplot-width"></div>
-          </div>
           <div class="floattitle" id="svg-clusteraxis" style="top: 58px; z-index: 14"></div>
+          <div id="beadplot-hscroll">
+            <div id="inner-hscroll"></div>
+          </div>
           <div class="beadplot-content" id="svg-cluster"></div>
+        </div>
+        <div id="beadplot-vscroll">
+          <div id="inner-vscroll"></div>
         </div>
       </div>
     </div>

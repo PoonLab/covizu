@@ -85,6 +85,7 @@ div.tooltip{
   border: 1px solid #4f2683;
   border-radius: 8px;
   pointer-events: none;
+  z-index: 1;
 }
 
 
@@ -152,13 +153,16 @@ div.tree-beadplot {
 }
 
 .beadplot-content {
-  height: 81vh;
-  overflow-y: scroll;
-  overflow-x: hidden;
+  height: 79vh;
+  overflow: scroll;
   scrollbar-track-color: white;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
-
+.beadplot-content::-webkit-scrollbar {
+  display: none;
+}
 
 div.leftbox {
   overflow: auto;
@@ -340,6 +344,11 @@ circle.default{
   stroke: black;
 }
 
+circle.selectionLC{
+  fill-opacity: 1;
+  stroke: black;
+}
+
 .not_SelectedBead{
   fill-opacity: 0.3;
 }
@@ -504,14 +513,39 @@ details + dl {
     display: block;
 }
 
-#beadplot-horizontal {
+/* Horizontal scrollbar for beadplot */
+#beadplot-hscroll {
   overflow-x: scroll;
   overflow-y: hidden;
-  height: 20px;
+  height: 16px;
 }
 
-#beadplot-width {
-  height: 20px;
+#inner-hscroll {
+  height: 16px;
+}
+
+/* Vertical scrollbar for beadplot */
+#beadplot-vscroll {
+  overflow-x: hidden;
+  overflow-y: scroll;
+  width: 20px;
+  height: 79vh;
+}
+
+#inner-vscroll {
+  width: 20px;
+}
+
+/* Vertical scrollbar for time-scaled tree */
+#tree-vscroll {
+  overflow-x: hidden;
+  overflow-y: scroll;
+  width: 20px;
+  height: 81vh;
+}
+
+#tree-inner-vscroll {
+  width: 20px;
 }
 
 .toplabel {
