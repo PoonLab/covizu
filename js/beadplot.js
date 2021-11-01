@@ -520,7 +520,7 @@ function clear_selection() {
  * integer index <cid>) in the SVG.
  * @param {Number} cid:  integer index of cluster to draw as beadplot
  */
-function beadplot(cid) {
+ function beadplot(cid) {
   // Update global cindex for SVG and NWK filenames
   cindex = cid;
   
@@ -545,8 +545,136 @@ function beadplot(cid) {
     $('#expand-option').removeAttr('checked')
   }
 
-  if ($('#expand-option').attr('expanded')) {
-    $('#expand-option').removeAttr('expanded')
+  function expand() {
+    // set plotting domain
+    var mindate = d3.min(variants, xValue1B),
+        maxdate = d3.max(variants, xValue2B),
+        spandate = maxdate-mindate,  // in milliseconds
+        min_y = d3.min(variants, yValue1B),
+        max_y = d3.max(variants, yValue1B),
+        numDays = d3.timeDay.count(mindate, maxdate),
+        clientWidth = document.getElementById("svg-cluster").clientWidth;
+
+    let currentWidth = null;
+    if ($('#expand-option').attr('checked')) {
+      currentWidth = (numDays * pixelsPerDay > clientWidth ? numDays * pixelsPerDay : clientWidth)
+                      - marginB.left -  marginB.right;
+      $('#svg-clusteraxis').css('padding-bottom', 0)
+    }
+    else {
+      currentWidth = clientWidth - marginB.left -  marginB.right;
+      $('#svg-clusteraxis').css('padding-bottom', $('#inner-hscroll').height())
+
+    }
+
+    xScaleB = d3.scaleLinear().range([0, currentWidth]);
+    var xAxis = d3.scaleTime().range([0, currentWidth]);
+
+    // allocate space for text labels on left
+    xScaleB.domain([mindate - 170*(spandate/currentWidth), maxdate]);
+    xAxis.domain([mindate - 170*(spandate/currentWidth), maxdate]);
+
+    // update horizontal range
+    $("#svg-cluster > svg").attr("width",currentWidth + marginB.left + marginB.right);
+    $("#inner-hscroll").css("width",currentWidth + marginB.left + marginB.right);
+    
+    // Add 15px to account for the scrollbar for the beadplot
+    $("#svg-clusteraxis > svg").attr("width", currentWidth + marginB.left + marginB.right + 15);
+
+
+    // draw vertical line segments that represent edges in NJ tree
+    visB.selectAll(".vLine")
+        .data(edgelist.filter(x => x.dist <= slider.slider("value")))
+        .transition().duration(700)
+        .ease(d3.easeExp)
+        .attr("x1", xMap1B)
+        .attr("x2", xMap2B)
+        .attr("y1", yMap1B)
+        .attr("y2", yMap2B)
+        .attr("stroke-width", 1)
+        .attr("stroke", function(d) {
+          return("#bbd");
+        });
+
+    // draw horizontal line segments that represent variants in cluster
+    visB.selectAll(".hLine")
+        .data(variants)
+        .transition().duration(700)
+        .ease(d3.easeExp)
+        .attr("x1", xMap1B)
+        .attr("x2", xMap2B)
+        .attr("y1", yMap1B)
+        .attr("y2", yMap2B)
+        .attr("stroke-width", function(d) {
+          if (d.unsampled) {
+            return 1;
+          } else {
+            return 3;
+          }
+        })
+        .attr("stroke", function(d) {
+          if (d.unsampled) {
+            return "#ccc";
+          } else {
+            return "#777";
+          }
+        });
+
+
+    // label variants with earliest sample name
+    visB.selectAll("text")
+        .data(variants)
+        .transition().duration(700)
+        .ease(d3.easeExp)
+        .attr("x", function(d) { return(xScaleB(d.x1)-5); })
+        .attr("y", function(d) { return(yScaleB(d.y1)); })
+        .text(function(d) { return(d.label); });
+
+
+    // draw "beads" to represent samples per collection date
+    visB.selectAll("circle")
+        .data(points)
+        .transition().duration(700)
+        .ease(d3.easeExp)
+        .attr("cx", xMapB)
+        .attr("cy", yMapB)
+        .attr("class", "default")
+        .attr("id", function(d) { return d.accessions[0]; })
+        .attr("idx", function(d, i) { return i; })
+        .attr("search_hit", function(d) {
+          if (search_results.get().beads.length == 0){
+            return null;
+          } else {
+            return search_results.get().beads[d.accessions[0]] === undefined ? false : true;
+          }
+        })
+        .attr("fill", function(d) {
+          return(country_pal[d.region1]);
+        })
+        .attr("stroke", function(d) {
+          return(country_pal[d.region1]);
+        });
+
+
+    var tickCount = 0.005*currentWidth;
+    if (tickCount <= 4) tickCount = 4;
+
+    // Ensures that there aren't extra ticks in the time axis of the beadplot when the first and last coldates are within a few days
+    var dateDiff = d3.timeDay.count(
+                    d3.min(variants, function(d) {return d.x1}), 
+                    d3.max(variants, function(d) {return d.x2}));
+    
+    if (dateDiff !=0 && dateDiff < tickCount) tickCount = dateDiff;
+
+    // draw x-axis
+    visBaxis.selectAll(".treeaxis")
+        .transition().duration(700)
+        .ease(d3.easeExp)
+        .call(
+          d3.axisTop(xAxis)
+            .ticks(tickCount)
+            .tickFormat(d3.timeFormat("%Y-%m-%d"))
+        );
   }
 
   function redraw() {
@@ -587,15 +715,6 @@ function beadplot(cid) {
 
     }
 
-    // Width before expansion/contraction of the beadplot for animation purposes
-    var prevWidth = 0;
-    if ($('#expand-option').attr('expanded')) {
-      prevWidth = (numDays * pixelsPerDay > clientWidth ? numDays * pixelsPerDay : clientWidth)
-                - marginB.left -  marginB.right;
-    }
-    else
-      prevWidth = clientWidth - marginB.left -  marginB.right;
-
     // update vertical range for consistent spacing between variants
     heightB = max_y * 10 + 40;
     $("#svg-cluster > svg").attr("height", heightB + marginB.top + marginB.bottom);
@@ -605,16 +724,9 @@ function beadplot(cid) {
     xScaleB = d3.scaleLinear().range([0, currentWidth]);
     var xAxis = d3.scaleTime().range([0, currentWidth]);
 
-    // Scale before expansion/contraction of the beadplot for animation purposes
-    var prevXScaleB = d3.scaleLinear().range([0, prevWidth]);
-    var xAxisPrev = d3.scaleTime().range([0, prevWidth]);
-
     // allocate space for text labels on left
     xScaleB.domain([mindate - 170*(spandate/currentWidth), maxdate]);
     xAxis.domain([mindate - 170*(spandate/currentWidth), maxdate]);
-
-    prevXScaleB.domain([mindate - 170*(spandate/prevWidth), maxdate]);
-    xAxisPrev.domain([mindate - 170*(spandate/prevWidth), maxdate]);
 
     // update horizontal range
 
@@ -633,7 +745,15 @@ function beadplot(cid) {
     visB.selectAll("lines")
         .data(edgelist.filter(x => x.dist <= slider.slider("value")))
         .enter().append("line")
-        .attr("class", "lines")
+        .attr("class", "lines vLine")
+        .attr("x1", xMap1B)
+        .attr("x2", xMap2B)
+        .attr("y1", yMap1B)
+        .attr("y2", yMap2B)
+        .attr("stroke-width", 1)
+        .attr("stroke", function(d) {
+          return("#bbd");
+        })
         .on("mouseover", function(d) {
           // visual feedback
           var edge = d3.select(this);
@@ -795,33 +915,33 @@ function beadplot(cid) {
                   })
             }
           }
-        })
-        .attr("x1", function(d) { return prevXScaleB(d.x1); })
-        .attr("x2", function(d) { return prevXScaleB(d.x2); })
-        .attr("y1", yMap1B)
-        .attr("y2", yMap2B)
-        .attr("stroke-width", 1)
-        .attr("stroke", function(d) {
-          return("#bbd");
-        })
-        .transition().duration(700)
-        .ease(d3.easeExp)
-        .attr("x1", xMap1B)
-        .attr("x2", xMap2B)
-        .attr("y1", yMap1B)
-        .attr("y2", yMap2B)
-        .attr("stroke-width", 1)
-        .attr("stroke", function(d) {
-          return("#bbd");
         });
 
     // draw horizontal line segments that represent variants in cluster
     visB.selectAll("lines")
         .data(variants)
         .enter().append("line")
-        .attr("class", "lines")
+        .attr("class", "lines hLine")
         .attr("id", function(d) {
           return d.label.replace('/', '-').replace(' ', '_');
+        })
+        .attr("x1", xMap1B)
+        .attr("x2", xMap2B)
+        .attr("y1", yMap1B)
+        .attr("y2", yMap2B)
+        .attr("stroke-width", function(d) {
+          if (d.unsampled) {
+            return 1;
+          } else {
+            return 3;
+          }
+        })
+        .attr("stroke", function(d) {
+          if (d.unsampled) {
+            return "#ccc";
+          } else {
+            return "#777";
+          }
         })
         .on("mouseover", function(d) {
           if (d.label !== null) {
@@ -891,44 +1011,6 @@ function beadplot(cid) {
             let var_samples = points.filter(x => x.y === d.y1);
             gen_details_table(var_samples);
           }
-        })
-        .attr("x1", function(d) { return prevXScaleB(d.x1); })
-        .attr("x2", function(d) { return prevXScaleB(d.x2); })
-        .attr("y1", yMap1B)
-        .attr("y2", yMap2B)
-        .attr("stroke-width", function(d) {
-          if (d.unsampled) {
-            return 1;
-          } else {
-            return 3;
-          }
-        })
-        .attr("stroke", function(d) {
-          if (d.unsampled) {
-            return "#ccc";
-          } else {
-            return "#777";
-          }
-        })
-        .transition().duration(700)
-        .ease(d3.easeExp)
-        .attr("x1", xMap1B)
-        .attr("x2", xMap2B)
-        .attr("y1", yMap1B)
-        .attr("y2", yMap2B)
-        .attr("stroke-width", function(d) {
-          if (d.unsampled) {
-            return 1;
-          } else {
-            return 3;
-          }
-        })
-        .attr("stroke", function(d) {
-          if (d.unsampled) {
-            return "#ccc";
-          } else {
-            return "#777";
-          }
         });
 
     // label variants with earliest sample name
@@ -938,10 +1020,6 @@ function beadplot(cid) {
         .style("font-size", "10px")
         .attr("text-anchor", "end")
         .attr("alignment-baseline", "middle")
-        .attr("x", function(d) { return(prevXScaleB(d.x1)-5); })
-        .attr("y", function(d) { return(yScaleB(d.y1)); })
-        .transition().duration(700)
-        .ease(d3.easeExp)
         .attr("x", function(d) { return(xScaleB(d.x1)-5); })
         .attr("y", function(d) { return(yScaleB(d.y1)); })
         .text(function(d) { return(d.label); });
@@ -952,6 +1030,24 @@ function beadplot(cid) {
         .data(points)
         .enter().append("circle")
         .attr("r", function(d) { return (4*Math.sqrt(d.count)); })
+        .attr("cx", xMapB)
+        .attr("cy", yMapB)
+        .attr("class", "default")
+        .attr("id", function(d) { return d.accessions[0]; })
+        .attr("idx", function(d, i) { return i; })
+        .attr("search_hit", function(d) {
+          if (search_results.get().beads.length == 0){
+            return null;
+          } else {
+            return search_results.get().beads[d.accessions[0]] === undefined ? false : true;
+          }
+        })
+        .attr("fill", function(d) {
+          return(country_pal[d.region1]);
+        })
+        .attr("stroke", function(d) {
+          return(country_pal[d.region1]);
+        })
         .on("mouseover", function(d) {
           d3.select(this).attr("stroke-width", 2)
               .attr("r", 4*Math.sqrt(d.count)+3);
@@ -1020,34 +1116,8 @@ function beadplot(cid) {
           $('#next_button').attr("disabled", true);
           $('#previous_button').attr("disabled", true);
           $('#search_stats').addClass("disabled_stats");
-        })
-        .attr("cx", function(d) { return prevXScaleB(d.x); })
-        .attr("cy", yMapB)
-        .transition().duration(700)
-        .ease(d3.easeExp)
-        .attr("cx", xMapB)
-        .attr("cy", yMapB)
-        .attr("class", "default")
-        .attr("id", function(d) { return d.accessions[0]; })
-        .attr("idx", function(d, i) { return i; })
-        .attr("search_hit", function(d) {
-          if (search_results.get().beads.length == 0){
-            return null;
-          } else {
-            return search_results.get().beads[d.accessions[0]] === undefined ? false : true;
-          }
-        })
-        .attr("fill", function(d) {
-          return(country_pal[d.region1]);
-        })
-        .attr("stroke", function(d) {
-          return(country_pal[d.region1]);
         });
 
-
-    // Keep track of the number of ticks before expansion/contraction of the beadplot for animation purposes
-    var tickCountStart = 0.005*prevWidth;
-    if (tickCount <= 4) tickCount = 4;
 
     var tickCount = 0.005*currentWidth;
     if (tickCount <= 4) tickCount = 4;
@@ -1056,21 +1126,12 @@ function beadplot(cid) {
     var dateDiff = d3.timeDay.count(
                     d3.min(variants, function(d) {return d.x1}), 
                     d3.max(variants, function(d) {return d.x2}));
-    
-    if (dateDiff !=0 && dateDiff < tickCountStart) tickCountStart = dateDiff;
     if (dateDiff !=0 && dateDiff < tickCount) tickCount = dateDiff;
 
     // draw x-axis
     visBaxis.append("g")
         .attr("class", "treeaxis")
         .attr("transform", "translate(0,20)")
-        .call(
-          d3.axisTop(xAxisPrev)
-          .ticks(tickCountStart)
-          .tickFormat(d3.timeFormat("%Y-%m-%d"))
-        )
-        .transition().duration(700)
-        .ease(d3.easeExp)
         .call(
           d3.axisTop(xAxis)
             .ticks(tickCount)
@@ -1082,6 +1143,7 @@ function beadplot(cid) {
   }
   redraw();
   window.addEventListener("resize", redraw);
+  window.addEventListener("expand", expand);
 
   // replace previous event listeners
   let listeners = $._data(slider[0], "events");
