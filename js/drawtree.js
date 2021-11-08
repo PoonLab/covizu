@@ -707,7 +707,7 @@ function click_cluster(d, cluster_info) {
     gentable(d);
     draw_region_distribution(d.allregions);
     gen_details_table(beaddata[d.cluster_idx].points);  // update details table with all samples
-    gen_mut_table({'mutations': mutations[d.cluster_idx].mutation, 'frequency': [4, 8], 'phenotype': ['convalescent_plasma_escape', 'gene_expression_increase']})
+    gen_mut_table({'mutations': mutations[d.cluster_idx].mutation, 'frequency': [4, 8], 'phenotype': mutations[d.cluster_idx].phenotype})
     
     // FIXME: this is the same div used for making barplot SVG
     $("#text-node").html(`Number of cases: ${d.count}<br/>Number of variants: ${d.varcount}<br/>`);

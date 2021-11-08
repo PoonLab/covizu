@@ -152,7 +152,7 @@ req.done(function() {
 
   beaddata = parse_clusters(clusters);
   tips = map_clusters_to_tips(df, clusters);
-  mutations = parse_mutation_annotations();
+  mutations = parse_mutation_annotations(mut_annotations);
   drawtree(df);
   //spinner.stop();
   draw_clusters(tips);
@@ -171,7 +171,7 @@ req.done(function() {
   draw_region_distribution(node.__data__.allregions);
   gen_details_table(beaddata[node.__data__.cluster_idx].points);  // update details table with all samples
   console.log(node.__data__.cluster_idx)
-  gen_mut_table({'mutations': mutations[node.__data__.cluster_idx].mutation, 'frequency': [4, 8], 'phenotype': ["convalescent_plasma_escape", "transmissibility"]}) // currently hardcoded 
+  gen_mut_table({'mutations': mutations[node.__data__.cluster_idx].mutation, 'frequency': [4, 8], 'phenotype': mutations[node.__data__.cluster_idx].phenotype}) // currently hardcoded 
   draw_cluster_box(d3.select(node));
 
   /*

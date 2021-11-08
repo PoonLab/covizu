@@ -413,17 +413,32 @@ function parse_clusters(clusters) {
   return beaddata;
 }
 
-function parse_mutation_annotations() {
+function parse_mutation_annotations(mut_annotations) {
   var mutations = [];
-  var mutation, frequency, phenotype = [] 
 
-  for (const tidx in tips) {
-    tip = tips[tidx];
+  // Sorts tips according to cluster_idx
+  sorted_tips = [...tips]
+  sorted_tips.sort(function(a,b) {
+    return a.cluster_idx - b.cluster_idx
+  });
 
+  for (const cidx in tips) {
+    let phenotype = []
+    let tip = sorted_tips[cidx];
+
+    for (i = 0; i < tip.mutations.length; i++) {
+      if (tip.mutations[i] in mut_annotations) {
+        phenotype.push(mut_annotations[tip.mutations[i]])
+      }
+      else {
+        phenotype.push([])
+      }
+    }
+
+    console.log(phenotype)
     mutations.push({
       'mutation': tip.mutations,
-      // 'frequency': frequency,
-      // 'phenotype': phenotype
+      'phenotype': phenotype
     })
   }
 
