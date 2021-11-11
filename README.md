@@ -1,9 +1,10 @@
-# openCoVizu: Open access real-time visualization of SARS-COV-2 genomic diversity
+# CoVizu: Open access real-time visualization of SARS-COV-2 genomic diversity
+## VirusSeq version
 
 [CoVizu](https://github.com/PoonLab/covizu) is an ongoing open-source project to provide a public interface to visualize the global diversity of SARS-CoV-2 genomes in near real time.
 Our specific objectives are (1) to process and visualize as much publicly available data as possible (*i.e.*, millions of genomes); (2) to reconstruct robust evolutionary and epidemiological relationships among these genomes; (3) to continually update outputs with new genomic data as frequently as possible, and; (4) to present this information in a rich and intuitive visual interface.
 
-This `opendata` branch is a version of CoVizu that enables users to run the entire analysis and visualize results without the requirement of having special access to any particular database.
+This `virusseq` branch is a version of CoVizu that enables users to run the entire analysis and visualize results without the requirement of having special access to any particular database.
 For example, you may want to try these methods on your own laboratory's data.
 Hence, we provide script (`convert.py`) to adapt any combination of [FASTA](https://en.wikipedia.org/wiki/FASTA_format) and [tabular](https://en.wikipedia.org/wiki/Table_(information)) metadata into a common input format, and a second script to automate the analytical pipeline (`process.py`).
 
@@ -65,3 +66,5 @@ This sequence of commands demonstrates how to run the CoVizu pipeline using the 
 
 ## Acknowledgements
 The development and validation of these scripts was made possible by the labs who have generated and contributed SARS-COV-2 genomic sequence data, much of which has been curated and published by the [GISAID Initiative](https://www.gisaid.org/).  We sincerely thank these labs for making this information available to the public and open science.
+
+Computational support provided by the [McArthur Lab](https://mcarthurbioinformatics.ca/) (Michael G. DeGroote Institute for Infectious Disease Research, McMaster University).
