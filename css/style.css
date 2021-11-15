@@ -694,3 +694,24 @@ input:checked + .slider:before {
 .slider.round:before {
   border-radius: 50%;
 }
+
+.transmissibility {
+  background-image: url('../img/red_circle.png');
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+  background-position: left center;
+}
+
+.immunosuppression {
+  background-image: url('../img/blue_triangle.png');
+  background-position: left;
+  background-repeat: no-repeat;
+  background-size: 5px 5px;
+}
+
+.transmissibility.immunosuppression {
+  background-image: url('../img/blue_triangle.png'), url('../img/red_circle.png');
+  background-position: 5%, 20%;
+  background-repeat: no-repeat, no-repeat;
+  background-size: 5px 5px, 5px 5px;
+}

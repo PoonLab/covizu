@@ -426,6 +426,10 @@ function parse_mutation_annotations(mut_annotations) {
     let phenotype = []
     let tip = sorted_tips[cidx];
 
+    if (!('mutations' in tip)) {
+      tip['mutations'] = []
+    }
+
     for (i = 0; i < tip.mutations.length; i++) {
       if (tip.mutations[i] in mut_annotations) {
         phenotype.push(mut_annotations[tip.mutations[i]])
@@ -435,7 +439,6 @@ function parse_mutation_annotations(mut_annotations) {
       }
     }
 
-    console.log(phenotype)
     mutations.push({
       'mutation': tip.mutations,
       'phenotype': phenotype
@@ -1105,7 +1108,8 @@ function gen_mut_table(obj) {
         let sample_details = [
           obj[j].mutations[i],
           obj[j].frequency[i],
-          obj[j].phenotype[i]  
+          []
+          // obj[j].phenotype[i]  
         ];
         mutations.push(sample_details);
       }
@@ -1117,7 +1121,8 @@ function gen_mut_table(obj) {
       let sample_details = [
         obj.mutations[i],
         obj.frequency[i],
-        obj.phenotype[i]  
+        []
+        // obj.phenotype[i]  
       ];
       mutations.push(sample_details);
     }
@@ -1151,7 +1156,7 @@ function gen_mut_table(obj) {
       })
       .append('a')
       .text(function (x) { return x; })
-      .classed('sort-by', true);
+      .classed('sort-by', true)
 
   // Create a row for each sample
   mut_tbody.html("");
@@ -1181,6 +1186,20 @@ function gen_mut_table(obj) {
       })
       .text(function (x) { return x; })
       .style("font", "0.875em/1.2 Lato, sans-serif");
+
+  var t_cells = document.querySelectorAll("#tabs-3 table tbody tr")
+
+  for (let j = 0; j < obj.phenotype.length; j++) {
+    var phenotype = t_cells[j].children[2];
+      for (let i = 0; i < obj.phenotype[j].length; i++) {
+        if (obj.phenotype[j][i] == 'transmissibility') {
+          phenotype.classList.add('transmissibility')
+        }
+        if (obj.phenotype[j][i] == 'immunosuppression_variant_emergence') {
+          phenotype.classList.add('immunosuppression')
+        }
+      }
+  }    
 }
 
 
