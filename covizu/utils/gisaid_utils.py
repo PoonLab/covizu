@@ -166,6 +166,7 @@ def filter_problematic(records, origin='2019-12-01', rate=0.0655, cutoff=0.005,
     """
     # load resources
     mask = load_vcf(vcf_file)
+    qp = QPois(quantile=1-cutoff, rate=rate, maxtime=maxtime, origin=origin)
 
     n_sites = 0
     n_outlier = 0
@@ -191,8 +192,6 @@ def filter_problematic(records, origin='2019-12-01', rate=0.0655, cutoff=0.005,
 
         if not encoded:
             record['diffs'] = filtered
-
-            qp = QPois(quantile=1-cutoff, rate=rate, maxtime=maxtime, origin=origin)
 
             # exclude genomes with excessive divergence from reference
             coldate = record['covv_collection_date']
