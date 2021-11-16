@@ -143,7 +143,7 @@ def extract_features(batcher, ref_file, binpath='minimap2', nthread=3, minlen=29
 
 
 def filter_problematic(records, origin='2019-12-01', rate=0.0655, cutoff=0.005,
-                       maxtime=1e3, vcf_file='data/problematic_sites_sarsCov2.vcf',
+                       maxtime=1e3, vcf_file='data/ProblematicSites_SARS-CoV2/problematic_sites_sarsCov2.vcf',
                        encoded=False,
                        misstol=300, callback=None):
     """
@@ -166,6 +166,7 @@ def filter_problematic(records, origin='2019-12-01', rate=0.0655, cutoff=0.005,
     """
     # load resources
     mask = load_vcf(vcf_file)
+    qp = QPois(quantile=1-cutoff, rate=rate, maxtime=maxtime, origin=origin)
 
     n_sites = 0
     n_outlier = 0
@@ -191,8 +192,6 @@ def filter_problematic(records, origin='2019-12-01', rate=0.0655, cutoff=0.005,
 
         if not encoded:
             record['diffs'] = filtered
-
-            qp = QPois(quantile=1-cutoff, rate=rate, maxtime=maxtime, origin=origin)
 
             # exclude genomes with excessive divergence from reference
             coldate = record['covv_collection_date']
@@ -313,7 +312,7 @@ def parse_args():
                         help='option, number of threads to run minimap2. Defaults to 8.')
 
     parser.add_argument("--vcf_file", type=str,
-                        default=os.path.join(covizu.__path__[0], "data/problematic_sites_sarsCov2.vcf"),
+                        default=os.path.join(covizu.__path__[0], "data/ProblematicSites_SARS-CoV2/problematic_sites_sarsCov2.vcf"),
                         help="Path to VCF file of problematic sites in SARS-COV-2 genome. "
                              "Source: https://github.com/W-L/ProblematicSites_SARS-CoV2")
 

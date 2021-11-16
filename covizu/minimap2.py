@@ -240,10 +240,10 @@ def parse_args():
     if '.egg' in path:
         import pkg_resources
         ref_file = pkg_resources.resource_filename('covizu', 'data/NC_045512.fa')
-        vcf_file = pkg_resources.resource_filename('covizu', "data/problematic_sites_sarsCov2.vcf")
+        vcf_file = pkg_resources.resource_filename('covizu', "data/ProblematicSites_SARS-CoV2/problematic_sites_sarsCov2.vcf")
     else:
         ref_file = os.path.join(path, "data", "NC_045512.fa")
-        vcf_file = os.path.join(path, "data", "problematic_sites_sarsCov2.vcf")
+        vcf_file = os.path.join(path, "data/ProblematicSites_SARS-CoV2", "problematic_sites_sarsCov2.vcf")
 
     parser.add_argument('--ref', type=str, default=ref_file,
                         help="<input> path to target FASTA (reference)")
