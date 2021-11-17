@@ -168,6 +168,7 @@ req.done(function() {
   draw_region_distribution(node.__data__.allregions);
   gen_details_table(beaddata[node.__data__.cluster_idx].points);  // update details table with all samples
   draw_cluster_box(d3.select(node));
+  window.addEventListener("resize", expand, true);
 
   /*
   rect = d3.selectAll("#svg-cluster > svg > g > circle");
@@ -236,8 +237,7 @@ req.done(function() {
     
     $("#custom-handle").text( slider.slider( "value" ) );
     move_arrow();
-    const event = new Event('resize');
-    window.dispatchEvent(event)
+    slider_update();
   }
 
   disable_buttons();
@@ -414,8 +414,7 @@ req.done(function() {
       $('#expand-option').removeAttr('checked');
       $('#beadplot-hscroll').hide();
     }
-    const event = new Event('expand');
-    window.dispatchEvent(event)
+    expand();
   });
 
   // Sets the scrolling speed when scrolling through the beadplot

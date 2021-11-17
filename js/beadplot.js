@@ -509,9 +509,135 @@ function clear_selection() {
   });
   d3.selectAll(".selectionL").attr("stroke-width", 1);
 
-  d3.selectAll(".selectionLH").attr("class","lines");
-  d3.selectAll(".selectionL").attr("class","lines");
+  d3.selectAll(".selectionLH").attr("class","lines hLine");
+  d3.selectAll(".selectionL").attr("class","lines vLine");
   d3.selectAll(".selectionLC").attr("class","default");
+}
+
+/**
+ * Updates beadplot when the expand switch is selected or when a resize event occurs
+ */
+function expand() {
+  var variants = beaddata[cindex].variants,
+      points = beaddata[cindex].points,
+      mindate = d3.min(variants, xValue1B),
+      maxdate = d3.max(variants, xValue2B),
+      spandate = maxdate-mindate,  // in milliseconds
+      numDays = d3.timeDay.count(mindate, maxdate),
+      clientWidth = document.getElementById("svg-cluster").clientWidth;
+
+  // Don't give the user the option to scroll horizontally if the beadplot cannot expand 
+  if (numDays * pixelsPerDay > clientWidth) {
+    $('.expand').show();
+    $('.switch').show();
+    if ($('#expand-option').attr('checked')) { $('#beadplot-hscroll').show(); }
+  }
+  else {
+    $('.expand').hide();
+    $('.switch').hide();
+    $('#beadplot-hscroll').hide();
+  }
+
+  let currentWidth = null;
+  if ($('#expand-option').attr('checked')) {
+    currentWidth = (numDays * pixelsPerDay > clientWidth ? numDays * pixelsPerDay : clientWidth)
+                    - marginB.left -  marginB.right;
+    $('#svg-clusteraxis').css('padding-bottom', 0)
+  }
+  else {
+    currentWidth = clientWidth - marginB.left -  marginB.right;
+    $('#svg-clusteraxis').css('padding-bottom', $('#inner-hscroll').height())
+
+  }
+
+  xScaleB = d3.scaleLinear().range([0, currentWidth]);
+  var xAxis = d3.scaleTime().range([0, currentWidth]);
+
+  // allocate space for text labels on left
+  xScaleB.domain([mindate - 170*(spandate/currentWidth), maxdate]);
+  xAxis.domain([mindate - 170*(spandate/currentWidth), maxdate]);
+
+  // update horizontal range
+  $("#svg-cluster > svg").attr("width",currentWidth + marginB.left + marginB.right);
+  $("#inner-hscroll").css("width",currentWidth + marginB.left + marginB.right);
+  
+  // Add 15px to account for the scrollbar for the beadplot
+  $("#svg-clusteraxis > svg").attr("width", currentWidth + marginB.left + marginB.right + 15);
+
+  // draw vertical line segments that represent edges in NJ tree
+  visB.selectAll(".vLine")
+      .transition().duration(700)
+      .ease(d3.easeExp)
+      .attr("x1", xMap1B)
+      .attr("x2", xMap2B)
+      .attr("y1", yMap1B)
+      .attr("y2", yMap2B);
+
+  // draw horizontal line segments that represent variants in cluster
+  visB.selectAll(".hLine")
+      .transition().duration(700)
+      .ease(d3.easeExp)
+      .attr("x1", xMap1B)
+      .attr("x2", xMap2B)
+      .attr("y1", yMap1B)
+      .attr("y2", yMap2B);
+
+  // label variants with earliest sample name
+  visB.selectAll("text")
+      .transition().duration(700)
+      .ease(d3.easeExp)
+      .attr("x", function(d) { return(xScaleB(d.x1)-5); })
+      .attr("y", function(d) { return(yScaleB(d.y1)); })
+
+  // draw "beads" to represent samples per collection date
+  visB.selectAll("circle:not(.selectionH)")
+      .transition().duration(700)
+      .ease(d3.easeExp)
+      .attr("cx", xMapB)
+      .attr("cy", yMapB);
+
+  var selectionH = d3.selectAll("circle.selectionH").nodes(),
+      selectionLC = d3.selectAll("circle.selectionLC").nodes();
+
+  // Add animation to selection on bead if it exists
+  if (selectionH.length > 0) {
+    visB.selectAll("circle.selectionH")
+    .data(points.filter(x => x.accessions[0] === selectionH[0].attributes.bead.nodeValue))
+    .transition().duration(700)
+    .ease(d3.easeExp)
+    .attr("cx", function(d) {
+      return xScaleB(d.x)
+    });
+    setTimeout(function() {
+      selectionH[0].scrollIntoView({block: "center", inline: "center"});
+    }, 700);
+  }
+
+  if (selectionLC.length > 0) {
+    setTimeout(function() {
+      selectionLC[0].scrollIntoView({block: "center", inline: "center"});
+    }, 700);
+  }
+
+  var tickCount = 0.005*currentWidth;
+  if (tickCount <= 4) tickCount = 4;
+
+  // Ensures that there aren't extra ticks in the time axis of the beadplot when the first and last coldates are within a few days
+  var dateDiff = d3.timeDay.count(
+                  d3.min(variants, function(d) {return d.x1}), 
+                  d3.max(variants, function(d) {return d.x2}));
+  
+  if (dateDiff !=0 && dateDiff < tickCount) tickCount = dateDiff;
+
+  // draw x-axis
+  visBaxis.selectAll(".treeaxis")
+      .transition().duration(700)
+      .ease(d3.easeExp)
+      .call(
+        d3.axisTop(xAxis)
+          .ticks(tickCount)
+          .tickFormat(d3.timeFormat("%Y-%m-%d"))
+      );
 }
 
 
@@ -545,605 +671,299 @@ function clear_selection() {
     $('#expand-option').removeAttr('checked')
   }
 
-  function expand() {
-    // set plotting domain
-    var mindate = d3.min(variants, xValue1B),
-        maxdate = d3.max(variants, xValue2B),
-        spandate = maxdate-mindate,  // in milliseconds
-        min_y = d3.min(variants, yValue1B),
-        max_y = d3.max(variants, yValue1B),
-        numDays = d3.timeDay.count(mindate, maxdate),
-        clientWidth = document.getElementById("svg-cluster").clientWidth;
+  // set plotting domain
+  var mindate = d3.min(variants, xValue1B),
+      maxdate = d3.max(variants, xValue2B),
+      spandate = maxdate-mindate,  // in milliseconds
+      min_y = d3.min(variants, yValue1B),
+      max_y = d3.max(variants, yValue1B),
+      numDays = d3.timeDay.count(mindate, maxdate),
+      clientWidth = document.getElementById("svg-cluster").clientWidth;
 
-    let currentWidth = null;
-    if ($('#expand-option').attr('checked')) {
-      currentWidth = (numDays * pixelsPerDay > clientWidth ? numDays * pixelsPerDay : clientWidth)
-                      - marginB.left -  marginB.right;
-      $('#svg-clusteraxis').css('padding-bottom', 0)
-    }
-    else {
-      currentWidth = clientWidth - marginB.left -  marginB.right;
-      $('#svg-clusteraxis').css('padding-bottom', $('#inner-hscroll').height())
+  // Sets margin top to align vertical scrollbar with the beadplot
+  $('#beadplot-vscroll').css('margin-top', document.getElementById("beadplot-title").clientHeight + document.getElementById("svg-clusteraxis").clientHeight +
+                                          ($('#expand-option').attr('checked') ? $('#inner-hscroll').height() : $('#inner-hscroll').height() * 2));
 
-    }
-
-    xScaleB = d3.scaleLinear().range([0, currentWidth]);
-    var xAxis = d3.scaleTime().range([0, currentWidth]);
-
-    // allocate space for text labels on left
-    xScaleB.domain([mindate - 170*(spandate/currentWidth), maxdate]);
-    xAxis.domain([mindate - 170*(spandate/currentWidth), maxdate]);
-
-    // update horizontal range
-    $("#svg-cluster > svg").attr("width",currentWidth + marginB.left + marginB.right);
-    $("#inner-hscroll").css("width",currentWidth + marginB.left + marginB.right);
-    
-    // Add 15px to account for the scrollbar for the beadplot
-    $("#svg-clusteraxis > svg").attr("width", currentWidth + marginB.left + marginB.right + 15);
-
-
-    // draw vertical line segments that represent edges in NJ tree
-    visB.selectAll(".vLine")
-        .data(edgelist.filter(x => x.dist <= slider.slider("value")))
-        .transition().duration(700)
-        .ease(d3.easeExp)
-        .attr("x1", xMap1B)
-        .attr("x2", xMap2B)
-        .attr("y1", yMap1B)
-        .attr("y2", yMap2B)
-        .attr("stroke-width", 1)
-        .attr("stroke", function(d) {
-          return("#bbd");
-        });
-
-    // draw horizontal line segments that represent variants in cluster
-    visB.selectAll(".hLine")
-        .data(variants)
-        .transition().duration(700)
-        .ease(d3.easeExp)
-        .attr("x1", xMap1B)
-        .attr("x2", xMap2B)
-        .attr("y1", yMap1B)
-        .attr("y2", yMap2B)
-        .attr("stroke-width", function(d) {
-          if (d.unsampled) {
-            return 1;
-          } else {
-            return 3;
-          }
-        })
-        .attr("stroke", function(d) {
-          if (d.unsampled) {
-            return "#ccc";
-          } else {
-            return "#777";
-          }
-        });
-
-
-    // label variants with earliest sample name
-    visB.selectAll("text")
-        .data(variants)
-        .transition().duration(700)
-        .ease(d3.easeExp)
-        .attr("x", function(d) { return(xScaleB(d.x1)-5); })
-        .attr("y", function(d) { return(yScaleB(d.y1)); })
-        .text(function(d) { return(d.label); });
-
-
-    // draw "beads" to represent samples per collection date
-    visB.selectAll("circle")
-        .data(points)
-        .transition().duration(700)
-        .ease(d3.easeExp)
-        .attr("cx", xMapB)
-        .attr("cy", yMapB)
-        .attr("class", "default")
-        .attr("id", function(d) { return d.accessions[0]; })
-        .attr("idx", function(d, i) { return i; })
-        .attr("search_hit", function(d) {
-          if (search_results.get().beads.length == 0){
-            return null;
-          } else {
-            return search_results.get().beads[d.accessions[0]] === undefined ? false : true;
-          }
-        })
-        .attr("fill", function(d) {
-          return(country_pal[d.region1]);
-        })
-        .attr("stroke", function(d) {
-          return(country_pal[d.region1]);
-        });
-
-
-    var tickCount = 0.005*currentWidth;
-    if (tickCount <= 4) tickCount = 4;
-
-    // Ensures that there aren't extra ticks in the time axis of the beadplot when the first and last coldates are within a few days
-    var dateDiff = d3.timeDay.count(
-                    d3.min(variants, function(d) {return d.x1}), 
-                    d3.max(variants, function(d) {return d.x2}));
-    
-    if (dateDiff !=0 && dateDiff < tickCount) tickCount = dateDiff;
-
-    // draw x-axis
-    visBaxis.selectAll(".treeaxis")
-        .transition().duration(700)
-        .ease(d3.easeExp)
-        .call(
-          d3.axisTop(xAxis)
-            .ticks(tickCount)
-            .tickFormat(d3.timeFormat("%Y-%m-%d"))
-        );
+  // Don't give the user the option to scroll horizontally if the beadplot cannot expand 
+  if (numDays * pixelsPerDay > clientWidth) {
+    $('.expand').show();
+    $('.switch').show();
+    if ($('#expand-option').attr('checked')) { $('#beadplot-hscroll').show(); }
+  }
+  else {
+    $('.expand').hide();
+    $('.switch').hide();
+    $('#beadplot-hscroll').hide();
   }
 
-  function redraw() {
-    // set plotting domain
-    var mindate = d3.min(variants, xValue1B),
-        maxdate = d3.max(variants, xValue2B),
-        spandate = maxdate-mindate,  // in milliseconds
-        min_y = d3.min(variants, yValue1B),
-        max_y = d3.max(variants, yValue1B),
-        numDays = d3.timeDay.count(mindate, maxdate),
-        clientWidth = document.getElementById("svg-cluster").clientWidth;
+  let currentWidth = null;
+  if ($('#expand-option').attr('checked')) {
+    currentWidth = (numDays * pixelsPerDay > clientWidth ? numDays * pixelsPerDay : clientWidth)
+                    - marginB.left -  marginB.right;
+    $('#svg-clusteraxis').css('padding-bottom', 0)
+  }
+  else {
+    currentWidth = clientWidth - marginB.left -  marginB.right;
+    $('#svg-clusteraxis').css('padding-bottom', $('#inner-hscroll').height())
 
-    // Sets margin top to align vertical scrollbar with the beadplot
-    $('#beadplot-vscroll').css('margin-top', document.getElementById("beadplot-title").clientHeight + document.getElementById("svg-clusteraxis").clientHeight +
-                                            ($('#expand-option').attr('checked') ? $('#inner-hscroll').height() : $('#inner-hscroll').height() * 2));
+  }
 
-    // Don't give the user the option to scroll horizontally if the beadplot cannot expand 
-    if (numDays * pixelsPerDay > clientWidth) {
-      $('.expand').show();
-      $('.switch').show();
-      if ($('#expand-option').attr('checked')) { $('#beadplot-hscroll').show(); }
-    }
-    else {
-      $('.expand').hide();
-      $('.switch').hide();
-      $('#beadplot-hscroll').hide();
-    }
+  // update vertical range for consistent spacing between variants
+  heightB = max_y * 10 + 40;
+  $("#svg-cluster > svg").attr("height", heightB + marginB.top + marginB.bottom);
+  yScaleB = d3.scaleLinear().range([20, heightB]);
+  yScaleB.domain([min_y, max_y]);
 
-    let currentWidth = null;
-    if ($('#expand-option').attr('checked')) {
-      currentWidth = (numDays * pixelsPerDay > clientWidth ? numDays * pixelsPerDay : clientWidth)
-                      - marginB.left -  marginB.right;
-      $('#svg-clusteraxis').css('padding-bottom', 0)
-    }
-    else {
-      currentWidth = clientWidth - marginB.left -  marginB.right;
-      $('#svg-clusteraxis').css('padding-bottom', $('#inner-hscroll').height())
+  xScaleB = d3.scaleLinear().range([0, currentWidth]);
+  var xAxis = d3.scaleTime().range([0, currentWidth]);
 
-    }
+  // allocate space for text labels on left
+  xScaleB.domain([mindate - 170*(spandate/currentWidth), maxdate]);
+  xAxis.domain([mindate - 170*(spandate/currentWidth), maxdate]);
 
-    // update vertical range for consistent spacing between variants
-    heightB = max_y * 10 + 40;
-    $("#svg-cluster > svg").attr("height", heightB + marginB.top + marginB.bottom);
-    yScaleB = d3.scaleLinear().range([20, heightB]);
-    yScaleB.domain([min_y, max_y]);
+  // update horizontal range
 
-    xScaleB = d3.scaleLinear().range([0, currentWidth]);
-    var xAxis = d3.scaleTime().range([0, currentWidth]);
+  // clear SVG
+  visB.selectAll('*').remove();
+  visBaxis.selectAll('*').remove();
 
-    // allocate space for text labels on left
-    xScaleB.domain([mindate - 170*(spandate/currentWidth), maxdate]);
-    xAxis.domain([mindate - 170*(spandate/currentWidth), maxdate]);
-
-    // update horizontal range
-
-    // clear SVG
-    visB.selectAll('*').remove();
-    visBaxis.selectAll('*').remove();
-
-    $("#svg-cluster > svg").attr("width",currentWidth + marginB.left + marginB.right);
-    $("#inner-hscroll").css("width",currentWidth + marginB.left + marginB.right);
-    
-    // Add 15px to account for the scrollbar for the beadplot
-    $("#svg-clusteraxis > svg").attr("width", currentWidth + marginB.left + marginB.right + 15);
+  $("#svg-cluster > svg").attr("width",currentWidth + marginB.left + marginB.right);
+  $("#inner-hscroll").css("width",currentWidth + marginB.left + marginB.right);
+  
+  // Add 15px to account for the scrollbar for the beadplot
+  $("#svg-clusteraxis > svg").attr("width", currentWidth + marginB.left + marginB.right + 15);
 
 
-    // draw vertical line segments that represent edges in NJ tree
-    visB.selectAll("lines")
-        .data(edgelist.filter(x => x.dist <= slider.slider("value")))
-        .enter().append("line")
-        .attr("class", "lines vLine")
-        .attr("x1", xMap1B)
-        .attr("x2", xMap2B)
-        .attr("y1", yMap1B)
-        .attr("y2", yMap2B)
-        .attr("stroke-width", 1)
-        .attr("stroke", function(d) {
-          return("#bbd");
-        })
-        .on("mouseover", function(d) {
-          // visual feedback
-          var edge = d3.select(this);
-          edge.attr("stroke-width", 3);
+  // draw vertical line segments that represent edges in NJ tree
+  var vLines = visB.selectAll("lines")
+      .data(edgelist.filter(x => x.dist <= slider.slider("value")))
+      .enter().append("line")
 
-          let parent_variant = d3.select(".lines#"+d.parent.replace('/', '-').replace(' ', '_')),
-              child_variant = d3.select(".lines#"+d.child.replace('/', '-').replace(' ', '_'));
+  draw_vertical_edges(vLines);
 
-          if (!parent_variant.empty()) {
-            if (parent_variant.datum().count > 0) {
-              d3.selectAll("circle").filter(ci => ci.y === d.y1)
-                  .attr("stroke-width", function() {
-                    if (this.classList.contains("selectionH")) return 5;
-                    return 1.5;
-                  })
-                  .attr("r", function(d) {
-                    if (this.classList.contains("selectionH")) return 4*Math.sqrt(d.count)+7;
-                    return 4 * Math.sqrt(d.count) + 3;
-                  });
-            }
-            parent_variant.attr("stroke-width", 5);
-          }
-
-          if (!child_variant.empty()) {
-            if (child_variant.datum().count > 0) {
-              d3.selectAll("circle").filter(ci => ci.y === d.y2)
-                  .attr("stroke-width", function() {
-                    if (this.classList.contains("selectionH")) return 5;
-                    return 1.5;
-                  })
-                  .attr("r", function(d) {
-                    if (this.classList.contains("selectionH")) return 4*Math.sqrt(d.count)+7;
-                    return 4*Math.sqrt(d.count)+3;
-                  });
-            }
-            child_variant.attr("stroke-width", 5);
-          }
-
-          // Show tooltip
-          cTooltip.transition()
-              .duration(50)
-              .style("opacity", 0.75);
-
-          let tooltipText = `<b>${i18n_text.vedge_parent}:</b> ${d.parent}<br/><b>${i18n_text.vedge_child}:</b> ${d.child}<br/>`;
-          tooltipText += `<b>${i18n_text.vedge_distance}:</b> ${Math.round(d.dist*100)/100}<br/>`;
-          tooltipText += `<b>${i18n_text.vedge_support}:</b> ${(d.support === undefined) ? 'n/a' : d.support}<br/>`
-          tooltipText += `<b>${i18n_text.vedge_coldate}:</b> ${formatDate(d.x2)}`;
-
-          cTooltip.html(tooltipText)
-              .style("left", function() {
-                if (d3.event.pageX > window.innerWidth/2) {
-                  return (
-                    d3.event.pageX - 15 -
-                    cTooltip.node().getBoundingClientRect().width +
-                    "px"
-                  );
-                } else {
-                  return d3.event.pageX + 15 + "px";
-                }
-              })
-              .style("top", function() {
-                if (d3.event.pageY > window.innerHeight/2) {
-                  return (d3.event.pageY - cTooltip.node().getBoundingClientRect().height - 15) + "px";
-                } else {
-                  return d3.event.pageY + 15 + "px";
-                }
-              });
-        })
-        .on("mouseout", function(d) {
-          if(this.classList.contains("selectionL")) {
-            d3.select(this).attr("stroke-width", 3);
-          }
-          else {
-            d3.select(this).attr("stroke-width", 1);
-          }
-
-          let parent_variant = d3.select(".lines#"+d.parent.replace('/', '-').replace(' ', '_')),
-              child_variant = d3.select(".lines#"+d.child.replace('/', '-').replace(' ', '_'));
-
-          if (!parent_variant.empty()) {
-            if (parent_variant.datum().count > 0) {
-              d3.selectAll("circle").filter(ci => ci.y === d.y1)
-                  .attr("stroke-width", function() {
-                    if (this.classList.contains("selectionH")) return 5;
-                    if (this.classList.contains("selectionLC")) return 1.5;
-                    return 1;
-                  })
-                  .attr("r", function(d) {
-                    if (this.classList.contains("selectionH")) return 4*Math.sqrt(d.count)+4;
-                    if (this.classList.contains("selectionLC")) return 4 * Math.sqrt(d.count) + 3;
-                    return 4 * Math.sqrt(d.count);
-                  });
-            }
-
-            if(this.classList.contains("selectionL") || parent_variant.node().classList.contains("selectionLH")) {
-              parent_variant.attr("stroke-width", 5);
-            }
-            else {
-              parent_variant.attr("stroke-width", 3);
-            }
-          }
-
-          if (!child_variant.empty()) {
-            if (child_variant.datum().count > 0) {
-              d3.selectAll("circle").filter(ci => ci.y === d.y2)
-                  .attr("stroke-width", function() {
-                    if (this.classList.contains("selectionH")) return 5;
-                    if (this.classList.contains("selectionLC")) return 1.5;
-                    return 1;
-                  })
-                  .attr("r", function(d) {
-                    if (this.classList.contains("selectionH")) return 4*Math.sqrt(d.count)+4;
-                    if (this.classList.contains("selectionLC")) return 4*Math.sqrt(d.count)+3;
-                    return 4 * Math.sqrt(d.count);
-                  });
-            }
-            if(this.classList.contains("selectionL") || child_variant.node().classList.contains("selectionLH")) {
-              child_variant.attr("stroke-width", 5);
-            }
-            else {
-              child_variant.attr("stroke-width", 3);
-            }
-          }
-
-          cTooltip.transition()     // Hide tooltip
-              .duration(50)
-              .style("opacity", 0);
-        })
-        .on("click", function(d) {
-          // Clear previous selections 
-          clear_selection();
-
-          // Add attributes to keep track of line selection
-          var edge = d3.select(this);
-          edge.attr("class", "lines selectionL");
-
-          let parent_variant = d3.select(".lines#"+d.parent.replace('/', '-').replace(' ', '_')),
-              child_variant = d3.select(".lines#"+d.child.replace('/', '-').replace(' ', '_'));
-
-          parent_variant.attr("class", "lines selectionLH");
-          child_variant.attr("class", "lines selectionLH");
-
-          if (!parent_variant.empty()) {
-            if (parent_variant.datum().count > 0) {
-              d3.selectAll("circle").filter(ci => ci.y === d.y1) 
-                  .attr("class", function() {
-                    if (this.classList.contains("selectionH")) return "selectionH selectionLC";
-                    return "selectionLC";
-                  })
-            }
-          }
-
-          if (!child_variant.empty()) {
-            if (child_variant.datum().count > 0) {
-              d3.selectAll("circle").filter(ci => ci.y === d.y2)
-                  .attr("class", function() {
-                    if (this.classList.contains("selectionH")) return "selectionH selectionLC";
-                    return "selectionLC";
-                  })
-            }
-          }
-        });
-
-    // draw horizontal line segments that represent variants in cluster
-    visB.selectAll("lines")
-        .data(variants)
-        .enter().append("line")
-        .attr("class", "lines hLine")
-        .attr("id", function(d) {
-          return d.label.replace('/', '-').replace(' ', '_');
-        })
-        .attr("x1", xMap1B)
-        .attr("x2", xMap2B)
-        .attr("y1", yMap1B)
-        .attr("y2", yMap2B)
-        .attr("stroke-width", function(d) {
-          if (d.unsampled) {
-            return 1;
-          } else {
-            return 3;
-          }
-        })
-        .attr("stroke", function(d) {
-          if (d.unsampled) {
-            return "#ccc";
-          } else {
-            return "#777";
-          }
-        })
-        .on("mouseover", function(d) {
-          if (d.label !== null) {
-            d3.select(this)
-              .attr("stroke-width", 5);
-
-            let tooltipText = "";
-            if (d.parent || d.dist) {
-              tooltipText += `<b>${i18n_text.vedge_parent}:</b> ${d.parent}<br/><b>${i18n_text.vedge_distance}:</b> ${Math.round(d.dist*100)/100}<br/>`;
-            }
-            if (!d.unsampled) {
-              tooltipText += region_to_string(tabulate(d.region));
-              tooltipText += `<b>${i18n_text.hedge_unique_dates}:</b> ${d.numBeads}<br/>`;
-              tooltipText += `<b>${i18n_text.hedge_coldates}:</b><br>${formatDate(d.x1)} / ${formatDate(d.x2)}`;
-            }
-
-            if (tooltipText.length > 0) {
-              // Show tooltip
-              cTooltip.transition()
-                  .duration(50)
-                  .style("opacity", 0.75);
-
-              // Tooltip appears 10 pixels left of the cursor
-              cTooltip.html(tooltipText)
-                  .style("left", function() {
-                    if (d3.event.pageX > window.innerWidth/2) {
-                      return (
-                        d3.event.pageX - 10 -
-                        cTooltip.node().getBoundingClientRect().width +
-                        "px"
-                      );
-                    } else {
-                      return d3.event.pageX + 10 + "px";
-                    }
-                  })
-                  .style("top", function() {
-                    if (d3.event.pageY > window.innerHeight/2) {
-                      return (d3.event.pageY - cTooltip.node().getBoundingClientRect().height - 10) + "px";
-                    } else {
-                      return d3.event.pageY + 10 + "px";
-                    }
-                  });
-            }
-
-          }
-        })
-        .on("mouseout", function() {
+  // draw horizontal line segments that represent variants in cluster
+  visB.selectAll("lines")
+      .data(variants)
+      .enter().append("line")
+      .attr("class", "lines hLine")
+      .attr("id", function(d) {
+        return d.label.replace('/', '-').replace(' ', '_');
+      })
+      .attr("x1", xMap1B)
+      .attr("x2", xMap2B)
+      .attr("y1", yMap1B)
+      .attr("y2", yMap2B)
+      .attr("stroke-width", function(d) {
+        if (d.unsampled) {
+          return 1;
+        } else {
+          return 3;
+        }
+      })
+      .attr("stroke", function(d) {
+        if (d.unsampled) {
+          return "#ccc";
+        } else {
+          return "#777";
+        }
+      })
+      .on("mouseover", function(d) {
+        if (d.label !== null) {
           d3.select(this)
-              .attr("stroke-width", function(d) {
-                // reset line width
-                if (this.classList.contains("selectionLH")) {
-                  return 5;
-                } else if (d.unsampled) {
-                  return 1;
-                } else {
-                  return 3;
-                }
-              });
-          cTooltip.transition()     // Hide tooltip
-              .duration(50)
-              .style("opacity", 0);
-        })
-        .on("click", function(d) {
-          if (d.label !== null && d.country !== null) {
-            gentable(d);
-            draw_region_distribution(tabulate(d.region));
-            let var_samples = points.filter(x => x.y === d.y1);
-            gen_details_table(var_samples);
-          }
-        });
-
-    // label variants with earliest sample name
-    visB.selectAll("text")
-        .data(variants)
-        .enter().append("text")
-        .style("font-size", "10px")
-        .attr("text-anchor", "end")
-        .attr("alignment-baseline", "middle")
-        .attr("x", function(d) { return(xScaleB(d.x1)-5); })
-        .attr("y", function(d) { return(yScaleB(d.y1)); })
-        .text(function(d) { return(d.label); });
-
-
-    // draw "beads" to represent samples per collection date
-    visB.selectAll("circle")
-        .data(points)
-        .enter().append("circle")
-        .attr("r", function(d) { return (4*Math.sqrt(d.count)); })
-        .attr("cx", xMapB)
-        .attr("cy", yMapB)
-        .attr("class", "default")
-        .attr("id", function(d) { return d.accessions[0]; })
-        .attr("idx", function(d, i) { return i; })
-        .attr("search_hit", function(d) {
-          if (search_results.get().beads.length == 0){
-            return null;
-          } else {
-            return search_results.get().beads[d.accessions[0]] === undefined ? false : true;
-          }
-        })
-        .attr("fill", function(d) {
-          return(country_pal[d.region1]);
-        })
-        .attr("stroke", function(d) {
-          return(country_pal[d.region1]);
-        })
-        .on("mouseover", function(d) {
-          d3.select(this).attr("stroke-width", 2)
-              .attr("r", 4*Math.sqrt(d.count)+3);
-
-          cTooltip.transition()
-              .duration(50)
-              .style("opacity", 0.75);
+            .attr("stroke-width", 5);
 
           let tooltipText = "";
           if (d.parent || d.dist) {
-            tooltipText += `<b>Parent:</b> ${d.parent}<br/><b>${i18n_text.vedge_distance}:</b> ${Math.round(d.dist*100)/100}<br/>`;
+            tooltipText += `<b>${i18n_text.vedge_parent}:</b> ${d.parent}<br/><b>${i18n_text.vedge_distance}:</b> ${Math.round(d.dist*100)/100}<br/>`;
           }
-          tooltipText += region_to_string(tabulate(d.region));
-          tooltipText += `<b>${i18n_text.vedge_coldate}:</b> ${formatDate(d.x)}`;
-
-          // Tooltip appears 10 pixels left of the cursor
-          cTooltip.html(tooltipText)
-              .style("left", function() {
-                if (d3.event.pageX > window.innerWidth/2) {
-                  return (
-                    d3.event.pageX - 15 -
-                    cTooltip.node().getBoundingClientRect().width +
-                    "px"
-                  );
-                } else {
-                  return d3.event.pageX + 15 + "px";
-                }
-              })
-              .style("top", function() {
-                if (d3.event.pageY > window.innerHeight/2) {
-                  return (d3.event.pageY - cTooltip.node().getBoundingClientRect().height - 15) + "px";
-                } else {
-                  return d3.event.pageY + 15 + "px";
-                }
-              });
-        })
-        .on("mouseout", function(d) {
-          if (this.classList.contains("selectionLC")) {
-            d3.select(this).attr("stroke-width", 1.5)
-                .attr("r", 4*Math.sqrt(d.count) + 3);
-          } 
-          else {
-            d3.select(this).attr("stroke-width", 1)
-                .attr("r", 4*Math.sqrt(d.count));
+          if (!d.unsampled) {
+            tooltipText += region_to_string(tabulate(d.region));
+            tooltipText += `<b>${i18n_text.hedge_unique_dates}:</b> ${d.numBeads}<br/>`;
+            tooltipText += `<b>${i18n_text.hedge_coldates}:</b><br>${formatDate(d.x1)} / ${formatDate(d.x2)}`;
           }
-            cTooltip//.transition()     // Hide tooltip
-                //.duration(50)
-                .style("opacity", 0);
-        })
-        .on("click", function(d) {
-          clear_selection();
-          d3.select(this).raise();
-          draw_halo_front(d);
 
+          if (tooltipText.length > 0) {
+            // Show tooltip
+            cTooltip.transition()
+                .duration(50)
+                .style("opacity", 0.75);
+
+            // Tooltip appears 10 pixels left of the cursor
+            cTooltip.html(tooltipText)
+                .style("left", function() {
+                  if (d3.event.pageX > window.innerWidth/2) {
+                    return (
+                      d3.event.pageX - 10 -
+                      cTooltip.node().getBoundingClientRect().width +
+                      "px"
+                    );
+                  } else {
+                    return d3.event.pageX + 10 + "px";
+                  }
+                })
+                .style("top", function() {
+                  if (d3.event.pageY > window.innerHeight/2) {
+                    return (d3.event.pageY - cTooltip.node().getBoundingClientRect().height - 10) + "px";
+                  } else {
+                    return d3.event.pageY + 10 + "px";
+                  }
+                });
+          }
+
+        }
+      })
+      .on("mouseout", function() {
+        d3.select(this)
+            .attr("stroke-width", function(d) {
+              // reset line width
+              if (this.classList.contains("selectionLH")) {
+                return 5;
+              } else if (d.unsampled) {
+                return 1;
+              } else {
+                return 3;
+              }
+            });
+        cTooltip.transition()     // Hide tooltip
+            .duration(50)
+            .style("opacity", 0);
+      })
+      .on("click", function(d) {
+        if (d.label !== null && d.country !== null) {
           gentable(d);
           draw_region_distribution(tabulate(d.region));
-          gen_details_table(d);
-          $('#search-input').val('');
-          $('#end-date').val('');
-          $('#start-date').val('');
-          $('#error_message').text(``);
+          let var_samples = points.filter(x => x.y === d.y1);
+          gen_details_table(var_samples);
+        }
+      });
 
-          // Disable buttons
-          $('#search-button').attr("disabled", true);
-          $('#clear_button').attr("disabled", true);
-          $('#next_button').attr("disabled", true);
-          $('#previous_button').attr("disabled", true);
-          $('#search_stats').addClass("disabled_stats");
-        });
+  // label variants with earliest sample name
+  visB.selectAll("text")
+      .data(variants)
+      .enter().append("text")
+      .style("font-size", "10px")
+      .attr("text-anchor", "end")
+      .attr("alignment-baseline", "middle")
+      .attr("x", function(d) { return(xScaleB(d.x1)-5); })
+      .attr("y", function(d) { return(yScaleB(d.y1)); })
+      .text(function(d) { return(d.label); });
 
 
-    var tickCount = 0.005*currentWidth;
-    if (tickCount <= 4) tickCount = 4;
+  // draw "beads" to represent samples per collection date
+  visB.selectAll("circle")
+      .data(points)
+      .enter().append("circle")
+      .attr("r", function(d) { return (4*Math.sqrt(d.count)); })
+      .attr("cx", xMapB)
+      .attr("cy", yMapB)
+      .attr("class", "default")
+      .attr("id", function(d) { return d.accessions[0]; })
+      .attr("idx", function(d, i) { return i; })
+      .attr("search_hit", function(d) {
+        if (search_results.get().beads.length == 0){
+          return null;
+        } else {
+          return search_results.get().beads[d.accessions[0]] === undefined ? false : true;
+        }
+      })
+      .attr("fill", function(d) {
+        return(country_pal[d.region1]);
+      })
+      .attr("stroke", function(d) {
+        return(country_pal[d.region1]);
+      })
+      .on("mouseover", function(d) {
+        d3.select(this).attr("stroke-width", 2)
+            .attr("r", 4*Math.sqrt(d.count)+3);
 
-    // Ensures that there aren't extra ticks in the time axis of the beadplot when the first and last coldates are within a few days
-    var dateDiff = d3.timeDay.count(
-                    d3.min(variants, function(d) {return d.x1}), 
-                    d3.max(variants, function(d) {return d.x2}));
-    if (dateDiff !=0 && dateDiff < tickCount) tickCount = dateDiff;
+        cTooltip.transition()
+            .duration(50)
+            .style("opacity", 0.75);
 
-    // draw x-axis
-    visBaxis.append("g")
-        .attr("class", "treeaxis")
-        .attr("transform", "translate(0,20)")
-        .call(
-          d3.axisTop(xAxis)
-            .ticks(tickCount)
-            .tickFormat(d3.timeFormat("%Y-%m-%d"))
-        );
+        let tooltipText = "";
+        if (d.parent || d.dist) {
+          tooltipText += `<b>Parent:</b> ${d.parent}<br/><b>${i18n_text.vedge_distance}:</b> ${Math.round(d.dist*100)/100}<br/>`;
+        }
+        tooltipText += region_to_string(tabulate(d.region));
+        tooltipText += `<b>${i18n_text.vedge_coldate}:</b> ${formatDate(d.x)}`;
 
-    // Sets the height of the vertical scrollbar element to have the same height as the beadplot
-    $('#inner-vscroll').css('height', $('.beadplot-content > svg').height()); 
-  }
-  redraw();
-  window.addEventListener("resize", redraw);
-  window.addEventListener("expand", expand);
+        // Tooltip appears 10 pixels left of the cursor
+        cTooltip.html(tooltipText)
+            .style("left", function() {
+              if (d3.event.pageX > window.innerWidth/2) {
+                return (
+                  d3.event.pageX - 15 -
+                  cTooltip.node().getBoundingClientRect().width +
+                  "px"
+                );
+              } else {
+                return d3.event.pageX + 15 + "px";
+              }
+            })
+            .style("top", function() {
+              if (d3.event.pageY > window.innerHeight/2) {
+                return (d3.event.pageY - cTooltip.node().getBoundingClientRect().height - 15) + "px";
+              } else {
+                return d3.event.pageY + 15 + "px";
+              }
+            });
+      })
+      .on("mouseout", function(d) {
+        if (this.classList.contains("selectionLC")) {
+          d3.select(this).attr("stroke-width", 1.5)
+              .attr("r", 4*Math.sqrt(d.count) + 3);
+        } 
+        else {
+          d3.select(this).attr("stroke-width", 1)
+              .attr("r", 4*Math.sqrt(d.count));
+        }
+          cTooltip//.transition()     // Hide tooltip
+              //.duration(50)
+              .style("opacity", 0);
+      })
+      .on("click", function(d) {
+        clear_selection();
+        d3.select(this).raise();
+        draw_halo_front(d);
+
+        gentable(d);
+        draw_region_distribution(tabulate(d.region));
+        gen_details_table(d);
+        $('#search-input').val('');
+        $('#end-date').val('');
+        $('#start-date').val('');
+        $('#error_message').text(``);
+
+        // Disable buttons
+        $('#search-button').attr("disabled", true);
+        $('#clear_button').attr("disabled", true);
+        $('#next_button').attr("disabled", true);
+        $('#previous_button').attr("disabled", true);
+        $('#search_stats').addClass("disabled_stats");
+      });
+
+
+  var tickCount = 0.005*currentWidth;
+  if (tickCount <= 4) tickCount = 4;
+
+  // Ensures that there aren't extra ticks in the time axis of the beadplot when the first and last coldates are within a few days
+  var dateDiff = d3.timeDay.count(
+                  d3.min(variants, function(d) {return d.x1}), 
+                  d3.max(variants, function(d) {return d.x2}));
+  if (dateDiff !=0 && dateDiff < tickCount) tickCount = dateDiff;
+
+  // draw x-axis
+  visBaxis.append("g")
+      .attr("class", "treeaxis")
+      .attr("transform", "translate(0,20)")
+      .call(
+        d3.axisTop(xAxis)
+          .ticks(tickCount)
+          .tickFormat(d3.timeFormat("%Y-%m-%d"))
+      );
+
+  // Sets the height of the vertical scrollbar element to have the same height as the beadplot
+  $('#inner-vscroll').css('height', $('.beadplot-content > svg').height()); 
 
   // replace previous event listeners
   let listeners = $._data(slider[0], "events");
@@ -1162,9 +982,202 @@ function clear_selection() {
       if (event.handleObj.type === "slide")
         slider.slider("value", ui.valueOf().value);
 
-      redraw();
+      slider_update();
     }
   });
+}
+
+
+/**
+ * Filters vertical lines in the beadplot when the slider is moved
+ */
+function slider_update() {
+  var edgelist = beaddata[cindex].edgelist,
+      slider = $("#vedge-slider");
+
+  visB.selectAll(".vLine").remove();
+
+  var vLines = visB.selectAll("lines")
+                .data(edgelist.filter(x => x.dist <= slider.slider("value")))
+                .enter().insert("line", ".hLine");
+
+  draw_vertical_edges(vLines)
+}
+
+
+function draw_vertical_edges(vLines) {
+  vLines
+    .attr("class", "lines vLine")
+    .attr("x1", xMap1B)
+    .attr("x2", xMap2B)
+    .attr("y1", yMap1B)
+    .attr("y2", yMap2B)
+    .attr("stroke-width", 1)
+    .attr("stroke", function(d) {
+      return("#bbd");
+    })
+    .on("mouseover", function(d) {
+      // visual feedback
+      var edge = d3.select(this);
+      edge.attr("stroke-width", 3);
+
+      let parent_variant = d3.select(".lines#"+d.parent.replace('/', '-').replace(' ', '_')),
+          child_variant = d3.select(".lines#"+d.child.replace('/', '-').replace(' ', '_'));
+
+      if (!parent_variant.empty()) {
+        if (parent_variant.datum().count > 0) {
+          d3.selectAll("circle").filter(ci => ci.y === d.y1)
+              .attr("stroke-width", function() {
+                if (this.classList.contains("selectionH")) return 5;
+                return 1.5;
+              })
+              .attr("r", function(d) {
+                if (this.classList.contains("selectionH")) return 4*Math.sqrt(d.count)+7;
+                return 4 * Math.sqrt(d.count) + 3;
+              });
+        }
+        parent_variant.attr("stroke-width", 5);
+      }
+
+      if (!child_variant.empty()) {
+        if (child_variant.datum().count > 0) {
+          d3.selectAll("circle").filter(ci => ci.y === d.y2)
+              .attr("stroke-width", function() {
+                if (this.classList.contains("selectionH")) return 5;
+                return 1.5;
+              })
+              .attr("r", function(d) {
+                if (this.classList.contains("selectionH")) return 4*Math.sqrt(d.count)+7;
+                return 4*Math.sqrt(d.count)+3;
+              });
+        }
+        child_variant.attr("stroke-width", 5);
+      }
+
+      // Show tooltip
+      cTooltip.transition()
+          .duration(50)
+          .style("opacity", 0.75);
+
+      let tooltipText = `<b>${i18n_text.vedge_parent}:</b> ${d.parent}<br/><b>${i18n_text.vedge_child}:</b> ${d.child}<br/>`;
+      tooltipText += `<b>${i18n_text.vedge_distance}:</b> ${Math.round(d.dist*100)/100}<br/>`;
+      tooltipText += `<b>${i18n_text.vedge_support}:</b> ${(d.support === undefined) ? 'n/a' : d.support}<br/>`
+      tooltipText += `<b>${i18n_text.vedge_coldate}:</b> ${formatDate(d.x2)}`;
+
+      cTooltip.html(tooltipText)
+          .style("left", function() {
+            if (d3.event.pageX > window.innerWidth/2) {
+              return (
+                d3.event.pageX - 15 -
+                cTooltip.node().getBoundingClientRect().width +
+                "px"
+              );
+            } else {
+              return d3.event.pageX + 15 + "px";
+            }
+          })
+          .style("top", function() {
+            if (d3.event.pageY > window.innerHeight/2) {
+              return (d3.event.pageY - cTooltip.node().getBoundingClientRect().height - 15) + "px";
+            } else {
+              return d3.event.pageY + 15 + "px";
+            }
+          });
+    })
+    .on("mouseout", function(d) {
+      if(this.classList.contains("selectionL")) {
+        d3.select(this).attr("stroke-width", 3);
+      }
+      else {
+        d3.select(this).attr("stroke-width", 1);
+      }
+
+      let parent_variant = d3.select(".lines#"+d.parent.replace('/', '-').replace(' ', '_')),
+          child_variant = d3.select(".lines#"+d.child.replace('/', '-').replace(' ', '_'));
+
+      if (!parent_variant.empty()) {
+        if (parent_variant.datum().count > 0) {
+          d3.selectAll("circle").filter(ci => ci.y === d.y1)
+              .attr("stroke-width", function() {
+                if (this.classList.contains("selectionH")) return 5;
+                if (this.classList.contains("selectionLC")) return 1.5;
+                return 1;
+              })
+              .attr("r", function(d) {
+                if (this.classList.contains("selectionH")) return 4*Math.sqrt(d.count)+4;
+                if (this.classList.contains("selectionLC")) return 4 * Math.sqrt(d.count) + 3;
+                return 4 * Math.sqrt(d.count);
+              });
+        }
+
+        if(this.classList.contains("selectionL") || parent_variant.node().classList.contains("selectionLH")) {
+          parent_variant.attr("stroke-width", 5);
+        }
+        else {
+          parent_variant.attr("stroke-width", 3);
+        }
+      }
+
+      if (!child_variant.empty()) {
+        if (child_variant.datum().count > 0) {
+          d3.selectAll("circle").filter(ci => ci.y === d.y2)
+              .attr("stroke-width", function() {
+                if (this.classList.contains("selectionH")) return 5;
+                if (this.classList.contains("selectionLC")) return 1.5;
+                return 1;
+              })
+              .attr("r", function(d) {
+                if (this.classList.contains("selectionH")) return 4*Math.sqrt(d.count)+4;
+                if (this.classList.contains("selectionLC")) return 4*Math.sqrt(d.count)+3;
+                return 4 * Math.sqrt(d.count);
+              });
+        }
+        if(this.classList.contains("selectionL") || child_variant.node().classList.contains("selectionLH")) {
+          child_variant.attr("stroke-width", 5);
+        }
+        else {
+          child_variant.attr("stroke-width", 3);
+        }
+      }
+
+      cTooltip.transition()     // Hide tooltip
+          .duration(50)
+          .style("opacity", 0);
+    })
+    .on("click", function(d) {
+      // Clear previous selections 
+      clear_selection();
+
+      // Add attributes to keep track of line selection
+      var edge = d3.select(this);
+      edge.attr("class", "lines vLine selectionL");
+
+      let parent_variant = d3.select(".lines#"+d.parent.replace('/', '-').replace(' ', '_')),
+          child_variant = d3.select(".lines#"+d.child.replace('/', '-').replace(' ', '_'));
+
+      parent_variant.attr("class", "lines hLine selectionLH");
+      child_variant.attr("class", "lines hLine selectionLH");
+
+      if (!parent_variant.empty()) {
+        if (parent_variant.datum().count > 0) {
+          d3.selectAll("circle").filter(ci => ci.y === d.y1) 
+              .attr("class", function() {
+                if (this.classList.contains("selectionH")) return "selectionH selectionLC";
+                return "selectionLC";
+              })
+        }
+      }
+
+      if (!child_variant.empty()) {
+        if (child_variant.datum().count > 0) {
+          d3.selectAll("circle").filter(ci => ci.y === d.y2)
+              .attr("class", function() {
+                if (this.classList.contains("selectionH")) return "selectionH selectionLC";
+                return "selectionLC";
+              })
+        }
+      }
+    });
 }
 
 
