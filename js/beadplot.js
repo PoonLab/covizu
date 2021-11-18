@@ -602,20 +602,26 @@ function expand() {
   // Add animation to selection on bead if it exists
   if (selectionH.length > 0) {
     visB.selectAll("circle.selectionH")
-    .data(points.filter(x => x.accessions[0] === selectionH[0].attributes.bead.nodeValue))
-    .transition().duration(700)
-    .ease(d3.easeExp)
-    .attr("cx", function(d) {
-      return xScaleB(d.x)
-    });
+        .data(points.filter(x => x.accessions[0] === selectionH[0].attributes.bead.nodeValue))
+        .transition().duration(700)
+        .ease(d3.easeExp)
+        .attr("cx", function(d) {
+          return xScaleB(d.x)
+        });
     setTimeout(function() {
-      selectionH[0].scrollIntoView({block: "center", inline: "center"});
+      $('#svg-cluster').animate({
+        scrollTop: selectionH[0].cy.baseVal.value - document.getElementById("svg-cluster").clientHeight/2,
+        scrollLeft: selectionH[0].cx.baseVal.value - document.getElementById("svg-cluster").clientWidth/2,
+      }, 200);
     }, 700);
   }
 
   if (selectionLC.length > 0) {
     setTimeout(function() {
-      selectionLC[0].scrollIntoView({block: "center", inline: "center"});
+      $('#svg-cluster').animate({
+        scrollTop: selectionLC[0].cy.baseVal.value - document.getElementById("svg-cluster").clientHeight/2,
+        scrollLeft: selectionLC[0].cx.baseVal.value - document.getElementById("svg-cluster").clientWidth/2,
+      }, 200);
     }, 700);
   }
 
