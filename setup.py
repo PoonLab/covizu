@@ -20,8 +20,6 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     package_data={'covizu': [
-        'data/problematic_sites_sarsCov2.vcf',
-        'data/lineages.csv',
         'data/NC_045512.fa'
     ]}
 )

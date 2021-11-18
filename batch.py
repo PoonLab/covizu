@@ -54,7 +54,7 @@ def parse_args():
                         help="option, maximum tolerated number of missing bases per "
                              "genome (default 300).")
     parser.add_argument("--vcf", type=str,
-                        default=os.path.join(covizu.__path__[0], "data/problematic_sites_sarsCov2.vcf"),
+                        default=os.path.join(covizu.__path__[0], "data/ProblematicSites_SARS-CoV2/problematic_sites_sarsCov2.vcf"),
                         help="Path to VCF file of problematic sites in SARS-COV-2 genome. "
                              "Source: https://github.com/W-L/ProblematicSites_SARS-CoV2")
 
@@ -62,7 +62,7 @@ def parse_args():
                         help='option, path to fasttree2 binary executable')
 
     parser.add_argument('--lineages', type=str,
-                        default=os.path.join(covizu.__path__[0], "data/lineages.csv"),
+                        default=os.path.join(covizu.__path__[0], "data/pango-designation/lineages.csv"),
                         help="optional, path to CSV file containing Pango lineage designations.")
     parser.add_argument('--ttbin', default='treetime',
                         help='option, path to treetime binary executable')
@@ -121,6 +121,22 @@ if __name__ == "__main__":
         subprocess.check_call(['mpirun', '-np', '2', 'ls'], stdout=subprocess.DEVNULL)
     except FileNotFoundError:
         cb.callback("mpirun not loaded - run `module load openmpi/gnu`", level='ERROR')
+        sys.exit()
+
+    # check that the user has included submodules
+    if (not os.path.exists(os.path.join(covizu.__path__[0], "data/pango-designation/lineages.csv")) or 
+            not os.path.exists(os.path.join(covizu.__path__[0], "data/ProblematicSites_SARS-CoV2/problematic_sites_sarsCov2.vcf"))):
+        try:
+            subprocess.check_call("git submodule init; git submodule update", shell=True)
+        except:
+            cb.callback("Error adding the required submodules")
+            sys.exit()
+
+    # update submodules
+    try:
+        subprocess.check_call("git submodule foreach git pull origin master", shell=True)
+    except:
+        cb.callback("Error updating submodules")
         sys.exit()
 
     # download xz file if not specified by user

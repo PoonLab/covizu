@@ -6,6 +6,7 @@ import os
 import json
 
 import covizu
+from covizu.utils import gisaid_utils
 
 
 def apply_cigar(seq, rpos, cigar):
@@ -239,10 +240,10 @@ def parse_args():
     if '.egg' in path:
         import pkg_resources
         ref_file = pkg_resources.resource_filename('covizu', 'data/NC_045512.fa')
-        vcf_file = pkg_resources.resource_filename('covizu', "data/problematic_sites_sarsCov2.vcf")
+        vcf_file = pkg_resources.resource_filename('covizu', "data/ProblematicSites_SARS-CoV2/problematic_sites_sarsCov2.vcf")
     else:
         ref_file = os.path.join(path, "data", "NC_045512.fa")
-        vcf_file = os.path.join(path, "data", "problematic_sites_sarsCov2.vcf")
+        vcf_file = os.path.join(path, "data/ProblematicSites_SARS-CoV2", "problematic_sites_sarsCov2.vcf")
 
     parser.add_argument('--ref', type=str, default=ref_file,
                         help="<input> path to target FASTA (reference)")
@@ -280,9 +281,8 @@ if __name__ == '__main__':
     reflen = len(refseq)
     if args.align:
         if args.filter:
-            vcf = load_vcf(args.vcf)
             encoded = encode_diffs(mm2, reflen=reflen)
-            for qname, diffs, missing in filter_problematic2(encoded, mask=vcf):
+            for qname, diffs, missing in gisaid_utils.filter_problematic(encoded, vcf_file=args.vcf, encoded=True):
                 seq = apply_features(diffs, missing, refseq=refseq)
                 args.outfile.write(">{}\n{}\n".format(qname, seq))
         else:

@@ -168,6 +168,7 @@ req.done(function() {
   draw_region_distribution(node.__data__.allregions);
   gen_details_table(beaddata[node.__data__.cluster_idx].points);  // update details table with all samples
   draw_cluster_box(d3.select(node));
+  window.addEventListener("resize", expand, true);
 
   /*
   rect = d3.selectAll("#svg-cluster > svg > g > circle");
@@ -236,8 +237,7 @@ req.done(function() {
     
     $("#custom-handle").text( slider.slider( "value" ) );
     move_arrow();
-    const event = new Event('resize');
-    window.dispatchEvent(event)
+    slider_update();
   }
 
   disable_buttons();
@@ -414,8 +414,7 @@ req.done(function() {
       $('#expand-option').removeAttr('checked');
       $('#beadplot-hscroll').hide();
     }
-    const event = new Event('resize');
-    window.dispatchEvent(event)
+    expand();
   });
 
   // Sets the scrolling speed when scrolling through the beadplot
@@ -447,6 +446,15 @@ req.done(function() {
     $("#beadplot-hscroll").scrollLeft($(this).scrollLeft());
     $('#svg-clusteraxis').scrollLeft($(this).scrollLeft());
     $("#beadplot-vscroll").scrollTop($(this).scrollTop());
+  });
+
+  // Vertical scrollbar for the time-scaled tree
+  $('#tree-vscroll').scroll(function() {
+    $("#svg-timetree").scrollTop($(this).scrollTop());
+  });
+
+  $('#svg-timetree').scroll(function() {
+    $("#tree-vscroll").scrollTop($(this).scrollTop());
   });
 
   $('#previous_button').click(function(){
@@ -549,6 +557,7 @@ req.done(function() {
 
     // User presses the left arrow key (37) or right arrow key (39)
     if (e.keyCode == 37 || e.keyCode == 39) {
+      e.preventDefault() //issue #352
       var selected_bead = d3.selectAll(".selectionH").nodes();
 
       if (selected_bead.length == 0) {

@@ -126,6 +126,10 @@ function getTimeTreeData(timetree) {
  */
 function drawtree(df) {
 
+  // Sets margin top to align vertical scrollbar with the time-scaled tree
+  $('#tree-vscroll').css('margin-top', document.getElementById("tree-title").clientHeight + document.getElementById("svg-timetreeaxis").clientHeight + $('#inner-hscroll').height() + 5);
+  $('#svg-timetreeaxis').css('padding-bottom', $('#inner-hscroll').height())
+
   var edgeset = edges(df, rectangular=true);
 
   // rescale SVG for size of tree
@@ -155,6 +159,7 @@ function drawtree(df) {
     .attr("stroke-width", 1.5)
     .attr("stroke", "#777");
 
+    $('#tree-inner-vscroll').css('height', $('.tree-content > svg').height()); 
 }
 
 
