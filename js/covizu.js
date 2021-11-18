@@ -171,7 +171,7 @@ req.done(function() {
   draw_region_distribution(node.__data__.allregions);
   gen_details_table(beaddata[node.__data__.cluster_idx].points);  // update details table with all samples
   console.log(node.__data__.cluster_idx)
-  gen_mut_table({'mutations': mutations[node.__data__.cluster_idx].mutation, 'frequency': [4, 8], 'phenotype': mutations[node.__data__.cluster_idx].phenotype}) // currently hardcoded 
+  gen_mut_table({'mutations': mutations[cindex].mutation, 'frequency': mutations[cindex].frequency, 'phenotype': mutations[cindex].phenotype}) 
   draw_cluster_box(d3.select(node));
 
   /*
