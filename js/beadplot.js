@@ -423,16 +423,20 @@ function parse_mutation_annotations(mut_annotations) {
   });
 
   for (const cidx in tips) {
-    let phenotype = []
-    let tip = sorted_tips[cidx];
+    let phenotype = [],
+        mutations_list = [],
+        frequency_list = [],
+        tip = sorted_tips[cidx];
 
     if (!('mutations' in tip)) {
       tip['mutations'] = []
     }
 
-    for (i = 0; i < tip.mutations.length; i++) {
-      if (tip.mutations[i] in mut_annotations) {
-        phenotype.push(mut_annotations[tip.mutations[i]])
+    for (const [mutation, freq] of Object.entries(tip.mutations)) {
+      mutations_list.push(mutation);
+      frequency_list.push(parseFloat(freq).toFixed(2))
+      if (mutation in mut_annotations) {
+        phenotype.push(mut_annotations[mutation])
       }
       else {
         phenotype.push([])
@@ -440,7 +444,8 @@ function parse_mutation_annotations(mut_annotations) {
     }
 
     mutations.push({
-      'mutation': tip.mutations,
+      'mutation': mutations_list,
+      'frequency' : frequency_list,
       'phenotype': phenotype
     })
   }

@@ -274,7 +274,7 @@ function date_to_xaxis(coldate) {
 
 function mutations_to_string(mutations) {
   let mutStr = `<b>${i18n_text.tip_mutations}:</b><br/>`;
-  for (mutation of mutations) {
+  for ([mutation,_] of Object.entries(mutations)) {
     mutStr += `&nbsp;&nbsp;${mutation}<br/>`;
   }
   return mutStr;
@@ -707,7 +707,7 @@ function click_cluster(d, cluster_info) {
     gentable(d);
     draw_region_distribution(d.allregions);
     gen_details_table(beaddata[d.cluster_idx].points);  // update details table with all samples
-    gen_mut_table({'mutations': mutations[d.cluster_idx].mutation, 'frequency': [4, 8], 'phenotype': mutations[d.cluster_idx].phenotype})
+    gen_mut_table({'mutations': mutations[d.cluster_idx].mutation, 'frequency': mutations[d.cluster_idx].frequency, 'phenotype': mutations[d.cluster_idx].phenotype})
     
     // FIXME: this is the same div used for making barplot SVG
     $("#text-node").html(`Number of cases: ${d.count}<br/>Number of variants: ${d.varcount}<br/>`);
