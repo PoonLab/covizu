@@ -1193,10 +1193,16 @@ function gen_mut_table(obj) {
     var phenotype = t_cells[j].children[2];
       for (let i = 0; i < obj.phenotype[j].length; i++) {
         if (obj.phenotype[j][i] == 'transmissibility') {
-          phenotype.classList.add('transmissibility')
+          var img = document.createElement("img");
+          img.src = "../img/red_circle.png";
+          img.classList.add('phenotype_icon')
+          phenotype.appendChild(img);
         }
         if (obj.phenotype[j][i] == 'immunosuppression_variant_emergence') {
-          phenotype.classList.add('immunosuppression')
+          var img = document.createElement("img");
+          img.src = "../img/blue_triangle.png";
+          img.classList.add('phenotype_icon')
+          phenotype.appendChild(img);
         }
       }
   }    
