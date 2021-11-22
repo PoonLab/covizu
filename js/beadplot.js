@@ -1194,51 +1194,21 @@ function gen_mut_table(obj) {
       .style("font", "0.875em/1.2 Lato, sans-serif");
 
   var t_cells = document.querySelectorAll("#tabs-3 table tbody tr")
+  var phenotype_icons = {'vaccine_neutralization_efficacy':'../img/red_circle.png', 
+  'vaccine_efficacy':'../img/orange_star.png', 'gene_expression_increase': '../img/orange_star.png', 
+  'ACE2_receptor_binding_affinity':'../img/purple_square.jpeg','monoclonal_antibody_serial_passage_escape': '../img/yellow_hexagon.png', 
+  'convalescent_plasma_escape': '../img/green_pentagon.png', 'antibody_epitope_effects':'../img/blue_triangle.png'}
 
   for (let j = 0; j < obj.phenotype.length; j++) {
     var phenotype = t_cells[j].children[2];
       for (let i = 0; i < obj.phenotype[j].length; i++) {
-        if (obj.phenotype[j][i] == 'vaccine_neutralization_efficacy') {
-          var img = document.createElement("img");
-          img.src = "../img/red_circle.png";
-          img.classList.add('phenotype_icon')
-          phenotype.appendChild(img);
-        }
-        else if (obj.phenotype[j][i] == 'vaccine_efficacy') {
-          var img = document.createElement("img");
-          img.src = "../img/orange_star.png";
-          img.classList.add('phenotype_icon')
-          phenotype.appendChild(img);
-        }
-        else if (obj.phenotype[j][i] == 'gene_expression_increase') {
-          var img = document.createElement("img");
-          img.src = "../img/green_rhombus.png";
-          img.classList.add('phenotype_icon')
-          phenotype.appendChild(img);
-        }
-        else if (obj.phenotype[j][i] == 'ACE2_receptor_binding_affinity') {
-          var img = document.createElement("img");
-          img.src = "../img/purple_square.jpeg";
-          img.classList.add('phenotype_icon')
-          phenotype.appendChild(img);
-        }
-        else if (obj.phenotype[j][i] == 'monoclonal_antibody_serial_passage_escape') {
-          var img = document.createElement("img");
-          img.src = "../img/yellow_hexagon.png";
-          img.classList.add('phenotype_icon')
-          phenotype.appendChild(img);
-        }
-        else if (obj.phenotype[j][i] == 'convalescent_plasma_escape') {
-          var img = document.createElement("img");
-          img.src = "../img/green_pentagon.png";
-          img.classList.add('phenotype_icon')
-          phenotype.appendChild(img);
-        }
-        else if (obj.phenotype[j][i] == 'antibody_epitope_effects') {
-          var img = document.createElement("img");
-          img.src = "../img/blue_triangle.png";
-          img.classList.add('phenotype_icon')
-          phenotype.appendChild(img);
+        for (const [label, link] of Object.entries(phenotype_icons)) {
+          if(obj.phenotype[j][i] == label) {
+            var img = document.createElement("img");
+            img.src = link;
+            img.classList.add('phenotype_icon')
+            phenotype.appendChild(img);
+          }
         }
       }
   }    

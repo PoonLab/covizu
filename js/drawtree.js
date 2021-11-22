@@ -274,10 +274,25 @@ function date_to_xaxis(coldate) {
 
 function mutations_to_string(mutations) {
   let mutStr = `<b>${i18n_text.tip_mutations}:</b><br/>`;
-  for ([mutation,_] of Object.entries(mutations)) {
+  for ([mutation, ] of mutations.slice(0,5)) {
     mutStr += `&nbsp;&nbsp;${mutation}<br/>`;
   }
+
+  if (mutations.length > 5) {
+    mutStr += `&nbsp;&nbsp;<i>See more...</i><br/>`
+  }
   return mutStr;
+}
+
+function sort_mutations(mutations) {
+  // Change dict to array 
+  var mutations_array = Object.keys(mutations).map(function(key) {
+    return [key, mutations[key]];
+  });
+  mutations_array.sort(function(first, second) {
+    return second[1] - first[1]
+  })
+  return mutations_array
 }
 
 /**
@@ -307,7 +322,7 @@ function draw_clusters(tips) {
 
     let ctooltipText = `<b>${i18n_text.tip_diffs}:</b> ${Math.round(100*d.mean_ndiffs)/100.}<br/>`;
     ctooltipText += `<b>${i18n_text.tip_residual}:</b> ${Math.round(100*d.residual)/100.}<br>`;
-    ctooltipText += mutations_to_string(d.mutations);
+    ctooltipText += mutations_to_string(sort_mutations(d.mutations));
     ctooltipText += region_to_string(d.allregions);
     ctooltipText += `<b>${i18n_text.tip_varcount}:</b><br>`;
     ctooltipText += `&nbsp;&nbsp; ${i18n_text.sampled}: ${d.varcount}<br>`;
