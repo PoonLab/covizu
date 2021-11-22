@@ -699,3 +699,14 @@ input:checked + .slider:before {
   padding-left: 3px;
   max-height: 8px;
 }
+
+table.legend {
+  font-size: 0.5em;
+  color: #5e5e5e;
+  padding: 3px 0 3px 0;  top right bottom left
+  margin-top: 10px;
+}
+
+.legend td {
+  background-color: #ffffff !important;
+}
