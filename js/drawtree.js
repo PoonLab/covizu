@@ -279,7 +279,7 @@ function mutations_to_string(mutations) {
   }
 
   if (mutations.length > 5) {
-    mutStr += `&nbsp;&nbsp;<i>See more...</i><br/>`
+    mutStr += `&nbsp;&nbsp;(see more...)<br/>`
   }
   return mutStr;
 }
