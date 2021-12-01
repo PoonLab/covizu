@@ -136,8 +136,7 @@ if __name__ == "__main__":
     try:
         subprocess.check_call("git submodule foreach git pull origin master", shell=True)
     except:
-        cb.callback("Error updating submodules")
-        sys.exit()
+        cb.callback("Could not update submodules", level='ERROR')
 
     # download xz file if not specified by user
     if args.infile is None:
