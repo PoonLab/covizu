@@ -34,6 +34,21 @@
         "Oceania": "Oceania",
         "South America": "América del Sur"
       },
+      province_legend: {
+        "British Columbia": "British Columbia",
+        "Alberta": "Alberta",
+        "Saskatchewan": "Saskatchewan",
+        "Manitoba": "Manitoba",
+        "Ontario": "Ontario",
+        "Quebec": "Quebec",
+        "Newfoundland and Labrador": "Newfoundland and Labrador",
+        "New Brunswick": "New Brunswick",
+        "Nova Scotia": "Nova Scotia",
+        "Prince Edward Island": "Prince Edward Island",
+        "Nunavut": "Nunavut",
+        "Yukon": "Yukon",
+        "Northwest Territories": "Northwest Territories"
+      },
       sample_legend: "Tamaño de la muestra (log10)",
       coldate_legend: "Colección mas reciente",
       diverge_legend: "Divergencia (reloj molecular estricto)",
@@ -92,11 +107,13 @@
           <label for="select-tree-colours">Colorear árbol por:</label>
           <select name="tree-colours" id="select-tree-colours">
             <option value="Region">Región</option>
+            <option value="Province (Canada)" selected>Province (Canada)</option>
             <option value="No. samples">No. muestras</option>
             <option value="Collection date">Fecha de colección</option>
-            <option value="Divergence" selected>Divergencia</option>
+            <option value="Divergence">Divergencia</option>
           </select>
           <div class="legend" id="div-region-legend"></div>
+          <div class="legend" id="div-province-legend"></div>
           <div class="legend" id="svg-sample-legend"></div>
           <div class="legend" id="svg-coldate-legend"></div>
           <div class="legend" id="svg-diverge-legend"></div>
@@ -206,7 +223,7 @@
         </div>
         <div class="rightbox">
           <div style="padding-top: 10px; cursor: help;">
-            <h1><span onclick="$('#splash').dialog('open');"><small><i>open</i></small>CoVizu</span></h1>
+            <h1><span onclick="$('#splash').dialog('open');">CoVizu<sup><i>vs</i></sup></span></h1>
           </div>
           <div style="font-size: 8pt;">
             <a href="index.html">en</a>
@@ -262,6 +279,16 @@
       Al seleccionar un linaje, se muestra una visulización de "beadplot" en el centro de la página.
       Cada línea horizontal representa una o más muestras de SARS-CoV-2 con la misma secuencia genómica. 
       Líneas verticales a lo largo de dicha línea representa las fechas en las cuales estas variantes fueron colectadas.
+    </p>
+    <p>
+      The results here are in whole or part based upon data hosted at the
+      <a href="https://virusseq-dataportal.ca/">Canadian VirusSeq Data Portal</a> and the
+      <a href="https://docs.nextstrain.org/projects/ncov/en/latest/reference/remote_inputs.html">Nextstrain Open Data</a> build assets.
+      We wish to acknowledge the <a href="https://virusseq-dataportal.ca/acknowledgements">contributing laboratories</a>,
+      <a href="https://nccid.ca/cphln/">Canadian Public Health Laboratory Network</a> (CPHLN) and
+      <a href="https://www.genomecanada.ca/en/cancogen/cancogen-virusseq">CanCOGGeN VirusSeq</a>.
+      Computational support provided by the <a href="https://mcarthurbioinformatics.ca/">McArthur Lab</a> (Michael G. DeGroote Institute for Infectious Disease Research, McMaster University).
+      This <a href="https://github.com/PoonLab/covizu/tree/vsportal">version</a> of the front-end is hosted by the <a href="https://oicr.on.ca/">Ontario Institute for Cancer Research</a>.
     </p>
     <p>
       Para más ayuda has click en los

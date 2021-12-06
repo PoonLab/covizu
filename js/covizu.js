@@ -129,14 +129,14 @@ var province_pal = {
   "Ontario": '#DB8433',
   "Quebec": '#9E3C2A',
 
-  "Newfoundland and Labrador": '#867570',
-  "New Brunswick": '#867570',
-  "Nova Scotia": '#867570',
-  "Prince Edward Island": '#867570',
+  "Newfoundland and Labrador": '#094074',
+  "New Brunswick": '#441151',
+  "Nova Scotia": '#B10F2E',
+  "Prince Edward Island": '#087E8B',
 
   "Nunavut": '#B29F7D',
-  "Yukon": '#B29F7D',
-  "Northwest Territories": '#B29F7D'
+  "Yukon": '#904C77',
+  "Northwest Territories": '#C98BB9'
 }
 
 // load time-scaled phylogeny from server

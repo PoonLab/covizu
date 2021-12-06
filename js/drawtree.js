@@ -638,6 +638,17 @@ function generate_legends() {
   s += `</div></div>`;
   $("#div-region-legend").html(s).hide();
 
+  s = `<div style="display: flex; align-items: center; margin-left: 0px; padding-top: 6px; min-height: 33px; font: 10px sans-serif;">`;
+  s += `<div style="width: 100%; columns: 60px;">`;
+  for (const [key, value] of Object.entries(province_pal)) {
+    let prov = i18n_text.province_legend[key];
+    s += `<div class="legend-item">`;
+    s += `<div class="legend-swatch" style="background:${value};"></div>`;
+    s += `<div class="legend-label" title="${prov}">${prov}</div>`;
+    s += `</div>`;
+  }
+  $("#div-province-legend").html(s).hide();
+
   // sample size legend
   $("div#svg-sample-legend").html(legend({
     color: sample_pal,

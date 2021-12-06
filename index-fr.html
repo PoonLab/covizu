@@ -34,6 +34,21 @@
         "Oceania": "Océanie",
         "South America": "Amérique du Sud"
       },
+      province_legend: {
+        "British Columbia": "La Colombie-Britannique",
+        "Alberta": "L'Alberta",
+        "Saskatchewan": "La Saskatchewan",
+        "Manitoba": "Le Manitoba",
+        "Ontario": "L'Ontario",
+        "Quebec": "Le Québec",
+        "Newfoundland and Labrador": "La Terre-Neuve-et-Labrador",
+        "New Brunswick": "Le Nouveau-Brunswick",
+        "Nova Scotia": "La Nouvelle-Écosse",
+        "Prince Edward Island": "Île-du-Prince-Édouard",
+        "Nunavut": "Le Nunavut",
+        "Yukon": "Le Yukon",
+        "Northwest Territories": "Les Territoires du Nord-Ouest"
+      },
       sample_legend: "Taille de l'échantillon (log10)",
       coldate_legend: "Date des échantillons les plus récents",
       diverge_legend: "Divergence (prédiction par horloge moléculaire stricte)",
@@ -92,11 +107,13 @@
           <label for="select-tree-colours">Colorer les branches:</label>
           <select name="tree-colours" id="select-tree-colours">
             <option value="Region">R&eacute;gion</option>
+            <option value="Province (Canada)" selected>Province (Canada)</option>
             <option value="No. samples">T. de l'&eacute;chantillon</option>
             <option value="Collection date">Date de collecte</option>
-            <option value="Divergence" selected>Divergence</option>
+            <option value="Divergence">Divergence</option>
           </select>
           <div class="legend" id="div-region-legend"></div>
+          <div class="legend" id="div-province-legend"></div>
           <div class="legend" id="svg-sample-legend"></div>
           <div class="legend" id="svg-coldate-legend"></div>
           <div class="legend" id="svg-diverge-legend"></div>
@@ -206,7 +223,7 @@
         </div>
         <div class="rightbox">
           <div style="padding-top: 10px; cursor: help;">
-            <h1><span onclick="$('#splash').dialog('open');"><small><i>open</i></small>CoVizu</span></h1>
+            <h1><span onclick="$('#splash').dialog('open');">CoVizu<sup><i>vs</i></sup></span></h1>
           </div>
           <div style="font-size: 8pt;">
             <a href="index.html">en</a>
@@ -265,6 +282,16 @@
       m&ecirc;me g&eacute;nome.
       Les cercles repr&eacute;sentent les dates auxquelles le variant a &eacute;t&eacute;
       &eacute;chantillonn&eacute;.
+    </p>
+    <p>
+      The results here are in whole or part based upon data hosted at the
+      <a href="https://virusseq-dataportal.ca/">Canadian VirusSeq Data Portal</a> and the
+      <a href="https://docs.nextstrain.org/projects/ncov/en/latest/reference/remote_inputs.html">Nextstrain Open Data</a> build assets.
+      We wish to acknowledge the <a href="https://virusseq-dataportal.ca/acknowledgements">contributing laboratories</a>,
+      <a href="https://nccid.ca/cphln/">Canadian Public Health Laboratory Network</a> (CPHLN) and
+      <a href="https://www.genomecanada.ca/en/cancogen/cancogen-virusseq">CanCOGGeN VirusSeq</a>.
+      Computational support provided by the <a href="https://mcarthurbioinformatics.ca/">McArthur Lab</a> (Michael G. DeGroote Institute for Infectious Disease Research, McMaster University).
+      This <a href="https://github.com/PoonLab/covizu/tree/vsportal">version</a> of the front-end is hosted by the <a href="https://oicr.on.ca/">Ontario Institute for Cancer Research</a>.
     </p>
     <p>
       Pour plus d'aide, cliquez sur les
