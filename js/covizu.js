@@ -424,8 +424,19 @@ req.done(function() {
     event.preventDefault();
 
     element.scrollBy({
-      top: Math.abs(event.deltaY) == 0 ? 0 : event.deltaY,
-      left: Math.abs(event.deltaX) == 0 ? 0 : event.deltaX
+      top: Math.abs(event.deltaY) == 0 ? 0 : event.deltaY * 2,
+      left: Math.abs(event.deltaX) == 0 ? 0 : event.deltaX * 2
+    });
+  });
+
+  // Sets the scrolling speed when scrolling through the time-scaled tree
+  const timetree = document.querySelector("#svg-timetree");
+
+  timetree.addEventListener('wheel', (event) => {
+    event.preventDefault();
+
+    timetree.scrollBy({
+      top: Math.abs(event.deltaY) == 0 ? 0 : event.deltaY * 2,
     });
   });
 
