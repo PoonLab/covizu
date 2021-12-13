@@ -278,8 +278,8 @@ function mutations_to_string(mutations) {
     mutStr += `&nbsp;&nbsp;${mutation}<br/>`;
   }
 
-  if (mutations.length > 5) {
-    mutStr += `&nbsp;&nbsp;(see more...)<br/>`
+  if (mutations.length > 10) {
+    mutStr += `&nbsp;&nbsp;and ${mutations.length} others...<br/>`
   }
   return mutStr;
 }
