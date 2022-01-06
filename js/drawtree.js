@@ -274,7 +274,7 @@ function date_to_xaxis(coldate) {
 
 function mutations_to_string(mutations) {
   let mutStr = `<b>${i18n_text.tip_mutations}:</b><br/>`;
-  for ([mutation, ] of mutations.slice(0,5)) {
+  for ([mutation, ] of mutations.slice(0,10)) {
     mutStr += `&nbsp;&nbsp;${mutation}<br/>`;
   }
 

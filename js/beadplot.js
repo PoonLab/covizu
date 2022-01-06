@@ -1194,8 +1194,8 @@ function gen_mut_table(obj) {
       .style("font", "0.875em/1.2 Lato, sans-serif");
 
   var t_cells = document.querySelectorAll("#tabs-3 table tbody tr")
-  var phenotype_icons = {'vaccine_neutralization_efficacy':'../img/vaccine.png', 
-  'anthropozoonotic_events':'../img/bat.png', 'gene_expression_increase': '../img/gene.png', 
+  var phenotype_icons = {'vaccine_neutralization_efficacy':'../img/red_circle.png', 
+  'anthropozoonotic_events':'../img/bat.png', 'gene_expression_increase': '../img/orange_star.png', 
   'ACE2_receptor_binding_affinity':'../img/purple_square.jpeg','monoclonal_antibody_serial_passage_escape': '../img/antibody.png', 
   'convalescent_plasma_escape': '../img/green_pentagon.png', 'antibody_epitope_effects':'../img/blue_triangle.png'}
 
