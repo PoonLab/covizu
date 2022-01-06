@@ -841,6 +841,13 @@ function expand() {
           let var_samples = points.filter(x => x.y === d.y1);
           gen_details_table(var_samples);
         }
+
+        // Clear previous selection
+        clear_selection();
+
+        // Visual feedback
+        var edge = d3.select(this);
+        edge.attr("class", "lines hLine selectionLH");
       });
 
   // label variants with earliest sample name
