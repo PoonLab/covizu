@@ -145,6 +145,9 @@ req = $.getJSON("data/clusters.json", function(data) {
 });
 
 req.done(function() {
+  var urlParams = new URLSearchParams(window.location.search);
+  var search = urlParams.get('search') || '';
+
   $("#splash-button").button("enable");
   $("#splash-extra").html("");  // remove loading animation
 
@@ -161,13 +164,6 @@ req.done(function() {
   // d3.select(node).dispatch("click");
   cindex = node.__data__.cluster_idx;
   d3.select(node).attr("class", "clicked");
-  d3.select('#cidx-' + cindex).attr("class", "clicked")
-  beadplot(node.__data__.cluster_idx);
-  $("#barplot").text(null);
-  gentable(node.__data__);
-  draw_region_distribution(node.__data__.allregions);
-  gen_details_table(beaddata[node.__data__.cluster_idx].points);  // update details table with all samples
-  draw_cluster_box(d3.select(node));
   window.addEventListener("resize", expand, true);
 
   /*
@@ -241,6 +237,24 @@ req.done(function() {
   }
 
   disable_buttons();
+
+  if (search !== '') {
+    $('#search-input').val(search)
+    $('#error_message').text(``);
+    $('#search-button').removeAttr("disabled");
+    $('#clear_button').removeAttr("disabled");
+    wrap_search();
+    enable_buttons();
+  }
+  else {
+    d3.select('#cidx-' + cindex).attr("class", "clicked")
+    beadplot(node.__data__.cluster_idx);
+    $("#barplot").text(null);
+    gentable(node.__data__);
+    draw_region_distribution(node.__data__.allregions);
+    gen_details_table(beaddata[node.__data__.cluster_idx].points);  // update details table with all samples
+    draw_cluster_box(d3.select(node));
+  }
 
   // Enables "search" and "clear" buttons if the input fields are not empty
   $('#search-input').on('change keyup search', function() {
