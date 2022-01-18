@@ -140,8 +140,11 @@
       </div>
     
       <div class="tree-beadplot">
+        <div id="tree-vscroll">
+          <div id="tree-inner-vscroll"></div>
+        </div>
         <div class="leftbox">
-          <div class="floattitle">
+          <div class="floattitle" id="tree-title">
             Time-scaled tree
             <span class="clicker" title="Download time-scaled tree" onclick="save_timetree()">
               &nbsp;&nbsp;NWK&nbsp;&nbsp;
@@ -249,7 +252,7 @@
             </div>
             <div id="tabs-3">
               <div id="muttable-hint" class="hint">
-                Phenotypic data was generated from <a href="https://github.com/nodrogluap/pokay">Pokay</a>, courtesy of Paul Gordon and his team.
+                Phenotypes are generated from <a href="https://github.com/nodrogluap/pokay">Pokay</a>, courtesy of Paul Gordon and his team.
               </div>
               <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="mut-table"></div>
               <table id="muttable-legend" class="legend">

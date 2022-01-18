@@ -201,7 +201,7 @@ def retrieve_genomes(by_lineage, known_seqs, ref_file, earliest=True, callback=N
         if len(curated) == 0:
             if callback:
                 callback("Error in retrieve_genomes(): no sequence names for lineage {} in designated "
-                         "list; may need to update data/lineages.csv".format(lineage), level='WARN')
+                         "list; may need to update data/pango-designation/lineages.csv".format(lineage), level='WARN')
             curated = records
 
         intermed = [(r['covv_collection_date'], r['diffs'], r['missing']) for r in curated]
@@ -254,7 +254,7 @@ def parse_args():
     parser.add_argument('--ttbin', default='treetime',
                         help='optional, path to treetime binary executable')
     parser.add_argument('--lineages', type=str,
-                        default=os.path.join(covizu.__path__[0], "data/lineages.csv"),
+                        default=os.path.join(covizu.__path__[0], "data/pango-designation/lineages.csv"),
                         help="optional, path to CSV file containing Pango lineage designations.")
 
     parser.add_argument('--outfile', default='data/timetree.nwk',

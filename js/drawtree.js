@@ -1,5 +1,6 @@
 var margin = {top: 10, right: 40, bottom: 10, left: 0},
-  width = 250 - margin.left - margin.right,
+  padding = {right: 15}
+  width = 250 - margin.left - margin.right - padding.right,
   height = 1200 - margin.top - margin.bottom;
 
 // to store colour palettes
@@ -24,13 +25,13 @@ var yValue = function(d) { return d.y; },
 
 var vis = d3.select("div#svg-timetree")
   .append("svg")
-  .attr("width", width + margin.left + margin.right);
+  .attr("width", width + margin.left + margin.right + padding.right);
   //.attr("height", height + margin.top + margin.bottom);
   //.append("g");
 
 var axis = d3.select("div#svg-timetreeaxis")
   .append("svg")
-  .attr("width", width + margin.left + margin.right)
+  .attr("width", width + margin.left + margin.right + padding.right)
   .attr("height", 25)
   .append("g");
 
@@ -126,6 +127,10 @@ function getTimeTreeData(timetree) {
  */
 function drawtree(df) {
 
+  // Sets margin top to align vertical scrollbar with the time-scaled tree
+  $('#tree-vscroll').css('margin-top', document.getElementById("tree-title").clientHeight + document.getElementById("svg-timetreeaxis").clientHeight + $('#inner-hscroll').height() + 5);
+  $('#svg-timetreeaxis').css('padding-bottom', $('#inner-hscroll').height())
+
   var edgeset = edges(df, rectangular=true);
 
   // rescale SVG for size of tree
@@ -155,6 +160,7 @@ function drawtree(df) {
     .attr("stroke-width", 1.5)
     .attr("stroke", "#777");
 
+    $('#tree-inner-vscroll').css('height', $('.tree-content > svg').height()); 
 }
 
 
@@ -279,7 +285,7 @@ function mutations_to_string(mutations) {
   }
 
   if (mutations.length > 10) {
-    mutStr += `&nbsp;&nbsp;and ${mutations.length} others...<br/>`
+    mutStr += `&nbsp;&nbsp;and ${mutations.length - 10} others...<br/>`
   }
   return mutStr;
 }
@@ -301,12 +307,22 @@ function sort_mutations(mutations) {
  */
 function draw_clusters(tips) {
 
+  var tickVals = [],
+      minVal = d3.min(df, xValue)-0.05,
+      maxVal = date_to_xaxis(d3.max(df, function(d) {return d.last_date})),
+      interval = (maxVal - minVal)/3;
+
+  for (var i = 0; i < 3; i++) {
+    tickVals.push(minVal + (interval/2) + (i*interval));
+  }
+  
   // Draws the axis for the time scaled tree
   axis.append("g")
     .attr("class", "treeaxis")
     .attr("transform", "translate(0,20)")
     .call(d3.axisTop(xScale)
       .ticks(3)
+      .tickValues(tickVals)
       .tickFormat(function(d) {
         return xaxis_to_date(d, tips[0])
       })

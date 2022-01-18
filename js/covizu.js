@@ -147,6 +147,9 @@ req = $.getJSON("data/clusters.json", function(data) {
 });
 
 req.done(function() {
+  var urlParams = new URLSearchParams(window.location.search);
+  var search = urlParams.get('search') || '';
+
   $("#splash-button").button("enable");
   $("#splash-extra").html("");  // remove loading animation
 
@@ -164,15 +167,7 @@ req.done(function() {
   // d3.select(node).dispatch("click");
   cindex = node.__data__.cluster_idx;
   d3.select(node).attr("class", "clicked");
-  d3.select('#cidx-' + cindex).attr("class", "clicked")
-  beadplot(node.__data__.cluster_idx);
-  $("#barplot").text(null);
-  gentable(node.__data__);
-  draw_region_distribution(node.__data__.allregions);
-  gen_details_table(beaddata[node.__data__.cluster_idx].points);  // update details table with all samples
-  console.log(node.__data__.cluster_idx)
-  gen_mut_table({'mutations': mutations[cindex].mutation, 'frequency': mutations[cindex].frequency, 'phenotype': mutations[cindex].phenotype}) 
-  draw_cluster_box(d3.select(node));
+  window.addEventListener("resize", expand, true);
 
   /*
   rect = d3.selectAll("#svg-cluster > svg > g > circle");
@@ -241,11 +236,29 @@ req.done(function() {
     
     $("#custom-handle").text( slider.slider( "value" ) );
     move_arrow();
-    const event = new Event('resize');
-    window.dispatchEvent(event)
+    slider_update();
   }
 
   disable_buttons();
+
+  if (search !== '') {
+    $('#search-input').val(search)
+    $('#error_message').text(``);
+    $('#search-button').removeAttr("disabled");
+    $('#clear_button').removeAttr("disabled");
+    wrap_search();
+    enable_buttons();
+  }
+  else {
+    d3.select('#cidx-' + cindex).attr("class", "clicked")
+    beadplot(node.__data__.cluster_idx);
+    $("#barplot").text(null);
+    gentable(node.__data__);
+    draw_region_distribution(node.__data__.allregions);
+    gen_details_table(beaddata[node.__data__.cluster_idx].points);  // update details table with all samples
+    gen_mut_table({'mutations': mutations[cindex].mutation, 'frequency': mutations[cindex].frequency, 'phenotype': mutations[cindex].phenotype}) 
+    draw_cluster_box(d3.select(node));
+  }
 
   // Enables "search" and "clear" buttons if the input fields are not empty
   $('#search-input').on('change keyup search', function() {
@@ -419,8 +432,7 @@ req.done(function() {
       $('#expand-option').removeAttr('checked');
       $('#beadplot-hscroll').hide();
     }
-    const event = new Event('resize');
-    window.dispatchEvent(event)
+    expand();
   });
 
   // Sets the scrolling speed when scrolling through the beadplot
@@ -430,8 +442,19 @@ req.done(function() {
     event.preventDefault();
 
     element.scrollBy({
-      top: Math.abs(event.deltaY) == 0 ? 0 : event.deltaY,
-      left: Math.abs(event.deltaX) == 0 ? 0 : event.deltaX
+      top: Math.abs(event.deltaY) == 0 ? 0 : event.deltaY * 2,
+      left: Math.abs(event.deltaX) == 0 ? 0 : event.deltaX * 2
+    });
+  });
+
+  // Sets the scrolling speed when scrolling through the time-scaled tree
+  const timetree = document.querySelector("#svg-timetree");
+
+  timetree.addEventListener('wheel', (event) => {
+    event.preventDefault();
+
+    timetree.scrollBy({
+      top: Math.abs(event.deltaY) == 0 ? 0 : event.deltaY * 2,
     });
   });
 
@@ -452,6 +475,15 @@ req.done(function() {
     $("#beadplot-hscroll").scrollLeft($(this).scrollLeft());
     $('#svg-clusteraxis').scrollLeft($(this).scrollLeft());
     $("#beadplot-vscroll").scrollTop($(this).scrollTop());
+  });
+
+  // Vertical scrollbar for the time-scaled tree
+  $('#tree-vscroll').scroll(function() {
+    $("#svg-timetree").scrollTop($(this).scrollTop());
+  });
+
+  $('#svg-timetree').scroll(function() {
+    $("#tree-vscroll").scrollTop($(this).scrollTop());
   });
 
   $('#previous_button').click(function(){
@@ -554,6 +586,7 @@ req.done(function() {
 
     // User presses the left arrow key (37) or right arrow key (39)
     if (e.keyCode == 37 || e.keyCode == 39) {
+      e.preventDefault() //issue #352
       var selected_bead = d3.selectAll(".selectionH").nodes();
 
       if (selected_bead.length == 0) {

@@ -225,7 +225,7 @@ def filter_outliers(iter, origin='2019-12-01', rate=0.0655, cutoff=0.005, maxtim
         yield qname, diffs, missing
 
 
-def load_vcf(vcf_file="data/problematic_sites_sarsCov2.vcf"):
+def load_vcf(vcf_file="data/ProblematicSites_SARS-CoV2/problematic_sites_sarsCov2.vcf"):
     """
     Load VCF of problematic sites curated by Nick Goldman lab
     NOTE: The curators of this VCF used MN908947.3, which is identical to NC_045512.
@@ -249,44 +249,6 @@ def load_vcf(vcf_file="data/problematic_sites_sarsCov2.vcf"):
                 'ref': ref, 'alt': alt, 'info': info}
             })
     return mask
-
-
-def filter_problematic2(obj, mask, callback=None):
-    """
-    Apply problematic sites annotation from de Maio et al.,
-    https://virological.org/t/issues-with-sars-cov-2-sequencing-data/473
-    which are published and maintained as a VCF-formatted file.
-    FIXME: this duplicates functionality of gisaid_utils:filter_problematic(), see issue #290.
-
-    :param obj:  list, entries are (1) dicts returned by import_json or (2) tuples
-    :param mask:  dict, problematic site index from load_vcf()
-    :param callback:  optional callback function for progress monitoring
-    :return:
-    """
-    # apply filters to feature vectors
-    count = 0
-    result = []
-    for row in obj:
-        if type(row) is dict:
-            qname, diffs, missing = row['qname'], row['diffs'], row['missing']
-        else:
-            qname, diffs, missing = row  # unpack tuple
-
-        filtered = []
-        for typ, pos, alt in diffs:
-            if typ == '~' and int(pos) in mask and alt in mask[pos]['alt']:
-                continue
-            if typ != '-' and 'N' in alt:
-                # drop substitutions and insertions with uncalled bases
-                continue
-            filtered.append(tuple([typ, pos, alt]))
-
-        count += len(diffs) - len(filtered)
-        result.append([qname, filtered, missing])
-
-    if callback:
-        callback('filtered {} problematic features'.format(count))
-    return result
 
 
 class SC2Locator:
