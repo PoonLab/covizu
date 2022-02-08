@@ -848,6 +848,26 @@ function expand() {
         // Visual feedback
         var edge = d3.select(this);
         edge.attr("class", "lines hLine selectionLH");
+
+        var filtered_edgelist = edgelist.filter(x => x.dist <= slider.slider("value"))
+
+        // Bold parent and child variants 
+        for (i=0; i < filtered_edgelist.length; i++) {
+          let edge_label = edge.data()[0].label
+          if(filtered_edgelist[i].child == edge_label) {
+            parent_variant = filtered_edgelist[i].parent.replace(/\./g,'-').replace('/', '-').replace(' ', '_')
+            d3.select(`#${parent_variant}`).attr("stroke-width", 5).attr("class", "lines hLine selectionLH");
+          }
+          else if(filtered_edgelist[i].parent == edge_label) {
+            child_variant = filtered_edgelist[i].child.replace(/\./g,'-').replace('/', '-').replace(' ', '_')
+            d3.select(`#${child_variant}`).attr("stroke-width", 5).attr("class", "lines hLine selectionLH");
+          }
+        }
+
+        // Bold edges connecting clicked variant to parent/children
+        d3.selectAll(`.vLine[y1="${yScaleB(edge.data()[0].y1)}"]`).attr("stroke-width", 3).attr("class", "lines hLine selectionL")
+        d3.selectAll(`.vLine[y2="${yScaleB(edge.data()[0].y1)}"]`).attr("stroke-width", 3).attr("class", "lines hLine selectionL")
+
       });
 
   // label variants with earliest sample name
