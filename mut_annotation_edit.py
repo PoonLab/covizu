@@ -1,9 +1,9 @@
 import functools
 import json
+import logging
 import os
 import re
 import sys
-import warnings
 
 
 # define path to working directory
@@ -70,7 +70,7 @@ def generate_constellation_keys(lines, gene, qualified_txt_file, short_effect_de
             constellation_key = "{}:{}".format(gene, sorted_constellations)
 
             if not lit_references:
-                warnings.warn("Ignoring variant '{}' wihout literature annotations ({} line #{})".format(line, qualified_txt_file, index))
+                logging.warning("Ignoring variant '{}' wihout literature annotations ({} line #{})".format(line, qualified_txt_file, index))
             
             if not constellation_key in constellations_to_categories:
                 constellations_to_categories[constellation_key] = {}
@@ -79,14 +79,14 @@ def generate_constellation_keys(lines, gene, qualified_txt_file, short_effect_de
             constellations_to_categories[constellation_key][short_effect_desc].extend(lit_references)
             lit_references = []
 
-        if sentence:
+        elif sentence:
             val = annotations_for_sentence_match(sentence, lit_references, lit_link_evidence_summary)
             if val == -1: continue
 
         elif not re.compile("^\s*$").match(line):
-            warnings.warn("Ignoring line that is not a comment starting with '#', nor a properly formatted variant ({} line #{})".format(qualified_txt_file, index))
+            logging.warning("Ignoring line that is not a comment starting with '#', nor a properly formatted variant ({} line #{})".format(qualified_txt_file, index))
             if lit_link_evidence_summary:
-                warnings.warn("Dumping preceding comments.")
+                logging.warning("Dumping preceding comments.")
                 lit_link_evidence_summary = ""
         # else it's blank
     return constellations_to_categories
