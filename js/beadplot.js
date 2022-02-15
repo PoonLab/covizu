@@ -4,7 +4,8 @@
 var marginB = {top: 50, right: 10, bottom: 50, left: 10},
     widthB = document.getElementById("svg-cluster").clientWidth - marginB.left - marginB.right,
     heightB = 1000 - marginB.top - marginB.bottom,
-    pixelsPerDay = 10;
+    pixelsPerDay = 10,
+    ccid = -1;
 
 // set up plotting scales
 var xValueB = function(d) { return d.x },
@@ -518,9 +519,7 @@ function clear_selection() {
  * Updates beadplot when the expand switch is selected or when a resize event occurs
  */
 function expand() {
-  var variants = beaddata[cindex].variants,
-      points = beaddata[cindex].points,
-      mindate = d3.min(variants, xValue1B),
+  var mindate = d3.min(variants, xValue1B),
       maxdate = d3.max(variants, xValue2B),
       spandate = maxdate-mindate,  // in milliseconds
       numDays = d3.timeDay.count(mindate, maxdate),
@@ -652,13 +651,29 @@ function expand() {
  * integer index <cid>) in the SVG.
  * @param {Number} cid:  integer index of cluster to draw as beadplot
  */
- function beadplot(cid) {
+ async function beadplot(cid) {
   // Update global cindex for SVG and NWK filenames
-  cindex = cid;
-  
-  var variants = beaddata[cid].variants,
-      edgelist = beaddata[cid].edgelist,
-      points = beaddata[cid].points;
+  if (cindex !== ccid) {
+    cindex = cid;
+    ccid = cindex
+    edgelist = await getdata(`/api/edgelist/${cindex}`);
+    edgelist.forEach(x => {
+      x.x1 = utcDate(x.x1),
+      x.x2 = utcDate(x.x2)
+    });
+    points = await getdata(`/api/points/${cindex}`);
+    points.forEach(d => {
+      d.x = utcDate(d.x)
+    });
+    variants = await getdata(`/api/variants/${cindex}`);
+    variants.forEach(x => {
+      x.x1 = utcDate(x.x1),
+      x.x2 = utcDate(x.x2)
+    });
+    await fetch(`/api/lineage/${cindex}`)
+    .then(response => response.text())
+    .then(lin => lineage=lin)
+  } 
 
   // rescale slider
   let max_dist = Math.max(...edgelist.map(x => x.dist));
@@ -997,9 +1012,8 @@ function expand() {
 /**
  * Filters vertical lines in the beadplot when the slider is moved
  */
-function slider_update() {
-  var edgelist = beaddata[cindex].edgelist,
-      slider = $("#vedge-slider");
+async function slider_update() {
+  var slider = $("#vedge-slider");
 
   visB.selectAll(".vLine").remove();
 
@@ -1543,8 +1557,7 @@ function serialize_branch(parent, edgelist) {
 }
 
 function serialize_beadplot(cidx) {
-  var edgelist = beaddata[cidx].edgelist,
-      root = edgelist[0].parent;
+  var root = edgelist[0].parent;
   return serialize_branch(root, edgelist)+';';
 }
 
