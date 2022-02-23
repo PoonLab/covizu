@@ -707,3 +707,19 @@ input:checked + .slider:before {
 .slider.round:before {
   border-radius: 50%;
 }
+
+.phenotype_icon {
+  padding-left: 3px;
+  max-height: 8px;
+}
+
+table.legend {
+  font-size: 0.5em;
+  color: #5e5e5e;
+  padding: 3px 0 3px 0;  
+  margin-top: 10px;
+}
+
+.legend td {
+  background-color: #ffffff !important;
+}

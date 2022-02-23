@@ -122,7 +122,7 @@ var country_pal = {
 };
 
 // load time-scaled phylogeny from server
-var nwk, df, countries;
+var nwk, df, countries, mut_annotations;
 $.ajax({
   url: "data/timetree.nwk",
   success: function(data) {
@@ -133,7 +133,9 @@ $.ajax({
 $.getJSON("data/countries.json", function(data) {
   countries = data;
 });
-
+$.getJSON("data/mut_annotations.json", function(data) {
+  mut_annotations = data;
+});
 
 var clusters, beaddata, tips,
     accn_to_cid, cindex, lineage_to_cid;
@@ -153,6 +155,7 @@ req.done(function() {
 
   beaddata = parse_clusters(clusters);
   tips = map_clusters_to_tips(df, clusters);
+  mutations = parse_mutation_annotations(mut_annotations);
   drawtree(df);
   //spinner.stop();
   draw_clusters(tips);
@@ -253,6 +256,7 @@ req.done(function() {
     gentable(node.__data__);
     draw_region_distribution(node.__data__.allregions);
     gen_details_table(beaddata[node.__data__.cluster_idx].points);  // update details table with all samples
+    gen_mut_table({'mutations': mutations[cindex].mutation, 'frequency': mutations[cindex].frequency, 'phenotype': mutations[cindex].phenotype}) 
     draw_cluster_box(d3.select(node));
   }
 
@@ -630,6 +634,12 @@ var seq_table = d3.select("#seq-table").append('table');
 var thead = seq_table.append('thead');
 var seq_theaders = i18n_text.sample_theaders;
 var seq_tbody = seq_table.append('tbody');
+
+// Populate mutation details table
+var mut_table = d3.select('#mut-table').append('table');
+var mut_thead = mut_table.append('thead')
+var mut_theaders = i18n_text.mutation_threaders;
+var mut_tbody = mut_table.append("tbody")
 
 // implement acknowledgements dialog
 $( "#dialog" ).dialog({ autoOpen: false });
