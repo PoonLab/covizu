@@ -8,7 +8,6 @@ const fs = require('fs');
 
 try {
     var tree = fs.readFileSync('./data/timetree.nwk', 'utf8');
-    // console.log(tree);    
 } catch(e) {
     console.log('Error:', e.stack);
 }
@@ -18,6 +17,14 @@ const beaddata = parse_clusters(clusters)
 const tips = map_clusters_to_tips(df, clusters)
 const accn_to_cid = index_accessions(clusters)
 const lineage_to_cid = index_lineage(clusters)
+
+	// This is a hack to match anything that could be an acc number prefix
+const prefix = /^(E|I|EP|IS|EPI_I|EPI_IS|EPI_ISL_?|EPI_?|ISL_?|[A-Z]\.[1-9]+)$/i;
+const MIN_RESULTS = 10;
+const normalize = (str) => str.replace(/[^a-z0-9]/gi, '').toLowerCase();
+const data = Object.keys(accn_to_cid).sort().concat(Object.keys(lineage_to_cid).sort()).map(accn => [
+  normalize(accn), accn
+]);
 
 app.get('/api/edgeList/:cindex', (req, res) => {
   res.send(beaddata[req.params.cindex].edgelist)
@@ -41,11 +48,11 @@ app.get('/api/df', (req, res) => {
 
 app.get('/api/lineage/:cindex', (req, res) => {
   res.send(clusters[req.params.cindex].lineage)
-})
+});
 
 app.get('/api/cid/:accession', (req, res) => {
   res.send(accn_to_cid[req.params.accession])
-})
+});
 
 app.get('/api/cid', (req, res) => {
   res.send(accn_to_cid)
@@ -53,7 +60,7 @@ app.get('/api/cid', (req, res) => {
 
 app.get('/api/lineagetocid', (req, res) => {
   res.send(lineage_to_cid)
-})
+});
 
 app.get('/api/searchHits/:query/:start/:end', (req, res) => {
   // Flatten the json data to an array with bead data only
@@ -70,7 +77,27 @@ app.get('/api/searchHits/:query/:start/:end', (req, res) => {
   });
 
   res.send(search_hits)
-})
+});
+
+app.get('/api/getHits/:query', (req, res) => {
+  function as_label(search_data) {
+    const [, accn] = search_data;
+    return accn;
+  }
+
+  const term = req.params.query
+
+  if (!/\d/.test(term)) {
+    if (prefix.test(term)) {
+      res.send(data.slice(0, MIN_RESULTS).map(as_label));
+    } else {
+      res.send([]);
+    }
+  } else {
+    const result = data.filter(array => array[0].indexOf(normalize(term)) > -1);
+    res.send(result.slice(0, MIN_RESULTS).map(as_label));
+  }
+});
 
 const port = process.env.PORT || 8001;
 

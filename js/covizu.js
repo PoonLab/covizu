@@ -192,13 +192,30 @@ req.done(async function() {
   .then(response => response.json())
   .then(data => lineage_to_cid = data)
 
-  // $('#search-input').autocomplete({
-  //   source: get_autocomplete_source_fn(accn_to_cid, lineage_to_cid),
-  //   select: function( event, ui ) {
-  //       const accn = ui.item.value;
-  //       //search(accn);
-  //   }
-  // });
+  $('#search-input').autocomplete({
+    source: function(req, res) {
+      $.ajax({
+        url: `/api/getHits/${req.term}`,
+        dataType: "json",
+        type: "GET",
+        data: {
+          term: req.term
+        },
+        success: function(data) {
+          res(data)
+        },
+        error: function(xhr) {
+          console.log(xhr.statusText)
+        }
+      })
+    },
+    minLength: 1,
+    delay: 0,
+    select: function( event, ui ) {
+        const accn = ui.item.value;
+        //search(accn);
+    }
+  });
 
 
   // Maps cidx to an id
