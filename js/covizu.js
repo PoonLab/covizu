@@ -248,6 +248,14 @@ req.done(function() {
     $('#clear_button').removeAttr("disabled");
     wrap_search();
     enable_buttons();
+
+    // Close the introductory text popup
+    $( "#splash" ).dialog("close");
+
+    if ($('#error_message').text() !== '') {
+      $('.modal-text').text(`No matches for ${search}. Please try again.`);
+      $('.modal').fadeIn(300);
+    }
   }
   else {
     d3.select('#cidx-' + cindex).attr("class", "clicked")
@@ -484,6 +492,18 @@ req.done(function() {
 
   $('#svg-timetree').scroll(function() {
     $("#tree-vscroll").scrollTop($(this).scrollTop());
+  });
+
+  // Closing the modal
+  $('.closeBtn').on('click', function () {
+    $('.modal').fadeOut(300);
+  });
+
+  // Close the modal when clicking outside the modal
+  $('.modal').on('click', function () {
+    $('.modal').fadeOut(300);
+  }).children().click(function () {
+    return false;
   });
 
   $('#previous_button').click(function(){
