@@ -9,6 +9,8 @@
 * [TreeTime](https://github.com/neherlab/treetime) version 0.7.5+
 * [RapidNJ](https://birc.au.dk/software/rapidnj/)
 * [git](https://git-scm.com/)
+* [Node.js](https://nodejs.org/en/download/)
+* [npm](https://docs.npmjs.com/about-npm-versions)
 
 If running locally (without dedicated GISAID feed):
 * [Pangolin](https://github.com/cov-lineages/pangolin/)
