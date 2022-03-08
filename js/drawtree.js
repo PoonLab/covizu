@@ -1,5 +1,6 @@
 var margin = {top: 10, right: 40, bottom: 10, left: 0},
-  width = 250 - margin.left - margin.right,
+  padding = {right: 15}
+  width = 250 - margin.left - margin.right - padding.right,
   height = 1200 - margin.top - margin.bottom;
 
 // to store colour palettes
@@ -24,13 +25,13 @@ var yValue = function(d) { return d.y; },
 
 var vis = d3.select("div#svg-timetree")
   .append("svg")
-  .attr("width", width + margin.left + margin.right);
+  .attr("width", width + margin.left + margin.right + padding.right);
   //.attr("height", height + margin.top + margin.bottom);
   //.append("g");
 
 var axis = d3.select("div#svg-timetreeaxis")
   .append("svg")
-  .attr("width", width + margin.left + margin.right)
+  .attr("width", width + margin.left + margin.right + padding.right)
   .attr("height", 25)
   .append("g");
 
@@ -279,10 +280,25 @@ function date_to_xaxis(coldate) {
 
 function mutations_to_string(mutations) {
   let mutStr = `<b>${i18n_text.tip_mutations}:</b><br/>`;
-  for (mutation of mutations) {
+  for ([mutation, ] of mutations.slice(0,10)) {
     mutStr += `&nbsp;&nbsp;${mutation}<br/>`;
   }
+
+  if (mutations.length > 10) {
+    mutStr += `&nbsp;&nbsp;and ${mutations.length - 10} others...<br/>`
+  }
   return mutStr;
+}
+
+function sort_mutations(mutations) {
+  // Change dict to array 
+  var mutations_array = Object.keys(mutations).map(function(key) {
+    return [key, mutations[key]];
+  });
+  mutations_array.sort(function(first, second) {
+    return second[1] - first[1]
+  })
+  return mutations_array
 }
 
 /**
@@ -291,12 +307,22 @@ function mutations_to_string(mutations) {
  */
 function draw_clusters(tips) {
 
+  var tickVals = [],
+      minVal = d3.min(df, xValue)-0.05,
+      maxVal = date_to_xaxis(d3.max(df, function(d) {return d.last_date})),
+      interval = (maxVal - minVal)/3;
+
+  for (var i = 0; i < 3; i++) {
+    tickVals.push(minVal + (interval/2) + (i*interval));
+  }
+  
   // Draws the axis for the time scaled tree
   axis.append("g")
     .attr("class", "treeaxis")
     .attr("transform", "translate(0,20)")
     .call(d3.axisTop(xScale)
       .ticks(3)
+      .tickValues(tickVals)
       .tickFormat(function(d) {
         return xaxis_to_date(d, tips[0])
       })
@@ -312,7 +338,7 @@ function draw_clusters(tips) {
 
     let ctooltipText = `<b>${i18n_text.tip_diffs}:</b> ${Math.round(100*d.mean_ndiffs)/100.}<br/>`;
     ctooltipText += `<b>${i18n_text.tip_residual}:</b> ${Math.round(100*d.residual)/100.}<br>`;
-    ctooltipText += mutations_to_string(d.mutations);
+    ctooltipText += mutations_to_string(sort_mutations(d.mutations));
     ctooltipText += region_to_string(d.allregions);
     ctooltipText += `<b>${i18n_text.tip_varcount}:</b><br>`;
     ctooltipText += `&nbsp;&nbsp; ${i18n_text.sampled}: ${d.varcount}<br>`;
@@ -712,6 +738,7 @@ function click_cluster(d, cluster_info) {
     gentable(d);
     draw_region_distribution(d.allregions);
     gen_details_table(beaddata[d.cluster_idx].points);  // update details table with all samples
+    gen_mut_table({'mutations': mutations[d.cluster_idx].mutation, 'frequency': mutations[d.cluster_idx].frequency, 'phenotype': mutations[d.cluster_idx].phenotype})
     
     // FIXME: this is the same div used for making barplot SVG
     $("#text-node").html(`Number of cases: ${d.count}<br/>Number of variants: ${d.varcount}<br/>`);

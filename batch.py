@@ -136,8 +136,7 @@ if __name__ == "__main__":
     try:
         subprocess.check_call("git submodule foreach git pull origin master", shell=True)
     except:
-        cb.callback("Error updating submodules")
-        sys.exit()
+        cb.callback("Could not update submodules", level='ERROR')
 
     # download xz file if not specified by user
     if args.infile is None:
@@ -164,8 +163,8 @@ if __name__ == "__main__":
     locator = SC2Locator()
     mutations = {}
     for lineage, features in get_mutations(by_lineage).items():
-        annots = [locator.parse_mutation(f) for f in features]
-        mutations.update({lineage: [a for a in annots if a is not None]})
+        annots = {locator.parse_mutation(f) : freq for f, freq in features.items()}
+        mutations.update({lineage: {a : freq for a, freq in annots.items() if a is not None}})
 
     # write data stats
     dbstat_file = os.path.join(args.outdir, 'dbstats.{}.json'.format(timestamp))
