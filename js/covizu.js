@@ -264,7 +264,7 @@ req.done(function() {
     gentable(node.__data__);
     draw_region_distribution(node.__data__.allregions);
     gen_details_table(beaddata[node.__data__.cluster_idx].points);  // update details table with all samples
-    gen_mut_table({'mutations': mutations[cindex].mutation, 'frequency': mutations[cindex].frequency, 'phenotype': mutations[cindex].phenotype}) 
+    gen_mut_table(mutations[cindex]);
     draw_cluster_box(d3.select(node));
   }
 

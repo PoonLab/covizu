@@ -247,6 +247,7 @@ function lineage_search(text_query) {
   gentable(cluster_info);
   draw_region_distribution(cluster_info.allregions);
   gen_details_table(beaddata[cluster_info.cluster_idx].points); 
+  gen_mut_table(mutations[cluster_info.cluster_idx]);
 }
 
 
@@ -323,6 +324,7 @@ function update_table_individual_bead(bead) {
   gentable(bead);
   draw_region_distribution(tabulate(bead.region));
   gen_details_table(bead);
+  gen_mut_table(mutations[bead.cidx]);
 }
 
 function update_table_individual_bead_front(bead) {
@@ -330,6 +332,7 @@ function update_table_individual_bead_front(bead) {
   gentable(bead);
   draw_region_distribution(tabulate(bead.region));
   gen_details_table(bead);
+  gen_mut_table(mutations[bead.cidx]);
 }
 
 
