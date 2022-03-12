@@ -706,6 +706,7 @@ function click_cluster(d, cluster_info) {
     gentable(d);
     draw_region_distribution(d.allregions);
     gen_details_table(beaddata[d.cluster_idx].points);  // update details table with all samples
+    gen_mut_table(mutations[d.cluster_idx]);
   }
   else if (cluster_info.className.baseVal !== "SelectedCluster"){
     if (search_results.get().total_points > 0) {
