@@ -78,6 +78,16 @@
       loading_json: "Chargement les donn&eacute;es JSON depuis le serveur (~10 sec)...",
       country_theaders: ["Région", "Pays", "Compte"],
       sample_theaders: ["Num d'ordre", "Nom", "Date"],
+      mutation_threaders: ["Mutation", "Frequency", "Phenotype"],
+      phenotypes: {
+        'Vaccine neutralization efficacy': 'img/red_circle.png', 
+        'Anthropozoonotic events': 'img/bat.png', 
+        'Gene expression increase': 'img/orange_star.png', 
+        'ACE2 receptor binding affinity': 'img/purple_square.jpeg',
+        'Monoclonal antibody serial passage escape': 'img/antibody.png', 
+        'Convalescent plasma escape': 'img/green_pentagon.png', 
+        'Antibody epitope effects': 'img/blue_triangle.png'
+      }
     };
 
   </script>
@@ -243,8 +253,9 @@
 
           <div id="tabs">
             <ul>
-              <li><a href="#tabs-1">Pays</a></li>
-              <li><a href="#tabs-2">&Eacute;chantillons</a></li>
+              <li style="font-size: 0.8em"><a href="#tabs-1">Pays</a></li>
+              <li style="font-size: 0.8em"><a href="#tabs-2">&Eacute;chantillons</a></li>
+              <li style="font-size: 0.8em"><a href="#tabs-3">Mutations</a></li>
             </ul>
             <div id="tabs-1">
               <div class="breaker" id="barplot"></div>
@@ -255,6 +266,13 @@
                 Passer la souris sur les accessions (EPI_ISL_#) pour afficher le laboratoire et d'autres informations.
               </div>
               <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="seq-table"></div>
+            </div>
+            <div id="tabs-3">
+              <div id="muttable-hint" class="hint">
+                Phenotype annotations retrieved from <a href="https://github.com/nodrogluap/pokay">Pokay</a>, curated by <a href="https://people.ucalgary.ca/~gordonp/">Paul Gordon</a> and his team.
+              </div>
+              <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="mut-table"></div>
+              <table id="muttable-legend" class="legend"></table>
             </div>
           </div>
         </div>

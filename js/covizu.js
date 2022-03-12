@@ -656,10 +656,50 @@ var seq_theaders = i18n_text.sample_theaders;
 var seq_tbody = seq_table.append('tbody');
 
 // Populate mutation details table
+
+// Prepare the legend
+var mut_table_legend = []
+
+var num_labels = 0, phenotype_labels = [];
+for (const [label, link] of Object.entries(i18n_text.phenotypes)) {
+  if (num_labels != 0 && num_labels % 2 == 0) {
+    mut_table_legend.push(phenotype_labels);
+    phenotype_labels = []
+  }
+  phenotype_labels.push(label);
+  num_labels++;
+}
+
+if (phenotype_labels.length !== 0) {
+  mut_table_legend.push(phenotype_labels)
+}
+
 var mut_table = d3.select('#mut-table').append('table');
 var mut_thead = mut_table.append('thead')
 var mut_theaders = i18n_text.mutation_threaders;
 var mut_tbody = mut_table.append("tbody")
+
+var mut_legend_rows = d3.select("#muttable-legend")
+                        .append("tbody")
+                        .selectAll("tr")
+                        .data(mut_table_legend)
+                        .enter()
+                        .append("tr")
+
+var mut_legend_cells = mut_legend_rows
+                        .selectAll("td")
+                        .data(function (r) { return r.slice(0,2); })
+                        .enter()
+                        .append("td")
+
+mut_legend_cells
+  .append("img")
+  .attr("src", function(d) { return i18n_text.phenotypes[d] })
+  .attr("class", "phenotype_icon")
+
+mut_legend_cells
+  .append("text")
+  .text(function(d) { return d; })
 
 // implement acknowledgements dialog
 $( "#dialog" ).dialog({ autoOpen: false });

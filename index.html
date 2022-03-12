@@ -78,7 +78,16 @@
       loading_json: "Loading JSON data from server (~10s)...",
       country_theaders: ["Region", "Country", "Count"],
       sample_theaders: ["Accession", "Name", "Date"],
-      mutation_threaders: ["Mutation", "Frequency", "Phenotype"]
+      mutation_threaders: ["Mutation", "Frequency", "Phenotype"],
+      phenotypes: {
+        'Vaccine neutralization efficacy': 'img/red_circle.png', 
+        'Anthropozoonotic events': 'img/bat.png', 
+        'Gene expression increase': 'img/orange_star.png', 
+        'ACE2 receptor binding affinity': 'img/purple_square.jpeg',
+        'Monoclonal antibody serial passage escape': 'img/antibody.png', 
+        'Convalescent plasma escape': 'img/green_pentagon.png', 
+        'Antibody epitope effects': 'img/blue_triangle.png'
+      }
     };
 
   </script>
@@ -263,44 +272,7 @@
                 Phenotype annotations retrieved from <a href="https://github.com/nodrogluap/pokay">Pokay</a>, curated by <a href="https://people.ucalgary.ca/~gordonp/">Paul Gordon</a> and his team.
               </div>
               <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="mut-table"></div>
-              <table id="muttable-legend" class="legend">
-                <tr>
-                  <td>
-                    <img src="img/red_circle.png" alt="vaccine" class="phenotype_icon">
-                    Vaccine neutralization efficacy
-                  </td>
-                  <td>
-                    <img src="img/bat.png" alt="bat" class="phenotype_icon">
-                    Anthropozoonotic events 
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <img src="img/orange_star.png" alt="green rhombus" class="phenotype_icon">
-                    Gene expression increase
-                  </td>
-                  <td>
-                    <img src="img/purple_square.jpeg" alt="purple square" class="phenotype_icon">
-                    ACE2 receptor binding affinity
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <img src="img/antibody.png" alt="yellow hexagon" class="phenotype_icon">
-                    Monoclonal antibody serial passage escape 
-                  </td>
-                  <td>
-                    <img src="img/green_pentagon.png" alt="green pentagon" class="phenotype_icon">
-                    Convalescent plasma escape
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <img src="img/blue_triangle.png" alt="blue triangle" class="phenotype_icon">
-                    Antibody epitope effects
-                  </td>
-                </tr> 
-              </table>
+              <table id="muttable-legend" class="legend"></table>
             </div>
           </div>
         </div>
