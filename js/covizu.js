@@ -121,6 +121,16 @@ var country_pal = {
   "South America": "#77AADD"
 };
 
+var phenotypes = {
+  'Vaccine neutralization efficacy': 'img/red_circle.png', 
+  'Anthropozoonotic events': 'img/bat.png', 
+  'Gene expression increase': 'img/orange_star.png', 
+  'ACE2 receptor binding affinity': 'img/purple_square.jpeg',
+  'Monoclonal antibody serial passage escape': 'img/antibody.png', 
+  'Convalescent plasma escape': 'img/green_pentagon.png', 
+  'Antibody epitope effects': 'img/blue_triangle.png'
+}
+
 // load time-scaled phylogeny from server
 var nwk, df, countries, mut_annotations;
 $.ajax({
@@ -661,12 +671,15 @@ var seq_tbody = seq_table.append('tbody');
 var mut_table_legend = []
 
 var num_labels = 0, phenotype_labels = [];
-for (const [label, link] of Object.entries(i18n_text.phenotypes)) {
+for (const [label, link] of Object.entries(phenotypes)) {
   if (num_labels != 0 && num_labels % 2 == 0) {
     mut_table_legend.push(phenotype_labels);
     phenotype_labels = []
   }
-  phenotype_labels.push(label);
+  phenotype_labels.push({
+    label: i18n_text.phenotypes[label],
+    src: link
+  });
   num_labels++;
 }
 
@@ -694,12 +707,12 @@ var mut_legend_cells = mut_legend_rows
 
 mut_legend_cells
   .append("img")
-  .attr("src", function(d) { return i18n_text.phenotypes[d] })
+  .attr("src", function(d) { return d.src })
   .attr("class", "phenotype_icon")
 
 mut_legend_cells
   .append("text")
-  .text(function(d) { return d; })
+  .text(function(d) { return d.label; })
 
 // implement acknowledgements dialog
 $( "#dialog" ).dialog({ autoOpen: false });
