@@ -78,15 +78,15 @@
       loading_json: "Chargement les donn&eacute;es JSON depuis le serveur (~10 sec)...",
       country_theaders: ["Région", "Pays", "Compte"],
       sample_theaders: ["Num d'ordre", "Nom", "Date"],
-      mutation_threaders: ["Mutation", "Frequency", "Phenotype"],
+      mutation_threaders: ["Mutation", "Fréquence", "Phénotype"],
       phenotypes: {
-        'Vaccine neutralization efficacy': 'Vaccine neutralization efficacy', //English -> translated
-        'Anthropozoonotic events': 'Anthropozoonotic events', 
-        'Gene expression increase': 'Gene expression increase', 
-        'ACE2 receptor binding affinity': 'ACE2 receptor binding affinity',
-        'Monoclonal antibody serial passage escape': 'Monoclonal antibody serial passage escape', 
-        'Convalescent plasma escape': 'Convalescent plasma escape', 
-        'Antibody epitope effects': 'Antibody epitope effects'
+        'Vaccine neutralization efficacy': 'Éfficacité de neutralisation des vaccins', //English -> translated
+        'Anthropozoonotic events': 'Événements anthropozoonotiques', 
+        'Gene expression increase': `Augmenation de l'expression des gènes`, 
+        'ACE2 receptor binding affinity': 'Affinité de liason au récepteur ACE2',
+        'Monoclonal antibody serial passage escape': 'Échappement des anticorps monoclonaux', 
+        'Convalescent plasma escape': 'Évasion de plasma convalescent', 
+        'Antibody epitope effects': `Effets d'épitope d'anticorps`
       }
     };
 
@@ -269,7 +269,7 @@
             </div>
             <div id="tabs-3">
               <div id="muttable-hint" class="hint">
-                Phenotype annotations retrieved from <a href="https://github.com/nodrogluap/pokay">Pokay</a>, curated by <a href="https://people.ucalgary.ca/~gordonp/">Paul Gordon</a> and his team.
+                Annotations phénotypiques extraites de <a href="https://github.com/nodrogluap/pokay">Pokay</a>, organisées par <a href="https://people.ucalgary.ca/~gordonp/">Paul Gordon</a> et son équipe.
               </div>
               <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="mut-table"></div>
               <table id="muttable-legend" class="legend"></table>
