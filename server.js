@@ -1,3 +1,4 @@
+const compression = require('compression');
 const express = require('express');
 const app = express();
 const clusters = require('./data/clusters.json')
@@ -5,6 +6,8 @@ const { utcDate } = require('./utils/helpers')
 const { parse_clusters, readTree, map_clusters_to_tips, index_accessions, index_lineage } = require('./utils/parseCluster')
 
 const fs = require('fs');
+
+app.use(compression());
 
 try {
     var tree = fs.readFileSync('./data/timetree.nwk', 'utf8');

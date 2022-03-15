@@ -24,6 +24,7 @@
   },
   "homepage": "https://github.com/PoonLab/covizu#readme",
   "dependencies": {
+    "compression": "^1.7.4",
     "express": "^4.17.2",
     "fs": "^0.0.1-security"
   }
