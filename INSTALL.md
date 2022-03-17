@@ -12,3 +12,21 @@
 
 If running locally (without dedicated GISAID feed):
 * [Pangolin](https://github.com/cov-lineages/pangolin/)
+
+## Installation
+
+* Navigate to the directory in your filesystem under which you want to install the `covizu` directory
+* Clone the repository:
+```
+git clone https://github.com/PoonLab/covizu
+```
+* Enter the new directory and install the submodules `pango-designation` and `ProblematicSites_SARS-CoV2`:
+```
+cd covizu
+git submodule init
+git submodule update
+```
+* Install the package into your Python module directory
+```
+sudo python3 setup.py install  # omit `sudo` if you don't have superuser privileges
+```
