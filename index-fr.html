@@ -78,11 +78,29 @@
       loading_json: "Chargement les donn&eacute;es JSON depuis le serveur (~10 sec)...",
       country_theaders: ["Région", "Pays", "Compte"],
       sample_theaders: ["Num d'ordre", "Nom", "Date"],
+      mutation_threaders: ["Mutation", "Fréquence", "Phénotype"],
+      phenotypes: {
+        'Vaccine neutralization efficacy': 'Éfficacité de neutralisation des vaccins', //English -> translated
+        'Anthropozoonotic events': 'Événements anthropozoonotiques', 
+        'Gene expression increase': `Augmenation de l'expression des gènes`, 
+        'ACE2 receptor binding affinity': 'Affinité de liason au récepteur ACE2',
+        'Monoclonal antibody serial passage escape': 'Échappement des anticorps monoclonaux', 
+        'Convalescent plasma escape': 'Évasion de plasma convalescent', 
+        'Antibody epitope effects': `Effets d'épitope d'anticorps`
+      }
     };
 
   </script>
 
   <div class="tooltip" id="tooltipContainer"></div>
+
+  <div class="modal">
+    <div class="modal-content">
+      <h2 class="modal-title">Search Error</h2>
+      <div class="modal-text"></div>
+      <a class="closeBtn" href="javascript:void(0)">x</a>
+    </div>
+  </div>
 
   <div class="app">
     <div class="app-left">
@@ -235,8 +253,9 @@
 
           <div id="tabs">
             <ul>
-              <li><a href="#tabs-1">Pays</a></li>
-              <li><a href="#tabs-2">&Eacute;chantillons</a></li>
+              <li style="font-size: 0.8em"><a href="#tabs-1">Pays</a></li>
+              <li style="font-size: 0.8em"><a href="#tabs-2">&Eacute;chantillons</a></li>
+              <li style="font-size: 0.8em"><a href="#tabs-3">Mutations</a></li>
             </ul>
             <div id="tabs-1">
               <div class="breaker" id="barplot"></div>
@@ -247,6 +266,13 @@
                 Passer la souris sur les accessions (EPI_ISL_#) pour afficher le laboratoire et d'autres informations.
               </div>
               <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="seq-table"></div>
+            </div>
+            <div id="tabs-3">
+              <div id="muttable-hint" class="hint">
+                Annotations phénotypiques extraites de <a href="https://github.com/nodrogluap/pokay">Pokay</a>, organisées par <a href="https://people.ucalgary.ca/~gordonp/">Paul Gordon</a> et son équipe.
+              </div>
+              <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="mut-table"></div>
+              <table id="muttable-legend" class="legend"></table>
             </div>
           </div>
         </div>

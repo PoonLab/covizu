@@ -243,6 +243,7 @@ async function lineage_search(text_query) {
   gentable(cluster_info);
   draw_region_distribution(cluster_info.allregions);
   gen_details_table(points); 
+  gen_mut_table(mutations[cluster_info.cluster_idx]);
 }
 
 
@@ -320,6 +321,7 @@ function update_table_individual_bead(bead) {
   gentable(bead);
   draw_region_distribution(tabulate(bead.region));
   gen_details_table(bead);
+  gen_mut_table(mutations[bead.cidx]);
 }
 
 function update_table_individual_bead_front(bead) {
@@ -327,6 +329,7 @@ function update_table_individual_bead_front(bead) {
   gentable(bead);
   draw_region_distribution(tabulate(bead.region));
   gen_details_table(bead);
+  gen_mut_table(mutations[bead.cidx]);
 }
 
 
@@ -389,9 +392,9 @@ function select_clusters(rects) {
     cluster = d3.select(rects.nodes().pop());  // last element in array
     cluster.attr("class", "clicked");
     d3.select("#cidx-"+cidx).attr("class", "clicked");
-    
-    draw_cluster_box(cluster);
 
+    draw_cluster_box(cluster);
+    
     // switch to beadplot for this cluster
     beadplot(cluster.datum().cluster_idx);
 

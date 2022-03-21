@@ -280,10 +280,25 @@ function date_to_xaxis(coldate) {
 
 function mutations_to_string(mutations) {
   let mutStr = `<b>${i18n_text.tip_mutations}:</b><br/>`;
-  for (mutation of mutations) {
+  for ([mutation, ] of mutations.slice(0,10)) {
     mutStr += `&nbsp;&nbsp;${mutation}<br/>`;
   }
+
+  if (mutations.length > 10) {
+    mutStr += `&nbsp;&nbsp;and ${mutations.length - 10} others...<br/>`
+  }
   return mutStr;
+}
+
+function sort_mutations(mutations) {
+  // Change dict to array 
+  var mutations_array = Object.keys(mutations).map(function(key) {
+    return [key, mutations[key]];
+  });
+  mutations_array.sort(function(first, second) {
+    return second[1] - first[1]
+  })
+  return mutations_array
 }
 
 /**
@@ -323,7 +338,7 @@ function draw_clusters(tips) {
 
     let ctooltipText = `<b>${i18n_text.tip_diffs}:</b> ${Math.round(100*d.mean_ndiffs)/100.}<br/>`;
     ctooltipText += `<b>${i18n_text.tip_residual}:</b> ${Math.round(100*d.residual)/100.}<br>`;
-    ctooltipText += mutations_to_string(d.mutations);
+    ctooltipText += mutations_to_string(sort_mutations(d.mutations));
     ctooltipText += region_to_string(d.allregions);
     ctooltipText += `<b>${i18n_text.tip_varcount}:</b><br>`;
     ctooltipText += `&nbsp;&nbsp; ${i18n_text.sampled}: ${d.varcount}<br>`;
@@ -689,7 +704,7 @@ async function click_cluster(d, cluster_info) {
     gentable(d);
     draw_region_distribution(d.allregions);
     gen_details_table(points);  // update details table with all samples
-
+    gen_mut_table(mutations[d.cluster_idx]);
   }
   else if (cluster_info.className.baseVal !== "SelectedCluster"){
     if (search_results.get().total_points > 0) {
@@ -722,7 +737,7 @@ async function click_cluster(d, cluster_info) {
     gentable(d);
     draw_region_distribution(d.allregions);
     gen_details_table(points);  // update details table with all samples
-
+    gen_mut_table(mutations[d.cluster_idx]);
     
     // FIXME: this is the same div used for making barplot SVG
     $("#text-node").html(`Number of cases: ${d.count}<br/>Number of variants: ${d.varcount}<br/>`);

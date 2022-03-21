@@ -79,11 +79,29 @@
       loading_json: "从服务器加载JSON数据 (~十秒)...",
       country_theaders: ["地区", "国家", "数"],
       sample_theaders: ["登记号", "名", "日期"],
+      mutation_threaders: ["Mutation", "Frequency", "Phenotype"],
+      phenotypes: {
+        'Vaccine neutralization efficacy': 'Vaccine neutralization efficacy', //English -> translated
+        'Anthropozoonotic events': 'Anthropozoonotic events', 
+        'Gene expression increase': 'Gene expression increase', 
+        'ACE2 receptor binding affinity': 'ACE2 receptor binding affinity',
+        'Monoclonal antibody serial passage escape': 'Monoclonal antibody serial passage escape', 
+        'Convalescent plasma escape': 'Convalescent plasma escape', 
+        'Antibody epitope effects': 'Antibody epitope effects'
+      }
     };
 
   </script>
 
   <div class="tooltip" id="tooltipContainer"></div>
+
+  <div class="modal">
+    <div class="modal-content">
+      <h2 class="modal-title">Search Error</h2>
+      <div class="modal-text"></div>
+      <a class="closeBtn" href="javascript:void(0)">x</a>
+    </div>
+  </div>
 
   <div class="app">
     <div class="app-left">
@@ -236,8 +254,9 @@
 
           <div id="tabs">
             <ul>
-              <li><a href="#tabs-1">国别</a></li>
-              <li><a href="#tabs-2">样本</a></li>
+              <li style="font-size: 0.8em"><a href="#tabs-1">国别</a></li>
+              <li style="font-size: 0.8em"><a href="#tabs-2">样本</a></li>
+              <li style="font-size: 0.8em"><a href="#tabs-3">Mutations</a></li>
             </ul>
             <div id="tabs-1">
               <div class="breaker" id="barplot"></div>
@@ -248,6 +267,13 @@
                 将鼠标悬停在登记号（EPI_ISL_＃）上可显示实验室和作者信息
               </div>
               <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="seq-table"></div>
+            </div>
+            <div id="tabs-3">
+              <div id="muttable-hint" class="hint">
+                Phenotype annotations retrieved from <a href="https://github.com/nodrogluap/pokay">Pokay</a>, curated by <a href="https://people.ucalgary.ca/~gordonp/">Paul Gordon</a> and his team.
+              </div>
+              <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="mut-table"></div>
+              <table id="muttable-legend" class="legend"></table>
             </div>
           </div>
         </div>

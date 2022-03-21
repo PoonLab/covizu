@@ -163,8 +163,8 @@ if __name__ == "__main__":
     locator = SC2Locator()
     mutations = {}
     for lineage, features in get_mutations(by_lineage).items():
-        annots = [locator.parse_mutation(f) for f in features]
-        mutations.update({lineage: [a for a in annots if a is not None]})
+        annots = {locator.parse_mutation(f) : freq for f, freq in features.items()}
+        mutations.update({lineage: {a : freq for a, freq in annots.items() if a is not None}})
 
     # write data stats
     dbstat_file = os.path.join(args.outdir, 'dbstats.{}.json'.format(timestamp))

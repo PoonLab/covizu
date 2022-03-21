@@ -78,11 +78,29 @@
       loading_json: "Loading JSON data from server (~10s)...",
       country_theaders: ["Region", "Country", "Count"],
       sample_theaders: ["Accession", "Name", "Date"],
+      mutation_threaders: ["Mutation", "Frequency", "Phenotype"],
+      phenotypes: {
+        'Vaccine neutralization efficacy': 'Vaccine neutralization efficacy', //English -> translated
+        'Anthropozoonotic events': 'Anthropozoonotic events', 
+        'Gene expression increase': 'Gene expression increase', 
+        'ACE2 receptor binding affinity': 'ACE2 receptor binding affinity',
+        'Monoclonal antibody serial passage escape': 'Monoclonal antibody serial passage escape', 
+        'Convalescent plasma escape': 'Convalescent plasma escape', 
+        'Antibody epitope effects': 'Antibody epitope effects'
+      }
     };
 
   </script>
 
   <div class="tooltip" id="tooltipContainer"></div>
+
+  <div class="modal">
+    <div class="modal-content">
+      <h2 class="modal-title">Search Error</h2>
+      <div class="modal-text"></div>
+      <a class="closeBtn" href="javascript:void(0)">x</a>
+    </div>
+  </div>
 
   <div class="app">
     <div class="app-left">
@@ -223,7 +241,7 @@
           <span style="width: 250px">
             <div class="gisaid">Enabled by data from&nbsp;<a href="https://gisaid.org" target="_new">
                 <img src="https://www.gisaid.org/fileadmin/gisaid/img/schild.png"
-                     height="24px"/>
+                     height="24px"/> 
               </a>
             </div>
           </span>
@@ -235,8 +253,9 @@
 
           <div id="tabs">
             <ul>
-              <li><a href="#tabs-1">Countries</a></li>
-              <li><a href="#tabs-2">Samples</a></li>
+              <li style="font-size: 0.8em"><a href="#tabs-1">Countries</a></li>
+              <li style="font-size: 0.8em"><a href="#tabs-2">Samples</a></li>
+              <li style="font-size: 0.8em"><a href="#tabs-3">Mutations</a></li>
             </ul>
             <div id="tabs-1">
               <div class="breaker" id="barplot"></div>
@@ -247,6 +266,13 @@
                 Hover over accession (EPI_ISL_#) to display laboratory and author info.
               </div>
               <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="seq-table"></div>
+            </div>
+            <div id="tabs-3">
+              <div id="muttable-hint" class="hint">
+                Phenotype annotations retrieved from <a href="https://github.com/nodrogluap/pokay">Pokay</a>, curated by <a href="https://people.ucalgary.ca/~gordonp/">Paul Gordon</a> and his team.
+              </div>
+              <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="mut-table"></div>
+              <table id="muttable-legend" class="legend"></table>
             </div>
           </div>
         </div>

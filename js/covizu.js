@@ -121,8 +121,18 @@ var country_pal = {
   "South America": "#77AADD"
 };
 
+var phenotypes = {
+  'Vaccine neutralization efficacy': 'img/red_circle.png', 
+  'Anthropozoonotic events': 'img/bat.png', 
+  'Gene expression increase': 'img/orange_star.png', 
+  'ACE2 receptor binding affinity': 'img/purple_square.jpeg',
+  'Monoclonal antibody serial passage escape': 'img/antibody.png', 
+  'Convalescent plasma escape': 'img/green_pentagon.png', 
+  'Antibody epitope effects': 'img/blue_triangle.png'
+}
+
 // load time-scaled phylogeny from server
-var nwk, df, countries;
+var nwk, df, countries, mut_annotations;
 $.ajax({
   url: "data/timetree.nwk",
   success: function(data) {
@@ -133,7 +143,9 @@ $.ajax({
 $.getJSON("data/countries.json", function(data) {
   countries = data;
 });
-
+$.getJSON("data/mut_annotations.json", function(data) {
+  mut_annotations = data;
+});
 
 var clusters, beaddata, tips,
     accn_to_cid, cindex, lineage_to_cid, lineage;
@@ -167,7 +179,8 @@ req.done(async function() {
 
   $("#splash-button").button("enable");
   $("#splash-extra").html("");  // remove loading animation
-
+  
+  mutations = parse_mutation_annotations(mut_annotations);
   drawtree(df);
   //spinner.stop();
   draw_clusters(tips);
@@ -277,6 +290,14 @@ req.done(async function() {
     $('#clear_button').removeAttr("disabled");
     wrap_search();
     enable_buttons();
+
+    // Close the introductory text popup
+    $( "#splash" ).dialog("close");
+
+    if ($('#error_message').text() !== '') {
+      $('.modal-text').text(`No matches for ${search}. Please try again.`);
+      $('.modal').fadeIn(300);
+    }
   }
   else {
     d3.select('#cidx-' + cindex).attr("class", "clicked")
@@ -285,6 +306,7 @@ req.done(async function() {
     gentable(node.__data__);
     draw_region_distribution(node.__data__.allregions);
     gen_details_table(points);  // update details table with all samples
+    gen_mut_table(mutations[cindex]);
     draw_cluster_box(d3.select(node));
   }
 
@@ -516,7 +538,19 @@ req.done(async function() {
     $("#tree-vscroll").scrollTop($(this).scrollTop());
   });
 
-  $('#previous_button').click(async function(){
+  // Closing the modal
+  $('.closeBtn').on('click', function () {
+    $('.modal').fadeOut(300);
+  });
+
+  // Close the modal when clicking outside the modal
+  $('.modal').on('click', function () {
+    $('.modal').fadeOut(300);
+  }).children().click(function () {
+    return false;
+  });
+
+  $('#previous_button').click(async function() {
     var curr_bead = search_results.get().current_point;
     var bead_hits = search_results.get().beads;
     var bead_id_to_accession = Object.keys(bead_hits);
@@ -668,6 +702,55 @@ var seq_table = d3.select("#seq-table").append('table');
 var thead = seq_table.append('thead');
 var seq_theaders = i18n_text.sample_theaders;
 var seq_tbody = seq_table.append('tbody');
+
+// Populate mutation details table
+
+// Prepare the legend
+var mut_table_legend = []
+
+var num_labels = 0, phenotype_labels = [];
+for (const [label, link] of Object.entries(phenotypes)) {
+  if (num_labels != 0 && num_labels % 2 == 0) {
+    mut_table_legend.push(phenotype_labels);
+    phenotype_labels = []
+  }
+  phenotype_labels.push({
+    label: i18n_text.phenotypes[label],
+    src: link
+  });
+  num_labels++;
+}
+
+if (phenotype_labels.length !== 0) {
+  mut_table_legend.push(phenotype_labels)
+}
+
+var mut_table = d3.select('#mut-table').append('table');
+var mut_thead = mut_table.append('thead')
+var mut_theaders = i18n_text.mutation_threaders;
+var mut_tbody = mut_table.append("tbody")
+
+var mut_legend_rows = d3.select("#muttable-legend")
+                        .append("tbody")
+                        .selectAll("tr")
+                        .data(mut_table_legend)
+                        .enter()
+                        .append("tr")
+
+var mut_legend_cells = mut_legend_rows
+                        .selectAll("td")
+                        .data(function (r) { return r.slice(0,2); })
+                        .enter()
+                        .append("td")
+
+mut_legend_cells
+  .append("img")
+  .attr("src", function(d) { return d.src })
+  .attr("class", "phenotype_icon")
+
+mut_legend_cells
+  .append("text")
+  .text(function(d) { return d.label; })
 
 // implement acknowledgements dialog
 $( "#dialog" ).dialog({ autoOpen: false });
