@@ -13,6 +13,26 @@ from covizu.minimap2 import minimap2, encode_diffs
 from covizu.utils.seq_utils import *
 from covizu.utils.progress_utils import Callback
 
+import gc
+
+
+def actualsize(input_obj):
+    """
+    https://towardsdatascience.com/the-strange-size-of-python-objects-in-memory-ce87bdfbb97f
+    """
+    memory_size = 0
+    ids = set()
+    objects = [input_obj]
+    while objects:
+        new = []
+        for obj in objects:
+            if id(obj) not in ids:
+                ids.add(id(obj))
+                memory_size += sys.getsizeof(obj)
+                new.append(obj)
+        objects = gc.get_referents(*new)
+    return memory_size
+
 
 def download_feed(url, user, password):
     """
@@ -23,6 +43,9 @@ def download_feed(url, user, password):
     :param password:  str, access credentials - if None, query user
     :return:  str, path to time-stamped download file
     """
+    if url is None:
+        print("Error: no URL specified in download_feed()")
+        sys.exit()
     if user is None:
         user = getpass.getpass("GISAID username: ")
     if password is None:
@@ -35,7 +58,9 @@ def download_feed(url, user, password):
 
 def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None,
                 fields=("covv_accession_id", "covv_virus_name", "covv_lineage",
-                        "covv_collection_date", "covv_location", "sequence")):
+                        "covv_collection_date", "covv_location", "sequence"),
+                debug=None
+):
     """
     Read in GISAID feed as xz compressed JSON, applying some basic filters
 
@@ -44,13 +69,16 @@ def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None,
     :param mindate:  datetime.date, earliest reasonable sample collection date
     :param callback:  function, optional callback function
     :param fields:  tuple, fieldnames to keep
+    :param debug:  int, limit number of records
 
     :yield:  dict, contents of each GISAID record
     """
     mindate = fromisoformat(mindate)
     rejects = {'short': 0, 'baddate': 0, 'nonhuman': 0, 'nolineage': 0}
     with lzma.open(path, 'rb') as handle:
-        for line in handle:
+        for ln, line in enumerate(handle):
+            if debug and ln > debug:
+                break
             record = json.loads(line)
 
             # remove unused data
@@ -218,28 +246,44 @@ def filter_problematic(records, origin='2019-12-01', rate=0.0655, cutoff=0.005,
 
 def sort_by_lineage(records, callback=None, interval=10000):
     """
-    Resolve stream into a dictionary keyed by Pangolin lineage
+    Resolve stream into a dictionary keyed by Pangolin lineage.
+    Note: records yielded from generator accumulate in this function.
 
     :param records:  generator, return value of extract_features()
     :param callback:  optional, progress monitoring
     :param interval:  int, frequency to report alignment progress (genomes)
     :return:  dict, lists of records keyed by lineage
     """
+    refactor = False
     result = {}
     for i, record in enumerate(records):
         if callback and i % interval == 0:
             callback('aligned {} records'.format(i))
 
         lineage = record['covv_lineage']
+        if refactor:
+            diffs = record.pop('diffs')  # REMOVE entry from record!
+            if diffs is not None:
+                diffs.sort()
+            key = ','.join(['|'.join(map(str, diff)) for diff in diffs])
 
         if str(lineage) == "None" or lineage == '':
             # discard uncategorized genomes, #324, #335
             continue
 
-        if lineage not in result:
-            result.update({lineage: []})
-        result[lineage].append(record)
+        if refactor:
+            if lineage not in result:
+                result.update({lineage: {}})
+            if key not in result[lineage]:
+                result[lineage].update({key: []})
+        
+            result[lineage][key].append(record)
+        else:
+            if lineage not in result:
+                result.update({lineage: []})
+            result[lineage].append(record)
 
+    print(actualsize(result))
     return result
 
 
@@ -288,11 +332,11 @@ def parse_args():
 
     parser.add_argument('--infile', type=str, default=None,
                         help="input, path to xz-compressed JSON")
-    parser.add_argument('--url', type=str, default=os.environ["GISAID_URL"],
+    parser.add_argument('--url', type=str, 
                         help="URL to download provision file, defaults to environment variable.")
-    parser.add_argument('--user', type=str, default=os.environ["GISAID_USER"],
+    parser.add_argument('--user', type=str, 
                         help="GISAID username, defaults to environment variable.")
-    parser.add_argument('--password', type=str, default=os.environ["GISAID_PSWD"],
+    parser.add_argument('--password', type=str, 
                         help="GISAID password, defaults to environment variable.")
 
     parser.add_argument('--minlen', type=int, default=29000, help='option, minimum genome length')
@@ -316,7 +360,20 @@ def parse_args():
                         help="Path to VCF file of problematic sites in SARS-COV-2 genome. "
                              "Source: https://github.com/W-L/ProblematicSites_SARS-CoV2")
 
-    return parser.parse_args()
+    parser.add_argument("--debug", type=int, help="int, limit number of rows of input xz file to parse for debugging")
+
+    args = parser.parse_args()
+
+    if args.url is None and "GISAID_URL" in os.environ:
+        args.url = os.environ["GISAID_URL"]
+    if args.user is None and "GISAID_USER" in os.environ:
+        args.user = os.environ["GISAID_USER"]
+        # otherwise download_feed() will prompt for username
+    if args.password is None and "GISAID_PSWD" in os.environ:
+        args.password = os.environ["GISAID_PSWD"]    
+        # otherwise download_feed() will prompt for password
+    
+    return args 
 
 
 if __name__ == '__main__':
@@ -329,7 +386,7 @@ if __name__ == '__main__':
     if args.infile is None:
         args.infile = download_feed(args.url, args.user, args.password)
 
-    loader = load_gisaid(args.infile, minlen=args.minlen, mindate=args.mindate)
+    loader = load_gisaid(args.infile, minlen=args.minlen, mindate=args.mindate, debug=args.debug)
     batcher = batch_fasta(loader, size=args.batchsize)
     aligned = extract_features(batcher, ref_file=args.ref, binpath=args.binpath,
                                nthread=args.mmthreads, minlen=args.minlen)
