@@ -9,7 +9,8 @@ from datetime import datetime
 import getpass
 
 import covizu
-from covizu.minimap2 import minimap2, encode_diffs
+from covizu import minimap2
+#from covizu.minimap2 import minimap2, encode_diffs
 from covizu.utils.seq_utils import *
 from covizu.utils.progress_utils import Callback
 
@@ -35,7 +36,8 @@ def download_feed(url, user, password):
 
 def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None,
                 fields=("covv_accession_id", "covv_virus_name", "covv_lineage",
-                        "covv_collection_date", "covv_location", "sequence")):
+                        "covv_collection_date", "covv_location", "sequence"),
+                debug=None):
     """
     Read in GISAID feed as xz compressed JSON, applying some basic filters
 
@@ -44,13 +46,16 @@ def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None,
     :param mindate:  datetime.date, earliest reasonable sample collection date
     :param callback:  function, optional callback function
     :param fields:  tuple, fieldnames to keep
+    :param debug:  int, if >0 then limits input JSON for debugging
 
     :yield:  dict, contents of each GISAID record
     """
     mindate = fromisoformat(mindate)
     rejects = {'short': 0, 'baddate': 0, 'nonhuman': 0, 'nolineage': 0}
     with lzma.open(path, 'rb') as handle:
-        for line in handle:
+        for ln, line in enumerate(handle):
+            if debug and ln > debug:
+                break
             record = json.loads(line)
 
             # remove unused data
@@ -132,9 +137,9 @@ def extract_features(batcher, ref_file, binpath='minimap2', nthread=3, minlen=29
         reflen = len(convert_fasta(handle)[0][1])
 
     for fasta, batch in batcher:
-        mm2 = minimap2(fasta, ref_file, stream=True, path=binpath, nthread=nthread,
+        mm2 = minimap2.minimap2(fasta, ref_file, stream=True, path=binpath, nthread=nthread,
                        minlen=minlen)
-        result = list(encode_diffs(mm2, reflen=reflen))
+        result = list(minimap2.encode_diffs(mm2, reflen=reflen))
         for row, record in zip(result, batch):
             # reconcile minimap2 output with GISAID record
             qname, diffs, missing = row
@@ -218,7 +223,8 @@ def filter_problematic(records, origin='2019-12-01', rate=0.0655, cutoff=0.005,
 
 def sort_by_lineage(records, callback=None, interval=10000):
     """
-    Resolve stream into a dictionary keyed by Pangolin lineage
+    Resolve stream into a dictionary keyed by Pangolin lineage.
+    Note this accumulates records from the input generator.
 
     :param records:  generator, return value of extract_features()
     :param callback:  optional, progress monitoring
@@ -288,11 +294,11 @@ def parse_args():
 
     parser.add_argument('--infile', type=str, default=None,
                         help="input, path to xz-compressed JSON")
-    parser.add_argument('--url', type=str, default=os.environ["GISAID_URL"],
+    parser.add_argument('--url', type=str, default=None,
                         help="URL to download provision file, defaults to environment variable.")
-    parser.add_argument('--user', type=str, default=os.environ["GISAID_USER"],
+    parser.add_argument('--user', type=str, default=None,
                         help="GISAID username, defaults to environment variable.")
-    parser.add_argument('--password', type=str, default=os.environ["GISAID_PSWD"],
+    parser.add_argument('--password', type=str, default=None,
                         help="GISAID password, defaults to environment variable.")
 
     parser.add_argument('--minlen', type=int, default=29000, help='option, minimum genome length')
@@ -316,7 +322,16 @@ def parse_args():
                         help="Path to VCF file of problematic sites in SARS-COV-2 genome. "
                              "Source: https://github.com/W-L/ProblematicSites_SARS-CoV2")
 
-    return parser.parse_args()
+    parser.add_argument("--debug", type=int, default=None,
+                        help="Set to a positive integer to limit input.")
+    args = parser.parse_args()
+    if args.url is None:
+        args.url = os.environ["GISAID_URL"]
+    if args.user is None:
+        args.user = os.environ["GISAID_USER"]
+    if args.password is None:
+        args.password = os.environ["GISAID_PSWD"]
+    return args
 
 
 if __name__ == '__main__':
@@ -329,7 +344,8 @@ if __name__ == '__main__':
     if args.infile is None:
         args.infile = download_feed(args.url, args.user, args.password)
 
-    loader = load_gisaid(args.infile, minlen=args.minlen, mindate=args.mindate)
+    loader = load_gisaid(args.infile, minlen=args.minlen, mindate=args.mindate,
+                         debug=args.debug)
     batcher = batch_fasta(loader, size=args.batchsize)
     aligned = extract_features(batcher, ref_file=args.ref, binpath=args.binpath,
                                nthread=args.mmthreads, minlen=args.minlen)

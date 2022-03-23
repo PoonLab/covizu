@@ -284,6 +284,12 @@ if __name__ == '__main__':
     cb.callback("Identifying lineage representative genomes")
     fasta = retrieve_genomes(by_lineage, known_seqs=lineages, ref_file=args.ref, earliest=args.earliest,
                              callback=cb.callback)
+    outfile = open("iss385.fasta", 'w')
+    for header, seq in fasta.items():
+        outfile.write(f">{header}\n{seq}\n")
+    outfile.close()
+
+    sys.exit()
 
     cb.callback("Reconstructing tree with {}".format(args.ft2bin))
     nwk = fasttree(fasta, binpath=args.ft2bin)
