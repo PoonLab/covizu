@@ -21,7 +21,7 @@ def recode_features(records, callback=None, limit=10000):
     Recode feature vectors with integer indices based on set union.
     Pass results to bootstrap() to reconstruct trees by neighbor-joining method.
 
-    :param records:  list, dict for each record
+    :param records:  dict, samples keyed by unique mutation set
     :param callback:  optional, function for progress monitoring
     :param limit:  int, maximum number of variants to prevent memory allocation crashes
     :return:  dict, key-value pairs of all features indexed by integers
