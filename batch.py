@@ -169,13 +169,18 @@ if __name__ == "__main__":
     # write data stats
     dbstat_file = os.path.join(args.outdir, 'dbstats.{}.json'.format(timestamp))
     with open(dbstat_file, 'w') as handle:
-        nseqs = sum([len(rows) for rows in by_lineage.values()])
+        # total number of sequences
+        nseqs = 0
+        for records in by_lineage.values():
+            for variant in records.values():
+                nseqs += len(variant)  # number of samples
         val = {
             'lastupdate': timestamp.split('T')[0],
             'noseqs': nseqs,
             'lineages': {}
         }
-        for lineage, samples in by_lineage.items():
+        for lineage, records in by_lineage.items():
+            samples = unpack_records(records)
             ndiffs = [len(x['diffs']) for x in samples]
             val['lineages'][lineage] = {
                 'nsamples': len(samples),

@@ -17,24 +17,6 @@ from covizu.utils.progress_utils import Callback
 import gc
 
 
-def actualsize(input_obj):
-    """
-    https://towardsdatascience.com/the-strange-size-of-python-objects-in-memory-ce87bdfbb97f
-    """
-    memory_size = 0
-    ids = set()
-    objects = [input_obj]
-    while objects:
-        new = []
-        for obj in objects:
-            if id(obj) not in ids:
-                ids.add(id(obj))
-                memory_size += sys.getsizeof(obj)
-                new.append(obj)
-        objects = gc.get_referents(*new)
-    return memory_size
-
-
 def download_feed(url, user, password):
     """
     Download xz file from GISAID.  Note this requires confidential URL, user and password
@@ -255,36 +237,28 @@ def sort_by_lineage(records, callback=None, interval=10000):
     :param interval:  int, frequency to report alignment progress (genomes)
     :return:  dict, lists of records keyed by lineage
     """
-    refactor = False
     result = {}
     for i, record in enumerate(records):
         if callback and i % interval == 0:
             callback('aligned {} records'.format(i))
 
         lineage = record['covv_lineage']
-        if refactor:
-            diffs = record.pop('diffs')  # REMOVE entry from record!
-            if diffs is not None:
-                diffs.sort()
-            key = ','.join(['|'.join(map(str, diff)) for diff in diffs])
+        diffs = record.pop('diffs')  # REMOVE entry from record!
+        if diffs is not None:
+            diffs.sort()
+        key = ','.join(['|'.join(map(str, diff)) for diff in diffs])
 
         if str(lineage) == "None" or lineage == '':
             # discard uncategorized genomes, #324, #335
             continue
 
-        if refactor:
-            if lineage not in result:
-                result.update({lineage: {}})
-            if key not in result[lineage]:
-                result[lineage].update({key: []})
-        
-            result[lineage][key].append(record)
-        else:
-            if lineage not in result:
-                result.update({lineage: []})
-            result[lineage].append(record)
+        if lineage not in result:
+            result.update({lineage: {}})
+        if key not in result[lineage]:
+            result[lineage].update({key: []})
 
-    print(actualsize(result))
+        result[lineage][key].append(record)
+
     return result
 
 

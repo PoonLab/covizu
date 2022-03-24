@@ -30,16 +30,15 @@ def recode_features(records, callback=None, limit=10000):
     """
     # compress genomes with identical feature vectors
     fvecs = {}
-    for record in records:
-        label = '|'.join([record['covv_virus_name'], record['covv_accession_id'],
-                          record['covv_collection_date']])
-        key = tuple([tuple(x) for x in record['diffs']])
-        if key not in fvecs:
-            fvecs.update({key: []})
-        fvecs[key].append(label)
+    for key, variant in records.items:
+        fvecs.update({key: []})
+        for sample in variant:
+            label = "{covv_virus_name}|{covv_accession_id}|{covv_collection_date}".format(**sample)
+            fvecs[key].append(label)
 
     # limit to N most recently-sampled feature vectors
-    intermed = [(max([l.split('|')[-1] for l in label]), key) for key, label in fvecs.items()]
+    intermed = [(max([label.split('|')[-1] for label in labels]), key)
+                for key, labels in fvecs.items()]
     intermed.sort(reverse=True)
 
     # generate union of all features

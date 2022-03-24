@@ -13,6 +13,7 @@ from Bio import Phylo
 import covizu
 from covizu.utils.seq_utils import *
 from covizu.utils.progress_utils import Callback
+from covizu.utils.batch_utils import unpack_records
 
 
 def fasttree(fasta, binpath='fasttree2', seed=1, gtr=True, collapse=True):
@@ -191,6 +192,8 @@ def retrieve_genomes(by_lineage, known_seqs, ref_file, earliest=True, callback=N
 
     # retrieve unaligned genomes from database
     for lineage, records in by_lineage.items():
+        records = unpack_records(records)
+
         # filter records for lineage-defining genomes
         curated = filter(
             lambda r: r['covv_virus_name'].replace('hCoV-19/', '').replace(' ', '_')  # issue #313
