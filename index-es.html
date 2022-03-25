@@ -78,9 +78,9 @@
       loading_json: "Cargando archivos JSON desde el servidor (~10s)...",
       country_theaders: ["Región", "País", "Conteo"],
       sample_theaders: ["Accesión", "Nombre", "Fecha"],
-      mutation_threaders: ["Mutation", "Frequency", "Phenotype"],
+      mutation_threaders: ["Mutación", "Frecuencia", "Fenotipo"],
       phenotypes: {
-        'Vaccine neutralization efficacy': 'Eficacia de vacunas en netrualización', //English -> translated
+        'Vaccine neutralization efficacy': 'Eficacia de vacunas en neutralización', //English -> translated
         'Anthropozoonotic events': 'Evento Antropozoonótico', 
         'Gene expression increase': 'Incremento en la expresión de genes', 
         'ACE2 receptor binding affinity': 'Afinidad de unión al receptor ACE2',
@@ -177,13 +177,13 @@
 
         <div class="middlebox">
           <div class="floattitle" id="beadplot-title">
-            <div>Diagrama de las perlas</div>
+            <div>Diagrama de perlas</div>
             <div class="clicker" title="Descargar como &aacute;rbol" onclick="save_beadplot();">&nbsp;&nbsp;NWK&nbsp;&nbsp;</div>
             <div class="clicker" title="Descargar como SVG" onclick="export_svg();">&nbsp;&nbsp;SVG&nbsp;&nbsp;</div>
             <div title="Ayuda del diagramma" onclick="$('#help-beadplot').dialog('open');" style="cursor: help">&#128304;</div>
             
             <div class="edge-cuttoff">
-              <label style="vertical-align: middle;" for="vedge-slider">Edge cutoff:&nbsp;&nbsp;</label>
+              <label style="vertical-align: middle;" for="vedge-slider">Límite para el vértice:&nbsp;&nbsp;</label>
               <div id="left-arrow" class="arrow">
                 <div style="transform: translateY(-25%);" class="larrow">&#8249;</div>
               </div>
@@ -255,7 +255,7 @@
             <ul>
               <li style="font-size: 0.8em"><a href="#tabs-1">Países</a></li>
               <li style="font-size: 0.8em"><a href="#tabs-2">Muestras</a></li>
-              <li style="font-size: 0.8em"><a href="#tabs-3">Mutations</a></li>
+              <li style="font-size: 0.8em"><a href="#tabs-3">Mutaciones</a></li>
             </ul>
             <div id="tabs-1">
               <div class="breaker" id="barplot"></div>
@@ -269,7 +269,7 @@
             </div>
             <div id="tabs-3">
               <div id="muttable-hint" class="hint">
-                Anotaciones fenotípicas obtenidas de <a href="https://github.com/nodrogluap/pokay">Pokay</a>, curated by <a href="https://people.ucalgary.ca/~gordonp/">Paul Gordon</a> and his team.
+                Anotaciones fenotípicas obtenidas a partir de <a href="https://github.com/nodrogluap/pokay">Pokay</a>, curadas por <a href="https://people.ucalgary.ca/~gordonp/">Paul Gordon</a> y su equipo.
               </div>
               <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="mut-table"></div>
               <table id="muttable-legend" class="legend"></table>
