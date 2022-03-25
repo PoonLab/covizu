@@ -1292,9 +1292,9 @@ function gen_mut_table(obj) {
     for (let j = 0; j < obj.length; j++) {
 
       // "zip" the sequence details of each sample
-      for (let i = 0; i < obj[j].mutations.length; i++) {
+      for (let i = 0; i < obj[j].mutation.length; i++) {
         let sample_details = [
-          obj[j].mutations[i],
+          obj[j].mutation[i],
           obj[j].frequency[i],
           []
           // obj[j].phenotype[i]  
@@ -1305,9 +1305,9 @@ function gen_mut_table(obj) {
   }
   else {
     // "zip" the sequence details of each sample
-    for (let i = 0; i < obj.mutations.length; i++) {
+    for (let i = 0; i < obj.mutation.length; i++) {
       let sample_details = [
-        obj.mutations[i],
+        obj.mutation[i],
         obj.frequency[i],
         []
         // obj.phenotype[i]  

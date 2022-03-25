@@ -79,6 +79,16 @@
       loading_json: "从服务器加载JSON数据 (~十秒)...",
       country_theaders: ["地区", "国家", "数"],
       sample_theaders: ["登记号", "名", "日期"],
+      mutation_threaders: ["突变", "频率", "表型"],
+      phenotypes: {
+        'Vaccine neutralization efficacy': '疫苗中和效果', //English -> translated
+        'Anthropozoonotic events': '人畜共患事件', 
+        'Gene expression increase': '基因表现增加', 
+        'ACE2 receptor binding affinity': 'ACE2受体结合亲和力',
+        'Monoclonal antibody serial passage escape': '单克隆抗体串行通道逃逸', 
+        'Convalescent plasma escape': '恢复期血浆逃逸', 
+        'Antibody epitope effects': '抗体表位效应'
+      }
     };
 
   </script>
@@ -244,8 +254,9 @@
 
           <div id="tabs">
             <ul>
-              <li><a href="#tabs-1">国别</a></li>
-              <li><a href="#tabs-2">样本</a></li>
+              <li style="font-size: 0.8em"><a href="#tabs-1">国别</a></li>
+              <li style="font-size: 0.8em"><a href="#tabs-2">样本</a></li>
+              <li style="font-size: 0.8em"><a href="#tabs-3">突变</a></li>
             </ul>
             <div id="tabs-1">
               <div class="breaker" id="barplot"></div>
@@ -256,6 +267,13 @@
                 将鼠标悬停在登记号（EPI_ISL_＃）上可显示实验室和作者信息
               </div>
               <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="seq-table"></div>
+            </div>
+            <div id="tabs-3">
+              <div id="muttable-hint" class="hint">
+                表型注释由<a href="https://github.com/nodrogluap/pokay">Pokay获得</a>, 策办人是 <a href="https://people.ucalgary.ca/~gordonp/">保罗·戈登</a>和他的团队.
+              </div>
+              <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="mut-table"></div>
+              <table id="muttable-legend" class="legend"></table>
             </div>
           </div>
         </div>

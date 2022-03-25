@@ -710,6 +710,7 @@ input:checked + .slider:before {
 
 .phenotype_icon {
   padding-left: 3px;
+  padding-right: 3px;
   max-height: 8px;
 }
 
