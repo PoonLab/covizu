@@ -29,7 +29,7 @@ def unpack_records(records):
             typ, pos, alt = mutation.split('|')
             if typ == '+' or typ == '-':
                 alt = int(alt)  # number of nucleotides in indel
-            diffs.append([typ, pos, alt])
+            diffs.append(tuple([typ, int(pos), alt]))
 
         for sample in variant:
             sample.update({'diffs': diffs})
