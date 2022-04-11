@@ -30,8 +30,10 @@ def recode_features(records, callback=None, limit=10000):
     """
     # compress genomes with identical feature vectors
     fvecs = {}
-    for key, variant in records.items:
-        fvecs.update({key: []})
+    for muts, variant in records.items():
+        key = tuple([tuple(x.split('|')) for x in muts.split(',')])
+        if key not in fvecs:
+            fvecs.update({key: []})
         for sample in variant:
             label = "{covv_virus_name}|{covv_accession_id}|{covv_collection_date}".format(**sample)
             fvecs[key].append(label)

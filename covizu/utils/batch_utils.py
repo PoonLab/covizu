@@ -27,7 +27,7 @@ def unpack_records(records):
         diffs = []
         for mutation in key.split(','):
             typ, pos, alt = mutation.split('|')
-            if typ == '+' or typ == '-':
+            if typ == '-':
                 alt = int(alt)  # number of nucleotides in indel
             diffs.append(tuple([typ, int(pos), alt]))
 
