@@ -20,6 +20,8 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     package_data={'covizu': [
-        'data/NC_045512.fa'
+        'data/NC_045512.fa',
+        'data/ProblematicSites_SARS-CoV2/problematic_sites_sarsCov2.vcf',
+        'data/pango-designation/lineages.csv'
     ]}
 )
