@@ -1,3 +1,5 @@
+var root = {'parent': null, 'children':[]};
+
 /**
  * Parse a Newick tree string into a doubly-linked
  * list of JS Objects.  Assigns node labels, branch
@@ -11,7 +13,7 @@ function readTree(text) {
     text = text.replace(/ |\t|\r?\n|\r/g, '');
 
     var tokens = text.split(/(;|\(|\)|,)/),
-        root = {'parent': null, 'children':[]},
+        // root = {'parent': null, 'children':[]},
         curnode = root,
         nodeId = 0,
         nodeinfo;

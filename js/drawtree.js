@@ -25,7 +25,8 @@ var yValue = function(d) { return d.y; },
 
 var vis = d3.select("div#svg-timetree")
   .append("svg")
-  .attr("width", width + margin.left + margin.right + padding.right);
+  .attr("width", width + margin.left + margin.right + padding.right)
+  .style("margin-bottom", 20);
   //.attr("height", height + margin.top + margin.bottom);
   //.append("g");
 
@@ -305,7 +306,7 @@ function sort_mutations(mutations) {
  * Add subtree objects to time-scaled tree.
  * @param {Array} tips, clusters that have been mapped to tips of tree
  */
-function draw_clusters(tips) {
+function draw_clusters(tips, redraw=false) {
 
   var tickVals = [],
       minVal = d3.min(df, xValue)-0.05,
@@ -315,18 +316,20 @@ function draw_clusters(tips) {
   for (var i = 0; i < 3; i++) {
     tickVals.push(minVal + (interval/2) + (i*interval));
   }
-  
-  // Draws the axis for the time scaled tree
-  axis.append("g")
-    .attr("class", "treeaxis")
-    .attr("transform", "translate(0,20)")
-    .call(d3.axisTop(xScale)
-      .ticks(3)
-      .tickValues(tickVals)
-      .tickFormat(function(d) {
-        return xaxis_to_date(d, tips[0])
-      })
-    );
+
+  if (!redraw) {
+    // Draws the axis for the time scaled tree
+    axis.append("g")
+      .attr("class", "treeaxis")
+      .attr("transform", "translate(0,20)")
+      .call(d3.axisTop(xScale)
+        .ticks(3)
+        .tickValues(tickVals)
+        .tickFormat(function(d) {
+          return xaxis_to_date(d, tips[0])
+        })
+      );
+  }
 
   function mouseover(d) {
     d3.select("[cidx=cidx-" + d.cluster_idx + "]")
@@ -774,4 +777,74 @@ function click_cluster(d, cluster_info) {
     update_table_individual_bead_front(d3.select(working_bead).datum());
   }
   draw_cluster_box(d3.select(cluster_info));
+}
+
+function prune_tree(root, lineages) {
+  tip_labels = tips.map(x=>x.label1)
+  var found = false
+  for (var node of traverse(root, 'postorder')) {
+    var i = node.children.length
+    while(i--) {
+      if (lineages === node.children[i].label){
+        node.children.splice(i, 1);
+        found = true
+        break;
+      } 
+    }
+    if ((node.children.length == 1)) {
+      // if the root has 1 child
+      if (node.parent == null) {
+        // and there is more than one lineage in the tree
+        if (!(node.children[0].children.length == 0)) {
+          var new_children = []
+          for (const child of node.children[0].children) {
+            child.branchLength += node.children[0].branchLength
+            child.parent = node
+            new_children.push(child)
+          }
+          node.children = new_children
+        } 
+      }
+      else {
+        // if the node has 1 child — delete the node and reassign parents/branch lengths
+        node.children[0].branchLength += node.branchLength;
+        node.children[0].parent = node.parent
+        index = node.parent.children.findIndex(x => x.children.length == 1);
+        node.parent.children.splice(index, 1, node.children[0]);
+      }
+    }
+
+    if(found) {
+      break
+    }
+  }
+}
+
+function redraw_tree(cutoff_date) {
+  var filtered_labels = df.filter(x => {
+    if (!(formatDate(x.coldate) >= cutoff_date)) return x;
+  }).map(x => x.label1);
+  var filtered_clusters = clusters.filter(x => !filtered_labels.includes(x.lineage));
+
+  root = {'parent': null, 'children':[]};
+  readTree(nwk)
+
+  for(const label of filtered_labels) {
+    prune_tree(root, label)
+  }
+  // reassign node ids by postorder traversal 
+  var id = 0 
+  for (const node of traverse(root, 'postorder')) {
+    node.id = id++;
+  }
+
+  // refactor this
+  filtered_df = getTimeTreeData(root)
+  filtered_tips = map_clusters_to_tips(filtered_df, filtered_clusters);
+  beaddata = parse_clusters(filtered_clusters); 
+
+  document.querySelector("#svg-timetree > svg").innerHTML = ''
+  
+  drawtree(filtered_df);
+  draw_clusters(filtered_tips, redraw=true);
 }
