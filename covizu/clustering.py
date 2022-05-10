@@ -21,7 +21,7 @@ def recode_features(records, callback=None, limit=10000):
     Recode feature vectors with integer indices based on set union.
     Pass results to bootstrap() to reconstruct trees by neighbor-joining method.
 
-    :param records:  list, dict for each record
+    :param records:  dict, samples keyed by unique mutation set
     :param callback:  optional, function for progress monitoring
     :param limit:  int, maximum number of variants to prevent memory allocation crashes
     :return:  dict, key-value pairs of all features indexed by integers
@@ -30,16 +30,17 @@ def recode_features(records, callback=None, limit=10000):
     """
     # compress genomes with identical feature vectors
     fvecs = {}
-    for record in records:
-        label = '|'.join([record['covv_virus_name'], record['covv_accession_id'],
-                          record['covv_collection_date']])
-        key = tuple([tuple(x) for x in record['diffs']])
+    for muts, variant in records.items():
+        key = tuple([tuple(x.split('|')) for x in muts.split(',')])
         if key not in fvecs:
             fvecs.update({key: []})
-        fvecs[key].append(label)
+        for sample in variant:
+            label = "{covv_virus_name}|{covv_accession_id}|{covv_collection_date}".format(**sample)
+            fvecs[key].append(label)
 
     # limit to N most recently-sampled feature vectors
-    intermed = [(max([l.split('|')[-1] for l in label]), key) for key, label in fvecs.items()]
+    intermed = [(max([label.split('|')[-1] for label in labels]), key)
+                for key, labels in fvecs.items()]
     intermed.sort(reverse=True)
 
     # generate union of all features

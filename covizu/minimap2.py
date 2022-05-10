@@ -6,7 +6,7 @@ import os
 import json
 
 import covizu
-from covizu.utils import gisaid_utils
+import covizu.utils.gisaid_utils
 
 
 def apply_cigar(seq, rpos, cigar):
