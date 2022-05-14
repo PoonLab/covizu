@@ -13,6 +13,8 @@ from Bio import Phylo
 import covizu
 from covizu.utils.seq_utils import *
 from covizu.utils.progress_utils import Callback
+#from covizu.utils.batch_utils import unpack_records
+import covizu.utils.batch_utils
 
 
 def fasttree(fasta, binpath='fasttree2', seed=1, gtr=True, collapse=True):
@@ -43,8 +45,8 @@ def fasttree(fasta, binpath='fasttree2', seed=1, gtr=True, collapse=True):
 
     # parse Newick tree string from output
     phy = Phylo.read(StringIO(nwk), format='newick')
-    phy.root_with_outgroup('|reference|')  # issue #396
-    phy.prune('|reference|')
+    phy.root_with_outgroup('reference')  # issue #396
+    phy.prune('reference')
     if collapse:
         # collapse low support nodes into polytomies
         phy.collapse_all(lambda x: x.confidence is not None and x.confidence < 0.5)
@@ -121,6 +123,8 @@ def parse_nexus(nexus_file, fasta, callback=None):
     """
     coldates = {}
     for h, _ in fasta.items():
+        if 'reference' in h:
+            continue
         _, accn, coldate = h.split('|')
         coldates.update({accn: date2float(coldate)})
 
@@ -289,12 +293,6 @@ if __name__ == '__main__':
     cb.callback("Identifying lineage representative genomes")
     fasta = retrieve_genomes(by_lineage, known_seqs=lineages, ref_file=args.ref, earliest=args.earliest,
                              callback=cb.callback)
-    outfile = open("iss385.fasta", 'w')
-    for header, seq in fasta.items():
-        outfile.write(f">{header}\n{seq}\n")
-    outfile.close()
-
-    sys.exit()
 
     cb.callback("Reconstructing tree with {}".format(args.ft2bin))
     nwk = fasttree(fasta, binpath=args.ft2bin)
