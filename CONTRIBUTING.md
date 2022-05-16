@@ -31,7 +31,7 @@ Most web development is tested in Google Chrome.
 To setup the development environment:
 1. Navigate to the directory containing `package.json`
 2. Run the command `npm install`
-3. Run the `run-server.sh` script
+3. Run the `run-server.sh` script or `npm start`
 
 
 ## Coding style
