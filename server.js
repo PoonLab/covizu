@@ -2,8 +2,9 @@ const compression = require('compression');
 const express = require('express');
 const app = express();
 const clusters = require('./data/clusters.json')
-const { utcDate } = require('./utils/helpers')
-const { parse_clusters, readTree, map_clusters_to_tips, index_accessions, index_lineage } = require('./utils/parseCluster')
+const { utcDate } = require('./server/utils')
+const { parse_clusters, map_clusters_to_tips, index_accessions, index_lineage } = require('./server/parseCluster')
+const { readTree } = require('./server/phylo')
 const fs = require('fs');
 require('dotenv').config();
 

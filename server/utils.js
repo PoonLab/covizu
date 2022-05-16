@@ -91,9 +91,9 @@ function utcDate(date) {
 }
 
 module.exports = {
-    unique,
-    mode,
-    tabulate,
-    merge_tables,
-    utcDate
+  unique,
+  mode,
+  tabulate,
+  merge_tables,
+  utcDate
 };

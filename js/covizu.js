@@ -137,7 +137,6 @@ $.ajax({
   url: "data/timetree.nwk",
   success: function(data) {
     nwk = data;
-    df = readTree(data);
   }
 });
 $.getJSON("data/countries.json", function(data) {

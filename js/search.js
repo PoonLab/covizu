@@ -649,41 +649,11 @@ function previous_closest_match(non_hit_cluster_index, hit_ids) {
 
 /************************************ Autocomplete *************************************/
 
-/**
- * Populate Object with accession-cluster ID as key-value pairs.
- * Note, this also provides a list (via Object.keys()) of all
- * accession numbers for autocompleting search queries.
- *
- * @param {Object} clusters:  contents of clusters JSON
- * @returns {{}}
- */
-function index_accessions(clusters) {
-	var index = {};
-	for (const cid in clusters) {
-		var accns = Object.entries(clusters[cid].nodes)
-			.map(x => x[1])
-			.flat()
-			.map(x => x[1]);
-		for (const accn of accns) {
-			index[accn] = cid;
-		}
-	}
-	return(index); 
-}
-
 function as_label(search_data) {
 	const [, accn] = search_data;
 	return accn;
 }
 
-function index_lineage(clusters) {
-  var index = {};
-  for (const cid in clusters) {
-    var accns = clusters[cid].lineage
-    index[accns] = cid;
-  }
-  return index;
-}
 
 /**
  * Provides a source function suitable for jQuery UI's autocomplete
