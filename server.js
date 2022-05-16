@@ -4,15 +4,25 @@ const app = express();
 const clusters = require('./data/clusters.json')
 const { utcDate } = require('./utils/helpers')
 const { parse_clusters, readTree, map_clusters_to_tips, index_accessions, index_lineage } = require('./utils/parseCluster')
-
 const fs = require('fs');
+require('dotenv').config();
+
+var http = require('http');
+var https = require('https');
+
+if (process.env.PROD) {
+  var credentials = {
+    key: fs.readFileSync(process.env.PRVTKEY), 
+    cert: fs.readFileSync(process.env.CRT)
+  };
+}
 
 app.use(compression());
 
 try {
-    var tree = fs.readFileSync('./data/timetree.nwk', 'utf8');
+  var tree = fs.readFileSync('./data/timetree.nwk', 'utf8');
 } catch(e) {
-    console.log('Error:', e.stack);
+  console.log('Error:', e.stack);
 }
 
 const df = readTree(tree)
@@ -21,7 +31,7 @@ const tips = map_clusters_to_tips(df, clusters)
 const accn_to_cid = index_accessions(clusters)
 const lineage_to_cid = index_lineage(clusters)
 
-	// This is a hack to match anything that could be an acc number prefix
+// This is a hack to match anything that could be an acc number prefix
 const prefix = /^(E|I|EP|IS|EPI_I|EPI_IS|EPI_ISL_?|EPI_?|ISL_?|[A-Z]\.[1-9]+)$/i;
 const MIN_RESULTS = 10;
 const normalize = (str) => str.replace(/[^a-z0-9]/gi, '').toLowerCase();
@@ -104,5 +114,13 @@ app.get('/api/getHits/:query', (req, res) => {
 
 const port = process.env.PORT || 8001;
 
-app.listen(port, () => console.log(`Listening on Port ${port}...`))
 app.use(express.static('.'));
+
+// For the prod environment, need to create a https server
+if (process.env.PROD) {
+  var httpsServer = https.createServer(credentials, app);
+  httpsServer.listen(8002, () => console.log(`Listening on Port ${8002}...`))
+}
+
+var httpServer = http.createServer(app);
+httpServer.listen(port, () => console.log(`Listening on Port ${port}...`));
