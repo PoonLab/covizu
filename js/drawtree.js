@@ -175,8 +175,8 @@ function sort_mutations(mutations) {
 function draw_clusters(tips) {
 
   var tickVals = [],
-      minVal = d3.min(tips, xValue)-0.05,
-      maxVal = date_to_xaxis(d3.max(tips, function(d) {return d.last_date})),
+      minVal = d3.min(df, xValue)-0.05,
+      maxVal = date_to_xaxis(d3.max(df, function(d) {return d.last_date})),
       interval = (maxVal - minVal)/3;
 
   for (var i = 0; i < 3; i++) {
