@@ -383,10 +383,10 @@ function expand() {
     max_dist = 2.0;
   }
   let slider = $("#vedge-slider");
-  slider.slider("value", 2.0)
-        .slider("option", "max", max_dist )
+  slider.slider("option", "max", max_dist )
+        .slider("value", max_dist < 2.0 ? max_dist : 2.0)
   move_arrow();
-  $( "#custom-handle" ).text("2.0");
+  $( "#custom-handle" ).text(max_dist < 2.0 ? max_dist.toString() : "2.0");
 
   // Beadplots aren't expanded by default
   if ($('#expand-option').attr('checked')) {
