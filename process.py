@@ -262,7 +262,7 @@ def parse_args():
                         help="maximum tolerated number of missing bases per "
                              "genome (default 300).")
     parser.add_argument("--vcf", type=str,
-                        default=os.path.join(covizu.__path__[0], "data/problematic_sites_sarsCov2.vcf"),
+                        default=os.path.join(covizu.__path__[0], "data/ProblematicSites_SARS-CoV2/problematic_sites_sarsCov2.vcf"),
                         help="Path to VCF file of problematic sites in SARS-COV-2 genome. "
                              "Source: https://github.com/W-L/ProblematicSites_SARS-CoV2")
 
@@ -270,7 +270,7 @@ def parse_args():
                         help='path to fasttree2 binary executable')
 
     parser.add_argument('--lineages', type=str,
-                        default=os.path.join(covizu.__path__[0], "data/lineages.csv"),
+                        default=os.path.join(covizu.__path__[0], "data/pango-designation/lineages.csv"),
                         help="optional, path to CSV file containing Pango lineage designations.")
     parser.add_argument('--ttbin', default='treetime',
                         help='path to treetime binary executable')
@@ -309,6 +309,21 @@ def parse_args():
 if __name__ == '__main__':
     cb = Callback()
     args = parse_args()
+
+    # check that the user has included submodules
+    if (not os.path.exists(os.path.join(covizu.__path__[0], "data/pango-designation/lineages.csv")) or 
+            not os.path.exists(os.path.join(covizu.__path__[0], "data/ProblematicSites_SARS-CoV2/problematic_sites_sarsCov2.vcf"))):
+        try:
+            subprocess.check_call("git submodule init; git submodule update", shell=True)
+        except:
+            cb.callback("Error adding the required submodules")
+            sys.exit()
+
+    # update submodules
+    try:
+        subprocess.check_call("git submodule foreach git pull origin master", shell=True)
+    except:
+        cb.callback("Could not update submodules", level='ERROR')
 
     if args.vspango is None:
         cb.callback("running Pango lineage classification for VirusSeq")

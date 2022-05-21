@@ -1,0 +1,6 @@
+[submodule "covizu/data/ProblematicSites_SARS-CoV2"]
+	path = covizu/data/ProblematicSites_SARS-CoV2
+	url = https://github.com/W-L/ProblematicSites_SARS-CoV2/
+[submodule "covizu/data/pango-designation"]
+	path = covizu/data/pango-designation
+	url = https://github.com/cov-lineages/pango-designation/

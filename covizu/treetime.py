@@ -251,7 +251,7 @@ def parse_args():
     parser.add_argument('--ttbin', default='treetime',
                         help='optional, path to treetime binary executable')
     parser.add_argument('--lineages', type=str,
-                        default=os.path.join(covizu.__path__[0], "data/lineages.csv"),
+                        default=os.path.join(covizu.__path__[0], "data/pango-designation/lineages.csv"),
                         help="optional, path to CSV file containing Pango lineage designations.")
 
     parser.add_argument('--outfile', default='data/timetree.nwk',
