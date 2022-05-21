@@ -5,6 +5,7 @@ import lzma
 import gzip
 from io import BytesIO
 from datetime import datetime
+from subprocess import check_call
 import argparse
 import os
 
@@ -99,3 +100,9 @@ if __name__ == "__main__":
     progress("Exporting compressed files")
     paths = export_files(fasta_file, tsv_file, tmpfile, args.outdir)
     progress("Wrote outputs to {0} and {1}".format(*paths))
+
+    progress("Retrieving PANGO lineage classifications from the Viral AI database")
+    try:
+        check_call("dnastack collections query virusseq 'SELECT isolate, lineage FROM publisher_data.virusseq.samples' --format csv > data/viralai.csv")
+    except:
+        progress("Error retrieving PANO lineage classifications")
