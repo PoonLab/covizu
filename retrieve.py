@@ -103,6 +103,6 @@ if __name__ == "__main__":
 
     progress("Retrieving PANGO lineage classifications from the Viral AI database")
     try:
-        check_call("dnastack collections query virusseq 'SELECT isolate, lineage FROM publisher_data.virusseq.samples' --format csv > data/viralai.csv")
+        check_call("dnastack collections query virusseq 'SELECT isolate, lineage FROM publisher_data.virusseq.samples' --format csv > data/viralai.csv", shell=True)
     except:
-        progress("Error retrieving PANO lineage classifications")
+        progress("Error retrieving PANGO lineage classifications")
