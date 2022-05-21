@@ -73,53 +73,6 @@ function draw_cluster_box(rect) {
       .raise();
 }
 
-/**
- * Rectangular layout of tree, update nodes in place with x,y coordinates
- * @param {object} root
- */
-function rectLayout(root) {
-  // assign vertical positions to tips by postorder traversal
-  var counter = 0;
-  for (const node of traverse(root, 'postorder')) {
-    if (node.children.length === 0) {
-      // assign position to tip
-      node.y = counter;
-      counter++;
-    } else {
-      // ancestral node position is average of child nodes
-      node.y = 0;
-      for (var i = 0; i < node.children.length; i++) {
-        var child = node.children[i];
-        node.y += child.y;
-      }
-      node.y /= node.children.length;
-    }
-  }
-
-  // assign horizontal positions by preorder traversal
-  for (const node of traverse(root, 'preorder')) {
-    if (node.parent === null) {
-      // assign root to x=0
-      node.x = 0.;
-    } else {
-      node.x = node.parent.x + node.branchLength;
-    }
-  }
-}
-
-
-/**
- * Get the data frame
- * @param {Object} timetree:  time-scaled phylogenetic tree imported as JSON
- */
-function getTimeTreeData(timetree) {
-  // generate tree layout (x, y coordinates
-  rectLayout(timetree);
-
-  var df = fortify(timetree);
-
-  return(df);
-}
 
 /**
  * Draw time-scaled tree in SVG
@@ -161,92 +114,6 @@ function drawtree(df) {
     .attr("stroke", "#777");
 
     $('#tree-inner-vscroll').css('height', $('.tree-content > svg').height()); 
-}
-
-
-/**
- * Map cluster information to tips of the tree.
- * @param {Array} df: data frame extracted from time-scaled tree
- * @param {Array} clusters: data from clusters JSON
- * @returns {Array} subset of data frame annotated with cluster data
- */
-function map_clusters_to_tips(df, clusters) {
-  // extract accession numbers from phylogeny data frame
-  var tips = df.filter(x => x.children.length===0),
-      tip_labels = tips.map(x => x.thisLabel),  // accessions
-      tip_stats;
-
-  for (const cidx in clusters) {
-    var cluster = clusters[cidx];
-    if (cluster["nodes"].length === 1) {
-      continue
-    }
-
-    // find variant in cluster that matches a tip label
-    var labels = Object.keys(cluster["nodes"]),
-        root = tip_labels.filter(value => value === cluster['lineage'])[0];
-    if (root === undefined) {
-      console.log("Failed to match cluster of index ", cidx, " to a tip in the tree");
-      continue;
-    }
-
-    var root_idx = tip_labels.indexOf(root),  // row index in data frame
-        root_xcoord = tips[root_idx].x;  // left side of cluster starts at end of tip
-
-    // find most recent sample collection date
-    var coldates = Array(),
-        label, variant;
-
-    for (var i=0; i<labels.length; i++) {
-      label = labels[i];
-      variant = cluster['nodes'][label];
-      coldates = coldates.concat(variant.map(x => x[0]));
-    }
-    coldates.sort();  // in place, ascending order
-
-    var first_date = utcDate(coldates[0]),
-        last_date = utcDate(coldates[coldates.length-1]);
-    
-    // Calculate the mean collection date
-    let date_diffs = coldates.map(x => d3.timeDay.count(first_date, utcDate(x))),
-        mean_date = Math.round(date_diffs.reduce((a, b) => a + b, 0) / date_diffs.length);
-
-    // augment data frame with cluster data
-    tips[root_idx].cluster_idx = cidx;
-    tips[root_idx].region = cluster.region;
-    tips[root_idx].allregions = cluster.allregions;
-    tips[root_idx].country = cluster.country;
-    tips[root_idx].searchtext = cluster.searchtext;
-    tips[root_idx].label1 = cluster["lineage"];
-    tips[root_idx].count = coldates.length;
-    tips[root_idx].varcount = cluster["sampled_variants"]; // Number for sampled variants
-    tips[root_idx].sampled_varcount = labels.filter(x => x.substring(0,9) !== "unsampled").length;
-    tips[root_idx].first_date = first_date;
-    tips[root_idx].last_date = last_date;
-    tips[root_idx].pdist = cluster.pdist;
-    tips[root_idx].rdist = cluster.rdist;
-
-    tips[root_idx].coldate = last_date;
-    tips[root_idx].x1 = root_xcoord - ((last_date - first_date) / 3.154e10);
-    tips[root_idx].x2 = root_xcoord;
-
-    // map dbstats for lineage to tip
-    tip_stats = dbstats["lineages"][cluster["lineage"]];
-    tips[root_idx].max_ndiffs = tip_stats.max_ndiffs;
-    tips[root_idx].mean_ndiffs = tip_stats.mean_ndiffs;
-    tips[root_idx].nsamples = tip_stats.nsamples;
-    tips[root_idx].mutations = tip_stats.mutations;
-
-    // calculate residual from mean differences and mean collection date - fixes #241
-    let times = coldates.map(x => utcDate(x).getTime()),
-        origin = 18231,  // days between 2019-12-01 and UNIX epoch (1970-01-01)
-        mean_time = times.reduce((x, y)=>x+y) / times.length / 8.64e7 - origin,
-        rate = 0.0655342,  // subs per genome per day
-        exp_diffs = rate * mean_time;  // expected number of differences
-    tips[root_idx].residual = tip_stats.mean_ndiffs - exp_diffs;  // tip_stats.residual;
-    tips[root_idx].mcoldate = d3.timeDay.offset(first_date, mean_date);
-  }
-  return tips;
 }
 
 
@@ -385,16 +252,14 @@ function draw_clusters(tips) {
           .duration(50)
           .style("opacity", 0);
     })
-    .on("click", function(d) {
+    .on("click", async function(d) {
       var cluster_info = this;
       $('#error_message').text(``);
       $("#loading").show();
       $("#loading_text").text(`Loading. Please Wait...`);
-      setTimeout(function() {
-        click_cluster(d, cluster_info);
-        $("#loading").hide();
-        $("#loading_text").text(``);
-      }, 20);
+      await click_cluster(d, cluster_info);
+      $("#loading").hide();
+      $("#loading_text").text(``);
     });
 
   // generate colour palettes
@@ -673,7 +538,7 @@ function generate_legends() {
 }
 
 
-function click_cluster(d, cluster_info) {
+async function click_cluster(d, cluster_info) {
   cindex = d.cluster_idx;  // store index as global variable
   d3.selectAll("rect.clickedH").remove();
 
@@ -687,7 +552,7 @@ function click_cluster(d, cluster_info) {
     d3.selectAll("rect.clicked").attr('class', "default");
     d3.selectAll("text.clicked").attr('class', null);
     
-  beadplot(d.cluster_idx);
+  await beadplot(d.cluster_idx);
 
   // reset all rectangles to high transparency
   if ($('#search-input').val() === "") {
@@ -705,7 +570,7 @@ function click_cluster(d, cluster_info) {
 
     gentable(d);
     draw_region_distribution(d.allregions);
-    gen_details_table(beaddata[d.cluster_idx].points);  // update details table with all samples
+    gen_details_table(points);  // update details table with all samples
     gen_mut_table(mutations[d.cluster_idx]);
   }
   else if (cluster_info.className.baseVal !== "SelectedCluster"){
@@ -738,7 +603,7 @@ function click_cluster(d, cluster_info) {
 
     gentable(d);
     draw_region_distribution(d.allregions);
-    gen_details_table(beaddata[d.cluster_idx].points);  // update details table with all samples
+    gen_details_table(points);  // update details table with all samples
     gen_mut_table(mutations[d.cluster_idx]);
     
     // FIXME: this is the same div used for making barplot SVG

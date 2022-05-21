@@ -5,6 +5,38 @@ import sys
 import json
 
 
+def unpack_records(records):
+    """
+    by_lineage is a nested dict with the inner dicts keyed by serialized
+    mutation sets (diffs).  This function is used to reconstitute the mutations
+    as a list of tuples, restoring the diffs entry for each record, and to return
+    a list of dicts.
+    Used in:
+    - treetime:retrieve_genomes()
+    - get_mutations()
+    - batch.py, command line interface
+    See issue: https://github.com/PoonLab/covizu/issues/387
+
+    @param records:  dict, sets of genomes under a single lineage classification,
+                     each set keyed by their shared set of mutations (diffs)
+    @return:  a list of dicts, each dict representing a genome and its metadata
+    """
+    unpacked = []
+    for key, variant in records.items():
+        # reconstitute the mutations defining this variant
+        diffs = []
+        for mutation in key.split(','):
+            typ, pos, alt = mutation.split('|')
+            if typ == '-':
+                alt = int(alt)  # number of nucleotides in indel
+            diffs.append(tuple([typ, int(pos), alt]))
+
+        for sample in variant:
+            sample.update({'diffs': diffs})
+            unpacked.append(sample)
+    return unpacked
+
+
 def build_timetree(by_lineage, args, callback=None):
     """ Generate time-scaled tree of Pangolin lineages """
 
@@ -215,7 +247,9 @@ def get_mutations(by_lineage):
     :return:  dict, common mutations by lineage
     """
     result = {}
-    for lineage, samples in by_lineage.items():
+    for lineage, records in by_lineage.items():
+        samples = unpack_records(records)
+
         # enumerate features
         counts = {}
         for sample in samples:
@@ -224,8 +258,11 @@ def get_mutations(by_lineage):
                 if feat not in counts:
                     counts.update({feat: 0})
                 counts[feat] += 1
+
         # filter for mutations that occur in at least half of samples
-        common = dict([(feat, count/len(samples)) for feat, count in counts.items() if count/len(samples) >= 0.5])
+        common = dict([(feat, count/len(samples)) for feat, count in counts.items()
+                       if count/len(samples) >= 0.5])
         result.update({lineage: common})
+
     return result
 
