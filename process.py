@@ -61,7 +61,7 @@ def import_metadata(meta_file, fields, lineages=None, region=None, callback=None
         coldate = row[fields['coldate']]
 
         if lineages:
-            lineage = lineages.get(label, None)
+            lineage = lineages.get(label.upper(), None)
             if lineage is None:
                 if callback:
                     callback("Failed to retrieve lineage assignment for {}".format(label), level='ERROR')
@@ -301,7 +301,7 @@ if __name__ == '__main__':
     lineages = {}
     handle = open(args.vspango)
     for row in DictReader(handle):
-        lineages.update({row['isolate']: row['lineage']})
+        lineages.update({row['isolate'].upper() : row['lineage']})
 
     cb.callback("importing VirusSeq metadata")
     metadata = import_metadata(meta_file=args.vsmeta, fields=vs_fields, lineages=lineages,
