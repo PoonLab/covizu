@@ -13,6 +13,8 @@ from Bio import Phylo
 import covizu
 from covizu.utils.seq_utils import *
 from covizu.utils.progress_utils import Callback
+#from covizu.utils.batch_utils import unpack_records
+import covizu.utils.batch_utils
 
 
 def fasttree(fasta, binpath='fasttree2', seed=1, gtr=True, collapse=True):
@@ -41,12 +43,14 @@ def fasttree(fasta, binpath='fasttree2', seed=1, gtr=True, collapse=True):
     stdout, stderr = p.communicate(input=in_str.encode('utf-8'))
     nwk = stdout.decode('utf-8')
 
-    # collapse low support nodes into polytomies
+    # parse Newick tree string from output
+    phy = Phylo.read(StringIO(nwk), format='newick')
+    phy.root_with_outgroup('reference')  # issue #396
+    phy.prune('reference')
     if collapse:
-        phy = Phylo.read(StringIO(nwk), format='newick')
-        phy.collapse_all(lambda x: x.confidence is not None and
-                                   x.confidence < 0.5)
-        nwk = phy.format('newick')
+        # collapse low support nodes into polytomies
+        phy.collapse_all(lambda x: x.confidence is not None and x.confidence < 0.5)
+    nwk = phy.format('newick')
     return nwk
 
 
@@ -80,7 +84,8 @@ def treetime(nwk, fasta, outdir, binpath='treetime', clock=None, verbosity=1):
             '--outdir', outdir, '--verbose', str(verbosity),
             '--plot-rtt', 'none',  # see issue #66
             '--clock-filter', '0',  # issue #245
-            '--keep-polytomies'  # issue #339
+            '--keep-polytomies',  # issue #339
+            '--keep-root'  # issue 396
     ]
     if clock:
         call.extend(['--clock-rate', str(clock)])
@@ -118,6 +123,8 @@ def parse_nexus(nexus_file, fasta, callback=None):
     """
     coldates = {}
     for h, _ in fasta.items():
+        if 'reference' in h:
+            continue
         _, accn, coldate = h.split('|')
         coldates.update({accn: date2float(coldate)})
 
@@ -170,7 +177,7 @@ def parse_nexus(nexus_file, fasta, callback=None):
 def retrieve_genomes(by_lineage, known_seqs, ref_file, earliest=True, callback=None):
     """
     Identify most recent sampled genome sequence for each Pangolin lineage.
-    Export as FASTA for TreeTime analysis.
+    Export as FASTA for TreeTime analysis, including reference genome.
 
     :param by_lineage:  dict, return value from gisaid_utils::sort_by_lineage
     :param known_seqs:  dict, sequences used in Pango lineage designations
@@ -185,9 +192,9 @@ def retrieve_genomes(by_lineage, known_seqs, ref_file, earliest=True, callback=N
         _, refseq = convert_fasta(handle)[0]
 
     # allocate lists
-    coldates = []
-    lineages = []
-    seqs = []
+    coldates = [None]
+    lineages = ['reference']
+    seqs = [refseq]
 
     # retrieve unaligned genomes from database
     for lineage, records in by_lineage.items():
@@ -286,12 +293,6 @@ if __name__ == '__main__':
     cb.callback("Identifying lineage representative genomes")
     fasta = retrieve_genomes(by_lineage, known_seqs=lineages, ref_file=args.ref, earliest=args.earliest,
                              callback=cb.callback)
-    outfile = open("iss385.fasta", 'w')
-    for header, seq in fasta.items():
-        outfile.write(f">{header}\n{seq}\n")
-    outfile.close()
-
-    sys.exit()
 
     cb.callback("Reconstructing tree with {}".format(args.ft2bin))
     nwk = fasttree(fasta, binpath=args.ft2bin)

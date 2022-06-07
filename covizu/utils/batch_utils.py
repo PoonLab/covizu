@@ -1,8 +1,9 @@
 import subprocess
 from Bio import Phylo
-from covizu import clustering, treetime, beadplot
+from covizu import clustering, beadplot
 import sys
 import json
+import covizu.treetime
 
 
 def unpack_records(records):
@@ -55,20 +56,20 @@ def build_timetree(by_lineage, args, callback=None):
 
     if callback:
         callback("Identifying lineage representative genomes")
-    fasta = treetime.retrieve_genomes(by_lineage, known_seqs=lineages, ref_file=args.ref,
+    fasta = covizu.treetime.retrieve_genomes(by_lineage, known_seqs=lineages, ref_file=args.ref,
                                       earliest=True)
 
     if callback:
         callback("Reconstructing tree with {}".format(args.ft2bin))
-    nwk = treetime.fasttree(fasta, binpath=args.ft2bin)
+    nwk = covizu.treetime.fasttree(fasta, binpath=args.ft2bin)
 
     if callback:
         callback("Reconstructing time-scaled tree with {}".format(args.ttbin))
-    nexus_file = treetime.treetime(nwk, fasta, outdir=args.outdir, binpath=args.ttbin,
+    nexus_file = covizu.treetime.treetime(nwk, fasta, outdir=args.outdir, binpath=args.ttbin,
                                    clock=args.clock, verbosity=0)
 
     # writes output to treetime.nwk at `nexus_file` path
-    return treetime.parse_nexus(nexus_file, fasta)
+    return covizu.treetime.parse_nexus(nexus_file, fasta)
 
 
 def beadplot_serial(lineage, features, args, callback=None):
