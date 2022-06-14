@@ -54,6 +54,9 @@ def build_timetree(by_lineage, args, callback=None):
         taxon, lineage = line.strip().split(',')
         lineages.update({taxon: lineage})
 
+    # filter recombinants
+    by_lineage = {lineage : records for lineage, records in by_lineage.items() if lineage[0] != 'X'}
+
     if callback:
         callback("Identifying lineage representative genomes")
     fasta = covizu.treetime.retrieve_genomes(by_lineage, known_seqs=lineages, ref_file=args.ref,
