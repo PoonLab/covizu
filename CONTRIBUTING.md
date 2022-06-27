@@ -28,6 +28,11 @@ Development of CoVizu is primarily being carried out on workstations and servers
 However, we have also run the system on desktop computers running macOS 10.13.
 Most web development is tested in Google Chrome.
 
+To setup the development environment:
+1. Navigate to the directory containing `package.json`
+2. Run the command `npm install`
+3. Run the `run-server.sh` script or `npm start` or `node server.js`
+
 
 ## Coding style
 

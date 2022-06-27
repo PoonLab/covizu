@@ -61,7 +61,11 @@ This sequence of commands demonstrates how to run the CoVizu pipeline using the 
    ```
    Keeping the time-stamped data files is useful for revisiting results at a previous time, and they are relatively compact.
 
-5. Launch a local webserver with `bash run-server.sh` or `python3 -m http.server 8001 --bind 127.0.0.1`, and navigate your browser to `localhost:8001`.
+5. Launch the Node.js Web Server
+
+If you're running the server for the first time, navigate to the directory containing `package.json` and run the command `npm install` to install all the required dependencies to run the server.
+
+Launch the local webserver with `bash run-server.sh` or `node server.js` or `npm start`, and navigate your browser to `localhost:8001`.
 
 
 ## Acknowledgements

@@ -4,7 +4,8 @@
 var marginB = {top: 50, right: 10, bottom: 50, left: 10},
     widthB = document.getElementById("svg-cluster").clientWidth - marginB.left - marginB.right,
     heightB = 1000 - marginB.top - marginB.bottom,
-    pixelsPerDay = 10;
+    pixelsPerDay = 10,
+    ccid = -1;;
 
 // set up plotting scales
 var xValueB = function(d) { return d.x },
@@ -35,10 +36,6 @@ var visBaxis = d3.select("div#svg-clusteraxis")
   .attr("height", 25)
   .append("g");
 
-// regular expression to remove redundant sequence name components
-const pat = /^hCoV-19\/(.+\/.+)\/20[0-9]{2}$/gi;
-
-
 /**
  * Returns unique elements in given array.
  * @param {Array} arr
@@ -53,34 +50,6 @@ function unique(arr) {
     }
   }
   return (Object.keys(history));
-}
-
-
-/**
- * Returns most common element of array.  If there is a tie, then
- * the function returns the right-most value.
- * @param {Array} arr:  array of elements to sort
- * @return most common element
- */
-function mode(arr) {
-  if (arr.length === 0) {
-    return undefined;
-  }
-  var counts = {},
-      key, max_key=arr[0], max_count = 1;
-  for (var i = 0; i < arr.length; i++) {
-    key = arr[i];
-    if (counts[key] == null) {
-      counts[key] = 1
-      continue
-    }
-    counts[key]++;
-    if (counts[key] > max_count) {
-      max_count = counts[key];
-      max_key = key;
-    }
-  }
-  return(max_key);
 }
 
 
@@ -102,376 +71,6 @@ function tabulate(arr) {
     counts[val]++;
   }
   return(counts);
-}
-
-
-/**
- * Generate a map of country to region (continent).  In case of discordant region,
- * track all cases.
- * @param country
- * @param regions
- * @returns {{}}
- */
-function map_country_to_region(country, regions) {
-  // Compile map of country to region
-  let c2r = {}, ci, ri;
-  for (let i=0; i<country.length; i++) {
-    ci = country[i];
-    ri = regions[i];
-    if (ci in c2r) {
-      if (ri in c2r[ci]) {
-        c2r[ci][ri] += 1;
-      } else {
-        c2r[ci][ri] = 1;
-      }
-    } else {
-      c2r[ci] = {};
-      c2r[ci][ri] = 1;
-    }
-  }
-  return(c2r);
-}
-
-
-/**
- * Parse nodes that belong to the same variant.
- * A variant is a collection of genomes that are indistinguishable with respect to
- * (1) differences from the reference or (2) placement in the phylogenetic tree.
- * Visually, the variant is represented by a horizontal line segment spanning the
- * sample collection dates.
- * The samples that comprise a variant are gathered by collection date into "points"
- * along the horizontal line.  If there are no samples, then the variant is
- * "unsampled" and spans the entire width of the beadplot.
- *
- * @param {Object} variant:  associative list member of cluster.nodes
- * @param {number} y:  vertical position
- * @param {number} cidx:  cluster index for labeling points
- * @param {string} accn:  accession of baseline sample of variant
- * @param {Date} mindate:  used only for unsampled variants
- * @param {Date} maxdate:  used only for unsampled variants
- * @returns {{variants: [], points: []}}
- */
-function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
-  var vdata, pdata = [];
-
-  if (variant.length === 0) {
-    // handle unsampled internal node
-    if (mindate === null || maxdate === null) {
-      // this would happen if a cluster comprised only one unsampled node - should be impossible!
-      console.log("Error in parse_variants(): cannot draw unsampled variant without min and max dates");
-    }
-    vdata = {
-      'accession': accn,
-      'label': accn, // unsampled variant has no meaningful label
-      'x1': utcDate(mindate),  // cluster min date
-      'x2': utcDate(maxdate),  // cluster max date
-      'y1': y,
-      'y2': y,
-      'count': 0,
-      'country': null,
-      'region': null,
-      'numBeads': 0,
-      'parent': null,
-      'dist': 0,
-      'unsampled': true
-    };
-  }
-  else {
-    // parse samples within variant, i.e., "beads"
-    // coldate, division, country, region, accession, name
-    var label = variant[0][2] === variant[0][1] ? 
-                variant[0][1]+"/"+variant[0][4].replace(pat, "$1") : 
-                variant[0][2]+"/"+variant[0][1]+"/"+variant[0][4].replace(pat, "$1"), //Issue #323: avoid double tagging
-        coldates = variant.map(x => x[0]),
-        isodate, samples;
-
-    coldates.sort();
-    //Retrieving countries from variants?
-    var country = variant.map(x => x[2]),
-        regions = variant.map(x => x[3]),
-        divisions = variant.map(x => x[1]),
-        isodates = unique(coldates);
-
-    vdata = {
-      'accession': accn,
-      'label': label,
-      'x1': utcDate(coldates[0]),  // min date
-      'x2': utcDate(coldates[coldates.length-1]),  // max date
-      'y1': y,
-      'y2': y,
-      'count': coldates.length,
-      'division': tabulate(divisions),
-      'country': tabulate(country),
-      'region': regions,
-      'c2r': map_country_to_region(country, regions),
-      'numBeads': isodates.length,
-      'parent': null,
-      'dist': 0,
-      'unsampled': false
-    };
-
-    for (var i=0; i<isodates.length; i++) {
-      isodate = isodates[i];
-      samples = variant.filter(x => x[0] === isodate);
-      divisions = samples.map(x => x[1]);
-      country = samples.map(x => x[2]);
-      regions = samples.map(x => x[3]);
-
-      let provinces = divisions.filter(x => Object.keys(province_pal).includes(x));
-
-      pdata.push({
-        cidx,
-        'variant': accn,
-        'x': utcDate(isodate),
-        'y': y,
-        'count': samples.length,
-        'accessions': samples.map(x => x[4]),
-        'labels': samples.map(x => x[2] === x[1] ? x[1]+"/"+x[4].replace(pat, "$1") : x[2]+"/"+x[1]+"/"+x[4].replace(pat, "$1")), // Issue #323
-        'region1': mode(regions),
-        'region': regions,
-        'country': tabulate(country),
-        'division': tabulate(divisions),
-        'division1': mode(provinces),
-        'c2r': map_country_to_region(country, regions),
-        'parent': null,
-        'dist': 0
-      })
-    }
-  }
-
-  return {'variant': vdata, 'points': pdata};
-}
-
-
-/**
- *
- * @param cluster
- * @param variants
- * @param points
- * @returns {[]}
- */
-function parse_edgelist(cluster, variants, points) {
-  // map earliest collection date of child node to vertical edges
-  let edge, parent, child, dist, support,
-      edgelist = [];
-
-  // generate maps of variants and points keyed by accession
-  let lookup_variant = {};
-  variants.forEach(function(row) {
-    lookup_variant[row.accession] = row;
-  });
-
-  let lookup_points = {},
-      index_points = {};  // index by y-coordinate
-
-  points.forEach(function(pt) {
-    if (lookup_points[pt.variant] === undefined) {
-      lookup_points[pt.variant] = [];
-    }
-    lookup_points[pt.variant].push(pt);
-    if (index_points[pt.y] === undefined) {
-      index_points[pt.y] = [];
-    }
-    index_points[pt.y].push(pt);
-  })
-
-  for (var e = 0; e < cluster.edges.length; e++) {
-    edge = cluster.edges[e];
-    //parent = variants.filter(x => x.accession === edge[0])[0];
-    parent = lookup_variant[edge[0]];
-    //child = variants.filter(x => x.accession === edge[1])[0];
-    child = lookup_variant[edge[1]];
-
-    if (parent === undefined || child === undefined) {
-      // TODO: handle edge to unsampled node
-      continue;
-    }
-
-    dist = parseFloat(edge[2]);
-    if (edge[3] === null) {
-      support = undefined;
-    } else {
-      support = parseFloat(edge[3]);
-    }
-
-    edgelist.push({
-      'y1': parent.y1,
-      'y2': child.y1,
-      'x1': child.x1,  // vertical line segment
-      'x2': child.x1,
-      'parent': parent.label,
-      'child': child.label,
-      'dist': dist,
-      'support': support
-    });
-
-    child.parent = parent.label;
-    child.dist = dist;
-
-    // Assign the parent and genomic distance of each point
-    if (index_points[child.y1] !== undefined) {
-      for (let pt of index_points[child.y1]) {
-        pt.parent = parent.label;
-        pt.dist = dist;
-      }
-    }
-    /*
-    for (let c = 0; c < points.length; c++) {
-      if (points[c].y === child.y1) {
-        points[c].parent = parent.label;
-        points[c].dist = dist;
-      }
-    }
-    */
-
-    // update variant time range
-    if (parent.x1 > child.x1) {
-      parent.x1 = child.x1;
-    }
-    if (parent.x2 < child.x1) {
-      parent.x2 = child.x1;
-    }
-  }
-  return edgelist;
-}
-
-
-/**
- * Combine Object attributes that entabulate data like countries
- * @param {Array} tables: an array of Objects to combine
- * @return Object
- */
-function merge_tables(tables) {
-  var total = {};
-  for (tab of tables) {
-    if (tab === null) {
-      continue;
-    }
-    for (key of Object.keys(tab)) {
-      if (total[key] === undefined) {
-        total[key] = 0;
-      }
-      total[key] += tab[key];
-    }
-  }
-  return(total);
-}
-
-function merge_maps(maps) {
-  var total = {};
-  for (m of maps) {
-    // e.g., {'Canada': {'North America': 65}, 'USA': {'North America': 1}}
-    if (m === null) {
-      continue;
-    }
-    for (key of Object.keys(m)) {  // 'Canada'
-      if (total[key] === undefined) {
-        total[key] = {};
-      }
-      for (subkey of Object.keys(m[key])) {
-        if (total[key][subkey] === undefined) {
-          total[key][subkey] = 0;
-        }
-        total[key][subkey] += m[key][subkey];
-      }
-    }
-  }
-  return(total);
-}
-
-/**
- * Parse node and edge data from clusters JSON to a format that is
- * easier to map to SVG.
- * @param {Object} clusters:
- */
-function parse_clusters(clusters) {
-  var cluster, variant, coldates, regions, labels,
-      accn, mindate, maxdate,
-      result, vdata, pdata,
-      variants,  // horizontal line segment data + labels
-      edgelist,  // vertical line segment data
-      points,  // the "beads"
-      beaddata = [];  // return value
-
-  for (const cidx in clusters) {
-    cluster = clusters[cidx];
-
-    variants = [];
-    points = [];
-    edgelist = [];
-
-    // deal with edge case of cluster with only one variant, no edges
-    if (Object.keys(cluster["nodes"]).length === 1) {
-      variant = Object.values(cluster.nodes)[0];
-      accn = Object.keys(cluster.nodes)[0];
-      result = parse_variant(variant, 0, cidx, accn, null, null);
-      vdata = result['variant'];
-      variants.push(vdata);
-
-      pdata = result['points'];
-      points = points.concat(pdata);
-    }
-    else {
-      // de-convolute edge list to get node list in preorder
-      var nodelist = unique(cluster.edges.map(x => x.slice(0, 2)).flat());
-
-      // date range of cluster
-      coldates = nodelist.map(a => cluster.nodes[a].map(x => x[0])).flat();
-      coldates.sort()
-      mindate = coldates[0];
-      maxdate = coldates[coldates.length - 1];
-
-      // extract the date range for each variant in cluster
-      var y = 1;
-      for (const accn of nodelist) {
-        // extract collection dates for all samples of this variant
-        variant = cluster.nodes[accn];
-        result = parse_variant(variant, y, cidx, accn, mindate, maxdate);
-        variants.push(result['variant']);
-        points = points.concat(result['points']);
-        y++;
-      }
-
-      edgelist = parse_edgelist(cluster, variants, points);
-    }
-
-    beaddata.push({
-      'variants': variants,
-      'edgelist': edgelist,
-      'points': points
-    });
-
-    // calculate consensus region for cluster
-    // collect all region Arrays for all samples, all variants
-    regions = points.map(x => x.region).flat();
-    cluster['region'] = mode(regions);
-    cluster['allregions'] = tabulate(regions);
-
-    // concatenate all sample labels within cluster for searching
-    labels = points.map(x => x.labels).flat();
-
-    // decompose labels and only keep unique substrings
-    let uniq = new Set(labels.map(x => x.split('/')).flat());
-    cluster['searchtext'] = Array.from(uniq).join();
-    cluster['label1'] = labels[0];
-
-    // collect all countries
-    cluster['country'] = merge_tables(variants.map(x => x.country));
-    cluster['division'] = merge_tables(variants.map(x => x.division).filter(x => x !== undefined));
-    let province_counts = Object.keys(province_pal).map(x => {
-      let pcount = cluster["division"][x];
-      if (pcount === undefined) {
-        return (0);
-      } else {
-        return (pcount);
-      }
-    });
-    let which_max = province_counts.indexOf(province_counts.reduce((a,b) => a>b?a:b));
-    cluster['province'] = which_max>0 ? Object.keys(province_pal)[which_max] : null;
-
-    cluster['c2r'] = merge_maps(variants.map(x => x.c2r).filter(x => x!==undefined));
-  }
-  return beaddata;
 }
 
 
@@ -581,13 +180,35 @@ function clear_selection() {
  * integer index <cid>) in the SVG.
  * @param {Number} cid:  integer index of cluster to draw as beadplot
  */
-function beadplot(cid) {
+async function beadplot(cid) {
   // Update global cindex for SVG and NWK filenames
-  cindex = cid;
+  // cindex = cid;
 
-  var variants = beaddata[cid].variants,
-      edgelist = beaddata[cid].edgelist,
-      points = beaddata[cid].points;
+  // var variants = beaddata[cid].variants,
+  //     edgelist = beaddata[cid].edgelist,
+  //     points = beaddata[cid].points;
+
+  if (cindex !== ccid) {
+    cindex = cid;
+    ccid = cindex
+    edgelist = await getdata(`/api/edgelist/${cindex}`);
+    edgelist.forEach(x => {
+      x.x1 = utcDate(x.x1),
+      x.x2 = utcDate(x.x2)
+    });
+    points = await getdata(`/api/points/${cindex}`);
+    points.forEach(d => {
+      d.x = utcDate(d.x)
+    });
+    variants = await getdata(`/api/variants/${cindex}`);
+    variants.forEach(x => {
+      x.x1 = utcDate(x.x1),
+      x.x2 = utcDate(x.x2)
+    });
+    await fetch(`/api/lineage/${cindex}`)
+    .then(response => response.text())
+    .then(lin => lineage=lin)
+  } 
 
   // rescale slider
   let max_dist = Math.max(...edgelist.map(x => x.dist));
@@ -1463,8 +1084,7 @@ function serialize_branch(parent, edgelist) {
 }
 
 function serialize_beadplot(cidx) {
-  var edgelist = beaddata[cidx].edgelist,
-      root = edgelist[0].parent;
+  var root = edgelist[0].parent;
   return serialize_branch(root, edgelist)+';';
 }
 

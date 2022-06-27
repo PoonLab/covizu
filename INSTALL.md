@@ -8,6 +8,8 @@
 * [FastTree2](http://www.microbesonline.org/fasttree/) version 2.1.10+, compiled for [double precision](http://www.microbesonline.org/fasttree/#BranchLen)
 * [TreeTime](https://github.com/neherlab/treetime) version 0.7.5+
 * [RapidNJ](https://birc.au.dk/software/rapidnj/)
+* [Node.js](https://nodejs.org/en/download/)
+* [npm](https://docs.npmjs.com/about-npm-versions)
 
 If running locally (without dedicated GISAID feed):
 * [Pangolin](https://github.com/cov-lineages/pangolin/)
