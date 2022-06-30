@@ -11,6 +11,7 @@ require('dotenv').config();
 var http = require('http');
 var https = require('https');
 
+// Path to SSL certificate to create a https server
 if (process.env.PROD) {
   var credentials = {
     key: fs.readFileSync(process.env.PRVTKEY), 
@@ -40,6 +41,7 @@ const data = Object.keys(accn_to_cid).sort().concat(Object.keys(lineage_to_cid).
   normalize(accn), accn
 ]);
 
+// The following three get requests are to retrieve edge, bead and variant information for individual clusters
 app.get('/api/edgeList/:cindex', (req, res) => {
   res.send(beaddata[req.params.cindex].edgelist)
 });
@@ -52,6 +54,17 @@ app.get('/api/variants/:cindex', (req, res) => {
   res.send(beaddata[req.params.cindex].variants)
 });
 
+// Returns the lineage name for the provided cluster index
+app.get('/api/lineage/:cindex', (req, res) => {
+  res.send(clusters[req.params.cindex].lineage)
+});
+
+// Returns the cluster index for the provided accession
+app.get('/api/cid/:accession', (req, res) => {
+  res.send(accn_to_cid[req.params.accession])
+});
+
+// Returns information required to generate the tooltip when a user hovers over a cluster
 app.get('/api/tips', (req, res) => {
   res.send(tips)
 });
@@ -60,22 +73,11 @@ app.get('/api/df', (req, res) => {
   res.send(df)
 });
 
-app.get('/api/lineage/:cindex', (req, res) => {
-  res.send(clusters[req.params.cindex].lineage)
-});
-
-app.get('/api/cid/:accession', (req, res) => {
-  res.send(accn_to_cid[req.params.accession])
-});
-
-app.get('/api/cid', (req, res) => {
-  res.send(accn_to_cid)
-});
-
 app.get('/api/lineagetocid', (req, res) => {
   res.send(lineage_to_cid)
 });
 
+// Returns all beads that match the query, within the start and end dates provided
 app.get('/api/searchHits/:query/:start/:end', (req, res) => {
   // Flatten the json data to an array with bead data only
   let flat_data = beaddata.map(bead => bead.points).flat();
@@ -93,6 +95,7 @@ app.get('/api/searchHits/:query/:start/:end', (req, res) => {
   res.send(search_hits)
 });
 
+// Requests sent to provide search suggestions based on the user query
 app.get('/api/getHits/:query', (req, res) => {
   function as_label(search_data) {
     const [, accn] = search_data;
