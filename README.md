@@ -63,9 +63,9 @@ This sequence of commands demonstrates how to run the CoVizu pipeline using the 
 
 5. Launch the Node.js Web Server
 
-If you're running the server for the first time, navigate to the directory containing `package.json` and run the command `npm install` to install all the required dependencies to run the server.
+   If you're running the server for the first time, navigate to the directory containing `package.json` and run the command `npm install` to install all the required dependencies to run the server.
 
-Launch the local webserver with `bash run-server.sh` or `node server.js` or `npm start`, and navigate your browser to `localhost:8001`.
+   Launch the local webserver with `npm start`, allow up to a minute for the server to initialize and navigate your browser to `localhost:8001`.
 
 
 ## Acknowledgements
