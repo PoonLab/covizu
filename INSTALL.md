@@ -14,3 +14,16 @@
 
 If running locally (without dedicated GISAID feed):
 * [Pangolin](https://github.com/cov-lineages/pangolin/)
+
+## Initialize Development Environment
+If you're running the server for the first time run the following commands:
+```
+ git clone https://github.com/PoonLab/covizu
+ cp timetree.nwk covizu/data/
+ cp dbstats.json covizu/data/
+ cp clusters.json covizu/data/
+ cd covizu
+ npm install
+ npm start
+```
+Once you launch the local webserver with `npm start`, allow up to a minute for the server to initialize and then navigate your browser to localhost:8001
