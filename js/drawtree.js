@@ -172,7 +172,7 @@ function sort_mutations(mutations) {
  * Add subtree objects to time-scaled tree.
  * @param {Array} tips, clusters that have been mapped to tips of tree
  */
-function draw_clusters(tips) {
+function draw_clusters(tips, redraw=false) {
 
   var tickVals = [],
       minVal = d3.min(df, xValue)-0.05,
@@ -184,7 +184,8 @@ function draw_clusters(tips) {
   }
   
   // Draws the axis for the time scaled tree
-  axis.append("g")
+  if(!redraw){
+    axis.append("g")
     .attr("class", "treeaxis")
     .attr("transform", "translate(0,20)")
     .call(d3.axisTop(xScale)
@@ -194,7 +195,7 @@ function draw_clusters(tips) {
         return xaxis_to_date(d, tips[0])
       })
     );
-
+  }
   function mouseover(d) {
     d3.select("[cidx=cidx-" + d.cluster_idx + "]")
       .attr("txt_hover", "yes");
@@ -640,4 +641,74 @@ async function click_cluster(d, cluster_info) {
     update_table_individual_bead_front(d3.select(working_bead).datum());
   }
   draw_cluster_box(d3.select(cluster_info));
+}
+
+function redraw_tree(cutoff_date) {
+  // filter for tips with a collection date after the cutoff
+  var filtered_df = df.filter(x => {
+    if (formatDate(x.coldate) >= cutoff_date && x.isTip == true) return Object.assign({}, x);
+  });
+
+  // add internal nodes corresponding to filtered tips
+  filtered_df.forEach(function(node) {
+    let filtered_node = df[node.parentId];
+    while((filtered_node != undefined)) {
+      // let filtered_ids = filtered_df.map(x => x.parentId)
+      // let duplicates = filtered_ids.filter((e, i, a) => a.indexOf(e) !== i)
+      // if((!filtered_df.includes(filtered_node)) && (duplicates.includes(filtered_node.thisId))) {
+
+      if((!filtered_df.includes(filtered_node))) {
+        filtered_df.push(filtered_node);
+      }
+      // else if (!(duplicates.includes(filtered_node.thisId))) {
+      //   let i = filtered_ids.indexOf(filtered_node.thisId)
+      //   filtered_df[i].parentId = filtered_node.parentId
+      //   // filtered_df[i] = Object.assign({}, filtered_df[i], {parentId: filtered_node.parentId})
+      // }
+      filtered_node = df[filtered_node.parentId];
+    }
+  })
+  // sort by ids
+  filtered_df = filtered_df.sort(function(a, b) {
+    return a.thisId - b.thisId;
+  })
+
+  // map new ids to the old ids and reassign parents/children
+  map_ids = {}
+  filtered_df.forEach(function (node, i) {
+    map_ids[node.thisId] = i;
+    filtered_df[i] = Object.assign({}, node, { thisId: i});
+  });
+  filtered_df.forEach(function (node, i) {
+    new_children = [];
+    for(const child of node.children) {
+      filtered_child = map_ids[df[child].thisId]
+      if(filtered_child != undefined) {
+        new_children.push(filtered_child)
+      }
+    }
+    filtered_df[i] = Object.assign({}, node, { parentId: map_ids[node.parentId], 
+      children: new_children });
+  });
+
+  var filtered_tips = filtered_df.filter(x => {
+    if (x.isTip == true) return x;
+  });
+
+  console.log(filtered_df)
+  document.querySelector("#svg-timetree > svg").innerHTML = ''; 
+  drawtree(filtered_df)
+  draw_clusters(filtered_tips, redraw=true);
+}
+
+function reset_tree() {
+  // resets slider and tree 
+  min = $("#tree-slider").slider("option").min; 
+  min_date = formatDate(d3.min(df, function(d) {return d.last_date}));
+
+  $("#tree-slider").slider('value', min);
+  $("#cutoff-date").css('left', $("#tree-slider-handle").position().left + 29);
+  $("#cutoff-date").text(min_date)
+  $("#tree-slider").slider({ disabled: true});
+  redraw_tree(min_date);
 }
