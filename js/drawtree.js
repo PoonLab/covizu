@@ -644,28 +644,32 @@ async function click_cluster(d, cluster_info) {
 }
 
 function redraw_tree(cutoff_date) {
+  // deep copy the df and clear all references to children
+  df_copy = structuredClone(df)
+
+  var df_copy = df_copy.map(x => {
+    x.children = [];
+    return x;
+  });
+
   // filter for tips with a collection date after the cutoff
-  var filtered_df = df.filter(x => {
-    if (formatDate(x.coldate) >= cutoff_date && x.isTip == true) return Object.assign({}, x);
+  var filtered_df = df_copy.filter(x => {
+    if (formatDate(x.coldate) >= cutoff_date && x.isTip == true) return x;
   });
 
   // add internal nodes corresponding to filtered tips
   filtered_df.forEach(function(node) {
-    let filtered_node = df[node.parentId];
+    let filtered_node = df_copy[node.parentId];
+    let child = node;
     while((filtered_node != undefined)) {
-      // let filtered_ids = filtered_df.map(x => x.parentId)
-      // let duplicates = filtered_ids.filter((e, i, a) => a.indexOf(e) !== i)
-      // if((!filtered_df.includes(filtered_node)) && (duplicates.includes(filtered_node.thisId))) {
-
       if((!filtered_df.includes(filtered_node))) {
         filtered_df.push(filtered_node);
       }
-      // else if (!(duplicates.includes(filtered_node.thisId))) {
-      //   let i = filtered_ids.indexOf(filtered_node.thisId)
-      //   filtered_df[i].parentId = filtered_node.parentId
-      //   // filtered_df[i] = Object.assign({}, filtered_df[i], {parentId: filtered_node.parentId})
-      // }
-      filtered_node = df[filtered_node.parentId];
+      if(!filtered_node.children.includes(child.thisId)) {
+        filtered_node.children.push(child.thisId);
+      }
+      child = filtered_node;
+      filtered_node = df_copy[filtered_node.parentId];
     }
   })
   // sort by ids
@@ -673,31 +677,62 @@ function redraw_tree(cutoff_date) {
     return a.thisId - b.thisId;
   })
 
-  // map new ids to the old ids and reassign parents/children
-  map_ids = {}
-  filtered_df.forEach(function (node, i) {
-    map_ids[node.thisId] = i;
-    filtered_df[i] = Object.assign({}, node, { thisId: i});
-  });
-  filtered_df.forEach(function (node, i) {
-    new_children = [];
-    for(const child of node.children) {
-      filtered_child = map_ids[df[child].thisId]
-      if(filtered_child != undefined) {
-        new_children.push(filtered_child)
+  var final_df = []
+  // filter out internal nodes with only one child
+  for(var node of filtered_df) {
+    if(node.children.length > 1 || node.isTip) {
+      final_df.push(node)
+    }
+    else {
+      while((node.parentId != undefined) && (node.children.length == 1)) {
+        parent = df_copy[node.parentId];
+        child = df_copy[node.children[0]];
+
+        child.parentId = node.parentId;
+        child.parentLabel = node.parentLabel;
+        let index = parent.children.findIndex(x => x == node.thisId);
+        parent.children.splice(index, 1, node.children[0]);
+
+        node = parent;
       }
     }
-    filtered_df[i] = Object.assign({}, node, { parentId: map_ids[node.parentId], 
-      children: new_children });
+  }
+
+  // map new ids to the old ids and reassign parents/children
+  map_ids = {}
+  final_df.forEach(function (node, i) {
+    map_ids[node.thisId] = i;
+    final_df[i].thisId = i;
+  });
+  final_df.forEach(function (node) {
+    let new_children = [];
+    for(const child of node.children) {
+      new_children.push(map_ids[child])
+    }
+    node.parentId = map_ids[node.parentId] ? map_ids[node.parentId] : null;
+    node.children = new_children;
   });
 
-  var filtered_tips = filtered_df.filter(x => {
+  // recalculate y coordinates
+  var counter = 0;
+  final_df.forEach(function (node) {
+    if(node.isTip) node.y = counter++;
+    else {
+      node.y = 0;
+      for (var i = 0; i < node.children.length; i++) {
+        node.y += final_df[node.children[i]].y;
+      }
+      node.y /= node.children.length;
+    }
+  })
+
+  var filtered_tips = final_df.filter(x => {
     if (x.isTip == true) return x;
   });
 
-  console.log(filtered_df)
+  console.log(final_df)
   document.querySelector("#svg-timetree > svg").innerHTML = ''; 
-  drawtree(filtered_df)
+  drawtree(final_df)
   draw_clusters(filtered_tips, redraw=true);
 }
 
