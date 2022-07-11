@@ -27,6 +27,7 @@ $(document).tooltip({show: null});
 $("#loading_text").text(``);
 $("#loading").hide();
 $('#beadplot-hscroll').hide();
+$("#loading-tree").hide();
 
 
 /*********************** DIALOGS ***********************/
@@ -515,11 +516,12 @@ req.done(async function() {
   });
 
   // Sets the display date and cutoff line to move along with the slider
-  $( function() {
+  $(function() {
 
     var handle = $( "#tree-slider-handle" );
     var cutoff_date = $( "#cutoff-date" );
     var cutoff_line = $("#cutoff-line");
+    var tree_cutoff = $("#tree-cutoff");
 
     const multiplier = 100000000
     var min = Math.floor((d3.min(df, xValue)-0.05) * multiplier);
@@ -535,13 +537,16 @@ req.done(async function() {
         cutoff_line.css('visibility', 'visible');
         var cutoff_pos = handle.position().left;
         cutoff_line.css('left', cutoff_pos + 29);
-        cutoff_date.css('left', cutoff_pos + 29);
+        tree_cutoff.css('left', cutoff_pos);
       },
-      stop: function (event, ui) {
+      stop: async function (event, ui) {
         cutoff_line.css('visibility', 'hidden');
         var cutoff_pos = handle.position().left;
-        cutoff_date.css('left', cutoff_pos + 29);
-        redraw_tree(cutoff_date.text());
+        tree_cutoff.css('left', cutoff_pos);
+
+        $("#loading-tree").show();
+        await redraw_tree(cutoff_date.text());
+        $("#loading-tree").hide();
       },
       min: min,
       max: max,

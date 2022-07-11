@@ -797,3 +797,12 @@ h2.modal-title {
   font-size: 10px;
   margin: 2.5px 0px 25px -10px;
 }
+
+#loading-tree{
+  position: absolute;
+  width: 12px;
+  bottom: -15px;
+  left: 45px;
+  display:inline;
+  float: left;
+}

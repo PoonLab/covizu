@@ -730,7 +730,6 @@ function redraw_tree(cutoff_date) {
     if (x.isTip == true) return x;
   });
 
-  console.log(final_df)
   document.querySelector("#svg-timetree > svg").innerHTML = ''; 
   drawtree(final_df)
   draw_clusters(filtered_tips, redraw=true);
@@ -742,7 +741,6 @@ function reset_tree() {
   min_date = formatDate(d3.min(df, function(d) {return d.last_date}));
 
   $("#tree-slider").slider('value', min);
-  $("#cutoff-date").css('left', $("#tree-slider-handle").position().left + 29);
   $("#cutoff-date").text(min_date)
   $("#tree-slider").slider({ disabled: true});
   redraw_tree(min_date);
