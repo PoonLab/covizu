@@ -181,10 +181,11 @@ req.done(async function() {
   $("#splash-extra").html("");  // remove loading animation
   
   mutations = parse_mutation_annotations(mut_annotations);
-  drawtree(df);
-  //spinner.stop();
-  draw_clusters(tips);
+  var curr_date = new Date();
+  curr_date.setFullYear(curr_date.getFullYear() - 1);
+  redraw_tree(formatDate(curr_date), redraw=false);
 
+  //spinner.stop();
   var rect = d3.selectAll("#svg-timetree > svg > rect"),
       node = rect.nodes()[rect.size()-1];
 
@@ -523,17 +524,20 @@ req.done(async function() {
     var cutoff_line = $("#cutoff-line");
     var tree_cutoff = $("#tree-cutoff");
 
-    const multiplier = 100000000
-    var min = Math.floor((d3.min(df, xValue)-0.05) * multiplier);
-    var max = Math.ceil(date_to_xaxis(d3.max(df, function(d) {return d.last_date})) * multiplier);
+    const tree_multiplier = 100000000; 
+    var min = Math.floor((d3.min(df, xValue)-0.05) * tree_multiplier);
+    var max = Math.ceil(date_to_xaxis(d3.max(df, function(d) {return d.last_date})) * tree_multiplier);
+    var start_value = date_to_xaxis(curr_date) * tree_multiplier;
 
     $("#tree-slider").slider({
       create: function( event, ui ) {
-        cutoff_date.text(xaxis_to_date($( this ).slider( "value" )/multiplier, tips[0]));
+        cutoff_date.text(xaxis_to_date($( this ).slider( "value" )/tree_multiplier, tips[0]));
+        var cutoff_pos = handle.position().left;
+        tree_cutoff.css('left', cutoff_pos);
       },
       slide: function( event, ui ) {
         move_arrow();
-        cutoff_date.text(xaxis_to_date(ui.value/multiplier, tips[0]));
+        cutoff_date.text(xaxis_to_date(ui.value/tree_multiplier, tips[0]));
         cutoff_line.css('visibility', 'visible');
         var cutoff_pos = handle.position().left;
         cutoff_line.css('left', cutoff_pos + 29);
@@ -550,7 +554,7 @@ req.done(async function() {
       },
       min: min,
       max: max,
-      value: min
+      value: (start_value > min && start_value < max) ? start_value : min
     });
 
     // Prevents the default action when keydown event is detected
