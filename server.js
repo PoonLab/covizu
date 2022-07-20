@@ -3,7 +3,7 @@ const express = require('express');
 const app = express();
 const clusters = require('./data/clusters.json')
 const { utcDate } = require('./server/utils')
-const { parse_clusters, map_clusters_to_tips, index_accessions, index_lineage } = require('./server/parseCluster')
+const { parse_clusters, map_clusters_to_tips, index_accessions, index_lineage, get_recombinants } = require('./server/parseCluster')
 const { readTree } = require('./server/phylo')
 const fs = require('fs');
 require('dotenv').config();
@@ -28,9 +28,10 @@ try {
 
 const df = readTree(tree)
 const beaddata = parse_clusters(clusters)
-const tips = map_clusters_to_tips(df, clusters)
+const { tips, recombinant_tips } = map_clusters_to_tips(df, clusters)
 const accn_to_cid = index_accessions(clusters)
 const lineage_to_cid = index_lineage(clusters)
+const recombinants = get_recombinants()
 
 // This is a hack to match anything that could be an acc number prefix
 const prefix = /^(E|I|EP|IS|EPI_I|EPI_IS|EPI_ISL_?|EPI_?|ISL_?|[A-Z]\.[1-9]+)$/i;
@@ -74,6 +75,10 @@ app.get('/api/cid', (req, res) => {
 
 app.get('/api/lineagetocid', (req, res) => {
   res.send(lineage_to_cid)
+});
+
+app.get('/api/recombtips', (req, res) => {
+  res.send(recombinant_tips)
 });
 
 app.get('/api/searchHits/:query/:start/:end', (req, res) => {

@@ -29,6 +29,10 @@ var vis = d3.select("div#svg-timetree")
   //.attr("height", height + margin.top + margin.bottom);
   //.append("g");
 
+var vis_recombinant = d3.select("div#svg-recombinants")
+  .append("svg")
+  .attr("width", width + margin.left + margin.right + padding.right);
+
 var axis = d3.select("div#svg-timetreeaxis")
   .append("svg")
   .attr("width", width + margin.left + margin.right + padding.right)
@@ -47,21 +51,45 @@ function draw_cluster_box(rect) {
   var d = rect.datum();
   var rectWidth = xScale(date_to_xaxis(d.last_date)) - xScale(d.x2);
 
-  // draw a box around the cluster rectangle
-  vis.append("rect")
-    .attr('class', "clickedH")
-    .attr("x", xMap2(d) - 2)
-    .attr("y", yMap(d) - 2)
-    .attr("width", function() {
-      if (rectWidth < minRectWidth)
-        return minRectWidth + 4
-      return xScale(date_to_xaxis(d.last_date)) - xScale(d.x2) + 4
-    })
-    .attr("height", 14)
-    .attr("fill", "white")
-    .attr("stroke", "grey")
-    .attr("fill-opacity", 1)
-    .attr("stroke-width", 2);
+  if (d.label1[0] == 'X') {
+    vis_recombinant.append("rect")
+      .attr('class', "clickedH")
+      .attr("x", function() {
+        return xScale(date_to_xaxis(d.first_date)) - 2;
+      })
+      .attr("y", function() {
+        return d.y*11;
+      })
+      .attr("width", function() {
+        rectWidth = (xScale(date_to_xaxis(d.last_date)) - xScale(date_to_xaxis(d.first_date))) + 4;
+        if (rectWidth < minRectWidth)
+          return minRectWidth + 4
+        return rectWidth
+      })
+      .attr("height", 14)
+      .attr("fill", "white")
+      .attr("stroke", "grey")
+      .attr("fill-opacity", 1)
+      .attr("stroke-width", 2);
+  }
+  else {
+    // draw a box around the cluster rectangle
+    vis.append("rect")
+      .attr('class', "clickedH")
+      .attr("x", xMap2(d) - 2)
+      .attr("y", yMap(d) - 2)
+      .attr("width", function() {
+        if (rectWidth < minRectWidth)
+          return minRectWidth + 4
+        return xScale(date_to_xaxis(d.last_date)) - xScale(d.x2) + 4
+      })
+      .attr("height", 14)
+      .attr("fill", "white")
+      .attr("stroke", "grey")
+      .attr("fill-opacity", 1)
+      .attr("stroke-width", 2);
+  }
+
 
   // move the box to the background by promoting other objects
   rect.raise();
@@ -172,7 +200,7 @@ function sort_mutations(mutations) {
  * Add subtree objects to time-scaled tree.
  * @param {Array} tips, clusters that have been mapped to tips of tree
  */
-function draw_clusters(tips) {
+function draw_clusters(tips, recombinant_tips) {
 
   var tickVals = [],
       minVal = d3.min(df, xValue)-0.05,
@@ -262,6 +290,50 @@ function draw_clusters(tips) {
       $("#loading_text").text(``);
     });
 
+  vis_recombinant
+  .attr("height", recombinant_tips.length * 11.1)
+
+  vis_recombinant.selectAll("rect")
+    .data(recombinant_tips)
+    .enter()
+    .lower()
+    .append("rect")
+    //.attr("selected", false)
+    .attr("x", function(d) {
+      return xScale(date_to_xaxis(d.first_date))
+    })
+    .attr("y", function(d) {
+      return d.y*11 + 2;
+    })
+    .attr("width", function(d) {
+      var rectWidth = xScale(date_to_xaxis(d.last_date)) - xScale(date_to_xaxis(d.first_date));
+      if (rectWidth < minRectWidth)
+        return minRectWidth;
+      return rectWidth;
+    })
+    .attr("height", 10)
+    .attr("class", "default recombinant")
+    .attr("cidx", function(d) { return "cidx-" + d.cluster_idx; })
+    .attr("id", function(d, i) { return "id-" + i; })
+    .on('mouseover', mouseover)
+    .on("mouseout", function() {
+      d3.select(this)
+        .attr("txt_hover", null);
+
+      cTooltip.transition()     // Hide tooltip
+          .duration(50)
+          .style("opacity", 0);
+    })
+    .on("click", async function(d) {
+      var cluster_info = this;
+      $('#error_message').text(``);
+      $("#loading").show();
+      $("#loading_text").text(`Loading. Please Wait...`);
+      await click_cluster(d, cluster_info);
+      $("#loading").hide();
+      $("#loading_text").text(``);
+    });
+
   // generate colour palettes
   sample_pal = d3.scaleSequential(d3.interpolatePuBu)
       .domain(d3.extent(tips, function(d) { return Math.log10(d.nsamples); }));
@@ -303,6 +375,35 @@ function draw_clusters(tips) {
       .on("click", function(d) {
         d3.select("[cidx=cidx-" + d.cluster_idx + "]").dispatch('click');
       });
+
+    vis_recombinant.selectAll("text")
+      .data(recombinant_tips)
+      .enter().append("text")
+      .style("font-size", "10px")
+      .attr("text-anchor", "start")
+      .attr("alignment-baseline", "middle")
+      .attr("cursor", "default")
+      .attr("id", function(d) { return "cidx-" + d.cluster_idx; })
+      .attr("x", function(d) {
+        var rectWidth = xScale(date_to_xaxis(d.last_date)) - xScale(date_to_xaxis(d.first_date));
+        if (rectWidth < minRectWidth)
+          return xScale(date_to_xaxis(d.first_date)) + minRectWidth + 3;
+        return xScale(date_to_xaxis(d.first_date)) + rectWidth + 3;
+      })
+      .attr("y", function(d) {
+        // return(yScale(d.y-0.15));
+        return d.y*11 + 7;
+      })
+      .text(function(d) { return(d.label1); })
+      .on("mouseover", function(d) {
+	      mouseover(d);
+      })
+      .on("mouseout", function(d) {
+        d3.select("[cidx=cidx-" + d.cluster_idx + "]").dispatch('mouseout');
+      })
+      .on("click", function(d) {
+        d3.select("[cidx=cidx-" + d.cluster_idx + "]").dispatch('click');
+      });
 }
 
 
@@ -317,6 +418,31 @@ function changeTreeColour() {
   $("div#svg-diverge-legend").hide();
 
   vis.selectAll("rect")
+      .transition()
+      .duration(300)
+      .style("fill", function(d) {
+        if (d !== undefined) {
+          let opt = $("#select-tree-colours").val();
+          if (opt === "Region") {
+            $("#div-region-legend").show();
+            return(country_pal[d.region]);
+          }
+          else if (opt === "No. samples") {
+            $("div#svg-sample-legend").show();
+            return(sample_pal(Math.log10(d.nsamples)));  // placeholder values
+          }
+          else if (opt === "Collection date") {
+            $("div#svg-coldate-legend").show();
+            return(coldate_pal(d.last_date));
+          }
+          else {  // Divergence
+            $("div#svg-diverge-legend").show();
+            return(diverge_pal(d.residual));
+          }
+        }
+      })
+
+    vis_recombinant.selectAll("rect")
       .transition()
       .duration(300)
       .style("fill", function(d) {
