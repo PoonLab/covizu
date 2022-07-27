@@ -93,10 +93,13 @@ function drawtree(df, redraw=true) {
   yScale = d3.scaleLinear().range([height, 10]);  // add room for time axis
 
   // adjust d3 scales to data frame
-  xScale.domain([
-    d3.min(df, xValue)-0.05, 
-    date_to_xaxis(d3.max(df, function(d) {return d.last_date})) 
-  ]);
+  if(!redraw) {
+    xScale.domain([
+      d3.min(df, xValue)-0.05, 
+      date_to_xaxis(d3.max(df, function(d) {return d.last_date})) 
+    ]);
+  }
+
   yScale.domain([
     d3.min(df, yValue)-1, d3.max(df, yValue)+1
   ]);
@@ -644,7 +647,7 @@ async function click_cluster(d, cluster_info) {
   draw_cluster_box(d3.select(cluster_info));
 }
 
-function redraw_tree(cutoff_date, redraw=true) {
+async function redraw_tree(cutoff_date, redraw=true) {
   // deep copy the df and clear all references to children
   df_copy = structuredClone(df);
 
@@ -737,8 +740,25 @@ function redraw_tree(cutoff_date, redraw=true) {
   });
 
   document.querySelector("#svg-timetree > svg").innerHTML = ''; 
-  drawtree(final_df);
+  drawtree(final_df, redraw=redraw);
   draw_clusters(filtered_tips, redraw);
+
+  if(redraw) {
+
+    var rect = d3.selectAll("#svg-timetree > svg > rect"),
+    node = rect.nodes()[rect.size()-1];
+
+    cindex = node.__data__.cluster_idx;
+    d3.select('#cidx-' + cindex).attr("class", "clicked");
+    draw_cluster_box(d3.select(node));
+
+    
+    await beadplot(cindex);
+    gentable(node.__data__);
+    draw_region_distribution(node.__data__.allregions);
+    gen_details_table(points);  // update details table with all samples
+    gen_mut_table(mutations[cindex]);
+  }
 }
 
 function reset_tree() {

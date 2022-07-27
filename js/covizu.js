@@ -535,22 +535,27 @@ req.done(async function() {
         var cutoff_pos = handle.position().left;
         tree_cutoff.css('left', cutoff_pos);
       },
-      slide: function( event, ui ) {
+      slide: async function( event, ui ) {
         move_arrow();
+        
         cutoff_date.text(xaxis_to_date(ui.value/tree_multiplier, tips[0]));
+        await handle.change()
+          
         cutoff_line.css('visibility', 'visible');
         var cutoff_pos = handle.position().left;
         cutoff_line.css('left', cutoff_pos + 29);
         tree_cutoff.css('left', cutoff_pos);
       },
-      stop: async function (event, ui) {
+      change: async function (event, ui) {
         cutoff_line.css('visibility', 'hidden');
         var cutoff_pos = handle.position().left;
         tree_cutoff.css('left', cutoff_pos);
 
-        $("#loading-tree").show();
+        $("#loading").show();
+        $("#loading_text").text(i18n_text.loading);
         await redraw_tree(cutoff_date.text());
-        $("#loading-tree").hide();
+        $("#loading").hide();
+        $("#loading_text").text(``);
       },
       min: min,
       max: max,
