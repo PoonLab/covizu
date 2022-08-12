@@ -64,8 +64,8 @@ def import_metadata(meta_file, fields, lineages=None, region=None, callback=None
             lineage = lineages.get(label.upper(), None)
             if lineage is None:
                 if callback:
-                    callback("Failed to retrieve lineage assignment for {}".format(label), level='ERROR')
-                sys.exit()
+                    callback("Failed to retrieve lineage assignment for {}. Ignoring sample".format(label))
+                continue
         else:
             lineage = row[fields['lineage']]
 
@@ -116,11 +116,10 @@ def merge_data(fasta_file, metadata, minlen=29000, mindate=date(2019, 12, 1),
                     callback("Rejected record with bad date: {}".format(label), level="WARN")
                 continue
             record.update(metadata[label])
+            yield record
         else:
             if callback:
-                callback("Failed to retrieve metadata for sequence {}".format(label), level='ERROR')
-            sys.exit()
-        yield record
+                callback("Failed to retrieve metadata for sequence {}. Ignoring Sample.".format(label))   
 
 
 def analyze_feed(feed, args, callback=None):
