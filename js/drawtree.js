@@ -29,6 +29,10 @@ var vis = d3.select("div#svg-timetree")
   //.attr("height", height + margin.top + margin.bottom);
   //.append("g");
 
+var vis_recombinant = d3.select("div#svg-timetree-recombinant")
+  .append("svg")
+  .attr("width", width + margin.left + margin.right + padding.right);
+
 var axis = d3.select("div#svg-timetreeaxis")
   .append("svg")
   .attr("width", width + margin.left + margin.right + padding.right)
@@ -47,21 +51,40 @@ function draw_cluster_box(rect) {
   var d = rect.datum();
   var rectWidth = xScale(date_to_xaxis(d.last_date)) - xScale(d.x2);
 
-  // draw a box around the cluster rectangle
-  vis.append("rect")
-    .attr('class', "clickedH")
-    .attr("x", xMap2(d) - 2)
-    .attr("y", yMap(d) - 2)
-    .attr("width", function() {
-      if (rectWidth < minRectWidth)
-        return minRectWidth + 4
-      return xScale(date_to_xaxis(d.last_date)) - xScale(d.x2) + 4
-    })
-    .attr("height", 14)
-    .attr("fill", "white")
-    .attr("stroke", "grey")
-    .attr("fill-opacity", 1)
-    .attr("stroke-width", 2);
+  if (d.label1[0] == 'X') {
+    // draw a box around the cluster rectangle
+    vis_recombinant.append("rect")
+      .attr('class', "clickedH")
+      .attr("x", rect.attr('x') - 2)
+      .attr("y", rect.attr('y') - 2)
+      .attr("width", function() {
+        if (rectWidth < minRectWidth)
+          return minRectWidth + 4
+        return xScale(date_to_xaxis(d.last_date)) - xScale(d.x2) + 4
+      })
+      .attr("height", 14)
+      .attr("fill", "white")
+      .attr("stroke", "grey")
+      .attr("fill-opacity", 1)
+      .attr("stroke-width", 2);
+  }
+  else {
+    // draw a box around the cluster rectangle
+    vis.append("rect")
+      .attr('class', "clickedH")
+      .attr("x", rect.attr('x') - 2)
+      .attr("y", rect.attr('y') - 2)
+      .attr("width", function() {
+        if (rectWidth < minRectWidth)
+          return minRectWidth + 4
+        return xScale(date_to_xaxis(d.last_date)) - xScale(d.x2) + 4
+      })
+      .attr("height", 14)
+      .attr("fill", "white")
+      .attr("stroke", "grey")
+      .attr("fill-opacity", 1)
+      .attr("stroke-width", 2);
+  }
 
   // move the box to the background by promoting other objects
   rect.raise();
@@ -78,7 +101,7 @@ function draw_cluster_box(rect) {
  * Draw time-scaled tree in SVG
  * @param {Array} df:  data frame
  */
-function drawtree(df, redraw=true) {
+function drawtree(df, redraw=true, recombinant=false) {
 
   // Sets margin top to align vertical scrollbar with the time-scaled tree
   $('#tree-vscroll').css('margin-top', document.getElementById("tree-title").clientHeight + document.getElementById("svg-timetreeaxis").clientHeight + $('#inner-hscroll').height() + 5);
@@ -89,7 +112,12 @@ function drawtree(df, redraw=true) {
   // rescale SVG for size of tree
   var ntips = df.map(x => x.children.length === 0).reduce((x,y) => x+y);
   height = ntips*11 + margin.top + margin.bottom;
-  vis.attr("height", height);
+
+  if (recombinant)
+    vis_recombinant.attr("height", height);
+  else
+    vis.attr("height", height);
+
   yScale = d3.scaleLinear().range([height, 10]);  // add room for time axis
 
   // adjust d3 scales to data frame
@@ -105,16 +133,30 @@ function drawtree(df, redraw=true) {
   ]);
 
   // draw lines
-  vis.selectAll("lines")
-    .data(edgeset)
-    .enter().append("line")
-    .attr("class", "lines")
-    .attr("x1", xMap1)
-    .attr("y1", yMap1)
-    .attr("x2", xMap2)
-    .attr("y2", yMap2)
-    .attr("stroke-width", 1.5)
-    .attr("stroke", "#777");
+  if (recombinant) {
+    vis_recombinant.selectAll("lines")
+      .data(edgeset)
+      .enter().append("line")
+      .attr("class", "lines")
+      .attr("x1", xMap1)
+      .attr("y1", yMap1)
+      .attr("x2", xMap2)
+      .attr("y2", yMap2)
+      .attr("stroke-width", 1.5)
+      .attr("stroke", "#777");
+  }
+  else {
+    vis.selectAll("lines")
+      .data(edgeset)
+      .enter().append("line")
+      .attr("class", "lines")
+      .attr("x1", xMap1)
+      .attr("y1", yMap1)
+      .attr("x2", xMap2)
+      .attr("y2", yMap2)
+      .attr("stroke-width", 1.5)
+      .attr("stroke", "#777");
+  }
 
     $('#tree-inner-vscroll').css('height', $('.tree-content > svg').height()); 
 }
@@ -175,7 +217,7 @@ function sort_mutations(mutations) {
  * Add subtree objects to time-scaled tree.
  * @param {Array} tips, clusters that have been mapped to tips of tree
  */
-function draw_clusters(tips, redraw=false) {
+function draw_clusters(tips, redraw=false, tree_vis) {
 
   var tickVals = [],
       minVal = d3.min(df, xValue)-0.05,
@@ -186,7 +228,7 @@ function draw_clusters(tips, redraw=false) {
     tickVals.push(minVal + (interval/2) + (i*interval));
   }
   
-  if(!redraw) {
+  if ($(".treeaxis").length == 0) {
     // Draws the axis for the time scaled tree
     axis.append("g")
     .attr("class", "treeaxis")
@@ -230,7 +272,7 @@ function draw_clusters(tips, redraw=false) {
         });
   }
 
-  vis.selectAll("rect")
+  tree_vis.selectAll("rect")
     .data(tips)
     .enter()
     .lower()
@@ -275,13 +317,13 @@ function draw_clusters(tips, redraw=false) {
   diverge_pal = d3.scaleSequential(d3.interpolatePlasma)
       .domain(d3.extent(tips, function(d) { return d.residual; }));
   generate_legends();
-  changeTreeColour();
+  changeTreeColour(tree_vis);
 
   d3.select("#svg-timetree")
   .selectAll("line")
   .raise();
 
-  vis.selectAll("text")
+  tree_vis.selectAll("text")
       .data(tips)
       .enter().append("text")
       .style("font-size", "10px")
@@ -314,14 +356,14 @@ function draw_clusters(tips, redraw=false) {
 /**
  * Colour rect elements of tree to represent lineage attributes
  */
-function changeTreeColour() {
+function changeTreeColour(tree_vis) {
   // hide legends, not knowing which one is showing
   $("#div-region-legend").hide();
   $("div#svg-sample-legend").hide();
   $("div#svg-coldate-legend").hide();
   $("div#svg-diverge-legend").hide();
 
-  vis.selectAll("rect")
+  tree_vis.selectAll("rect")
       .transition()
       .duration(300)
       .style("fill", function(d) {
@@ -349,7 +391,8 @@ function changeTreeColour() {
 
 // bind to element
 $("#select-tree-colours").change(function() {
-  changeTreeColour();
+  changeTreeColour(vis);
+  changeTreeColour(vis_recombinant);
 });
 
 
@@ -647,7 +690,7 @@ async function click_cluster(d, cluster_info) {
   draw_cluster_box(d3.select(cluster_info));
 }
 
-async function redraw_tree(cutoff_date, redraw=true) {
+function getdf(cutoff_date, recombinant=false) {
   // deep copy the df and clear all references to children
   df_copy = structuredClone(df);
 
@@ -657,9 +700,17 @@ async function redraw_tree(cutoff_date, redraw=true) {
   });
 
   // filter for tips with a collection date after the cutoff
-  var filtered_df = df_copy.filter(x => {
-    if (formatDate(x.coldate) >= cutoff_date && x.isTip == true) return x;
-  });
+  if (recombinant) {
+    var filtered_df = df_copy.filter(x => {
+      if (formatDate(x.coldate) >= cutoff_date && x.isTip == true && x.thisLabel[0] === 'X') return x;
+    });
+  }
+  else {
+    var filtered_df = df_copy.filter(x => {
+      if (formatDate(x.coldate) >= cutoff_date && x.isTip == true && x.thisLabel[0] !== 'X') return x;
+    });
+  }
+
 
   if(filtered_df.length > 0) {
     // add internal nodes corresponding to filtered tips
@@ -733,15 +784,33 @@ async function redraw_tree(cutoff_date, redraw=true) {
   }
   else {
     final_df = df;
+    $(".recombinant-tree-content").hide()
+    $(".recombtitle").hide()
   }
 
   var filtered_tips = final_df.filter(x => {
     if (x.isTip == true) return x;
   });
 
+  return {final_df, filtered_tips}
+}
+
+async function redraw_tree(cutoff_date, redraw=true) {
+  if ($('#display-option').attr('checked')) {
+    $(".recombinant-tree-content").show()
+    $(".recombtitle").show()
+  }
+
   document.querySelector("#svg-timetree > svg").innerHTML = ''; 
+  document.querySelector("#svg-timetree-recombinant > svg").innerHTML = ''; 
+
+  var {final_df, filtered_tips} = getdf(cutoff_date)
   drawtree(final_df, redraw=redraw);
-  draw_clusters(filtered_tips, redraw);
+  draw_clusters(filtered_tips, redraw, vis);
+
+  var {final_df, filtered_tips} = getdf(cutoff_date, recombinant=true)
+  drawtree(final_df, redraw=redraw, recombinant=true);
+  draw_clusters(filtered_tips, redraw, vis_recombinant);
 
   if(redraw) {
 

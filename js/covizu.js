@@ -183,7 +183,7 @@ req.done(async function() {
   mutations = parse_mutation_annotations(mut_annotations);
   var curr_date = new Date();
   curr_date.setFullYear(curr_date.getFullYear() - 1);
-  redraw_tree(formatDate(curr_date), redraw=false);
+  await redraw_tree(formatDate(curr_date), redraw=false);
 
   //spinner.stop();
   var rect = d3.selectAll("#svg-timetree > svg > rect"),
@@ -491,6 +491,19 @@ req.done(async function() {
       $('#beadplot-hscroll').hide();
     }
     expand();
+  });
+
+  $('#display-option').on('change', function() {
+    if (!$('#display-option').attr('checked')) {
+      $('#display-option').attr('checked', 'checked');
+      $(".recombinant-tree-content").show()
+      $(".recombtitle").show()
+    }
+    else {
+      $('#display-option').removeAttr('checked');
+      $(".recombinant-tree-content").hide()
+      $(".recombtitle").hide()
+    }
   });
 
   // Sets the scrolling speed when scrolling through the beadplot
