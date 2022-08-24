@@ -239,6 +239,7 @@ async function lineage_search(text_query) {
   d3.select("#cidx-"+cidx).attr("class", "clicked");
   
   var cluster_info = cluster.datum();
+  cindex = cluster_info.cluster_index;
   await beadplot(cluster_info.cluster_idx);
   gentable(cluster_info);
   draw_region_distribution(cluster_info.allregions);

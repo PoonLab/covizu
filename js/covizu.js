@@ -27,6 +27,7 @@ $(document).tooltip({show: null});
 $("#loading_text").text(``);
 $("#loading").hide();
 $('#beadplot-hscroll').hide();
+$("#loading-tree").hide();
 
 
 /*********************** DIALOGS ***********************/
@@ -180,10 +181,11 @@ req.done(async function() {
   $("#splash-extra").html("");  // remove loading animation
   
   mutations = parse_mutation_annotations(mut_annotations);
-  drawtree(df);
-  //spinner.stop();
-  draw_clusters(tips);
+  var curr_date = new Date();
+  curr_date.setFullYear(curr_date.getFullYear() - 1);
+  redraw_tree(formatDate(curr_date), redraw=false);
 
+  //spinner.stop();
   var rect = d3.selectAll("#svg-timetree > svg > rect"),
       node = rect.nodes()[rect.size()-1];
 
@@ -287,6 +289,7 @@ req.done(async function() {
     $('#error_message').text(``);
     $('#search-button').removeAttr("disabled");
     $('#clear_button').removeAttr("disabled");
+    reset_tree();
     wrap_search();
     enable_buttons();
 
@@ -336,12 +339,14 @@ req.done(async function() {
       $('#error_message').text(``);
       $("#loading").show();
       $("#loading_text").text(i18n_text.loading);
-
+      
+      await reset_tree();
       await wrap_search();
       enable_buttons();
 
       $("#loading").hide();
       $("#loading_text").text(``);
+      $("#tree-slider").slider({ disabled: true});
     }
   });
 
@@ -412,6 +417,7 @@ req.done(async function() {
     $('#error_message').text(``);
     $("#loading").show();
     $("#loading_text").text(i18n_text.loading);
+    await reset_tree();
     await wrap_search();
     enable_buttons();
     $("#loading").hide();
@@ -427,6 +433,7 @@ req.done(async function() {
     $('#start-date').val('');
     $('#error_message').text(``);
     disable_buttons();
+    $("#tree-slider").slider({ disabled: false });
   });
 
   $('#next_button').click(async function() {
@@ -508,6 +515,57 @@ req.done(async function() {
       top: Math.abs(event.deltaY) == 0 ? 0 : event.deltaY * 2,
     });
   });
+
+  // Sets the display date and cutoff line to move along with the slider
+  $(function() {
+
+    var handle = $( "#tree-slider-handle" );
+    var cutoff_date = $( "#cutoff-date" );
+    var cutoff_line = $("#cutoff-line");
+    var tree_cutoff = $("#tree-cutoff");
+
+    const tree_multiplier = 100000000; 
+    var min = Math.floor((d3.min(df, xValue)-0.05) * tree_multiplier);
+    var max = Math.ceil(date_to_xaxis(d3.max(df, function(d) {return d.last_date})) * tree_multiplier);
+    var start_value = date_to_xaxis(curr_date) * tree_multiplier;
+
+    $("#tree-slider").slider({
+      create: function( event, ui ) {
+        cutoff_date.text(xaxis_to_date($( this ).slider( "value" )/tree_multiplier, tips[0]));
+        var cutoff_pos = handle.position().left;
+        tree_cutoff.css('left', cutoff_pos);
+      },
+      slide: async function( event, ui ) {
+        move_arrow();
+        
+        cutoff_date.text(xaxis_to_date(ui.value/tree_multiplier, tips[0]));
+        await handle.change()
+          
+        cutoff_line.css('visibility', 'visible');
+        var cutoff_pos = handle.position().left;
+        cutoff_line.css('left', cutoff_pos + 29);
+        tree_cutoff.css('left', cutoff_pos);
+      },
+      change: async function (event, ui) {
+        cutoff_line.css('visibility', 'hidden');
+        var cutoff_pos = handle.position().left;
+        tree_cutoff.css('left', cutoff_pos);
+
+        $("#loading").show();
+        $("#loading_text").text(i18n_text.loading);
+        await redraw_tree(cutoff_date.text());
+        $("#loading").hide();
+        $("#loading_text").text(``);
+      },
+      min: min,
+      max: max,
+      value: (start_value > min && start_value < max) ? start_value : min
+    });
+
+    // Prevents the default action when keydown event is detected
+    handle.unbind('keydown')
+
+  } );
 
   // Sets the beadplot and time axis to move when the horizontal scrollbar is moved
   $('#beadplot-hscroll').scroll(function() {
