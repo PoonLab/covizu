@@ -275,8 +275,14 @@ if __name__ == '__main__':
         sys.exit()
     lineages = {}
     for line in handle:
-        taxon, lineage = line.strip().split(',')
-        lineages.update({taxon: lineage})
+        try:
+            taxon, lineage = line.strip().split(',')
+            if taxon and lineage:
+                lineages.update({taxon: lineage})
+            else:
+                cb.callback("Warning '{}': taxon or lineage is missing".format(line), level='WARN')
+        except:
+            cb.callback("Warning: There is an issue with the line '{}' in lineages.csv".format(line), level='WARN')
 
     cb.callback("Identifying lineage representative genomes")
     fasta = retrieve_genomes(by_lineage, known_seqs=lineages, ref_file=args.ref, earliest=args.earliest,
