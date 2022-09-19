@@ -41,12 +41,16 @@ def fasttree(fasta, binpath='fasttree2', seed=1, gtr=True, collapse=True):
     stdout, stderr = p.communicate(input=in_str.encode('utf-8'))
     nwk = stdout.decode('utf-8')
 
-    # collapse low support nodes into polytomies
+    # parse Newick tree string from output
+    phy = Phylo.read(StringIO(nwk), format='newick')
+    phy.root_with_outgroup('reference')  # issue #396
+    phy.prune('reference')
+
     if collapse:
-        phy = Phylo.read(StringIO(nwk), format='newick')
+        # collapse low support nodes into polytomies
         phy.collapse_all(lambda x: x.confidence is not None and
-                                   x.confidence < 0.5)
-        nwk = phy.format('newick')
+                                  x.confidence < 0.5)
+    nwk = phy.format('newick')
     return nwk
 
 
@@ -80,7 +84,8 @@ def treetime(nwk, fasta, outdir, binpath='treetime', clock=None, verbosity=1):
             '--outdir', outdir, '--verbose', str(verbosity),
             '--plot-rtt', 'none',  # see issue #66
             '--clock-filter', '0',  # issue #245
-            '--keep-polytomies'  # issue #339
+            '--keep-polytomies',  # issue #339
+            '--keep-root'  # issue 396
     ]
     if clock:
         call.extend(['--clock-rate', str(clock)])
@@ -118,6 +123,8 @@ def parse_nexus(nexus_file, fasta, callback=None):
     """
     coldates = {}
     for h, _ in fasta.items():
+        if 'reference' in h:
+            continue
         _, accn, coldate = h.split('|')
         coldates.update({accn: date2float(coldate)})
 
@@ -185,9 +192,9 @@ def retrieve_genomes(by_lineage, known_seqs, ref_file, earliest=True, callback=N
         _, refseq = convert_fasta(handle)[0]
 
     # allocate lists
-    coldates = []
-    lineages = []
-    seqs = []
+    coldates = [None]
+    lineages = ['reference']
+    seqs = [refseq]
 
     # retrieve unaligned genomes from database
     for lineage, records in by_lineage.items():
