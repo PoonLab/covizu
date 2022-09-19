@@ -14,3 +14,35 @@
 
 If running locally (without dedicated GISAID feed):
 * [Pangolin](https://github.com/cov-lineages/pangolin/)
+
+
+## Installation
+
+* Navigate to the directory in your filesystem under which you want to install the `covizu` directory
+
+* Clone the repository:
+```
+git clone https://github.com/PoonLab/covizu
+```
+
+* Install with:
+```
+sudo python3 setup.py install  # omit `sudo` if you don't have superuser privileges
+```
+
+If you're running the server (front-end) for the first time, obtain the following data files from our main server at 
+https://filogeneti.ca/covizu/data/:
+* `timetree.nwk`
+* `dbstats.json`
+* `clusters.json`
+and save your local copies under `covizu/data/`.
+
+Next, run the following commands:
+```
+ cd covizu
+ npm install
+ npm start
+```
+
+Once you launch the local webserver with `npm start`, allow up to a minute for the server to initialize and then 
+navigate your browser to `localhost:8001`.

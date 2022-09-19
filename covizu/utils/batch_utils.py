@@ -51,8 +51,16 @@ def build_timetree(by_lineage, args, callback=None):
         sys.exit()
     lineages = {}
     for line in handle:
-        taxon, lineage = line.strip().split(',')
-        lineages.update({taxon: lineage})
+        try:
+            taxon, lineage = line.strip().split(',')
+            if taxon and lineage:
+                lineages.update({taxon: lineage})
+            else:
+                if callback:
+                    callback("Warning '{}': taxon or lineage is missing".format(line), level='WARN')
+        except:
+            if callback:
+                callback("Warning: There is an issue with the line '{}' in lineages.csv".format(line), level='WARN')
 
     # filter recombinants
     by_lineage = {lineage : records for lineage, records in by_lineage.items() if lineage[0] != 'X'}

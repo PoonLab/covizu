@@ -169,6 +169,14 @@
             <div class="clicker" title="Download lineage statistics as CSV" onclick="export_csv();">&nbsp;&nbsp;CSV&nbsp;&nbsp;</div>
             <span title="Timetree help" onclick="$('#help-timetree').dialog('open');" style="cursor: help">&#128304;</span>
           </div>
+          <div id="tree-cutoff" style="position: relative;">
+            <div id="cutoff-date"></div>
+            <img id="loading-tree" src="img/Loading_icon_cropped.gif"/>
+          </div>
+          <div class="floattile" id="tree-slider">
+            <div id="tree-slider-handle" class="ui-slider-handle"></div>
+          </div>
+          <div id="cutoff-line" style="visibility: hidden"></div>
           <div class="floattitle" id="svg-timetreeaxis" style="top: 58px; z-index: 13"></div>
           <div class="tree-container">
             <div class="tree-content" id="svg-timetree" style="width: 250px; max-width: 250px;">
