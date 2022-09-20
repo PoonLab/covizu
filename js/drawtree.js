@@ -865,9 +865,28 @@ async function redraw_tree(cutoff_date, redraw=true) {
     if (x.isTip == true) return x;
   });
 
+  var filtered_recomb_tips = recombinant_tips.filter(x => {
+    if (formatDate(x.coldate) >= cutoff_date) return x;
+  });
+
+  filtered_recomb_tips.forEach(function(x,i) {
+    x.y = i   
+  })
+
+  if (filtered_recomb_tips.length === 0) {
+    $(".recombinant-tree-content").hide()
+    $(".recombtitle").hide()
+  }
+  else if ($('#display-option').attr('checked')) {
+    $(".recombinant-tree-content").show()
+    $(".recombtitle").show()
+  }
+
+
   document.querySelector("#svg-timetree > svg").innerHTML = ''; 
+  document.querySelector("#svg-recombinants > svg").innerHTML = '';
   drawtree(final_df, redraw=redraw);
-  draw_clusters(filtered_tips, redraw);
+  draw_clusters(filtered_tips, filtered_recomb_tips, redraw);
 
   if(redraw) {
 
