@@ -275,7 +275,7 @@ function draw_clusters(tips, recombinant_tips, redraw=false) {
     .attr("height", 10)
     .attr("class", "default")
     .attr("cidx", function(d) { return "cidx-" + d.cluster_idx; })
-    .attr("id", function(d, i) { return "id-" + i; })
+    .attr("id", function(d, i) { return "id-" + map_cidx_to_id['cidx-' + d.cluster_idx]; })
     .on('mouseover', mouseover)
     .on("mouseout", function() {
       d3.select(this)

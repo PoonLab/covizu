@@ -193,6 +193,16 @@ req.done(async function() {
   //spinner.stop();
   var curr_date = new Date();
   curr_date.setFullYear(curr_date.getFullYear() - 1);
+
+  // Maps id to a cidx
+  for (i in tips) {
+    id_to_cidx[i] = 'cidx-' + tips[i].cluster_idx
+  }
+
+  // Maps cidx to an id
+  const reverseMapping = o => Object.keys(o).reduce((r, k) => Object.assign(r, { [o[k]]: (r[o[k]] || parseInt(k)) }), {})
+  map_cidx_to_id = reverseMapping(id_to_cidx)
+
   await redraw_tree(formatDate(curr_date), redraw=false);
 
   //spinner.stop();
@@ -240,19 +250,6 @@ req.done(async function() {
         //search(accn);
     }
   });
-
-
-  // Maps cidx to an id
-  var key;
-  var rect = d3.selectAll('#svg-timetree > svg > rect:not(.clickedH)').nodes();
-  for (var i = 0; i < rect.length; i++) {
-	  key = d3.select(rect[i]).attr("cidx");
-	  map_cidx_to_id[key] = parseInt(d3.select(rect[i]).attr("id").substring(3));
-  }
-
-  // Maps id to a cidx
-  const reverseMapping = o => Object.keys(o).reduce((r, k) => Object.assign(r, { [o[k]]: (r[o[k]] || []).concat(k) }), {})
-  id_to_cidx = reverseMapping(map_cidx_to_id);
 
 
   /***********************  SEARCH INTERFACE ***********************/

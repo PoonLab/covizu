@@ -94,6 +94,9 @@ async function wrap_search() {
     return;
   }
 
+  // Prevent search when the query is just a space
+  if (query === ' ') return;
+
   if (isAccn(query)) 
     await accession_search(query);
   else if (isLineage(query))
@@ -163,7 +166,7 @@ async function main_search(all_bead_data, text_query, start_date, end_date) {
   });
 
   // Keeps track of the clicked cluster
-  var curr_cluster = d3.selectAll(".clicked").nodes()[0].attributes.cidx.nodeValue;
+  var curr_cluster = d3.selectAll(".clicked").nodes()[0].attributes.id.nodeValue;
   var selected_cidx = id_to_cidx[closest_match(curr_cluster, hit_id)];
 
   var selections = d3.selectAll("#svg-timetree > svg > rect:not(.clickedH)")
@@ -356,7 +359,6 @@ async function select_next_prev_bead(bead_id_to_accession, curr_bead) {
   d3.select('#cidx-' + curr_cid).attr("class", "clicked")
   draw_cluster_box(next_cluster);
   next_cluster.nodes()[0].scrollIntoView({block: "center"});
-  console.log(next_cluster.datum().cluster_idx)
 
   cindex = curr_cid
   await beadplot(next_cluster.datum().cluster_idx);
