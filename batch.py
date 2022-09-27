@@ -185,7 +185,7 @@ if __name__ == "__main__":
             val['lineages'][lineage] = {
                 'nsamples': len(samples),
                 'lastcoldate': max(x['covv_collection_date'] for x in samples),
-                'residual': residuals[lineage],
+                'residual': residuals[lineage] if lineage in residuals else 0,
                 'max_ndiffs': max(ndiffs),
                 'mean_ndiffs': sum(ndiffs)/len(ndiffs),
                 'mutations': mutations[lineage]

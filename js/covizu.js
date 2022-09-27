@@ -147,7 +147,7 @@ $.getJSON("data/mut_annotations.json", function(data) {
   mut_annotations = data;
 });
 
-var clusters, beaddata, tips,
+var clusters, beaddata, tips, recombinant_tips,
     accn_to_cid, cindex, lineage_to_cid, lineage;
 var edgelist = [], points = [], variants = []
 var map_cidx_to_id = [], id_to_cidx = [];
@@ -156,6 +156,15 @@ req = $.when(
   $.getJSON("/api/tips", function(data) {
     tips = data;
     tips.forEach(x => {
+      x.first_date = new Date(x.first_date)
+      x.last_date = new Date(x.last_date)
+      x.coldate = new Date(x.coldate)
+      x.mcoldate = new Date(x.mcoldate)
+    });
+  }),
+  $.getJSON("/api/recombtips", function(data) {
+    recombinant_tips = data;
+    recombinant_tips.forEach(x => {
       x.first_date = new Date(x.first_date)
       x.last_date = new Date(x.last_date)
       x.coldate = new Date(x.coldate)
@@ -181,6 +190,7 @@ req.done(async function() {
   $("#splash-extra").html("");  // remove loading animation
   
   mutations = parse_mutation_annotations(mut_annotations);
+  //spinner.stop();
   var curr_date = new Date();
   curr_date.setFullYear(curr_date.getFullYear() - 1);
 
@@ -193,7 +203,7 @@ req.done(async function() {
   const reverseMapping = o => Object.keys(o).reduce((r, k) => Object.assign(r, { [o[k]]: (r[o[k]] || parseInt(k)) }), {})
   map_cidx_to_id = reverseMapping(id_to_cidx)
 
-  redraw_tree(formatDate(curr_date), redraw=false);
+  await redraw_tree(formatDate(curr_date), redraw=false);
 
   //spinner.stop();
   var rect = d3.selectAll("#svg-timetree > svg > rect"),
@@ -488,6 +498,19 @@ req.done(async function() {
       $('#beadplot-hscroll').hide();
     }
     expand();
+  });
+
+  $('#display-option').on('change', function() {
+    if (!$('#display-option').attr('checked')) {
+      $('#display-option').attr('checked', 'checked');
+      $(".recombinant-tree-content").show()
+      $(".recombtitle").show()
+    }
+    else {
+      $('#display-option').removeAttr('checked');
+      $(".recombinant-tree-content").hide()
+      $(".recombtitle").hide()
+    }
   });
 
   // Sets the scrolling speed when scrolling through the beadplot

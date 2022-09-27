@@ -662,6 +662,19 @@ a.sort-by:after {
   height: 0;
 }
 
+.switch-recombinant {
+  position: relative;
+  display: inline-block;
+  width: 31px;
+  height: 16px;
+}
+
+.switch-recombinant input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
 .slider {
   position: absolute;
   cursor: pointer;
