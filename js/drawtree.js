@@ -106,7 +106,7 @@ function draw_cluster_box(rect) {
  * Draw time-scaled tree in SVG
  * @param {Array} df:  data frame
  */
-function drawtree(df, redraw=true) {
+function drawtree(df, org_df, redraw=true) {
 
   // Sets margin top to align vertical scrollbar with the time-scaled tree
   $('#tree-vscroll').css('margin-top', document.getElementById("tree-title").clientHeight + document.getElementById("svg-timetreeaxis").clientHeight + $('#inner-hscroll').height() + 5);
@@ -123,8 +123,8 @@ function drawtree(df, redraw=true) {
   // adjust d3 scales to data frame
   if(!redraw) {
     xScale.domain([
-      d3.min(df, xValue)-0.05, 
-      date_to_xaxis(d3.max(df, function(d) {return d.last_date})) 
+      d3.min(org_df, xValue)-0.05, 
+      date_to_xaxis(d3.max(org_df, function(d) {return d.last_date})) 
     ]);
   }
 
@@ -885,7 +885,7 @@ async function redraw_tree(cutoff_date, redraw=true) {
 
   document.querySelector("#svg-timetree > svg").innerHTML = ''; 
   document.querySelector("#svg-recombinants > svg").innerHTML = '';
-  drawtree(final_df, redraw=redraw);
+  drawtree(final_df, df_copy, redraw=redraw);
   draw_clusters(filtered_tips, filtered_recomb_tips, redraw);
 
   if(redraw) {
