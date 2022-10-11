@@ -73,6 +73,11 @@ async function wrap_search() {
     return;
   }
 
+  // Display recombinants when doing a search
+  $('#display-option').attr('checked', 'checked');
+  $(".recombinant-tree-content").show()
+  $(".recombtitle").show()
+
   var start_date, end_date;
   if (start_date_text === "") {
     start_date = utcDate("2020-01-01");
