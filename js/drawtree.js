@@ -906,7 +906,7 @@ async function redraw_tree(cutoff_date, redraw=true) {
   }
 }
 
-function reset_tree() {
+function reset_tree(redraw=true) {
   // resets slider and tree 
   min = $("#tree-slider").slider("option").min; 
   min_date = formatDate(d3.min(df, function(d) {return d.last_date}));
@@ -915,5 +915,6 @@ function reset_tree() {
   $("#cutoff-date").text(min_date);
   $("#tree-cutoff").css('left',  $("#tree-slider-handle").position().left);
   $("#tree-slider").slider({ disabled: true});
-  redraw_tree(min_date);
+  redraw_tree(min_date, redraw=redraw);
+  if (!redraw) d3.select('#cidx-' + cindex).attr("class", "clicked");
 }

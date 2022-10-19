@@ -347,8 +347,7 @@ req.done(async function() {
       $('#error_message').text(``);
       $("#loading").show();
       $("#loading_text").text(i18n_text.loading);
-      
-      await reset_tree();
+      await reset_tree(redraw=false);
       await wrap_search();
       enable_buttons();
 
@@ -425,7 +424,7 @@ req.done(async function() {
     $('#error_message').text(``);
     $("#loading").show();
     $("#loading_text").text(i18n_text.loading);
-    await reset_tree();
+    await reset_tree(redraw=false);
     await wrap_search();
     enable_buttons();
     $("#loading").hide();
@@ -568,15 +567,19 @@ req.done(async function() {
         tree_cutoff.css('left', cutoff_pos);
       },
       change: async function (event, ui) {
-        cutoff_line.css('visibility', 'hidden');
-        var cutoff_pos = handle.position().left;
-        tree_cutoff.css('left', cutoff_pos);
-
-        $("#loading").show();
-        $("#loading_text").text(i18n_text.loading);
-        await redraw_tree(cutoff_date.text());
-        $("#loading").hide();
-        $("#loading_text").text(``);
+        if (event.originalEvent) {
+          cutoff_line.css('visibility', 'hidden');
+          var cutoff_pos = handle.position().left;
+          tree_cutoff.css('left', cutoff_pos);
+  
+          $("#loading").show();
+          $("#loading_text").text(i18n_text.loading);
+          await redraw_tree(cutoff_date.text());
+          console.log(event.originalEvent)
+          console.log(cutoff_date.text())
+          $("#loading").hide();
+          $("#loading_text").text(``);
+        }
       },
       min: min,
       max: max,
