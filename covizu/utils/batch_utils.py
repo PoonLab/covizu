@@ -62,6 +62,9 @@ def build_timetree(by_lineage, args, callback=None):
             if callback:
                 callback("Warning: There is an issue with the line '{}' in lineages.csv".format(line), level='WARN')
 
+    # filter recombinants
+    by_lineage = {lineage : records for lineage, records in by_lineage.items() if lineage[0] != 'X'}
+
     if callback:
         callback("Identifying lineage representative genomes")
     fasta = covizu.treetime.retrieve_genomes(by_lineage, known_seqs=lineages, ref_file=args.ref,

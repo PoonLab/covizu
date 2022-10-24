@@ -147,7 +147,7 @@ $.getJSON("data/mut_annotations.json", function(data) {
   mut_annotations = data;
 });
 
-var clusters, beaddata, tips,
+var clusters, beaddata, tips, recombinant_tips,
     accn_to_cid, cindex, lineage_to_cid, lineage;
 var edgelist = [], points = [], variants = []
 var map_cidx_to_id = [], id_to_cidx = [];
@@ -156,6 +156,15 @@ req = $.when(
   $.getJSON("/api/tips", function(data) {
     tips = data;
     tips.forEach(x => {
+      x.first_date = new Date(x.first_date)
+      x.last_date = new Date(x.last_date)
+      x.coldate = new Date(x.coldate)
+      x.mcoldate = new Date(x.mcoldate)
+    });
+  }),
+  $.getJSON("/api/recombtips", function(data) {
+    recombinant_tips = data;
+    recombinant_tips.forEach(x => {
       x.first_date = new Date(x.first_date)
       x.last_date = new Date(x.last_date)
       x.coldate = new Date(x.coldate)
@@ -181,9 +190,22 @@ req.done(async function() {
   $("#splash-extra").html("");  // remove loading animation
   
   mutations = parse_mutation_annotations(mut_annotations);
+  //spinner.stop();
   var curr_date = new Date();
   curr_date.setFullYear(curr_date.getFullYear() - 1);
-  redraw_tree(formatDate(curr_date), redraw=false);
+
+  // Maps id to a cidx
+  const reverse_recombinant_tips = [...recombinant_tips].reverse()
+  var all_tips = [...tips, ...reverse_recombinant_tips]
+  for (i in all_tips) {
+    id_to_cidx[i] = 'cidx-' + all_tips[i].cluster_idx
+  }
+
+  // Maps cidx to an id
+  const reverseMapping = o => Object.keys(o).reduce((r, k) => Object.assign(r, { [o[k]]: (r[o[k]] || parseInt(k)) }), {})
+  map_cidx_to_id = reverseMapping(id_to_cidx)
+
+  await redraw_tree(formatDate(curr_date), redraw=false);
 
   //spinner.stop();
   var rect = d3.selectAll("#svg-timetree > svg > rect"),
@@ -230,19 +252,6 @@ req.done(async function() {
         //search(accn);
     }
   });
-
-
-  // Maps cidx to an id
-  var key;
-  var rect = d3.selectAll('#svg-timetree > svg > rect:not(.clickedH)').nodes();
-  for (var i = 0; i < rect.length; i++) {
-	  key = d3.select(rect[i]).attr("cidx");
-	  map_cidx_to_id[key] = parseInt(d3.select(rect[i]).attr("id").substring(3));
-  }
-
-  // Maps id to a cidx
-  const reverseMapping = o => Object.keys(o).reduce((r, k) => Object.assign(r, { [o[k]]: (r[o[k]] || []).concat(k) }), {})
-  id_to_cidx = reverseMapping(map_cidx_to_id);
 
 
   /***********************  SEARCH INTERFACE ***********************/
@@ -339,8 +348,7 @@ req.done(async function() {
       $('#error_message').text(``);
       $("#loading").show();
       $("#loading_text").text(i18n_text.loading);
-      
-      await reset_tree();
+      await reset_tree(partial_redraw=true);
       await wrap_search();
       enable_buttons();
 
@@ -417,7 +425,7 @@ req.done(async function() {
     $('#error_message').text(``);
     $("#loading").show();
     $("#loading_text").text(i18n_text.loading);
-    await reset_tree();
+    await reset_tree(partial_redraw=true);
     await wrap_search();
     enable_buttons();
     $("#loading").hide();
@@ -493,6 +501,19 @@ req.done(async function() {
     expand();
   });
 
+  $('#display-option').on('change', function() {
+    if (!$('#display-option').attr('checked')) {
+      $('#display-option').attr('checked', 'checked');
+      $(".recombinant-tree-content").show()
+      $(".recombtitle").show()
+    }
+    else {
+      $('#display-option').removeAttr('checked');
+      $(".recombinant-tree-content").hide()
+      $(".recombtitle").hide()
+    }
+  });
+
   // Sets the scrolling speed when scrolling through the beadplot
   const element = document.querySelector("#svg-cluster");
 
@@ -547,15 +568,17 @@ req.done(async function() {
         tree_cutoff.css('left', cutoff_pos);
       },
       change: async function (event, ui) {
-        cutoff_line.css('visibility', 'hidden');
-        var cutoff_pos = handle.position().left;
-        tree_cutoff.css('left', cutoff_pos);
-
-        $("#loading").show();
-        $("#loading_text").text(i18n_text.loading);
-        await redraw_tree(cutoff_date.text());
-        $("#loading").hide();
-        $("#loading_text").text(``);
+        if (event.originalEvent) {
+          cutoff_line.css('visibility', 'hidden');
+          var cutoff_pos = handle.position().left;
+          tree_cutoff.css('left', cutoff_pos);
+  
+          $("#loading").show();
+          $("#loading_text").text(i18n_text.loading);
+          await redraw_tree(cutoff_date.text());
+          $("#loading").hide();
+          $("#loading_text").text(``);
+        }
       },
       min: min,
       max: max,

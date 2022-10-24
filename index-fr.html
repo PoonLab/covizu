@@ -168,6 +168,11 @@
             </span>
             <div class="clicker" title="T&eacute;l&eacute;charger les statistiques au format CSV" onclick="export_csv();">&nbsp;&nbsp;CSV&nbsp;&nbsp;</div>
             <span title="Aide avec la phylog&eacute;nie" onclick="$('#help-timetree').dialog('open');" style="cursor: help">&#128304;</span>
+            <label class="recombinant" style="vertical-align: middle;">Afficher les recombinants:&nbsp;</label>
+            <label class="switch-recombinant">
+              <input type="checkbox" id="display-option" checked="checked">
+              <span class="slider round"></span>
+            </label>
           </div>
           <div id="tree-cutoff" style="position: relative;">
             <div id="cutoff-date"></div>
@@ -179,7 +184,13 @@
           <div id="cutoff-line" style="visibility: hidden"></div>
           <div class="floattitle" id="svg-timetreeaxis" style="top: 58px; z-index: 13"></div>
           <div class="tree-container">
-            <div class="tree-content" id="svg-timetree" style="width: 250px; max-width: 250px;"></div>
+            <div class="tree-content" id="svg-timetree" style="width: 250px; max-width: 250px;">
+              <div>
+                <div class="recombtitle" style="display: flex; justify-content: center; font-size: 12px; padding-bottom: 2px; width: 40%">Les Recombinants</div>
+                <div class="recombinant-tree-content" id="svg-recombinants" style="width: 250px; max-width: 250px; padding: 5px"></div>
+              </div>
+              <div style="display: flex; justify-content: center; font-size: 12px; padding-bottom: 2px; width: 50%">Non-Recombinants</div>
+            </div>
           </div>
         </div>
 

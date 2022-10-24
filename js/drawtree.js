@@ -29,6 +29,10 @@ var vis = d3.select("div#svg-timetree")
   //.attr("height", height + margin.top + margin.bottom);
   //.append("g");
 
+var vis_recombinant = d3.select("div#svg-recombinants")
+  .append("svg")
+  .attr("width", width + margin.left + margin.right + padding.right);
+
 var axis = d3.select("div#svg-timetreeaxis")
   .append("svg")
   .attr("width", width + margin.left + margin.right + padding.right)
@@ -47,21 +51,45 @@ function draw_cluster_box(rect) {
   var d = rect.datum();
   var rectWidth = xScale(date_to_xaxis(d.last_date)) - xScale(d.x2);
 
-  // draw a box around the cluster rectangle
-  vis.append("rect")
-    .attr('class', "clickedH")
-    .attr("x", xMap2(d) - 2)
-    .attr("y", yMap(d) - 2)
-    .attr("width", function() {
-      if (rectWidth < minRectWidth)
-        return minRectWidth + 4
-      return xScale(date_to_xaxis(d.last_date)) - xScale(d.x2) + 4
-    })
-    .attr("height", 14)
-    .attr("fill", "white")
-    .attr("stroke", "grey")
-    .attr("fill-opacity", 1)
-    .attr("stroke-width", 2);
+  if (d.label1[0] == 'X') {
+    vis_recombinant.append("rect")
+      .attr('class', "clickedH")
+      .attr("x", function() {
+        return xScale(date_to_xaxis(d.first_date)) - 2;
+      })
+      .attr("y", function() {
+        return d.y*11;
+      })
+      .attr("width", function() {
+        rectWidth = (xScale(date_to_xaxis(d.last_date)) - xScale(date_to_xaxis(d.first_date))) + 4;
+        if (rectWidth < minRectWidth)
+          return minRectWidth + 4
+        return rectWidth
+      })
+      .attr("height", 14)
+      .attr("fill", "white")
+      .attr("stroke", "grey")
+      .attr("fill-opacity", 1)
+      .attr("stroke-width", 2);
+  }
+  else {
+    // draw a box around the cluster rectangle
+    vis.append("rect")
+      .attr('class', "clickedH")
+      .attr("x", xMap2(d) - 2)
+      .attr("y", yMap(d) - 2)
+      .attr("width", function() {
+        if (rectWidth < minRectWidth)
+          return minRectWidth + 4
+        return xScale(date_to_xaxis(d.last_date)) - xScale(d.x2) + 4
+      })
+      .attr("height", 14)
+      .attr("fill", "white")
+      .attr("stroke", "grey")
+      .attr("fill-opacity", 1)
+      .attr("stroke-width", 2);
+  }
+
 
   // move the box to the background by promoting other objects
   rect.raise();
@@ -78,7 +106,7 @@ function draw_cluster_box(rect) {
  * Draw time-scaled tree in SVG
  * @param {Array} df:  data frame
  */
-function drawtree(df, redraw=true) {
+function drawtree(df, org_df, redraw=true) {
 
   // Sets margin top to align vertical scrollbar with the time-scaled tree
   $('#tree-vscroll').css('margin-top', document.getElementById("tree-title").clientHeight + document.getElementById("svg-timetreeaxis").clientHeight + $('#inner-hscroll').height() + 5);
@@ -95,8 +123,8 @@ function drawtree(df, redraw=true) {
   // adjust d3 scales to data frame
   if(!redraw) {
     xScale.domain([
-      d3.min(df, xValue)-0.05, 
-      date_to_xaxis(d3.max(df, function(d) {return d.last_date})) 
+      d3.min(org_df, xValue)-0.05, 
+      date_to_xaxis(d3.max(org_df, function(d) {return d.last_date})) 
     ]);
   }
 
@@ -175,7 +203,7 @@ function sort_mutations(mutations) {
  * Add subtree objects to time-scaled tree.
  * @param {Array} tips, clusters that have been mapped to tips of tree
  */
-function draw_clusters(tips, redraw=false) {
+function draw_clusters(tips, recombinant_tips, redraw=false) {
 
   var tickVals = [],
       minVal = d3.min(df, xValue)-0.05,
@@ -247,7 +275,51 @@ function draw_clusters(tips, redraw=false) {
     .attr("height", 10)
     .attr("class", "default")
     .attr("cidx", function(d) { return "cidx-" + d.cluster_idx; })
-    .attr("id", function(d, i) { return "id-" + i; })
+    .attr("id", function(d, i) { return "id-" + map_cidx_to_id['cidx-' + d.cluster_idx]; })
+    .on('mouseover', mouseover)
+    .on("mouseout", function() {
+      d3.select(this)
+        .attr("txt_hover", null);
+
+      cTooltip.transition()     // Hide tooltip
+          .duration(50)
+          .style("opacity", 0);
+    })
+    .on("click", async function(d) {
+      var cluster_info = this;
+      $('#error_message').text(``);
+      $("#loading").show();
+      $("#loading_text").text(`Loading. Please Wait...`);
+      await click_cluster(d, cluster_info);
+      $("#loading").hide();
+      $("#loading_text").text(``);
+    });
+
+  vis_recombinant
+  .attr("height", recombinant_tips.length * 11.1)
+
+  vis_recombinant.selectAll("rect")
+    .data(recombinant_tips)
+    .enter()
+    .lower()
+    .append("rect")
+    //.attr("selected", false)
+    .attr("x", function(d) {
+      return xScale(date_to_xaxis(d.first_date))
+    })
+    .attr("y", function(d) {
+      return d.y*11 + 2;
+    })
+    .attr("width", function(d) {
+      var rectWidth = xScale(date_to_xaxis(d.last_date)) - xScale(date_to_xaxis(d.first_date));
+      if (rectWidth < minRectWidth)
+        return minRectWidth;
+      return rectWidth;
+    })
+    .attr("height", 10)
+    .attr("class", "default recombinant")
+    .attr("cidx", function(d) { return "cidx-" + d.cluster_idx; })
+    .attr("id", function(d, i) { return "id-" + map_cidx_to_id['cidx-' + d.cluster_idx]; })
     .on('mouseover', mouseover)
     .on("mouseout", function() {
       d3.select(this)
@@ -308,6 +380,35 @@ function draw_clusters(tips, redraw=false) {
       .on("click", function(d) {
         d3.select("[cidx=cidx-" + d.cluster_idx + "]").dispatch('click');
       });
+
+    vis_recombinant.selectAll("text")
+      .data(recombinant_tips)
+      .enter().append("text")
+      .style("font-size", "10px")
+      .attr("text-anchor", "start")
+      .attr("alignment-baseline", "middle")
+      .attr("cursor", "default")
+      .attr("id", function(d) { return "cidx-" + d.cluster_idx; })
+      .attr("x", function(d) {
+        var rectWidth = xScale(date_to_xaxis(d.last_date)) - xScale(date_to_xaxis(d.first_date));
+        if (rectWidth < minRectWidth)
+          return xScale(date_to_xaxis(d.first_date)) + minRectWidth + 3;
+        return xScale(date_to_xaxis(d.first_date)) + rectWidth + 3;
+      })
+      .attr("y", function(d) {
+        // return(yScale(d.y-0.15));
+        return d.y*11 + 7;
+      })
+      .text(function(d) { return(d.label1); })
+      .on("mouseover", function(d) {
+	      mouseover(d);
+      })
+      .on("mouseout", function(d) {
+        d3.select("[cidx=cidx-" + d.cluster_idx + "]").dispatch('mouseout');
+      })
+      .on("click", function(d) {
+        d3.select("[cidx=cidx-" + d.cluster_idx + "]").dispatch('click');
+      });
 }
 
 
@@ -322,6 +423,31 @@ function changeTreeColour() {
   $("div#svg-diverge-legend").hide();
 
   vis.selectAll("rect")
+      .transition()
+      .duration(300)
+      .style("fill", function(d) {
+        if (d !== undefined) {
+          let opt = $("#select-tree-colours").val();
+          if (opt === "Region") {
+            $("#div-region-legend").show();
+            return(country_pal[d.region]);
+          }
+          else if (opt === "No. samples") {
+            $("div#svg-sample-legend").show();
+            return(sample_pal(Math.log10(d.nsamples)));  // placeholder values
+          }
+          else if (opt === "Collection date") {
+            $("div#svg-coldate-legend").show();
+            return(coldate_pal(d.last_date));
+          }
+          else {  // Divergence
+            $("div#svg-diverge-legend").show();
+            return(diverge_pal(d.residual));
+          }
+        }
+      })
+
+    vis_recombinant.selectAll("rect")
       .transition()
       .duration(300)
       .style("fill", function(d) {
@@ -647,7 +773,7 @@ async function click_cluster(d, cluster_info) {
   draw_cluster_box(d3.select(cluster_info));
 }
 
-async function redraw_tree(cutoff_date, redraw=true) {
+async function redraw_tree(cutoff_date, redraw=true, partial_redraw=false) {
   // deep copy the df and clear all references to children
   df_copy = structuredClone(df);
 
@@ -739,12 +865,36 @@ async function redraw_tree(cutoff_date, redraw=true) {
     if (x.isTip == true) return x;
   });
 
+  var filtered_recomb_tips = recombinant_tips.filter(x => {
+    if (formatDate(x.coldate) >= cutoff_date) return x;
+  });
+
+  filtered_recomb_tips.forEach(function(x,i) {
+    x.y = i   
+  })
+
+  if (filtered_recomb_tips.length === 0) {
+    $(".recombinant-tree-content").hide()
+    $(".recombtitle").hide()
+  }
+  else if ($('#display-option').attr('checked')) {
+    $(".recombinant-tree-content").show()
+    $(".recombtitle").show()
+  }
+
+
   document.querySelector("#svg-timetree > svg").innerHTML = ''; 
-  drawtree(final_df, redraw=redraw);
-  draw_clusters(filtered_tips, redraw);
+  document.querySelector("#svg-recombinants > svg").innerHTML = '';
+  if (partial_redraw) {
+    drawtree(final_df, df_copy, redraw=partial_redraw);
+    draw_clusters(filtered_tips, filtered_recomb_tips, partial_redraw);
+  }
+  else {
+    drawtree(final_df, df_copy, redraw=redraw);
+    draw_clusters(filtered_tips, filtered_recomb_tips, redraw);
+  }
 
-  if(redraw) {
-
+  if(redraw && !partial_redraw) {
     var rect = d3.selectAll("#svg-timetree > svg > rect"),
     node = rect.nodes()[rect.size()-1];
 
@@ -761,7 +911,7 @@ async function redraw_tree(cutoff_date, redraw=true) {
   }
 }
 
-function reset_tree() {
+function reset_tree(partial_redraw=false) {
   // resets slider and tree 
   min = $("#tree-slider").slider("option").min; 
   min_date = formatDate(d3.min(df, function(d) {return d.last_date}));
@@ -770,5 +920,6 @@ function reset_tree() {
   $("#cutoff-date").text(min_date);
   $("#tree-cutoff").css('left',  $("#tree-slider-handle").position().left);
   $("#tree-slider").slider({ disabled: true});
-  redraw_tree(min_date);
+  redraw_tree(min_date, redraw=true, partial_redraw=partial_redraw);
+  if (partial_redraw) d3.select('#cidx-' + cindex).attr("class", "clicked");
 }

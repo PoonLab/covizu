@@ -79,12 +79,12 @@ function parse_mutation_annotations(mut_annotations) {
   var mutations = [];
 
   // Sorts tips according to cluster_idx
-  sorted_tips = [...tips]
+  sorted_tips = [...tips, ...recombinant_tips]
   sorted_tips.sort(function(a,b) {
     return a.cluster_idx - b.cluster_idx
   });
 
-  for (const cidx in tips) {
+  for (const cidx in sorted_tips) {
     let phenotype = [],
         mutations_list = [],
         frequency_list = [],
@@ -470,7 +470,7 @@ function expand() {
       .enter().append("line")
       .attr("class", "lines hLine")
       .attr("id", function(d) {
-        return d.label.replace(/\./g,'-').replace('/', '-').replace(' ', '_');
+        return d.label.replace(/'/g, '-').replace(/\./g,'-').replace('/', '-').replace(' ', '_');
       })
       .attr("x1", xMap1B)
       .attr("x2", xMap2B)
@@ -770,8 +770,8 @@ function draw_vertical_edges(vLines) {
       var edge = d3.select(this);
       edge.attr("stroke-width", 3);
 
-      let parent_variant = d3.select(".lines#"+d.parent.replace(/\./g,'-').replace('/', '-').replace(' ', '_')),
-          child_variant = d3.select(".lines#"+d.child.replace(/\./g,'-').replace('/', '-').replace(' ', '_'));
+      let parent_variant = d3.select(".lines#"+d.parent.replace(/'/g, '-').replace(/\./g,'-').replace('/', '-').replace(' ', '_')),
+          child_variant = d3.select(".lines#"+d.child.replace(/'/g, '-').replace(/\./g,'-').replace('/', '-').replace(' ', '_'));
 
       if (!parent_variant.empty()) {
         if (parent_variant.datum().count > 0) {
@@ -841,8 +841,8 @@ function draw_vertical_edges(vLines) {
         d3.select(this).attr("stroke-width", 1);
       }
 
-      let parent_variant = d3.select(".lines#"+d.parent.replace(/\./g,'-').replace('/', '-').replace(' ', '_')),
-          child_variant = d3.select(".lines#"+d.child.replace(/\./g,'-').replace('/', '-').replace(' ', '_'));
+      let parent_variant = d3.select(".lines#"+d.parent.replace(/'/g, '-').replace(/\./g,'-').replace('/', '-').replace(' ', '_')),
+          child_variant = d3.select(".lines#"+d.child.replace(/'/g, '-').replace(/\./g,'-').replace('/', '-').replace(' ', '_'));
 
       if (!parent_variant.empty()) {
         if (parent_variant.datum().count > 0) {
@@ -901,8 +901,8 @@ function draw_vertical_edges(vLines) {
       var edge = d3.select(this);
       edge.attr("class", "lines vLine selectionL");
 
-      let parent_variant = d3.select(".lines#"+d.parent.replace(/\./g,'-').replace('/', '-').replace(' ', '_')),
-          child_variant = d3.select(".lines#"+d.child.replace(/\./g,'-').replace('/', '-').replace(' ', '_'));
+      let parent_variant = d3.select(".lines#"+d.parent.replace(/'/g, '-').replace(/\./g,'-').replace('/', '-').replace(' ', '_')),
+          child_variant = d3.select(".lines#"+d.child.replace(/'/g, '-').replace(/\./g,'-').replace('/', '-').replace(' ', '_'));
 
       parent_variant.attr("class", "lines hLine selectionLH");
       child_variant.attr("class", "lines hLine selectionLH");
