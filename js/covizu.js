@@ -348,7 +348,7 @@ req.done(async function() {
       $('#error_message').text(``);
       $("#loading").show();
       $("#loading_text").text(i18n_text.loading);
-      await reset_tree(redraw=false);
+      await reset_tree(partial_redraw=true);
       await wrap_search();
       enable_buttons();
 
@@ -425,7 +425,7 @@ req.done(async function() {
     $('#error_message').text(``);
     $("#loading").show();
     $("#loading_text").text(i18n_text.loading);
-    await reset_tree(redraw=false);
+    await reset_tree(partial_redraw=true);
     await wrap_search();
     enable_buttons();
     $("#loading").hide();
@@ -576,8 +576,6 @@ req.done(async function() {
           $("#loading").show();
           $("#loading_text").text(i18n_text.loading);
           await redraw_tree(cutoff_date.text());
-          console.log(event.originalEvent)
-          console.log(cutoff_date.text())
           $("#loading").hide();
           $("#loading_text").text(``);
         }

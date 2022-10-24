@@ -773,7 +773,7 @@ async function click_cluster(d, cluster_info) {
   draw_cluster_box(d3.select(cluster_info));
 }
 
-async function redraw_tree(cutoff_date, redraw=true) {
+async function redraw_tree(cutoff_date, redraw=true, partial_redraw=false) {
   // deep copy the df and clear all references to children
   df_copy = structuredClone(df);
 
@@ -885,11 +885,16 @@ async function redraw_tree(cutoff_date, redraw=true) {
 
   document.querySelector("#svg-timetree > svg").innerHTML = ''; 
   document.querySelector("#svg-recombinants > svg").innerHTML = '';
-  drawtree(final_df, df_copy, redraw=redraw);
-  draw_clusters(filtered_tips, filtered_recomb_tips, redraw);
+  if (partial_redraw) {
+    drawtree(final_df, df_copy, redraw=partial_redraw);
+    draw_clusters(filtered_tips, filtered_recomb_tips, partial_redraw);
+  }
+  else {
+    drawtree(final_df, df_copy, redraw=redraw);
+    draw_clusters(filtered_tips, filtered_recomb_tips, redraw);
+  }
 
-  if(redraw) {
-
+  if(redraw && !partial_redraw) {
     var rect = d3.selectAll("#svg-timetree > svg > rect"),
     node = rect.nodes()[rect.size()-1];
 
@@ -906,7 +911,7 @@ async function redraw_tree(cutoff_date, redraw=true) {
   }
 }
 
-function reset_tree(redraw=true) {
+function reset_tree(partial_redraw=false) {
   // resets slider and tree 
   min = $("#tree-slider").slider("option").min; 
   min_date = formatDate(d3.min(df, function(d) {return d.last_date}));
@@ -915,6 +920,6 @@ function reset_tree(redraw=true) {
   $("#cutoff-date").text(min_date);
   $("#tree-cutoff").css('left',  $("#tree-slider-handle").position().left);
   $("#tree-slider").slider({ disabled: true});
-  redraw_tree(min_date, redraw=redraw);
-  if (!redraw) d3.select('#cidx-' + cindex).attr("class", "clicked");
+  redraw_tree(min_date, redraw=true, partial_redraw=partial_redraw);
+  if (partial_redraw) d3.select('#cidx-' + cindex).attr("class", "clicked");
 }
