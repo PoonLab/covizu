@@ -195,7 +195,8 @@ req.done(async function() {
   curr_date.setFullYear(curr_date.getFullYear() - 1);
 
   // Maps id to a cidx
-  var all_tips = [...recombinant_tips, ...tips]
+  const reverse_recombinant_tips = [...recombinant_tips].reverse()
+  var all_tips = [...tips, ...reverse_recombinant_tips]
   for (i in all_tips) {
     id_to_cidx[i] = 'cidx-' + all_tips[i].cluster_idx
   }
