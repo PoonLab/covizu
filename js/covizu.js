@@ -321,6 +321,9 @@ req.done(async function() {
     draw_cluster_box(d3.select(node));
   }
 
+  // Calculate the height for the tree container and beadplot container
+  set_height()
+
   // Enables "search" and "clear" buttons if the input fields are not empty
   $('#search-input').on('change keyup search', function() {
     if ($('#search-input').val() !== "" || $('#start-date').val() !== "" ||
@@ -513,6 +516,8 @@ req.done(async function() {
       $(".recombtitle").hide()
     }
   });
+
+  $(window).on('resize', set_height);
 
   // Sets the scrolling speed when scrolling through the beadplot
   const element = document.querySelector("#svg-cluster");
@@ -875,4 +880,13 @@ function export_csv() {
   csvFile = csvFile + "\n" + lineage_info.join("\n");
   blob = new Blob([csvFile], {type: "text/csv"});
   saveAs(blob, "lineage_stats.csv");
+}
+
+function set_height() {
+  // Calculate the height for the tree container and beadplot container
+  $('#tree-vscroll').css('height',$(window).height() - $('#tree-vscroll').offset().top - 50)
+  $('.tree-content').css('height',$(window).height() - $('.tree-content').offset().top - 50)
+  $('#cutoff-line').css('height',$(window).height() - $('#cutoff-line').offset().top - 50)
+  $('.beadplot-content').css('height',$(window).height() - $('.beadplot-content').offset().top - 50)
+  $('#beadplot-vscroll').css('height',$(window).height() - $('#beadplot-vscroll').offset().top - 50)
 }
