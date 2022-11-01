@@ -5,6 +5,7 @@ from covizu.clustering import consensus
 from Bio import Phylo
 from io import StringIO
 from csv import DictReader
+from datetime import datetime
 
 
 def parse_labels(handle):
@@ -124,7 +125,6 @@ def annotate_tree(tree, label_dict, minlen=0.5, callback=None):
 
     return tree
 
-
 def serialize_tree(tree):
     """
     Convert annotated tree object to JSON
@@ -134,6 +134,7 @@ def serialize_tree(tree):
     """
     obj = {'nodes': {}, 'edges': []}
     variant_d = {}
+    map_nodes= {}
     parents = get_parents(tree)
 
     us_count = 0  # number of unsampled variants
@@ -144,6 +145,10 @@ def serialize_tree(tree):
             intermed.sort()  # ISO dates sort in increasing order
             variant = intermed[0][1]  # use accession of earliest sample to ID variant
 
+            # Map the nodes to length and ascending dates
+            first_date = intermed[0][0]
+            last_date = intermed[len(intermed) - 1][0]
+
             # populate list with samples
             obj['nodes'].update({variant: intermed})
         else:
@@ -151,14 +156,42 @@ def serialize_tree(tree):
             obj['nodes'].update({variant: []})
             us_count += 1
 
+            # Set first date to first date of parent; last date to the earliest first date of a descendant
+            id = node
+            while(not parents[id].labels):
+                id = parents[id]
+            
+            first_date = obj['nodes'][variant_d[parents[id]]][0][0]
+            last_date = datetime.today().strftime('%Y-%m-%d')
+            for child in node:
+                if(child.labels):
+                    intermed = [label.split('|')[::-1] for label in child.labels]
+                    intermed.sort()
+                    if (intermed[0][0] < last_date):
+                        last_date = intermed[0][0]
+
         variant_d.update({node: variant})
 
         if node is tree.root:
             continue  # no edge
         parent = parents[node]
-        # parent ID, child ID, branch length, node support
-        obj['edges'].append([variant_d[parent], variant, round(node.branch_length, 2),
+        date_diff = datetime.strptime(last_date, "%Y-%m-%d") - datetime.strptime(first_date, "%Y-%m-%d")
+
+        # date width, first date, parent ID, child ID, branch length, node support
+        if(variant_d[parent] in map_nodes):
+            map_nodes[variant_d[parent]].append([date_diff, first_date, variant_d[parent], variant, round(node.branch_length, 2),
                              node.confidence])
+        else:
+            map_nodes[variant_d[parent]] = [[date_diff, first_date, variant_d[parent], variant, round(node.branch_length, 2),
+                             node.confidence]]
+
+
+    for parent, child in map_nodes.items():
+        child.sort(key=lambda x: (x[0], x[1]))
+
+    for children in map_nodes.values():
+        for child in children:
+            obj['edges'].append(child[2:6])
 
     return obj
 
