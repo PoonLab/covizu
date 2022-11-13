@@ -554,7 +554,7 @@ function expand() {
       .on("click", function(d) {
         if (d.label !== null && d.country !== null) {
           gentable(d);
-          draw_region_distribution(tabulate(d.region));
+          draw_region_distribution(d.region);
           let var_samples = points.filter(x => x.y === d.y1);
           gen_details_table(var_samples);
         }
@@ -677,7 +677,7 @@ function expand() {
         draw_halo_front(d);
 
         gentable(d);
-        draw_region_distribution(tabulate(d.region));
+        draw_region_distribution(d.region);
         gen_details_table(d);
         $('#search-input').val('');
         $('#end-date').val('');
@@ -1223,7 +1223,7 @@ function gentable(obj) {
   // annotate with region (continent)
   for (const i in my_countries) {
     row = my_countries[i];
-    region = countries[row[0]];
+    region = region_map[row[0]];
     my_countries[i] = [region].concat(row);
   }
 
@@ -1288,7 +1288,7 @@ function gentable(obj) {
  * @param {{}} my_regions: associative list of region and case count pairs
  */
 function draw_region_distribution(my_regions) {
-  const regions = unique(Object.values(countries)).sort();
+  const regions = unique(Object.values(region_map)).sort()
   var counts = [], count;
 
   regions.forEach(function(r) {
