@@ -156,6 +156,12 @@ def serialize_tree(tree):
             obj['nodes'].update({variant: []})
             us_count += 1
 
+        variant_d.update({node: variant})
+
+        if node is tree.root:
+            continue  # no edge
+
+        if not node.labels:
             # Set first date to first date of parent; last date to the earliest first date of a descendant
             id = node
             while(not parents[id].labels):
@@ -170,10 +176,6 @@ def serialize_tree(tree):
                     if (intermed[0][0] < last_date):
                         last_date = intermed[0][0]
 
-        variant_d.update({node: variant})
-
-        if node is tree.root:
-            continue  # no edge
         parent = parents[node]
         date_diff = datetime.strptime(last_date, "%Y-%m-%d") - datetime.strptime(first_date, "%Y-%m-%d")
 
