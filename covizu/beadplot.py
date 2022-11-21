@@ -164,9 +164,12 @@ def serialize_tree(tree):
         if not node.labels:
             # Set first date to first date of parent; last date to the earliest first date of a descendant
             id = node
-            while(not parents[id].labels):
+            while parents[id] is not tree.root and not parents[id].labels:
                 id = parents[id]
-            
+
+            if parents[id] is tree.root and len(obj['nodes'][variant_d[parents[id]]]) == 0:
+                continue
+
             first_date = obj['nodes'][variant_d[parents[id]]][0][0]
             last_date = datetime.today().strftime('%Y-%m-%d')
             for child in node:
