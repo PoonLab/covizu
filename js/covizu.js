@@ -133,15 +133,12 @@ var phenotypes = {
 }
 
 // load time-scaled phylogeny from server
-var nwk, df, countries, mut_annotations;
+var nwk, df, countries, mut_annotations, region_map;
 $.ajax({
   url: "data/timetree.nwk",
   success: function(data) {
     nwk = data;
   }
-});
-$.getJSON("data/countries.json", function(data) {
-  countries = data;
 });
 $.getJSON("data/mut_annotations.json", function(data) {
   mut_annotations = data;
@@ -180,6 +177,9 @@ req = $.when(
       x.mcoldate = x.coldate ? new Date(x.mcoldate) : undefined
     });
   }),
+  $.getJSON("/api/regionmap", function(data) {
+    region_map = data;
+  })
 );
 
 req.done(async function() {

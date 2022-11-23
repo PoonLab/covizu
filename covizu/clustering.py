@@ -35,7 +35,7 @@ def recode_features(records, callback=None, limit=10000):
         if key not in fvecs:
             fvecs.update({key: []})
         for sample in variant:
-            label = "{covv_virus_name}|{covv_accession_id}|{covv_collection_date}".format(**sample)
+            label = "{covv_virus_name}|{covv_location}|{covv_accession_id}|{covv_collection_date}".format(**sample)
             fvecs[key].append(label)
 
     # limit to N most recently-sampled feature vectors
