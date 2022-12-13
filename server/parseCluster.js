@@ -1,8 +1,9 @@
 // regular expression to remove redundant sequence name components
+const {$DATA_FOLDER} = require("../config")
 const pat = /^hCoV-19\/(.+\/.+)\/20[0-9]{2}$/gi;
 const { unique, mode, tabulate, merge_tables, utcDate } = require('./utils')
-const countries = require('../data/countries.json')
-const dbstats = require('../data/dbstats.json')
+const countries = require(`../${$DATA_FOLDER}/countries.json`)
+const dbstats = require(`../${$DATA_FOLDER}/dbstats.json`)
 const d3 = require('../js/d3')
 var recombinants = []
 

@@ -1,5 +1,8 @@
-// covizu.spec.js is created with Cypress, https://www.cypress.io/
-// direct download of Cypress is required to run the tests
+/**
+* rename this file to covizu.spec.cy.js to include this in the testing 
+* suite. this testing suite fails for now because the frontened has 
+* changed since these tests were written. 
+*/
 
 describe('CoVizu page', () => {
     it('Language options redirect', () => {
@@ -121,6 +124,8 @@ describe('Tooltips', () => {
         cy.get('circle:visible').first().trigger('mouseover')
         cy.get('.tooltip').should('be.visible').should('have.length', 1)
     })
+    
+    
     it('Beadplot tooltips contain relevant information', () => {
         cy.get('rect:visible').first().click().invoke('attr','id').as('lineage_id')
         cy.get('@lineage_id').then(id => {
