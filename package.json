@@ -1,7 +1,7 @@
 {
   "name": "covizu",
   "version": "1.0.0",
-  "description": "CoVizu is an open source project to develop a `near real time' SARS-CoV-2 genome analysis and visual$
+  "description": "CoVizu is an open source project to develop a `near real time' SARS-CoV-2 genome analysis and visualization system that highlights potential cases of importation from other countries or ongoing community transmission.",
   "main": "server.js",
   "directories": {
     "doc": "doc",
