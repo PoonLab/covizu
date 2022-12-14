@@ -1,12 +1,16 @@
-name: With servers
-on: [push]
+name: End-to-end tests
+on:
+  pull_request:
+    branches:
+      - "master"
 jobs:
   cypress-run:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
+
       - name: Cypress run
         uses: cypress-io/github-action@v4
         with:
-          start: npm run api, npm run web
+          start: npm run test
