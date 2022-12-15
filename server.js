@@ -1,27 +1,20 @@
+const {$DATA_FOLDER,$HTTP_PORT,$HTTPS_PORT,$SSL_CREDENTIALS,$NODE_ENV} = require("./config")
 const compression = require('compression');
 const express = require('express');
 const app = express();
-const clusters = require('./data/clusters.json')
+const clusters = require(`./${$DATA_FOLDER}/clusters.json`)
 const { utcDate } = require('./server/utils')
 const { parse_clusters, map_clusters_to_tips, index_accessions, index_lineage, get_recombinants, get_region_map } = require('./server/parseCluster')
 const { readTree } = require('./server/phylo')
 const fs = require('fs');
-require('dotenv').config();
 
 var http = require('http');
 var https = require('https');
 
-if (process.env.PROD) {
-  var credentials = {
-    key: fs.readFileSync(process.env.PRVTKEY), 
-    cert: fs.readFileSync(process.env.CRT)
-  };
-}
-
 app.use(compression());
 
 try {
-  var tree = fs.readFileSync('./data/timetree.nwk', 'utf8');
+  var tree = fs.readFileSync(`./${$DATA_FOLDER}/timetree.nwk`, 'utf8');
 } catch(e) {
   console.log('Error:', e.stack);
 }
@@ -123,15 +116,13 @@ app.get('/api/getHits/:query', (req, res) => {
   }
 });
 
-const port = process.env.PORT || 8001;
-
 app.use(express.static('.'));
 
 // For the prod environment, need to create a https server
-if (process.env.PROD) {
-  var httpsServer = https.createServer(credentials, app);
-  httpsServer.listen(8002, () => console.log(`Listening on Port ${8002}...`))
+if ($NODE_ENV=='PROD') {
+  var httpsServer = https.createServer($SSL_CREDENTIALS, app);
+  httpsServer.listen($HTTPS_PORT, () => console.log(`Listening on Port ${$HTTPS_PORT}...`))
 }
 
 var httpServer = http.createServer(app);
-httpServer.listen(port, () => console.log(`Listening on Port ${port}...`));
+httpServer.listen($HTTP_PORT, () => console.log(`Listening on Port ${$HTTP_PORT}...`));
