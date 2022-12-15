@@ -328,7 +328,7 @@ function select_cluster(cidx) {
 function update_table_individual_bead(bead) {
   draw_halo(bead);
   gentable(bead);
-  draw_region_distribution(tabulate(bead.region));
+  draw_region_distribution(bead.region);
   gen_details_table(bead);
   gen_mut_table(mutations[bead.cidx]);
 }
@@ -336,7 +336,7 @@ function update_table_individual_bead(bead) {
 function update_table_individual_bead_front(bead) {
   draw_halo_front(bead);
   gentable(bead);
-  draw_region_distribution(tabulate(bead.region));
+  draw_region_distribution(bead.region);
   gen_details_table(bead);
   gen_mut_table(mutations[bead.cidx]);
 }
@@ -571,7 +571,7 @@ function select_bead_by_accession(accn, reset_clusters_tree = true) {
     // Update information panel
     const datum = bead.datum();
     gentable(datum);
-    draw_region_distribution(tabulate(datum.region));
+    draw_region_distribution(datum.region);
     gen_details_table(datum);
 
   }

@@ -287,12 +287,12 @@ def convert_json(infile, provision):
     for cluster in clusters:
         for variant, samples in cluster['nodes'].items():
             revised = []
-            for coldate, accn, name in samples:
+            for coldate, accn, location, name in samples:
                 md = metadata.get(accn, None)
                 if md is None:
                     print("Failed to retrieve metadata for accession {}".format(accn))
                     sys.exit()
-                revised.append([name, accn, md['location'], coldate, md['gender'], md['age'], md['status']])
+                revised.append([name, accn, location, coldate, md['gender'], md['age'], md['status']])
 
             # replace list of samples
             cluster['nodes'][variant] = revised

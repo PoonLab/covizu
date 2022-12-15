@@ -26,6 +26,7 @@
 
 body {
   font: .9em/1.2 Lato, sans-serif;
+  overflow-y: hidden;
 }
 
 h1, h2, h3, h4 {
@@ -139,7 +140,6 @@ div.tree-beadplot {
 }
 
 .tree-content {
-  height: 81vh;
   overflow-y: scroll;
 }
 
@@ -153,7 +153,6 @@ div.tree-beadplot {
 }
 
 .beadplot-content {
-  height: 79vh;
   overflow: scroll;
   scrollbar-track-color: white;
   -ms-overflow-style: none;
@@ -529,7 +528,6 @@ details + dl {
   overflow-x: hidden;
   overflow-y: scroll;
   width: 20px;
-  height: 79vh;
 }
 
 #inner-vscroll {
@@ -541,7 +539,6 @@ details + dl {
   overflow-x: hidden;
   overflow-y: scroll;
   width: 20px;
-  height: 81vh;
 }
 
 #tree-inner-vscroll {
@@ -800,7 +797,6 @@ h2.modal-title {
   position: absolute;
   width: 1px;
   background: #bbb;
-  height: 85vh;
   opacity: 50%;
 }
 
