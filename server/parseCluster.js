@@ -1,11 +1,10 @@
 // regular expression to remove redundant sequence name components
-const {$DATA_FOLDER} = require("../config")
 const pat = /^hCoV-19\/(.+\/.+)\/20[0-9]{2}$/gi;
 const { unique, mode, tabulate, merge_tables, utcDate } = require('./utils')
-const countries = require(`../${$DATA_FOLDER}/countries.json`)
-const dbstats = require(`../${$DATA_FOLDER}/dbstats.json`)
+const dbstats = require('../data/dbstats.json')
 const d3 = require('../js/d3')
 var recombinants = []
+var region_map = {} // map country to region
 
 /**
  * Parse nodes that belong to the same variant.
@@ -52,17 +51,26 @@ const parse_variant = (variant, y, cidx, accn, mindate, maxdate) => {
   }
   else {
     // parse samples within variant, i.e., "beads"
-    var label = variant[0][2].replace(pat, "$1"),
+    // [0: coldate, 1: accession, 2: location, 3: name]
+    var label = variant[0][3].replace(pat, "$1"),
         coldates = variant.map(x => x[0]),
         isodate, samples, regions;
 
     coldates.sort();
     //Retrieving countries from variants?
-    var country = variant.map(x => x[2].split('/')[1]),
+    var location = variant.map(x => x[2].split(' / ')),
+        region = location.map(x => x[0]),
+        country = location.map(x => x[1]),
         isodates = unique(coldates);
 
-    // remove underscores in country names
-    country = country.map(x => x.replace(/_/g," "));
+    // update country to region map
+    for (let i=0; i < country.length; i++) {
+      let this_country = country[i],
+          this_region = region[i];
+      if (region_map[this_country] === undefined) {
+        region_map[this_country] = this_region;
+      }
+    }
 
     vdata = {
       'accession': accn,
@@ -73,7 +81,7 @@ const parse_variant = (variant, y, cidx, accn, mindate, maxdate) => {
       'y2': y,
       'count': coldates.length,
       'country': tabulate(country),
-      'region': country.map(x => countries[x]),
+      'region': tabulate(region),
       'numBeads': isodates.length,
       'parent': null,
       'dist': 0,
@@ -83,21 +91,9 @@ const parse_variant = (variant, y, cidx, accn, mindate, maxdate) => {
     for (var i=0; i<isodates.length; i++) {
       isodate = isodates[i];
       samples = variant.filter(x => x[0] === isodate);
-      country = samples.map(x => x[2].split('/')[1]);
-      country = country.map(x => x.replace(/_/g," "));
-      regions = country.map(x => countries[x]);
-
-      // warn developers if no region for country
-      if (regions.includes(undefined)) {
-        //console.log("Developer msg, need to update countries.json:");
-        for (const j in regions.filter(x => x===undefined)) {
-          let this_country = samples[j].country;
-          // unsampled lineages have undefined country fields
-          if (this_country !== undefined) {
-            console.log(`Need to add "${samples[j].country}" to countries.json`);
-          }
-        }
-      }
+      location = samples.map(x => x[2].split(' / '));
+      region = location.map(x => x[0]);
+      country = location.map(x => x[1]);
 
       pdata.push({
         cidx,
@@ -107,8 +103,8 @@ const parse_variant = (variant, y, cidx, accn, mindate, maxdate) => {
         'count': samples.length,
         'accessions': samples.map(x => x[1]),
         'labels': samples.map(x => x[2].replace(pat, "$1")),
-        'region1': mode(regions),
-        'region': regions,
+        'region1': mode(region),
+        'region': tabulate(region),
         'country': tabulate(country),
         'parent': null,
         'dist': 0
@@ -277,9 +273,15 @@ const parse_clusters = (clusters) => {
 
     // calculate consensus region for cluster
     // collect all region Arrays for all samples, all variants
-    regions = points.map(x => x.region).flat();
-    cluster['region'] = mode(regions);
-    cluster['allregions'] = tabulate(regions);
+    cluster['allregions'] = merge_tables(points.map(x => x.region));
+    let max_freq = 0, max_region = '';
+    for (let row of Object.entries(cluster['allregions'])) {
+      if (row[1] > max_freq) {
+        max_freq = row[1];
+        max_region = row[0];
+      }
+    }
+    cluster['region'] = max_region;  // most common region
 
     // concatenate all sample labels within cluster for searching
     labels = points.map(x => x.labels).flat();
@@ -369,8 +371,8 @@ const map_clusters_to_tips = (df, clusters) => {
 
     // augment data frame with cluster data
     tips[root_idx].cluster_idx = cidx;
-    tips[root_idx].region = cluster.region;
     tips[root_idx].allregions = cluster.allregions;
+    tips[root_idx].region = cluster.region;
     tips[root_idx].country = cluster.country;
     tips[root_idx].searchtext = cluster.searchtext;
     tips[root_idx].label1 = cluster["lineage"];
@@ -456,8 +458,8 @@ const map_clusters_to_tips = (df, clusters) => {
     // recombinant_tips[root_idx].mcoldate = first_date.addDays(mean_date);
     recombinant_tips.push({
       cluster_idx: recombinants[cidx],
-      region: cluster.region,
       allregions: cluster.allregions,
+      region: cluster.region,
       country: cluster.country,
       searchtext: cluster.searchtext,
       label1: cluster["lineage"],
@@ -533,11 +535,16 @@ function get_recombinants() {
   return recombinants;
 }
 
+function get_region_map() {
+  return region_map;
+}
+
 
 module.exports = {
   parse_clusters,
   map_clusters_to_tips,
   index_accessions,
   index_lineage,
-  get_recombinants
+  get_recombinants,
+  get_region_map
 };

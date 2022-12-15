@@ -3,6 +3,7 @@ on:
   pull_request:
     branches:
       - "master"
+      - "dev"
 jobs:
   cypress-run:
     runs-on: ubuntu-latest

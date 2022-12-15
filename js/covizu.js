@@ -133,15 +133,12 @@ var phenotypes = {
 }
 
 // load time-scaled phylogeny from server
-var nwk, df, countries, mut_annotations;
+var nwk, df, countries, mut_annotations, region_map;
 $.ajax({
   url: "data/timetree.nwk",
   success: function(data) {
     nwk = data;
   }
-});
-$.getJSON("data/countries.json", function(data) {
-  countries = data;
 });
 $.getJSON("data/mut_annotations.json", function(data) {
   mut_annotations = data;
@@ -180,6 +177,9 @@ req = $.when(
       x.mcoldate = x.coldate ? new Date(x.mcoldate) : undefined
     });
   }),
+  $.getJSON("/api/regionmap", function(data) {
+    region_map = data;
+  })
 );
 
 req.done(async function() {
@@ -320,6 +320,9 @@ req.done(async function() {
     gen_mut_table(mutations[cindex]);
     draw_cluster_box(d3.select(node));
   }
+
+  // Calculate the height for the tree container and beadplot container
+  set_height()
 
   // Enables "search" and "clear" buttons if the input fields are not empty
   $('#search-input').on('change keyup search', function() {
@@ -513,6 +516,8 @@ req.done(async function() {
       $(".recombtitle").hide()
     }
   });
+
+  $(window).on('resize', set_height);
 
   // Sets the scrolling speed when scrolling through the beadplot
   const element = document.querySelector("#svg-cluster");
@@ -875,4 +880,13 @@ function export_csv() {
   csvFile = csvFile + "\n" + lineage_info.join("\n");
   blob = new Blob([csvFile], {type: "text/csv"});
   saveAs(blob, "lineage_stats.csv");
+}
+
+function set_height() {
+  // Calculate the height for the tree container and beadplot container
+  $('#tree-vscroll').css('height',$(window).height() - $('#tree-vscroll').offset().top - 50)
+  $('.tree-content').css('height',$(window).height() - $('.tree-content').offset().top - 50)
+  $('#cutoff-line').css('height',$(window).height() - $('#cutoff-line').offset().top - 50)
+  $('.beadplot-content').css('height',$(window).height() - $('.beadplot-content').offset().top - 50)
+  $('#beadplot-vscroll').css('height',$(window).height() - $('#beadplot-vscroll').offset().top - 50)
 }
