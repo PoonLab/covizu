@@ -7,6 +7,7 @@
         content="CoVizu: Real-time analysis and visualization of the global diversity of SARS-CoV-2 genomes.">
   <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/driver.min.css">
 
   <script src="js/jquery.js"></script>
   <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
@@ -14,6 +15,7 @@
   <script src="js/d3-scale.js"></script>
   <script src="js/FileSaver.js"></script>
   <script src="js/d3-save-svg.min.js"></script>
+  <script src="js/driver.min.js"></script>
 </head>
 
 <body>
@@ -74,6 +76,7 @@
       // miscellaneous
       okay: "Okay!",
       got_it: "Got it!",
+      tour: "Quick Tour",
       loading: `Loading. Please Wait...`,
       loading_json: "Loading JSON data from server (~10s)...",
       country_theaders: ["Region", "Country", "Count"],
@@ -160,7 +163,7 @@
         <div id="tree-vscroll">
           <div id="tree-inner-vscroll"></div>
         </div>
-        <div class="leftbox">
+        <div class="leftbox" id="leftbox">
           <div class="floattitle" id="tree-title">
             Time-scaled tree
             <span class="clicker" title="Download time-scaled tree" onclick="save_timetree()">
@@ -182,14 +185,16 @@
             <div id="tree-slider-handle" class="ui-slider-handle"></div>
           </div>
           <div id="cutoff-line" style="visibility: hidden"></div>
-          <div class="floattitle" id="svg-timetreeaxis" style="top: 58px; z-index: 13"></div>
-          <div class="tree-container">
-            <div class="tree-content" id="svg-timetree" style="width: 250px; max-width: 250px;">
-              <div>
-                <div class="recombtitle" style="display: flex; justify-content: center; font-size: 13px; padding-bottom: 2px; width: 40%">Recombinants</div>
-                <div class="recombinant-tree-content" id="svg-recombinants" style="width: 250px; max-width: 250px; padding: 5px"></div>
+          <div id="tree-axis">
+            <div class="floattitle" id="svg-timetreeaxis" style="top: 58px; z-index: 13"></div>
+            <div class="tree-container">
+              <div class="tree-content" id="svg-timetree" style="width: 250px; max-width: 250px;">
+                <div>
+                  <div class="recombtitle" style="display: flex; justify-content: center; font-size: 13px; padding-bottom: 2px; width: 40%">Recombinants</div>
+                  <div class="recombinant-tree-content" id="svg-recombinants" style="width: 250px; max-width: 250px; padding: 5px"></div>
+                </div>
+                <div style="display: flex; justify-content: center; font-size: 13px; padding-bottom: 2px; width: 50%">Non-Recombinants</div>
               </div>
-              <div style="display: flex; justify-content: center; font-size: 13px; padding-bottom: 2px; width: 50%">Non-Recombinants</div>
             </div>
           </div>
         </div>
@@ -220,11 +225,13 @@
               <span class="slider round"></span>
             </label>
           </div>
-          <div class="floattitle" id="svg-clusteraxis" style="top: 58px; z-index: 14"></div>
-          <div id="beadplot-hscroll">
-            <div id="inner-hscroll"></div>
+          <div id="beadplot-container">
+            <div class="floattitle" id="svg-clusteraxis" style="top: 58px; z-index: 14"></div>
+            <div id="beadplot-hscroll">
+              <div id="inner-hscroll"></div>
+            </div>
+            <div class="beadplot-content" id="svg-cluster"></div>
           </div>
-          <div class="beadplot-content" id="svg-cluster"></div>
         </div>
         <div id="beadplot-vscroll">
           <div id="inner-vscroll"></div>
@@ -246,7 +253,7 @@
         </div>
         <div class="rightbox">
           <div style="padding-top: 10px; cursor: help;">
-            <h1><span onclick="$('#splash').dialog('open');">CoVizu</span></h1>
+            <h1><span id="intro" onclick="$('#splash').dialog('open');">CoVizu</span></h1>
           </div>
           <div style="font-size: 8pt;">
             <a href="index.html">en</a>
@@ -323,7 +330,7 @@
     <p>
       For more help, click on the
       <a style="text-decoration: none;" href="https://en.wikipedia.org/wiki/Shoshinsha_mark" target="_new">
-        &#128304;</a>icons.
+        &#128304;</a>icons or have a look at the quick tour. 
     </p>
   </div>
 

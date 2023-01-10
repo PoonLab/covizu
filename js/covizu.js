@@ -36,6 +36,99 @@ $( "#splash" ).dialog({
   autoOpen: true,
   width: 600,
   buttons: [{
+    id: "tour-button",
+    text: i18n_text.tour,
+    disabled: true,
+    click: function() {
+      $( this ).dialog( "close" )
+
+      // Walkthrough
+      const driver = new Driver({
+        allowClose: false,
+        padding: 3
+      });
+
+      console.log(document.querySelector('.hLine'))
+      
+      driver.defineSteps([
+        {
+          element: '#tree-axis',
+          popover: {
+            className: 'first-step-popover-class',
+            title: 'Phylogenetic Tree',
+            description: 'This is a time-scaled phylogenetic tree summarizing the common ancestry of different SARS-CoV-2 lineages.',
+            position: 'right'
+          }
+        },
+        {
+          element: '.clicked',
+          popover: {
+            className: 'first-step-popover-class',
+            title: 'Lineages',
+            description: 'For each lineage, we draw a rectangle to represent the range of sample collection dates. To explore the samples within a lineage, click on the rectangle to retrieve the associated beadplot.',
+          }
+        },
+        {
+          element: '.legend-container',
+          popover: {
+            title: 'Colouring the Tree',
+            description: 'Right now, the tree is coloured by divergence. Browse through the drop-down to explore other options.',
+          }
+        },
+        {
+          element: '#beadplot-container',
+          popover: {
+            title: 'Beadplot',
+            description: 'We use beadplots to visualize the different variants of SARS-CoV-2 within a lineage, where and when they have been sampled, and how they are related to each other.',
+            position: 'right'
+          }
+        },
+        {
+          element: d3.select("div#svg-cluster").selectAll("line")[0],
+          popover: {
+            title: 'Bead',
+            description: 'Body of the popover',
+            position: 'left-center'
+          }
+        },
+        {
+          element: document.querySelector('[idx="0"]'),
+          popover: {
+            title: 'Beads',
+            description: 'Beads indicate when that variant was sampled. The area of the bead is scaled in proportion to the number of times the variant was sampled that day. Colours represent the most common geographic region of the samples.',
+            position: 'left-center'
+          }
+        },
+        {
+          element: '.search-bar-container',
+          popover: {
+            title: 'Search Bar',
+            description: 'You can use the text box to find a specific sample within a specified date range. Use the "Previous" and "Next" buttons to iterate through your search results, and the "Clear" button to reset the search interface.',
+          }
+        },
+        {
+          element: '#tabs',
+          popover: {
+            title: 'Summary Tables',
+            description: 'Toggle through the different tabs to see a summary of the countries, samples and mutations of a particular beadplot or bead.',
+            position: 'left-center'
+          }
+        },
+        {
+          element: '#intro',
+          popover: {
+            title: "That's it!",
+            description: `Click back here if you ever want to revisit the quick tour. For more help, you can also click on the
+            <a style="text-decoration: none;" href="https://en.wikipedia.org/wiki/Shoshinsha_mark" target="_new">
+              &#128304;</a>icons.`,
+            position: 'bottom'
+          }
+        },
+      ]);
+      driver.start()
+    }
+  },
+  {
     id: "splash-button",
     text: i18n_text.okay,
     disabled: true,
@@ -187,6 +280,7 @@ req.done(async function() {
   var search = urlParams.get('search') || '';
 
   $("#splash-button").button("enable");
+  $("#tour-button").button("enable");
   $("#splash-extra").html("");  // remove loading animation
   
   mutations = parse_mutation_annotations(mut_annotations);
