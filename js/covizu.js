@@ -882,6 +882,20 @@ function export_csv() {
   saveAs(blob, "lineage_stats.csv");
 }
 
+function export_muttable() {
+  var csvFile = 'lineage,mutation,frequency\n';
+  var mutation_info = [], muts;
+  for (lineage in dbstats['lineages']) {
+    muts = dbstats['lineages'][lineage]['mutations']
+    for (const [mut, count] of Object.entries(muts)) {
+      mutation_info.push([`${lineage},${mut},${count}`]);
+    }
+  }
+  csvFile = csvFile + mutation_info.join("\n") + "\n";
+  blob = new Blob([csvFile], {type: "text/csv"});
+  saveAs(blob, "mutations.csv");
+}
+
 function set_height() {
   // Calculate the height for the tree container and beadplot container
   $('#tree-vscroll').css('height',$(window).height() - $('#tree-vscroll').offset().top - 50)
