@@ -850,12 +850,14 @@ function save_timetree() {
 }
 
 function save_beadplot() {
+  // download beadplot as a Newick tree string
   blob = new Blob([serialize_beadplot(cindex)],
       {type: "text/plain;charset=utf-8"});
   saveAs(blob, lineage + ".nwk");
 }
 
 function export_svg() {
+  // download beadplot as an SVG file
   var config = {filename: lineage};
 
   // Creates a duplicate of the beadplot
@@ -872,6 +874,7 @@ function export_svg() {
 }
 
 function export_csv() {
+  // write lineage-level information to CSV file for download
   var csvFile = 'lineage,mean.diffs,clock.residual,num.cases,num.variants,min.coldate,max.coldate,mean.coldate';
   var lineage_info = []
   for (tip of tips) {
@@ -883,6 +886,7 @@ function export_csv() {
 }
 
 function export_muttable() {
+  // download mutation frequencies (>=50%) for every lineage as CSV file
   var csvFile = 'lineage,mutation,frequency\n';
   var mutation_info = [], muts;
   for (lineage in dbstats['lineages']) {
