@@ -200,16 +200,16 @@ div.middlebox::-webkit-scrollbar {
 div.rightbox {
   box-sizing: border-box;
   position: absolute;
-  overflow: visible;
+  overflow: auto;
   top: 15px;
   right: 10px;
   width: 260px;
-  height: 100%;
+  height: 90%;
 }
 
 div.sticky {
   position: -webkit-sticky; /* for Safari */
-  position: sticky;
+  /* position: sticky; */
   top: 0;
   align-self: flex-start; 
 }
