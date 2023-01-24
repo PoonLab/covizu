@@ -205,13 +205,16 @@ div.rightbox {
   right: 10px;
   width: 260px;
   height: 90%;
+  z-index: 0;
 }
 
 div.sticky {
   position: -webkit-sticky; /* for Safari */
-  /* position: sticky; */
+  position: sticky;
   top: 0;
   align-self: flex-start; 
+  background-color: white;
+  z-index: 1;
 }
 
 div.legend-container {
