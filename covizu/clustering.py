@@ -227,6 +227,26 @@ def build_trees(records, args, callback=None):
     return trees, labels
 
 
+def get_diversity(indexed, labels):
+    """
+    Calculate an analogue to the nucleotide diversity (the expected number of
+    differences between two randomly sampled genomes).
+    :param indexed:  list, sets of feature indices for each variant
+    :param labels:  dict, {variant number: [sequence names]}
+    """
+    nvar = len(indexed)
+    counts = [len(v) for v in labels]  # number of genomes per variant
+    total = sum(counts)
+    result = 0
+    for i in range(0, nvar-1):
+        fi = counts[i] / total  # frequency of i-th variant
+        for j in range(i+1, nvar):
+            fj = counts[j] / total
+            ndiff = len(indexed[i] ^ indexed[j])  # symmetric difference
+            result += 2*ndiff * fi * fj
+    return result * (total / (total-1))
+
+
 def parse_args():
     """ Command-line interface """
     parser = argparse.ArgumentParser(
