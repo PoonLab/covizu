@@ -77,9 +77,11 @@ def bootstrap(union, indexed, binpath='rapidnj', callback=None, callfreq=1000):
 
     :return:  Bio.Phylo.BaseTree object
     """
+
+    # sample features with replacement
     sample = [int(len(union) * random.random()) for _ in range(len(union))]
     weights = dict([(y, sample.count(y)) for y in sample])
-    n = len(indexed)
+    n = len(indexed)  # number of variants
 
     # TODO: this is the slowest step - port to C? cache results to traverse half matrix?
     outfile = tempfile.NamedTemporaryFile('w', prefix="cvz_boot_")

@@ -336,6 +336,10 @@ def parse_args():
                              "Source: https://github.com/W-L/ProblematicSites_SARS-CoV2")
 
     parser.add_argument("--debug", type=int, help="int, limit number of rows of input xz file to parse for debugging")
+    parser.add_argument("--recode", action="store_true", help="recode features to integers; required for clustering.py; "
+                                                              "used only for debugging")
+    parser.add_argument("--max-variants", type=int, default=10000,
+                        help="used only for debugging (recoding JSON)")
 
     args = parser.parse_args()
 
@@ -352,6 +356,7 @@ def parse_args():
 
 
 if __name__ == '__main__':
+    from covizu.clustering import recode_features
     args = parse_args()
     cb = Callback()
 
@@ -370,4 +375,16 @@ if __name__ == '__main__':
     by_lineage = sort_by_lineage(filtered, callback=cb.callback)
 
     # serialize to JSON file
-    json.dump(by_lineage, args.outfile)
+    if args.recode:
+        recoded = {}
+        for lineage, records in by_lineage.items():
+            union, labels, indexed = recode_features(records, limit=args.max_variants)
+
+            # serialize tuple keys (features of union), #335
+            union = dict([("{0}|{1}|{2}".format(*feat), idx) for feat, idx in union.items()])
+            indexed = [list(s) for s in indexed]  # sets cannot be serialized to JSON, #335
+            recoded.update({lineage: {'union': union, 'labels': labels,
+                                      'indexed': indexed}})
+        json.dump(recoded, args.outfile)
+    else:
+        json.dump(by_lineage, args.outfile)
