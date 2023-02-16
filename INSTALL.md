@@ -9,7 +9,7 @@
 * [TreeTime](https://github.com/neherlab/treetime) version 0.7.5+
 * [RapidNJ](https://birc.au.dk/software/rapidnj/)
 * [git](https://git-scm.com/)
-* [Node.js](https://nodejs.org/en/download/) version 11 or higher
+* [Node.js](https://nodejs.org/en/download/) version 18.0.0+
 * [npm](https://docs.npmjs.com/about-npm-versions)
 
 If running locally (without dedicated GISAID feed):

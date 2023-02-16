@@ -1,3 +1,5 @@
+const fs = require('fs');
+
 // capture the NODE_ENV env var specified on command-line (if any)
 // NODE_ENV='TEST' node server.js
 var $HTTP_PORT;
