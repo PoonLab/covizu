@@ -200,11 +200,12 @@ div.middlebox::-webkit-scrollbar {
 div.rightbox {
   box-sizing: border-box;
   position: absolute;
-  overflow: visible;
+  overflow: auto;
   top: 15px;
   right: 10px;
   width: 260px;
-  height: 100%;
+  height: 90%;
+  z-index: 0;
 }
 
 div.sticky {
@@ -212,6 +213,8 @@ div.sticky {
   position: sticky;
   top: 0;
   align-self: flex-start; 
+  background-color: white;
+  z-index: 1;
 }
 
 div.legend-container {
@@ -269,7 +272,7 @@ div.legend {
 
 .hint {
   border-bottom: 1px dotted #000;
-  cursor: help;
+  /* cursor: help; */
 }
 
 footer {
@@ -291,6 +294,7 @@ footer {
   margin: 1px;
   padding: 1px;
   display: inline-block;
+  cursor: pointer;
 }
 
 .clicker:hover {

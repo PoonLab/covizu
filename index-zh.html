@@ -234,7 +234,7 @@
     </div>
 
     <div class="app-right">
-      <div class="sticky">
+      <div>
         <div style="top: 0; right: 0; z-index: 10; width: 270px">
           <a href="https://github.com/PoonLab/covizu" target=“_new” class="github-corner" aria-label="View source on GitHub">
             <!-- https://github.com/tholman/github-corners -->
@@ -246,25 +246,28 @@
           </a>
         </div>
         <div class="rightbox">
-          <div style="padding-top: 10px; cursor: help;">
-            <h1><span onclick="$('#splash').dialog('open');">CoVizu</span></h1>
-          </div>
-          <div style="font-size: 8pt;">
-            <a href="index.html">en</a>
-            <a href="index-es.html">es</a>
-            <a href="index-fr.html">fr</a>
-            <a href="index-zh.html">zh</a>
-          </div>
-          <div style="padding-top: 10px; padding-right: 6px;">
-            <h3> SARS-CoV-2（hCoV-19）基因组变异的近实时可视化</h3>
-          </div>
-          <span style="width: 250px">
-            <div class="gisaid">数据来源于&nbsp;<a href="https://gisaid.org" target="_new">
-                <img src="https://www.gisaid.org/fileadmin/gisaid/img/schild.png"
-                     height="24px"/>
-              </a>
+          <div class="sticky">
+            <div style="padding-top: 10px; cursor: help;">
+              <h1><span id="intro" onclick="$('#splash').dialog('open');">CoVizu</span></h1>
             </div>
-          </span>
+            <div style="font-size: 8pt;">
+              <a href="index.html">en</a>
+              <a href="index-es.html">es</a>
+              <a href="index-fr.html">fr</a>
+              <a href="index-zh.html">zh</a>
+            </div>
+            <div style="padding-top: 10px; padding-right: 6px;">
+              <h3>SARS-CoV-2（hCoV-19）基因组变异的近实时可视化</h3>
+            </div>
+            <span style="width: 250px">
+              <div class="gisaid">数据来源于&nbsp;<a href="https://gisaid.org" target="_new">
+                  <img src="https://www.gisaid.org/fileadmin/gisaid/img/schild.png"
+                       height="24px"/> 
+                </a>
+              </div>
+            </span>
+
+          </div>
           <p>
             <div style="font-size: 0.9em;" id="div-last-update"></div>
             <div style="font-size: 0.9em;" id="div-number-genomes"></div>
@@ -289,7 +292,10 @@
             </div>
             <div id="tabs-3">
               <div id="muttable-hint" class="hint">
-                表型注释由<a href="https://github.com/nodrogluap/pokay">Pokay获得</a>, 策办人是 <a href="https://people.ucalgary.ca/~gordonp/">保罗·戈登</a>和他的团队.
+                表型注释由<a href="https://github.com/nodrogluap/pokay">Pokay获得</a>, 
+                策办人是 <a href="https://people.ucalgary.ca/~gordonp/">保罗·戈登</a>和他的团队.
+                <br/>
+                <div class="clicker" title="Download mutation frequencies as CSV" onclick="export_muttable();">&nbsp;&nbsp;CSV&nbsp;&nbsp;</div>
               </div>
               <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="mut-table"></div>
               <table id="muttable-legend" class="legend"></table>

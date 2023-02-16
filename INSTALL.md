@@ -37,12 +37,43 @@ https://filogeneti.ca/covizu/data/:
 * `clusters.json`
 and save your local copies under `covizu/data/`.
 
-Next, run the following commands:
+Next, make 3 separate environment files for the NodeJS server. 
+#### `.env.test`
+```
+HTTP_PORT='8001'
+NODE_ENV='TEST'
+DATA_FOLDER='data_test'
+```
+#### `.env.dev`
+```
+HTTP_PORT='8001'
+NODE_ENV='DEV'
+DATA_FOLDER='data'
+```
+#### `.env.prod` (if running a production server with SSL enabled)
+```
+HTTP_PORT='8001'
+HTTPS_PORT='8002'
+NODE_ENV='PROD'
+DATA_FOLDER='data'
+PRVTKEY='/path/to/private-key-file.pem'
+CRT='/path/to/certificate-file.crt'
+```
+
+Finally, run the following commands:
 ```
  cd covizu
  npm install
  npm start
 ```
 
-Once you launch the local webserver with `npm start`, allow up to a minute for the server to initialize and then 
-navigate your browser to `localhost:8001`.
+Once you launch the local webserver with `npm start`, allow up to a minute for the server to initialize and then navigate your browser to `localhost:8001`.
+
+To run the end-to-end tests with [Cypress](http://cypress.io) start the test server
+```
+npm test
+```
+and in a new terminal terminal window run 
+```
+npx cypress run
+```
