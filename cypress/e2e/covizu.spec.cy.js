@@ -129,7 +129,7 @@ describe('Tooltips', () => {
             var id_number = id.substring(3)
             cy.window().then((win) => {
                 // Number of variants
-                // cy.get('.tooltip').contains(`Sampled: ${win.tips[id_number]['varcount']}`)
+                cy.get('.tooltip',{timeout:10000}).contains(`Sampled: ${win.tips[id_number]['varcount']}`)
                 // cy.get('.tooltip').contains(`Displayed: ${win.tips[id_number]['sampled_varcount']}`)
                 // // Regions: Num of Cases 
                 // cy.wrap(Object.keys(win.tips[id_number]['allregions'])).each(($el, index) => {cy.get('.tooltip').contains(`${$el}: ${Object.values(win.tips[id_number]['allregions'])[index]}`)})
