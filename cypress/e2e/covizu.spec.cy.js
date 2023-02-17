@@ -1,5 +1,5 @@
 describe('CoVizu page', () => {
-    beforeEach(()=>{cy.visit("http://localhost:8001")})
+    beforeEach(()=>{cy.visit("http://localhost:8001",{timeout:10000})})
 
     it('Welcome dialog opens automatically', () => {
         cy.get('#splash').should('be.visible')
