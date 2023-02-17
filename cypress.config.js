@@ -3,8 +3,8 @@ module.exports = {
   pageLoadTimeout : 10000,
   requestTimeout : 10000,
   defaultCommandTimeout: 10000,
-  viewportWidth: 1000,
-  viewportHeight: 600,
+  viewportWidth: 1920,
+  viewportHeight: 1080,
   e2e: {
     testIsolation: false,
     baseUrl: 'http://localhost:8001',

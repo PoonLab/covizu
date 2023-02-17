@@ -1,5 +1,5 @@
 describe('CoVizu page', () => {
-    beforeEach(()=>{cy.visit("http://localhost:8001",{timeout:10000})})
+    beforeEach(()=>{cy.visit("http://localhost:8001")})
 
     it('Welcome dialog opens automatically', () => {
         cy.get('#splash').should('be.visible')
@@ -7,7 +7,7 @@ describe('CoVizu page', () => {
         // this test fails in the test-environment but passes in the dev-environment (size of data)
         // cy.get('#splash-button').should('be.disabled') 
 
-        cy.get('#splash-button', {timeout: 8000}).click().should('not.be.visible');
+        cy.get('#splash-button').click().should('not.be.visible');
 
     })
     
@@ -30,7 +30,7 @@ describe('CoVizu page', () => {
 describe('Help dialogs', () => {
     beforeEach(()=>{
         cy.visit("http://localhost:8001");
-        cy.get('#splash-button', {timeout: 10000}).click();
+        cy.get('#splash-button').click();
 
     })
     it('Open and close', () => {
@@ -41,7 +41,6 @@ describe('Help dialogs', () => {
         })
     })
 })
-
 
 
 describe('Search Interface', () => {
@@ -56,7 +55,7 @@ describe('Search Interface', () => {
         
             default: // by default we reload the page and close the spash-window
                 cy.visit("http://localhost:8001")
-                cy.get('#splash-button', {timeout: 10000}).click();
+                cy.get('#splash-button').click();
                 break;
         }
     })
@@ -116,45 +115,35 @@ describe('Search Interface', () => {
     })
 })
 
-
-
 describe('Tooltips', () => {
     it('Appear on hover over cluster', () => {
-        cy.get('rect:visible').first().trigger('mouseover')
+        cy.get('[id=id-0]').trigger('mouseover');
         cy.get('.tooltip').should('be.visible').should('have.length', 1)
     })
     it('Cluster tooltips contain relevant and correct information', () => {
-        cy.get('rect:visible').first().trigger('mouseover').invoke('attr','id').as('id')
-        cy.get('@id').then(id => {
-            var id_number = id.substring(3)
-            cy.window().then((win) => {
-                // Number of variants
-                cy.get('.tooltip',{timeout:10000}).contains(`Sampled: ${win.tips[id_number]['varcount']}`)
-                cy.get('.tooltip',{timeout:10000}).contains(`Displayed: ${win.tips[id_number]['sampled_varcount']}`)
-                // // Regions: Num of Cases 
-                // cy.wrap(Object.keys(win.tips[id_number]['allregions'])).each(($el, index) => {cy.get('.tooltip').contains(`${$el}: ${Object.values(win.tips[id_number]['allregions'])[index]}`)})
-                // // Mean diffs from root
-                // cy.get('.tooltip').contains(`Mean diffs from root: ${Math.round(100*win.tips[id_number]['mean_ndiffs'])/100}`) 
-                // // Deviation from clock
-                // cy.get('.tooltip').contains(`Deviation from clock: ${win.tips[id_number]['residual'].toFixed(2)}`)
-                // // Collection dates (UTC)
-                // cy.get('.tooltip').contains(`${win.tips[id_number]['first_date'].toISOString().slice(0, 10)} / ${win.tips[id_number]['last_date'].toISOString().slice(0, 10)}`)
+        cy.get('[id=id-0]').trigger('mouseover');
+        cy.window().then((win)=>{
+            cy.get('.tooltip').contains(`Sampled: ${win.tips[0]['varcount']}`)
+            cy.get('.tooltip').contains(`Displayed: ${win.tips[0]['sampled_varcount']}`)
+            cy.wrap(Object.keys(win.tips[0]['allregions'])).each(($el, index) => {
+                cy.get('.tooltip').contains(`${$el}: ${Object.values(win.tips[0]['allregions'])[index]}`)
             })
+            cy.get('.tooltip').contains(`Mean diffs from root: ${Math.round(100*win.tips[0]['mean_ndiffs'])/100}`) 
+            cy.get('.tooltip').contains(`Deviation from clock: ${win.tips[0]['residual'].toFixed(2)}`)
+            cy.get('.tooltip').contains(`${win.tips[0]['first_date'].toISOString().slice(0, 10)} / ${win.tips[0]['last_date'].toISOString().slice(0, 10)}`)
         })
     })
     it('Appear on hover over bead', () => {
         cy.get('circle:visible').first().trigger('mouseover')
         cy.get('.tooltip').should('be.visible').should('have.length', 1)
     })
-    
-    
     it('Beadplot tooltips contain relevant information', () => {
         cy.get('rect:visible').first().click().invoke('attr','id').as('lineage_id')
         cy.get('@lineage_id').then(id => {
             var lineage_id = id.substring(3)
             cy.window().then((win) => {
                 // Tooltip for first line with stroke-width of 3 (Assuming that it is parent)
-                cy.get('[stroke-width="3"]',{timeout:10000}).first().trigger('mouseover', {force: true})
+                cy.get('[stroke-width="3"]').first().trigger('mouseover', {force: true})
                 // cy.get('.tooltip').contains(`Unique collection dates: ${win.beaddata[win.tips[lineage_id]["cluster_idx"]]["variants"][0]["numBeads"]}`)
                 // cy.get('.tooltip').contains(`${win.beaddata[win.tips[lineage_id]["cluster_idx"]]["variants"][0]["x1"].toISOString().slice(0, 10)} / ${win.beaddata[win.tips[lineage_id]["cluster_idx"]]["variants"][0]["x2"].toISOString().slice(0, 10)}`)
                 // var regions = win.tabulate(win.beaddata[win.tips[lineage_id]["cluster_idx"]]["variants"][0]["region"])
