@@ -1,0 +1,23 @@
+%% This is a https://mermaid-js.github.io/ document
+%% e.g., to compile PNG, run `mmdc -i build-timetree.mmd -o process-feed.png`
+flowchart TB
+  subgraph build_timetree
+    direction TB
+
+    by_lineage(dict, lineage:features)
+    style by_lineage stroke:#00F,stroke-width:3px
+
+    repgenomes(dict, header:sequence)
+    by_lineage-->|treetime.retrieve_genomes|repgenomes
+    newick(Newick tree string)
+    repgenomes-->|treetime.fasttree|newick
+    nexus(NEXUS tree)
+    newick-->|treetime.build_timetree|nexus
+    repgenomes-->|treetime.build_timetree|nexus
+    phylo(Phylo.BaseTree)
+    residuals(float, clock residuals)
+    nexus-->residuals
+    nexus-->|treetime.parse_nexus|phylo
+    phylo-->|serialize|treetime.nwk
+  end
+  style treetime.nwk stroke:#F00,stroke-width:2px

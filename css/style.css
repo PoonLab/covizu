@@ -1,0 +1,821 @@
+/* load fonts */
+@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&display=swap');
+
+* {
+  margin: 0;
+}
+
+/* animate GitHub badge */
+/* https://github.com/tholman/github-corners */
+.github-corner:hover .octo-arm {
+  animation:octocat-wave 560ms ease-in-out
+}
+@keyframes octocat-wave {
+  0%,100%{transform:rotate(0)}
+  20%,60%{transform:rotate(-25deg)}
+  40%,80%{transform:rotate(10deg)}
+}
+@media (max-width:500px) {
+  .github-corner:hover .octo-arm {
+    animation:none
+  }
+  .github-corner .octo-arm {
+    animation:octocat-wave 560ms ease-in-out
+  }
+}
+
+body {
+  font: .9em/1.2 Lato, sans-serif;
+  overflow-y: hidden;
+}
+
+h1, h2, h3, h4 {
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+
+h1 {
+  font-weight: 900;
+}
+
+h3 {
+  font-size: 1.1em;
+  font-weight: 300;
+  color: #5e5e5e;
+}
+
+p {
+  margin: 1em 0 1em 0;  /* top right bottom left */
+}
+
+svg text {
+  font: 1em/1.2 Lato, sans-serif;
+}
+
+a, a:focus {
+  color: inherit;
+  border: inherit;
+  outline: none;
+}
+
+/* ------------------------------ DIV -------------------------------- */
+div.breaker {
+  white-space: pre;
+}
+
+div.gisaid {
+  white-space: nowrap;
+  font-size: 1.1em;
+  font-weight: 700;
+  color: #000;
+  display:flex;
+  flex-direction:row;
+  align-items: center;
+  margin: 5px 0 5px 0;
+}
+
+div.tooltip{
+  box-sizing: border-box;
+  position: absolute;
+  width: 200px;
+  max-width: 300px;
+  text-align: left;
+  padding: 12px;
+  font: 12px sans-serif;
+  background: #fffaff;
+  border: 1px solid #4f2683;
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+
+div.hint {
+  font-size: 0.8em;
+  color: #5e5e5e;
+  padding: 3px 0 12px 0;  /* top right bottom left */
+}
+
+div.floattitle {
+  cursor: default;
+  padding-top: 5px;
+  top: 20px;
+  z-index:11;
+  width: 100%;
+  background-color: rgba(255,255,255,0.9);
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+/* Keeps the entire "Edge cutoff" section together */
+div.edge-cuttoff {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+div.app {
+  display: flex;
+  justify-content: space-between;
+}
+
+div.app-left {
+  flex: 1;
+}
+
+div.app-right {
+  display: flex;
+  flex-direction: row;
+  margin-left: 10px;
+}
+
+div.tree-beadplot {
+  display: flex;
+  flex-direction: row;
+}
+
+.tree-container {
+  width: 250px;
+}
+
+.tree-content {
+  overflow-y: scroll;
+}
+
+.tree-content {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.tree-content::-webkit-scrollbar {
+  display: none;
+}
+
+.beadplot-content {
+  overflow: scroll;
+  scrollbar-track-color: white;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.beadplot-content::-webkit-scrollbar {
+  display: none;
+}
+
+div.leftbox {
+  overflow: visible;
+  top: 90px;
+  left: 10px;
+  width: 250px;
+  height: 100%;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  margin: 5px 5px 0px 9px;
+}
+
+div.leftbox::-webkit-scrollbar {
+  display: none;
+}
+
+div.middlebox {
+  flex-grow: 1;
+  box-sizing: border-box;
+  overflow: auto;
+  top: 100px;
+  left: 260px;
+  width: 500px;
+  height: 100%;
+  -ms-overflow-style: none;
+  /* scrollbar-width: none; */
+  margin: 5px 5px 0px 9px;
+}
+
+/*
+div.middlebox::-webkit-scrollbar {
+  display: none;
+}
+ */
+
+div.rightbox {
+  box-sizing: border-box;
+  position: absolute;
+  overflow: auto;
+  top: 15px;
+  right: 10px;
+  width: 260px;
+  height: 90%;
+  z-index: 0;
+}
+
+div.sticky {
+  position: -webkit-sticky; /* for Safari */
+  position: sticky;
+  top: 0;
+  align-self: flex-start; 
+  background-color: white;
+  z-index: 1;
+}
+
+div.legend-container {
+  width: 250px;
+  margin: 5px;
+}
+
+div.search-bar-container {
+  margin: 4px 5px 0px 5px;
+  /* flex: grow; */
+}
+
+div.legend {
+  font-size: 0.8em;
+}
+
+.legend-swatch {
+  width: 10px;
+  height: 10px;
+  margin: 0 0.5em 0 0;
+}
+.legend-item {
+  break-inside: avoid;
+  display: flex;
+  align-items: center;
+  padding-bottom: 1px;
+}
+.legend-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100% - 10px - 0.5em);
+}
+
+.ui-tabs .ui-tabs-nav {
+  padding: 0;
+}
+.ui-tabs .ui-tabs-nav li.ui-tabs-active {
+  background: white;
+  border-top-color: #c5c5c5;
+  border-left-color: #c5c5c5;
+  border-right-color: #c5c5c5;
+}
+.ui-tabs .ui-tabs-nav li.ui-tabs-active .ui-tabs-anchor {
+  color: black;
+  background: white;
+}
+.ui-tabs .ui-state-default a, .ui-state-default a:link, .ui-state-default a:visited {
+  color: grey;
+  background: #e9e9e9;
+}
+.ui-tabs .ui-tabs-panel {
+  padding: 3px;
+}
+
+.hint {
+  border-bottom: 1px dotted #000;
+  /* cursor: help; */
+}
+
+footer {
+  margin: 5px;
+  text-align: center;
+  position: fixed;
+  bottom: 10px;
+  right: 30%;
+  z-index: 150;
+  background-color: rgba(255,255,255,0.7);
+  font-size: 0.8em;
+}
+
+.clicker {
+  background-color: #999;
+  color: white;
+  font-size: 8pt;
+  vertical-align: middle;
+  margin: 1px;
+  padding: 1px;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.clicker:hover {
+  background-color: #777;
+}
+
+button.ack {
+  /* https://stackoverflow.com/questions/1367409/how-to-make-button-look-like-a-link */
+  background: none!important;
+  border: none;
+  padding: 0!important;
+  cursor: pointer;
+  font-size: 1em;
+}
+
+.treeaxis line, path {
+  stroke: lightslategrey;
+}
+.treeaxis text {
+  fill: lightslategrey;
+}
+
+.hover {
+  background-color: rgba(0, 0, 0, .5);
+}
+
+.textbox {
+  width: 90%;
+  margin: 1em auto;
+}
+
+div#vedge-slider {
+  width: 150px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+#custom-handle {
+  width: 3em;
+  height: 1.6em;
+  top: 50%;
+  font-size: 8pt;
+  margin-top: -.8em;
+  text-align: center;
+  line-height: 1.6em;
+}
+
+circle.default{
+  fill-opacity: 1;
+  stroke: black;
+}
+
+circle.selectionLC{
+  fill-opacity: 1;
+  stroke: black;
+}
+
+.not_SelectedBead{
+  fill-opacity: 0.3;
+}
+
+.SelectedBead{
+  fill-opacity: 1;
+  stroke: black;
+}
+
+rect.default{
+  fill-opacity: 0.8;
+}
+
+rect.SelectedCluster{
+  fill-opacity: 0.9;
+}
+
+rect.not_SelectedCluster{
+  fill-opacity: 0.1;
+}
+
+rect.clicked{
+  fill-opacity: 1;
+  filter: 
+    saturate(1.2) brightness(0.85) contrast(135%)
+}
+
+rect.SelectedCluster:hover{
+  stroke: gray;
+  stroke-width: 2;
+}
+
+rect.not_SelectedCluster.clicked {
+  fill-opacity: 0.1;
+}
+
+rect:hover{
+  fill-opacity: 1;
+  filter: 
+    saturate(1.2) brightness(0.85) contrast(135%)
+}
+
+rect[txt_hover="yes"]{
+  fill-opacity: 1 !important;
+  filter: 
+    saturate(1.2) brightness(0.85) contrast(135%)
+}
+
+rect.SelectedCluster[txt_hover="yes"]{
+  stroke: gray;
+  stroke-width: 2;
+}
+
+text.clicked{
+  font-weight: 900;
+  font-size: 0.8em !important;
+}
+
+#search-bar {
+    display: inline-block;
+}
+
+#search-input {
+  width: 300px;
+}
+
+
+.or {
+  margin-right: 5px;
+  margin-left: 5px;
+}
+
+.dates{
+  width: 90px;
+  position: relative;
+  z-index: 15;
+}
+
+#navigation {
+  display: inline-block;
+}
+
+#search_stats {
+  color: #000;
+  display: inline-block;
+}
+
+.disabled_stats{
+  color: #ccc !important;
+}
+
+/*
+details ::-webkit-details-marker {
+    color: gray;
+    display: none;
+}
+
+details summary::after{
+  content: "";
+  position: absolute;
+}
+
+[open] summary::after{
+   transform:rotate(90deg) ;
+}
+[open] summary, summary:hover {
+    box-shadow: inset 1px 0 #ddd, inset -1px 0 #ddd;
+     max-height: 100px;
+}
+
+details + dl {
+    max-height: 0;
+    transition: all .25s;
+    margin: 0 0 1rem;
+    overflow: hidden;
+}
+[open] + dl{
+  max-height: 100px;
+}
+*/
+
+.box a{
+   display:block;
+   text-decoration: none;
+   color: currentcolor;
+}
+.box {
+    position: absolute;
+    background-color: #fff;
+    min-width: 100px;
+    max-height: 0;
+    overflow: hidden;
+}
+
+.bar {
+  display: flex;
+  margin: 5px;
+  z-index:10;
+}
+.bar form {
+    height: 42px;
+}
+.bar input {
+    border-radius: 1px;
+    border: 1px solid #324B4E;
+    background: #fff;
+    transition: .3s linear;
+}
+.bar input:focus {
+    width: 100px;
+}
+
+#svg-timetreeaxis {
+    top: 58px;
+    /* background-color: #fffa; */
+}
+
+#svg-clusteraxis {
+    top: 58px;
+    /* background-color: #fffa; */
+    overflow: hidden;
+    display: block;
+}
+
+/* Horizontal scrollbar for beadplot */
+#beadplot-hscroll {
+  overflow-x: scroll;
+  overflow-y: hidden;
+  height: 16px;
+}
+
+#inner-hscroll {
+  height: 16px;
+}
+
+/* Vertical scrollbar for beadplot */
+#beadplot-vscroll {
+  overflow-x: hidden;
+  overflow-y: scroll;
+  width: 20px;
+}
+
+#inner-vscroll {
+  width: 20px;
+}
+
+/* Vertical scrollbar for time-scaled tree */
+#tree-vscroll {
+  overflow-x: hidden;
+  overflow-y: scroll;
+  width: 20px;
+}
+
+#tree-inner-vscroll {
+  width: 20px;
+}
+
+.toplabel {
+    top: 40px;
+    /* background-color: #fffa; */
+}
+
+table {
+    table-layout: fixed;
+    width: 100%;
+    overflow-wrap: anywhere;
+    font: 0.775em/1.2 Lato, sans-serif;
+}
+
+table::-webkit-scrollbar:horizontal {
+  display: none;
+}
+
+th, td {
+    text-align: left;
+    padding: 0 1em 0.5ex 0;
+}
+
+/* Add zebra stripping for rows */
+tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+thead tr th {
+    border-bottom: 1px solid black;
+}
+
+
+th a, td a {
+    display: block;
+    width: 100%;
+}
+
+th a.sort-by {
+    padding-right: 18px;
+    position: relative;
+}
+
+a.sort-by:before, a.sort-by:after {
+    border: 4px solid transparent;
+    content: "";
+    display: block;
+    height: 0;
+    right: 10px;
+    top: 50%;
+    position: absolute;
+    width: 0;
+}
+a.sort-by:before {
+    border-bottom-color: #666;
+    margin-top: -9px;
+}
+
+a.sort-by:after {
+    border-top-color: #666;
+    margin-top: 1px;
+}
+
+.hide-before:before, .hide-after:after {
+    display: none !important;
+}
+
+#loading{
+  vertical-align: middle;
+  padding-right: 5px;
+  width: 18px;
+}
+
+
+/*** Slider ***/
+.arrow {
+  text-decoration: none;
+  background-color: #f1f1f1;
+  color: black;
+  height: 18px;
+  margin-top: -0.1em;
+  font-weight: 400;
+  font-size: 22px;
+  width: 20px;
+  text-align: center;
+  user-select:none;
+}
+
+.arrow:hover{
+  background-color: #ddd;
+  cursor: pointer;
+}
+
+.arrow.clicked {
+  background-color: #ddd;
+  cursor: pointer;
+}
+
+.ui-slider-active {
+  outline: -webkit-focus-ring-color auto 1px;
+}
+
+/* Toogle Switch - https://www.w3schools.com/howto/howto_css_switch.asp */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 31px;
+  height: 16px;
+}
+
+.switch input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch-recombinant {
+  position: relative;
+  display: inline-block;
+  width: 31px;
+  height: 16px;
+}
+
+.switch-recombinant input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 9px;
+  width: 9px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: #999;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #999;
+}
+
+input:checked + .slider:before {
+  -webkit-transform: translateX(14px);
+  -ms-transform: translateX(14px);
+  transform: translateX(14px);
+}
+
+.slider.round {
+  border-radius: 21px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+.phenotype_icon {
+  padding-left: 3px;
+  padding-right: 3px;
+  max-height: 8px;
+}
+
+table.legend {
+  font-size: 0.5em;
+  color: #5e5e5e;
+  padding: 3px 0 3px 0;  
+  margin-top: 10px;
+}
+
+.legend td {
+  background-color: #ffffff !important;
+}
+
+/* Modal to alert the user that the search query is unknown */
+.modal {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  background: rgba(0, 0, 0, 0.58);
+  width: 100%;
+  height: 100%;
+  display: none;
+  z-index: 100;
+}
+
+h2.modal-title {
+  margin-bottom: 25px;
+}
+
+.modal-content {
+  width: 400px;
+  margin: 0 auto;
+  padding: 40px;
+  margin-top: 200px;
+  border-radius: 10px;
+  background: #fff;
+  position: relative;
+}
+
+.closeBtn {
+  position: absolute;
+  top: 5px;
+  right: 12px;
+  font-size: 17px;
+  color: #7c7575;
+  text-decoration: none;
+}
+
+/* Slider to filter the tree by most recent collection dates */
+
+#tree-slider.ui-slider-horizontal {
+  appearance: none;
+  width: 79%; 
+  height: 5px;
+  opacity: 0.7; /* Set transparency (for mouse-over effects on hover) */
+  transition: opacity .2s;
+  margin-top: 20px;
+  border-radius: 3px;
+  border: 0.1px solid #ccc;
+}
+
+#tree-slider-handle.ui-slider-handle {
+  width: 0;
+  height: 0;
+  background: transparent;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 14px solid #bbb;
+  border-bottom: none;
+}
+
+#cutoff-line {
+  position: absolute;
+  width: 1px;
+  background: #bbb;
+  opacity: 50%;
+}
+
+#cutoff-date {
+  color: #666;
+  position: absolute;
+  font-size: 10px;
+  margin: 2.5px 0px 25px -10px;
+}
+
+#loading-tree{
+  position: absolute;
+  width: 12px;
+  bottom: -15px;
+  left: 45px;
+  display:inline;
+  float: left;
+}

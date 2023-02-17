@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<head>
+  <meta charset="UTF-8"/>
+  <title>CoVizu</title>
+  <meta name="description"
+        content="CoVizu: Real-time analysis and visualization of the global diversity of SARS-CoV-2 genomes.">
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <link rel="stylesheet" href="css/style.css">
+
+  <script src="js/jquery.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+  <script src="js/d3.js"></script>
+  <script src="js/d3-scale.js"></script>
+  <script src="js/FileSaver.js"></script>
+  <script src="js/d3-save-svg.min.js"></script>
+</head>
+
+<body>
+  <script>
+    /*
+     Language translations in other files.
+     Change this for every index-lang.html
+     Note: cannot display HTML in title attribute, i.e., &eacute; will not render.
+     i18n = internationalization
+     */
+    var i18n_text = {
+      // time-tree legend titles
+      region_legend: {
+        "Africa": "非洲",  // English -> lang
+        "Asia": "亚洲",
+        "China": "中国",
+        "Europe": "欧洲",
+        "North America": "北美",
+        "Oceania": "大洋洲",
+        "South America": "南美"
+      },
+      sample_legend: "样本大小 (log10)",
+      coldate_legend: "最后收集日期",
+      diverge_legend: "趋异 (严格分子钟)",
+      total: "总计",
+      sampled: "采样",
+      displayed: "显示",
+
+      // side bar data statistics
+      last_update: "最新更新",
+      number_genomes: "基因组数",
+      number_lineages: "世系数",
+      number_cases: "案件数",
+      region: "地区",
+      countries: "国家",
+      samples: "样本",
+
+      // tooltips
+      tip_diffs: "与根的平均差异",
+      tip_residual: "与钟的偏差",
+      tip_cases: "案件数",
+      tip_varcount: "变异数量",
+      tip_coldates: "收集日期",
+      tip_mutations: "变异",
+
+      vedge_parent: "父节",
+      vedge_child: "子节",
+      vedge_distance: "基因组距离(分支的长度)",
+      vedge_support: "有这个分支的树（百分比）",
+      vedge_coldate: "采集日期",
+
+      hedge_unique_dates: "收集日期数",
+      hedge_coldates: "采集日期",
+
+      sample_orig_lab: "原始实验室",
+      sample_subm_lab: "提交实验室",
+      sample_authors: "作者",
+
+      // miscellaneous
+      okay: "好的",
+      got_it: "知道了",
+      loading: `加载请稍候...`,
+      loading_json: "从服务器加载JSON数据 (~十秒)...",
+      country_theaders: ["地区", "国家", "数"],
+      sample_theaders: ["登记号", "名", "日期"],
+      mutation_threaders: ["突变", "频率", "表型"],
+      phenotypes: {
+        'Vaccine neutralization efficacy': '疫苗中和效果', //English -> translated
+        'Anthropozoonotic events': '人畜共患事件', 
+        'Gene expression increase': '基因表现增加', 
+        'ACE2 receptor binding affinity': 'ACE2受体结合亲和力',
+        'Monoclonal antibody serial passage escape': '单克隆抗体串行通道逃逸', 
+        'Convalescent plasma escape': '恢复期血浆逃逸', 
+        'Antibody epitope effects': '抗体表位效应'
+      }
+    };
+
+  </script>
+
+  <div class="tooltip" id="tooltipContainer"></div>
+
+  <div class="modal">
+    <div class="modal-content">
+      <h2 class="modal-title">Search Error</h2>
+      <div class="modal-text"></div>
+      <a class="closeBtn" href="javascript:void(0)">x</a>
+    </div>
+  </div>
+
+  <div class="app">
+    <div class="app-left">
+      <div class="bar" style="top: 10px; left: 10px; z-index:10" >
+        <!-- <span style="display: inline-block; width: 250px; vertical-align: top"> -->
+        <div class="legend-container">
+          <label for="select-tree-colours">选择树的颜色：</label>
+          <select name="tree-colours" id="select-tree-colours">
+            <option value="Region">区域</option>
+            <option value="No. samples">样本编号</option>
+            <option value="Collection date">收集日期</option>
+            <option value="Divergence" selected>趋异</option>
+          </select>
+          <div class="legend" id="div-region-legend"></div>
+          <div class="legend" id="svg-sample-legend"></div>
+          <div class="legend" id="svg-coldate-legend"></div>
+          <div class="legend" id="svg-diverge-legend"></div>
+        </div>
+        <!-- </span> -->
+
+        <!-- <span style="display: inline-block; vertical-align: top"> -->
+        <div class="search-bar-container">
+          <div id="search-bar">
+            <input type="search" id="search-input"
+                    placeholder="e.g., B.1.351 or EPI_ISL_434070 or Canada">
+            <input id="start-date" class="dates"
+                      placeholder="Start">
+            to
+            <input id="end-date" class="dates"
+                      placeholder="End">
+            <span onclick="$('#help-search').dialog('open');" style="cursor: help">&#128304;</span>
+          </div>
+          <br/>
+          
+          <div id="navigation" style="padding-top: 5px">
+            <button type="button" id="search-button">搜索</button>
+            <button type="button" id="clear_button">清除</button>
+            <button type="button" id="previous_button">上一项</button>
+            <button type="button" id="next_button">下一项</button>
+            <div id="search_stats">
+              <span id="curr_hit" style="float: left;">0</span>
+              <span style="float: left;">分，共</span>
+              <span id="tot_hits" style="float: left;">0</span>
+              <span>分</span>
+            </div>
+          </div>
+          <div style="padding-top: 5px;">
+            <img id="loading" src="img/Loading_icon_cropped.gif"/>
+            <span id="loading_text"></span>
+            <span id="error_message"></span>
+          </div>
+        </div>
+        <!-- </span> -->
+      </div>
+    
+      <div class="tree-beadplot">
+        <div id="tree-vscroll">
+          <div id="tree-inner-vscroll"></div>
+        </div>
+        <div class="leftbox">
+          <div class="floattitle" id="tree-title">
+            时间尺度的种系发生树
+            <span class="clicker" title="Download time-scaled tree" onclick="save_timetree()">
+              &nbsp;&nbsp;NWK&nbsp;&nbsp;
+            </span>
+            <div class="clicker" title="Download lineage statistics as CSV" onclick="export_csv();">&nbsp;&nbsp;CSV&nbsp;&nbsp;</div>
+            <span title="Timetree help" onclick="$('#help-timetree').dialog('open');" style="cursor: help">&#128304;</span>
+            <label class="recombinant" style="vertical-align: middle;">Display Recombinants:&nbsp;</label>
+            <label class="switch-recombinant">
+              <input type="checkbox" id="display-option" checked="checked">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div id="tree-cutoff" style="position: relative;">
+            <div id="cutoff-date"></div>
+            <img id="loading-tree" src="img/Loading_icon_cropped.gif"/>
+          </div>
+          <div class="floattile" id="tree-slider">
+            <div id="tree-slider-handle" class="ui-slider-handle"></div>
+          </div>
+          <div id="cutoff-line" style="visibility: hidden"></div>
+          <div class="floattitle" id="svg-timetreeaxis" style="top: 58px; z-index: 13"></div>
+          <div class="tree-container">
+            <div class="tree-content" id="svg-timetree" style="width: 250px; max-width: 250px;">
+              <div>
+                <div class="recombtitle" style="display: flex; justify-content: center; font-size: 13px; padding-bottom: 2px; width: 40%">Recombinants</div>
+                <div class="recombinant-tree-content" id="svg-recombinants" style="width: 250px; max-width: 250px; padding: 5px"></div>
+              </div>
+              <div style="display: flex; justify-content: center; font-size: 13px; padding-bottom: 2px; width: 50%">Non-Recombinants</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="middlebox">
+          <div class="floattitle" id="beadplot-title">
+            <div>珠图</div>
+            <div class="clicker" title="Download beadplot as tree" onclick="save_beadplot();">&nbsp;&nbsp;NWK&nbsp;&nbsp;</div>
+            <div class="clicker" title="Save beadplot as SVG" onclick="export_svg();">&nbsp;&nbsp;SVG&nbsp;&nbsp;</div>
+            <div title="Beadplot help" onclick="$('#help-beadplot').dialog('open');" style="cursor: help">&#128304;</div>
+
+            <div class="edge-cuttoff">
+              <label style="vertical-align: middle;" for="vedge-slider">边的阈值:&nbsp;&nbsp;</label>
+              <div id="left-arrow" class="arrow">
+                <div style="transform: translateY(-25%);" class="larrow">&#8249;</div>
+              </div>
+              <div id="vedge-slider">
+                <div id="custom-handle" class="ui-slider-handle"></div>
+              </div>
+              <div id="right-arrow" class="arrow">
+                <div style="transform: translateY(-25%);" class="rarrow">&#8250;</div>
+              </div>
+            </div>
+                        
+            <label class="expand" style="vertical-align: middle;">&nbsp;&nbsp;展开:&nbsp;</label>
+            <label class="switch">
+              <input type="checkbox" id="expand-option">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div class="floattitle" id="svg-clusteraxis" style="top: 58px; z-index: 14"></div>
+          <div id="beadplot-hscroll">
+            <div id="inner-hscroll"></div>
+          </div>
+          <div class="beadplot-content" id="svg-cluster"></div>
+        </div>
+        <div id="beadplot-vscroll">
+          <div id="inner-vscroll"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-right">
+      <div>
+        <div style="top: 0; right: 0; z-index: 10; width: 270px">
+          <a href="https://github.com/PoonLab/covizu" target=“_new” class="github-corner" aria-label="View source on GitHub">
+            <!-- https://github.com/tholman/github-corners -->
+            <svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0; z-index: 21" aria-hidden="true">
+              <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
+              <path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path>
+              <path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path>
+            </svg>
+          </a>
+        </div>
+        <div class="rightbox">
+          <div class="sticky">
+            <div style="padding-top: 10px; cursor: help;">
+              <h1><span id="intro" onclick="$('#splash').dialog('open');">CoVizu</span></h1>
+            </div>
+            <div style="font-size: 8pt;">
+              <a href="index.html">en</a>
+              <a href="index-es.html">es</a>
+              <a href="index-fr.html">fr</a>
+              <a href="index-zh.html">zh</a>
+            </div>
+            <div style="padding-top: 10px; padding-right: 6px;">
+              <h3>SARS-CoV-2（hCoV-19）基因组变异的近实时可视化</h3>
+            </div>
+            <span style="width: 250px">
+              <div class="gisaid">数据来源于&nbsp;<a href="https://gisaid.org" target="_new">
+                  <img src="https://www.gisaid.org/fileadmin/gisaid/img/schild.png"
+                       height="24px"/> 
+                </a>
+              </div>
+            </span>
+
+          </div>
+          <p>
+            <div style="font-size: 0.9em;" id="div-last-update"></div>
+            <div style="font-size: 0.9em;" id="div-number-genomes"></div>
+            <div style="font-size: 0.9em;" id="div-number-lineages"></div>
+          </p>
+
+          <div id="tabs">
+            <ul>
+              <li style="font-size: 0.8em"><a href="#tabs-1">国别</a></li>
+              <li style="font-size: 0.8em"><a href="#tabs-2">样本</a></li>
+              <li style="font-size: 0.8em"><a href="#tabs-3">突变</a></li>
+            </ul>
+            <div id="tabs-1">
+              <div class="breaker" id="barplot"></div>
+              <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="country-table"></div>
+            </div>
+            <div id="tabs-2">
+              <div id="seqtable-hint" class="hint">
+                将鼠标悬停在登记号（EPI_ISL_＃）上可显示实验室和作者信息
+              </div>
+              <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="seq-table"></div>
+            </div>
+            <div id="tabs-3">
+              <div id="muttable-hint" class="hint">
+                表型注释由<a href="https://github.com/nodrogluap/pokay">Pokay获得</a>, 
+                策办人是 <a href="https://people.ucalgary.ca/~gordonp/">保罗·戈登</a>和他的团队.
+                <br/>
+                <div class="clicker" title="Download mutation frequencies as CSV" onclick="export_muttable();">&nbsp;&nbsp;CSV&nbsp;&nbsp;</div>
+              </div>
+              <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="mut-table"></div>
+              <table id="muttable-legend" class="legend"></table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="splash" title="Welcome">
+    <p>
+      <b>CoVizu</b>  <a href="https://github.com/PoonLab/CoVizu" target="_new">开源项目</a>
+      致力于可视化SARS-CoV-2基因组的全球多样性，该基因组由
+      <a href="https://gisaid.org" target="_new">GISAID倡议</a>.
+    </p>
+    <p>
+      该网页提供了这些数据的两种交互式可视化方式.
+      在左边，显示的是 <a href="https://en.wikipedia.org/wiki/Phylogenetic_tree" target="_new">
+      种系发生树</a> 总结不同物种之间的进化关系
+      <a href="https://cov-lineages.org" target="_new">SARS-CoV-2 lineages</a> (
+      具有相似基因组的病毒分组，可用于关联不同地区的爆发; <a href="https://www.nature.com/articles/s41564-020-0770-5" target="_new">朗巴特
+      <i>等等</i> 2020</a>).
+      您可以通过单击相应的框来在不同的谱系之间进行导航.
+    </p>
+    <p>
+      选择谱系将在页面中心显示一个“珠图”可视化效果
+      每条水平线代表一个或多个共享相同基因组的SARS-CoV-2样本顺序.
+      沿线的珠子代表该变体的采样日期.
+    </p>
+    <p>
+      如需更多帮助，请点击
+      <a style="text-decoration: none;" href="https://en.wikipedia.org/wiki/Shoshinsha_mark" target="_new">
+        &#128304;</a>按钮.
+    </p>
+  </div>
+
+  <div id="help-timetree" title=" 帮助：时标树形界面">
+    <p>
+      种系发生树是共同祖先如何将不同种群关联的模型.
+      这里显示的树 (由此生成 <a href="https://github.com/neherlab/treetime"> 
+      TreeTime</a> v0.8.0) 总结了不同病毒的共同祖先
+      <a href="https://cov-lineages.org" target="_new">SARS-CoV-2 lineages</a>, 它们是基于基因组相似性的预先定义的病毒分组.
+    </p>
+    <p>
+      时间刻度画在标有
+      <a href="https://en.wikipedia.org/wiki/ISO_8601" target="_new">日期</a>.
+      最早的祖先(根)画在左边，最近观察到的后代画在右边.
+      我们通过比较采样的基因组和假设一个
+      a <a href="http://virological.org/t/phylodynamic-analysis-176-genomes-6-mar-2020/356" target="_new">恒定的进化速率</a> 来估算共同祖先的日期.
+    </p>
+    <p>
+      对于每个谱系，我们绘制一个矩形以汇总样本收集日期的范围，并根据最常采样的地理区域为其着色.
+      要浏览一个谱系内的样本，请点击标签（<i>e.g.,</i> "B.4")或矩形以检索关联的珠图.
+    </p>
+  </div>
+
+  <div id="help-beadplot" title="Help: Beadplot interface">
+    <p>
+      我们使用珠图来可视化SARS-CoV-2的不同变体在
+      <a href="https://cov-lineages.org" target="_new">谱系</a>中的采样时间，地点以及它们之间的相互关系.
+      珠图中的每个对象在工具提示中都有额外的信息(你可以用鼠标指针悬停在该对象上查看).
+    </p>
+    <p>
+      每个水平线代表一个变体 &ndash; 具有
+      <span class="hint" title="这有点复杂.许多基因组在序列上是相同的，但是更多的基因组有缺失的信息——基因组的部分还没有被测序.由于我们不能100%确定两个缺失部分的基因组是完全相同的，我们随机重新采样基因组100次(非参数bootstrap)，并评估他们在我们的分析中分离的频率.">相同</span>
+      基因组的病毒.
+      我们沿着一条线画出珠子来表明该变体何时被取样.如果绳子上没有珠子，而且它是灰色的，则它是未采样的变体：
+      两个或多个采样的变体来自一个祖先变体，该祖先变体没有被直接观察到.
+    </p>
+    <p>
+      珠的面积与当天变体被采样的次数成比例.
+      这对于快速流行或密集采样的流行病很重要， <i>例如,</i>
+      澳大利亚 D.2.谱系
+      珠子根据样本最常见的地理区域 <span class="hint" title="请参阅右侧面板中地区选项卡中的条形图，以获取颜色图例">着色</span>
+    </p>
+    <p>
+      我们绘制垂直线段来连接变体和它们
+      <span class="hint" title="祖先-后代关系的方向是基于近邻结合树的中点根.这是一种粗略的方法，因此请谨慎对待过度解释这些关系的方向性.">共同的祖先</span>.
+      这些关系是通过 <a href="https://en.wikipedia.org/wiki/Neighbor_joining">近邻结合法</a> 中
+      <a href="https://birc.au.dk/software/rapidnj/">RapidNJ</a> 计算的.
+      每个边缘的工具提示报告祖先和后代之间的基因差异(突变)的数量为“基因组距离”.由于很难准确地重建这些突变发生的时间，我们只需将每一行映射到第一个样本收集的时间.
+    </p>
+  </div>
+
+  <div id="help-search" title="帮助：搜索界面">
+    <p>
+      由于我们试图在此处可视化大量抽样感染，因此我们构建了一个基本的搜索界面，您可以使用该网页顶部的输入进行交互.
+    </p>
+    <p>
+      您可以使用文本框通过GISAID登录号查找特定的样品.
+      如果您开始输入登记号，则文本框中将显示一个
+      可能性（自动完成）.
+      您还可以按子字符串搜索样本（区分大小写）.
+      例如，搜索“ Madaga”（按回车键提交）将跳至
+      包含来自马达加斯加的样本.
+    </p>
+    <p>
+      使用“上一步”和“下一步”按钮来迭代搜索结果，使用“清除”按钮来重置搜索界面
+    </p>
+  </div>
+
+  <div id="dialog" title="致谢">
+    <p>
+      我们要感谢GISAID计划，并感谢所有数据提供者，
+      即作者、负责获取标本的原始实验室、提交生成基因序列和元数据并通过GISAID计划(本研究的基础)进行共享的实验室.
+    <p>
+      Elbe, S., and Buckland-Merrett, G. (2017)
+      Data, disease and diplomacy: GISAID’s innovative contribution to global health.
+      <i>Global Challenges</i>, 1:33-46.<br/>
+      DOI: <a href="https://doi.org/10.1002/gch2.1018" target=“_new”>10.1002/gch2.1018</a>&nbsp;&nbsp;
+      PMCID: <a href="https://pubmed.ncbi.nlm.nih.gov/31565258/" target=“_new”>31565258</a>
+    </p>
+    <p>
+      使用这些分析的结果时，请确保您也致谢数据的贡献者，例如 - “We gratefully acknowledge all the Authors,
+      the Originating laboratories responsible for obtaining the specimens, and the Submitting
+      laboratories for generating the genetic sequence and metadata and sharing via the GISAID
+      Initiative, on which this research is based.”
+    </p>
+    <p>
+      另外，请引用以下参考资料：
+      Shu, Y., McCauley, J. (2017) GISAID: From vision to reality. <i>EuroSurveillance</i>, 22(13)<br/>
+      DOI: <a href="https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2017.22.13.30494" target=“_new”>10.2807/1560-7917.ES.2017.22.13.30494</a>&nbsp;&nbsp;
+      PMCID: <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5388101/" target=“_new”>PMC5388101</a>
+    </p>
+  </div>
+
+
+  <footer class="footer">
+    本网站提供的GISAID数据遵守GISAID的
+    <a href="https://www.gisaid.org/DAA/" target=“_new”>条款和条件</a>
+    &emsp;&emsp;
+    <button class="ack" id="ack-open" onclick="console.log('click');">致谢</button>
+
+  </footer>
+
+  <script src="js/beadplot.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/drawtree.js"></script>
+  <script src="js/phylo.js"></script>
+  <script src="js/search.js"></script>
+  <script src="js/gisaid/gisaid.js?random=1"></script>
+
+  <script src="js/covizu.js"></script>
+</body>
+</html>

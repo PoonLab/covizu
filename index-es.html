@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<head>
+  <meta charset="UTF-8"/>
+  <title>CoVizu</title>
+  <meta name="description"
+        content="CoVizu: Real-time analysis and visualization of the global diversity of SARS-CoV-2 genomes.">
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <link rel="stylesheet" href="css/style.css">
+
+  <script src="js/jquery.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+  <script src="js/d3.js"></script>
+  <script src="js/d3-scale.js"></script>
+  <script src="js/FileSaver.js"></script>
+  <script src="js/d3-save-svg.min.js"></script>
+</head>
+
+<body>
+  <script>
+    /*
+     Language translations for text in other files.
+     Change this for every index-lang.html
+     Note: we cannot display HTML in title attribute, i.e., &eacute; will not render.
+     */
+    var i18n_text = {
+      // time-tree legend titles
+      region_legend: {
+        "Africa": "África",  // English -> lang
+        "Asia": "Asia",
+        "China": "China",
+        "Europe": "Europa",
+        "North America": "América del Norte",
+        "Oceania": "Oceania",
+        "South America": "América del Sur"
+      },
+      sample_legend: "Tamaño de la muestra (log10)",
+      coldate_legend: "Colección mas reciente",
+      diverge_legend: "Divergencia (reloj molecular estricto)",
+      total: "Total",
+      sampled: "Muestreadas",
+      displayed: "Mostradas",
+
+      // side bar data statistics
+      last_update: "Última actualización",
+      number_genomes: "Número de genomas",
+      number_lineages: "Número de linajes",
+      number_cases: "Número de casos",
+      region: "Región",
+      countries: "Países",
+      samples: "Muestras",
+
+      // tooltips
+      tip_diffs: "Distancia media desde el origen",
+      tip_residual: "Desviación del reloj", //??
+      tip_cases: "Número de casos",
+      tip_varcount: "Número de variantes",
+      tip_coldates: "Fecha de colección",
+      tip_mutations: "Mutaciones",
+
+      vedge_parent: "Padre",
+      vedge_child: "Hijo",
+      vedge_distance: "Distancia genómica",
+      vedge_support: "Soporte",
+      vedge_coldate: "Fecha de colección",
+
+      hedge_unique_dates: "Fechas de colección únicas",
+      hedge_coldates: "Fechas de colección",
+
+      sample_orig_lab: "Laboratorio de origen",
+      sample_subm_lab: "Laboratorio de sometimiento",
+      sample_authors: "Autores",
+
+      // miscellaneous
+      okay: "De acuerdo!",
+      got_it: "Entiendo",
+      loading: `Cargando. Por favor espere...`,
+      loading_json: "Cargando archivos JSON desde el servidor (~10s)...",
+      country_theaders: ["Región", "País", "Conteo"],
+      sample_theaders: ["Accesión", "Nombre", "Fecha"],
+      mutation_threaders: ["Mutación", "Frecuencia", "Fenotipo"],
+      phenotypes: {
+        'Vaccine neutralization efficacy': 'Eficacia de vacunas en neutralización', //English -> translated
+        'Anthropozoonotic events': 'Evento Antropozoonótico', 
+        'Gene expression increase': 'Incremento en la expresión de genes', 
+        'ACE2 receptor binding affinity': 'Afinidad de unión al receptor ACE2',
+        'Monoclonal antibody serial passage escape': 'Escape serial a anticuerpos monoclonales', 
+        'Convalescent plasma escape': 'Escape a plasma convaleciente', 
+        'Antibody epitope effects': 'Efectos en el epítope de unión a Anticuerpos'
+      }
+    };
+
+  </script>
+
+  <div class="tooltip" id="tooltipContainer"></div>
+
+  <div class="modal">
+    <div class="modal-content">
+      <h2 class="modal-title">Search Error</h2>
+      <div class="modal-text"></div>
+      <a class="closeBtn" href="javascript:void(0)">x</a>
+    </div>
+  </div>
+
+  <div class="app">
+    <div class="app-left">
+      <div class="bar" style="top: 10px; left: 10px; z-index:10" >
+        <!-- <span style="display: inline-block; width: 250px; vertical-align: top"> -->
+        <div class="legend-container">
+          <label for="select-tree-colours">Colorear árbol por:</label>
+          <select name="tree-colours" id="select-tree-colours">
+            <option value="Region">Región</option>
+            <option value="No. samples">No. muestras</option>
+            <option value="Collection date">Fecha de colección</option>
+            <option value="Divergence" selected>Divergencia</option>
+          </select>
+          <div class="legend" id="div-region-legend"></div>
+          <div class="legend" id="svg-sample-legend"></div>
+          <div class="legend" id="svg-coldate-legend"></div>
+          <div class="legend" id="svg-diverge-legend"></div>
+        </div>
+        <!-- </span> -->
+
+        <!-- <span style="display: inline-block; vertical-align: top"> -->
+        <div class="search-bar-container">
+          <div id="search-bar">
+            <input type="search" id="search-input"
+                    placeholder="e.g., B.1.351 or EPI_ISL_434070 or Canada">
+            <input id="start-date" class="dates"
+                      placeholder="Start">
+            hasta
+            <input id="end-date" class="dates"
+                      placeholder="End">
+            <span onclick="$('#help-search').dialog('open');" style="cursor: help">&#128304;</span>
+          </div>
+          <br/>
+          
+          <div id="navigation" style="padding-top: 5px">
+            <button type="button" id="search-button">Buscar</button>
+            <button type="button" id="clear_button">Limpiar</button>
+            <button type="button" id="previous_button">Anterior</button>
+            <button type="button" id="next_button">Siguiente</button>
+            <div id="search_stats">
+              <span id="curr_hit">0</span>
+              <span>de</span>
+              <span id="tot_hits">0</span>
+              <span>puntos</span>
+            </div>
+          </div>
+          <div style="padding-top: 5px;">
+            <img id="loading" src="img/Loading_icon_cropped.gif"/>
+            <span id="loading_text"></span>
+            <span id="error_message"></span>
+          </div>
+        </div>
+        <!-- </span> -->
+      </div>
+    
+      <div class="tree-beadplot">
+        <div id="tree-vscroll">
+          <div id="tree-inner-vscroll"></div>
+        </div>
+        <div class="leftbox">
+          <div class="floattitle" id="tree-title">
+            &Aacute;rbol del tiempo
+            <span class="clicker" title="Download time-scaled tree" onclick="save_timetree()">
+              &nbsp;&nbsp;NWK&nbsp;&nbsp;
+            </span>
+            <div class="clicker" title="Download lineage statistics as CSV" onclick="export_csv();">&nbsp;&nbsp;CSV&nbsp;&nbsp;</div>
+            <span title="Timetree help" onclick="$('#help-timetree').dialog('open');" style="cursor: help">&#128304;</span>
+            <label class="recombinant" style="vertical-align: middle;">Mostrar recombinantes:&nbsp;</label>
+            <label class="switch-recombinant">
+              <input type="checkbox" id="display-option" checked="checked">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div id="tree-cutoff" style="position: relative;">
+            <div id="cutoff-date"></div>
+            <img id="loading-tree" src="img/Loading_icon_cropped.gif"/>
+          </div>
+          <div class="floattile" id="tree-slider">
+            <div id="tree-slider-handle" class="ui-slider-handle"></div>
+          </div>
+          <div id="cutoff-line" style="visibility: hidden"></div>
+          <div class="floattitle" id="svg-timetreeaxis" style="top: 58px; z-index: 13"></div>
+          <div class="tree-container">
+            <div class="tree-content" id="svg-timetree" style="width: 250px; max-width: 250px;">
+              <div>
+                <div class="recombtitle" style="display: flex; justify-content: center; font-size: 13px; padding-bottom: 2px; width: 40%">Recombinantes</div>
+                <div class="recombinant-tree-content" id="svg-recombinants" style="width: 250px; max-width: 250px; padding: 5px"></div>
+              </div>
+              <div style="display: flex; justify-content: center; font-size: 13px; padding-bottom: 2px; width: 50%">No Recombinantes</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="middlebox">
+          <div class="floattitle" id="beadplot-title">
+            <div>Diagrama de perlas</div>
+            <div class="clicker" title="Descargar como &aacute;rbol" onclick="save_beadplot();">&nbsp;&nbsp;NWK&nbsp;&nbsp;</div>
+            <div class="clicker" title="Descargar como SVG" onclick="export_svg();">&nbsp;&nbsp;SVG&nbsp;&nbsp;</div>
+            <div title="Ayuda del diagramma" onclick="$('#help-beadplot').dialog('open');" style="cursor: help">&#128304;</div>
+            
+            <div class="edge-cuttoff">
+              <label style="vertical-align: middle;" for="vedge-slider">Límite para el vértice:&nbsp;&nbsp;</label>
+              <div id="left-arrow" class="arrow">
+                <div style="transform: translateY(-25%);" class="larrow">&#8249;</div>
+              </div>
+              <div id="vedge-slider">
+                <div id="custom-handle" class="ui-slider-handle"></div>
+              </div>
+              <div id="right-arrow" class="arrow">
+                <div style="transform: translateY(-25%);" class="rarrow">&#8250;</div>
+              </div>
+            </div>
+
+            <label class="expand" style="vertical-align: middle;">&nbsp;&nbsp;Extender:&nbsp;</label>
+            <label class="switch">
+              <input type="checkbox" id="expand-option">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div class="floattitle" id="svg-clusteraxis" style="top: 58px; z-index: 14"></div>
+          <div id="beadplot-hscroll">
+            <div id="inner-hscroll"></div>
+          </div>
+          <div class="beadplot-content" id="svg-cluster"></div>
+        </div>
+        <div id="beadplot-vscroll">
+          <div id="inner-vscroll"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-right">
+      <div>
+        <div style="top: 0; right: 0; z-index: 10; width: 270px">
+          <a href="https://github.com/PoonLab/covizu" target=“_new” class="github-corner" aria-label="View source on GitHub">
+            <!-- https://github.com/tholman/github-corners -->
+            <svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0; z-index: 21" aria-hidden="true">
+              <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
+              <path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path>
+              <path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path>
+            </svg>
+          </a>
+        </div>
+        <div class="rightbox">
+          <div class="sticky">
+            <div style="padding-top: 10px; cursor: help;">
+              <h1><span id="intro" onclick="$('#splash').dialog('open');">CoVizu</span></h1>
+            </div>
+            <div style="font-size: 8pt;">
+              <a href="index.html">en</a>
+              <a href="index-es.html">es</a>
+              <a href="index-fr.html">fr</a>
+              <a href="index-zh.html">zh</a>
+            </div>
+            <div style="padding-top: 10px; padding-right: 6px;">
+              <h3>Visulización en tiempo real de la variación genómica de SARS-CoV-2 (hCoV-19)</h3>
+            </div>
+            <span style="width: 250px">
+              <div class="gisaid">Habilitado por datos de&nbsp;<a href="https://gisaid.org" target="_new">
+                  <img src="https://www.gisaid.org/fileadmin/gisaid/img/schild.png"
+                       height="24px"/> 
+                </a>
+              </div>
+            </span>
+
+          </div>
+          <p>
+            <div style="font-size: 0.9em;" id="div-last-update"></div>
+            <div style="font-size: 0.9em;" id="div-number-genomes"></div>
+            <div style="font-size: 0.9em;" id="div-number-lineages"></div>
+          </p>
+
+          <div id="tabs">
+            <ul>
+              <li style="font-size: 0.8em"><a href="#tabs-1">Países</a></li>
+              <li style="font-size: 0.8em"><a href="#tabs-2">Muestras</a></li>
+              <li style="font-size: 0.8em"><a href="#tabs-3">Mutaciones</a></li>
+            </ul>
+            <div id="tabs-1">
+              <div class="breaker" id="barplot"></div>
+              <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="country-table"></div>
+            </div>
+            <div id="tabs-2">
+              <div id="seqtable-hint" class="hint">
+                Pasa sobre las accesiones (EPI_ISL_#) para mostrar información sobre laboratorios y autores
+              </div>
+              <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="seq-table"></div>
+            </div>
+            <div id="tabs-3">
+              <div id="muttable-hint" class="hint">
+                Anotaciones fenotípicas obtenidas a partir de <a href="https://github.com/nodrogluap/pokay">Pokay</a>, 
+                curadas por <a href="https://people.ucalgary.ca/~gordonp/">Paul Gordon</a> y su equipo.
+                <br/>
+                <div class="clicker" title="Descargar la frecuencia de las mutaciones a un archivo CSV" onclick="export_muttable();">&nbsp;&nbsp;CSV&nbsp;&nbsp;</div>
+              </div>
+              <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="mut-table"></div>
+              <table id="muttable-legend" class="legend"></table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-right">
+      <div class="sticky">
+        <div style="top: 0; right: 0; z-index: 10; width: 270px">
+          <a href="https://github.com/PoonLab/covizu" target=“_new” class="github-corner" aria-label="View source on GitHub">
+            <!-- https://github.com/tholman/github-corners -->
+            <svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0; z-index: 21" aria-hidden="true">
+              <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
+              <path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path>
+              <path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="splash" title="Welcome">
+    <p>
+      <b>CoVizu</b> es un <a href="https://github.com/PoonLab/CoVizu" target="_new">proyecto de código abierto</a>
+      creado con el objetivo de visualizar la diversidad global de los genomas de SARS-CoV2, obtenidos
+      a partir de la <a href="https://gisaid.org" target="_new">iniciativa GISAID</a>.
+    </p>
+    <p>
+      Este sitio está compuesto de dos visualizaciones interactivas. 
+      En la izquierda, se muestra un <a href="https://en.wikipedia.org/wiki/Phylogenetic_tree" target="_new">
+      árbol filogenético</a> que resume las relaciones evolutivas entre diferentes 
+      <a href="https://cov-lineages.org" target="_new">linajes de SARS-CoV-2</a> (agrupar virus con genomas similares 
+      es útil para detectar brotes relaciones en diferentes lugares; <a href="https://www.nature.com/articles/s41564-020-0770-5" target="_new">Rambaut
+      <i>et al.</i> 2020</a>).
+      Puedes navegar entre diferentes linajes haciendo click en sus respectivas ramas.
+    </p>
+    <p>
+      Al seleccionar un linaje, se muestra una visulización de "beadplot" en el centro de la página.
+      Cada línea horizontal representa una o más muestras de SARS-CoV-2 con la misma secuencia genómica. 
+      Líneas verticales a lo largo de dicha línea representa las fechas en las cuales estas variantes fueron colectadas.
+    </p>
+    <p>
+      Para más ayuda has click en los
+      <a style="text-decoration: none;" href="https://en.wikipedia.org/wiki/Shoshinsha_mark" target="_new">
+        &#128304;</a>íconos.
+    </p>
+  </div>
+
+  <div id="help-timetree" title="Help: Time-scaled tree interface">
+    <p>
+      Un árbol filogenético es un modelo que permite establecer relaciones entre diferentes 
+      poblaciones que comparten un ancestro común.
+      La filogenia mostrada aquí (generada con <a href="https://github.com/neherlab/treetime">
+      TreeTime</a> v0.8.0) resume el ancestro común de los diferentes 
+      <a href="https://cov-lineages.org" target="_new">linajes de SARS-CoV-2</a>, que han sido
+      definidos agrupando virus de acuerdo a la similitud de sus genomas. 
+    </p>
+    <p>
+      Sobre el árbol se encuentra una escala de tiempo con las 
+      <a href="https://en.wikipedia.org/wiki/ISO_8601" target="_new">fechas</a>.
+      El primer ancestro (la raíz) está dibujado a la izquierda, y los descendientes observados más recientemente
+      se encuentran a la derecha. 
+      Las fechas del ancestro común fueron estimadas comparando los genomas asumiendo
+      una <a href="http://virological.org/t/phylodynamic-analysis-176-genomes-6-mar-2020/356" target="_new">tasa constante</a> de evolución.
+    </p>
+    <p>
+      Para cada linage dibujamos un rectángulo que resume el rango en el que las muestras fueron colectadas. 
+      El rectángulo es además coloreado de acuerdo a la región geográfica en la cual las muestras fueron colectadas con mayor frequencia. 
+      Para explorar las muestras al interior de un linage, haga click en la etiqueta (<i>e.g.,</i> "B.4")
+      o en el rectángulo para obtener el "beadplot" asociado. 
+    </p>
+  </div>
+
+  <div id="help-beadplot" title="Help: Beadplot interface">
+    <p>
+      Los "beadplots" permiten visualizar las diferentes variantes of SARS-CoV-2 al interior de un
+      <a href="https://cov-lineages.org" target="_new">linage</a>, dónde y cuándo
+      han sido colectados, y cómo se relacionan entre ellos.
+      Cada objeto en el "beadplot" contiene información adicional en los mensajes emergentes
+      (que se obtienen al pasar sobre el objeto con el mouse).
+    </p>
+    <p>
+      Cada segmento horizontal representa una variante &ndash; virus con
+      <span class="hint" title="It's a bit more complicated.  Many genomes are identical in sequence, but many more have missing information - parts of the genome that have not been sequenced.  Since we can't be 100% certain two genomes with missing parts are identical, we randomly re-sample genomes 100 times (non-parametric bootstrap) and evaluate how often they are separated in our analysis.">genomas idénticos</span>
+      Las círculos (beads) dibujados a través de las líneas indican la fecha de colección de la variante.
+      Si no hay más círculos en la línea y ésta es gris, esto representa una variante que no ha sido muestreada:
+      dos o mas variantes colectadas descienden de una variante ancestral que no ha sido 
+      directamente observada.
+    </p>
+    <p>
+      El área del círculo es proporcionl al número de veces que una variante 
+      ha sido muestreada ese día.
+      Esto es relevante para epidemias que en las que el se toman muestras con mucha 
+      frequencia, <i>e.g.,</i> linage D.2 in Australia.
+      Los círculos son <span class="hint" title="Refer to the barplot in the Countries tab in the right panel for a colour legend.">coloreados</span>
+      con respecto a la región geográfica muestrada más comñun en las muestras. 
+    </p>
+    <p>
+      Los líneas verticales conectan las variantes con sus 
+      <span class="hint" title="The direction of ancestor-descendant relationships is, in effect, determined by degree size.  This is a crude estimate, so be cautious about interpreting the directionality of these relationships.">ancestros comunes</span>.
+      Éstas relaciones son estimadas usando el método <a href="https://en.wikipedia.org/wiki/Neighbor_joining">neighbor-joining</a> implementado en
+      <a href="https://birc.au.dk/software/rapidnj/">RapidNJ</a>.
+      Los mensajes emergentes sobre cada línea vertical contienen reportes sobre la cantidad de diferencias genéticas (mutaciones)
+      entre el ancestro y su descendiente, esto es, "distancia genética".
+      Dado que la reconstrucción exacta de cuándo estas mutaciones ocurrieron es extremedamente complicada, 
+      decidimos mapear cada línea a el momento en que dicha muestra fue colectada.
+    </p>
+  </div>
+
+  <div id="help-search" title="Help: Search interface">
+    <p>
+      Dado que la cantidad de muestras de infecciones que se desea visualizar es abrumadora, 
+      nuestro equipo ha construido una interfaz con la cual los y las usuarias pueden interactuar 
+      usando las diferentes opciones de búsqueda que se encuentran en la parte superior de la página.
+    </p>
+    <p>
+      El campo de texto puede ser usado para encontrar muestras específicas usando el número de accessión de GISAD.
+      Esta utilidad cuenta además con una función de autocompletar para encontrar posibles muestras con 
+      accesiones similares.
+      También es posible buscar muestras con fragmentos del código.
+      Por ejemplo, buscando por "Madaga" y presionando enter, se visualizará 
+      el primer linaje que contenga una muestra de Madagascar. 
+    </p>
+    <p>
+      Usando el botón "Anterior" se puede iterar a través del resultado de la búsqueda, y el botón 
+      "Limpiar" resetea la interfaz.
+    </p>
+  </div>
+
+  <div id="dialog" title="Acknowledgements">
+    <p>
+      Nos gustaría agradecer a GISAID Initiative y a todas las personas que han contribuído con sus datos, 
+      i.e. Autores, laboratorios originarios responsables por la obtención de los especímenes, y 
+      laboratorios que han generado las secuencias genéticas y la metadata en la cual se basa esta investigación
+      y que ha sido compartida a través de GISAID Initiative.
+    </p>
+    <p>
+      Elbe, S., and Buckland-Merrett, G. (2017)
+      Data, disease and diplomacy: GISAID’s innovative contribution to global health.
+      <i>Global Challenges</i>, 1:33-46.<br/>
+      DOI: <a href="https://doi.org/10.1002/gch2.1018" target=“_new”>10.1002/gch2.1018</a>&nbsp;&nbsp;
+      PMCID: <a href="https://pubmed.ncbi.nlm.nih.gov/31565258/" target=“_new”>31565258</a>
+    </p>
+    <p>
+      Nota: En caso de compartir los resultados de éstos análisis en tu manuscrito, asegúrate 
+      de reconocer a los contribuidores, i.e. " Nos gustaría agradecer a GISAID Initiative y a todas 
+      las personas que han contribuído con sus datos, i.e. Autores, laboratorios originarios 
+      responsables por la obtención de los especímenes, y laboratorios que han generado las secuencias 
+      genéticas y la metadata en la cual se basa esta investigación y que ha sido compartida 
+      a través de GISAID Initiative."
+    </p>
+    <p>
+      Además, recuerda citar las siguientes referencias:
+      Shu, Y., McCauley, J. (2017) GISAID: From vision to reality. <i>EuroSurveillance</i>, 22(13)<br/>
+      DOI: <a href="https://www.eurosurveillance.org/content/10.2807/1560-7917.ES.2017.22.13.30494" target=“_new”>10.2807/1560-7917.ES.2017.22.13.30494</a>&nbsp;&nbsp;
+      PMCID: <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5388101/" target=“_new”>PMC5388101</a>
+    </p>
+  </div>
+
+
+  <footer class="footer">
+    Los datos proporcionados por GISAID en su página web están sujetos a
+    <a href="https://www.gisaid.org/DAA/" target=“_new”>Términos y Condiciones</a>
+    &emsp;&emsp;
+    <button class="ack" id="ack-open" onclick="console.log('click');">Agradecimientos</button>
+
+  </footer>
+
+  <script src="js/beadplot.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/drawtree.js"></script>
+  <script src="js/phylo.js"></script>
+  <script src="js/search.js"></script>
+  <script src="js/gisaid/gisaid.js?random=1"></script>
+
+  <script src="js/covizu.js"></script>
+</body>
+</html>
