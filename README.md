@@ -32,8 +32,9 @@ This sequence of commands demonstrates how to run the CoVizu pipeline using the 
 
 2. Next, we use the Python script `convert.py` to combine and convert these data files into a single xz-compressed JSON file.
    This script is designed to accommodate different tabular file formats for the metadata (*i.e.*, comma-, tab-separated) and different amounts of data.
+   Note the `--exclude` argument is removing samples that were collected in Canada, to prevent duplicates arising from combining these records with the VirusSeq database.
    ```console
-   $ python3 convert.py sequences.fasta.xz metadata.tsv.gz --xz --mgz --region region --division division --outfile opendata.json.xz
+   $ python3 convert.py sequences.fasta.xz metadata.tsv.gz --xz --mgz --region region --division division --exclude Canada --outfile opendata.json.xz
    ```
    The `--xz` and `--mgz` flags tell the script that the FASTA and metadata files are xz- and gzip-compressed, respectively.
    Leaving these files in their compressed state while streaming data minimizes data storage requirements.
