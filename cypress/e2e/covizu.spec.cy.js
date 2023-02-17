@@ -130,7 +130,7 @@ describe('Tooltips', () => {
             cy.window().then((win) => {
                 // Number of variants
                 cy.get('.tooltip',{timeout:10000}).contains(`Sampled: ${win.tips[id_number]['varcount']}`)
-                // cy.get('.tooltip').contains(`Displayed: ${win.tips[id_number]['sampled_varcount']}`)
+                cy.get('.tooltip',{timeout:10000}).contains(`Displayed: ${win.tips[id_number]['sampled_varcount']}`)
                 // // Regions: Num of Cases 
                 // cy.wrap(Object.keys(win.tips[id_number]['allregions'])).each(($el, index) => {cy.get('.tooltip').contains(`${$el}: ${Object.values(win.tips[id_number]['allregions'])[index]}`)})
                 // // Mean diffs from root
@@ -154,7 +154,7 @@ describe('Tooltips', () => {
             var lineage_id = id.substring(3)
             cy.window().then((win) => {
                 // Tooltip for first line with stroke-width of 3 (Assuming that it is parent)
-                // cy.get('[stroke-width="3"]').first().trigger('mouseover', {force: true})
+                cy.get('[stroke-width="3"]',{timeout:10000}).first().trigger('mouseover', {force: true})
                 // cy.get('.tooltip').contains(`Unique collection dates: ${win.beaddata[win.tips[lineage_id]["cluster_idx"]]["variants"][0]["numBeads"]}`)
                 // cy.get('.tooltip').contains(`${win.beaddata[win.tips[lineage_id]["cluster_idx"]]["variants"][0]["x1"].toISOString().slice(0, 10)} / ${win.beaddata[win.tips[lineage_id]["cluster_idx"]]["variants"][0]["x2"].toISOString().slice(0, 10)}`)
                 // var regions = win.tabulate(win.beaddata[win.tips[lineage_id]["cluster_idx"]]["variants"][0]["region"])
