@@ -1,4 +1,10 @@
 module.exports = {
+  // These settings apply everywhere unless overridden
+  pageLoadTimeout : 10000,
+  requestTimeout : 10000,
+  defaultCommandTimeout: 10000,
+  viewportWidth: 1000,
+  viewportHeight: 600,
   e2e: {
     testIsolation: false,
     baseUrl: 'http://localhost:8001',
