@@ -1,6 +1,6 @@
 import argparse
 import sys
-from datetime import datetime, date
+from datetime import date
 from csv import DictReader
 
 from covizu.utils import seq_utils
@@ -56,7 +56,8 @@ def parse_metadata(handle, set_region=None, delimiter=',', callback=None):
     return metadata
 
 
-def combine(handle, metadata, minlen=29000, mindate='2019-12-01', callback=None):
+def combine(handle, metadata, minlen=29000, mindate='2019-12-01', callback=None,
+            exclude=[]):
     """
     Combine FASTA and metadata records into dictionary objects and do some basic filtering.
 
@@ -65,6 +66,7 @@ def combine(handle, metadata, minlen=29000, mindate='2019-12-01', callback=None)
     :param minlen:  int, minimum genome length
     :param mindate:  str, earliest sample collection date in ISO-8601 format
     :param callback:  optional Callback() object
+    :param exclude:  list or str, countries to exclude from records
 
     :yield:  dict, combined genome and metadata for one record
     """
@@ -77,6 +79,12 @@ def combine(handle, metadata, minlen=29000, mindate='2019-12-01', callback=None)
                 callback("Failed to retrieve metadata for genome {}".format(label), level='ERROR')
                 sys.exit()
             sys.exit()
+
+        country = metadata[label]['country']
+        if country in exclude:
+            if callback:
+                callback("Excluding sample {} from {}".format(label, country), level="INFO")
+            continue
 
         if len(seq) < minlen:
             rejects['short'] += 1
@@ -106,7 +114,7 @@ def combine(handle, metadata, minlen=29000, mindate='2019-12-01', callback=None)
             'sequence': seq,
             'coldate': coldate,
             'region': metadata[label]['region'],
-            'country': metadata[label]['country'],
+            'country': country,
             'division': metadata[label]['division'],
             'lineage': lineage
         }
@@ -172,6 +180,11 @@ def parse_args():
     parser.add_argument('--mindate', type=str, default='2019-12-01',
                         help='earliest possible sample collection date (ISO format, default '
                              '2019-12-01')
+    parser.add_argument('--exclude', type=str, default='',
+                        help="Exclude samples from specific countries, entered as a comma-separated "
+                             "list.  This should be applied to Nextstrain data to prevent "
+                             "duplication of samples from combining Genbank and VirusSeq "
+                             "(Canadian) databases.")
 
     return parser.parse_args()
 
@@ -198,6 +211,8 @@ if __name__ == "__main__":
         handle = lzma.open(args.metadata, 'rt')
     else:
         handle = open(args.metadata)
+
+    exclude = args.exclude.split(',')
     metadata = parse_metadata(handle, set_region=args.set_region, delimiter=args.delimiter,
                               callback=callback)
     handle.close()
@@ -210,7 +225,7 @@ if __name__ == "__main__":
     else:
         handle = open(args.infile)
     feed = combine(handle, metadata, minlen=args.minlen, mindate=args.mindate,
-                   callback=callback)
+                   callback=callback, exclude=exclude)
     for record in feed:
         outfile.write(json.dumps(record)+'\n')
     handle.close()
