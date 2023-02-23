@@ -4,9 +4,6 @@
 [CoVizu](https://github.com/PoonLab/covizu) is an ongoing open-source project to provide a public interface to visualize the global diversity of SARS-CoV-2 genomes in near real time.
 Our specific objectives are (1) to process and visualize as much publicly available data as possible (*i.e.*, millions of genomes); (2) to reconstruct robust evolutionary and epidemiological relationships among these genomes; (3) to continually update outputs with new genomic data as frequently as possible, and; (4) to present this information in a rich and intuitive visual interface.
 
-This `virusseq` branch is a version of CoVizu that enables users to run the entire analysis and visualize results without the requirement of having special access to any particular database.
-For example, you may want to try these methods on your own laboratory's data.
-Hence, we provide script (`convert.py`) to adapt any combination of [FASTA](https://en.wikipedia.org/wiki/FASTA_format) and [tabular](https://en.wikipedia.org/wiki/Table_(information)) metadata into a common input format, and a second script to automate the analytical pipeline (`process.py`).
 
 ## Requirements
 * [Python](https://www.python.org/) 3.6 or higher, and the following modules:
