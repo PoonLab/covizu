@@ -82,7 +82,7 @@ def import_metadata(meta_file, fields, lineages=None, region=None, callback=None
 
 
 def merge_data(fasta_file, metadata, minlen=29000, mindate=date(2019, 12, 1),
-               callback=None, limit=None):
+               callback=None, limit=None, exclude=[]):
     """
     :param fasta_file:  str, path to xz-compressed FASTA file
     :param metadata:  dict, returned from import_metadata()
@@ -91,6 +91,7 @@ def merge_data(fasta_file, metadata, minlen=29000, mindate=date(2019, 12, 1),
                      collection date
     :param callback:  optional, progress_utils.Callback object
     :param limit:  int, stop iteration at count (DEBUGGING)
+    :param exclude:  list or str, countries to exclude from records
     :yield:  dict, record including label, sequence and metadata
     """
     # parse FASTA and do some basic QC
@@ -104,6 +105,12 @@ def merge_data(fasta_file, metadata, minlen=29000, mindate=date(2019, 12, 1),
         if len(sequence) < minlen:
             if callback:
                 callback("Rejected short sequence: {}".format(label), level='WARN')
+            continue
+
+        country = metadata[label]['country']
+        if country in exclude:
+            if callback:
+                callback("Excluding sample {} from {}".format(label, country), level="INFO")
             continue
 
         record = {'label': label, 'sequence': sequence}
@@ -196,15 +203,17 @@ def parse_args():
         description="CoVizu analysis pipeline automation for execution on local files"
     )
 
-    parser.add_argument("--vsfasta", required=True, type=str,
-                        help="input, path to VirusSeq xz-compressed FASTA")
-    parser.add_argument("--vsmeta", required=True, type=str,
-                        help="input, path to VirusSeq gzip metadata TSV")
-    parser.add_argument("--vspango", type=str, help="input, path to PANGO lineage classifications from the Viral AI database")
+    required = parser.add_argument_group('required arguments')
 
-    parser.add_argument("--opfasta", required=True, type=str,
+    required.add_argument("--vsfasta", required=True, type=str,
+                        help="input, path to VirusSeq xz-compressed FASTA")
+    required.add_argument("--vsmeta", required=True, type=str,
+                        help="input, path to VirusSeq gzip metadata TSV")
+    required.add_argument("--vspango", required=True, type=str, help="input, path to PANGO lineage classifications from the Viral AI database")
+
+    required.add_argument("--opfasta", required=True, type=str,
                         help="input, path to Nextstrain xz-compresed FASTA")
-    parser.add_argument("--opmeta", required=True, type=str,
+    required.add_argument("--opmeta", required=True, type=str,
                         help="input, path to Nextstrain gzip metadata TSV")
 
     parser.add_argument("--outdir", type=str, default='data/',
@@ -274,6 +283,12 @@ def parse_args():
     parser.add_argument("--boot-cutoff", type=float, default=0.5,
                         help="Bootstrap cutoff for consensus tree (default 0.5). "
                              "Only used if --cons is specified.")
+    
+    parser.add_argument('--exclude', type=str, default='',
+                        help="Exclude samples from specific countries, entered as a comma-separated "
+                             "list.  This should be applied to Nextstrain data to prevent "
+                             "duplication of samples from combining Genbank and VirusSeq "
+                             "(Canadian) databases.")
 
     return parser.parse_args()
 
@@ -297,6 +312,8 @@ if __name__ == '__main__':
     except:
         cb.callback("Could not update submodules", level='ERROR')
 
+    exclude = args.exclude.split(',')
+
     lineages = {}
     handle = open(args.vspango)
     for row in DictReader(handle):
@@ -314,7 +331,7 @@ if __name__ == '__main__':
                                callback=cb.callback)
     cb.callback("importing OpenData sequences")
     opendata = merge_data(fasta_file=args.opfasta, metadata=metadata,
-                          callback=cb.callback, limit=args.limit)
+                          callback=cb.callback, limit=args.limit, exclude=exclude)
 
     # run analysis
     cb.callback("starting main analysis")

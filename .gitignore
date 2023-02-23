@@ -10,3 +10,4 @@ dist/*
 venv/*
 cypress/fixtures/
 cypress/plugins/
+node_modules/
