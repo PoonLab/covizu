@@ -10,12 +10,13 @@ class TestBeadplotSerial(unittest.TestCase):
         self.expected = {
             'lineage': 'B.1.1.171',
             'nodes': {
-                'EPI_ISL_465679': [['2020-03-27', 'EPI_ISL_465679', 'hCoV-19/Canada/Qc-L00240569/2020']]
+                'EPI_ISL_465679': [['2020-03-27', 'EPI_ISL_465679', 'North America / Canada / London', 'hCoV-19/Canada/Qc-L00240569/2020']]
             },
             'edges': [],
             'sampled_variants': 1
         }
 
+    @unittest.skip("beadplot_serial has been deprecated")
     def testBeadplotSerial(self):
         # Lineage with only one variant
 
