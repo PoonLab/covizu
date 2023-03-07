@@ -154,3 +154,67 @@ describe('Tooltips', () => {
         })
     })
 })
+
+
+describe("Colour tree", () => {
+    
+    it("Verify <options> within <select> Colour tree", ()=>{
+        cy.visit("http://localhost:8001");
+        cy.get("#splash-button").click();
+        cy.get("#select-tree-colours").children().should(($options)=>{
+            expect($options).to.have.length(4);// number of options
+            expect($options.eq(0)).to.contain('Region')
+            expect($options.eq(1)).to.contain('No. samples');
+            expect($options.eq(2)).to.contain('Collection date');
+            expect($options.eq(3)).to.contain('Divergence');
+        })
+    })
+
+    it("On selecting <option> = 'Region' of <select> Colour tree", ()=>{
+        let regions;
+        let region_color_map = {};
+        cy.get("#select-tree-colours").select(0).should('have.value','Region')
+        cy.window().then((win)=>{
+            regions = [...Array.from(new Set(Object.values(win.region_map))),"China"]
+            return regions;
+        })
+        .then(()=>{
+            cy.get("#div-region-legend").children().children().children().should(($legendItems)=>{
+                expect($legendItems).to.have.length(regions.length);
+                regions.forEach((r)=>{
+                    expect($legendItems).to.contain(r)
+                })
+            })
+        })
+        .then(()=>{
+            let region_titles= [];
+            let region_colors = [];              
+
+            cy.get(".legend-item").each(($legendItem)=>{
+                cy.wrap($legendItem).children(".legend-swatch").invoke("css","background-color")
+                    .then((legend_color)=>region_colors.push(legend_color))
+              
+                cy.wrap($legendItem).children(".legend-label").invoke("text")
+                    .then((legend_title)=>region_titles.push(legend_title))
+            })
+            .then(()=>{
+                for (let i = 0; i < region_titles.length; i++) {
+                    region_color_map[region_titles[i]] = region_colors[i]
+                }
+            })
+        })
+        .then(()=>{
+            // check and see if this region_color_map is correctly represented in the tree graph
+            cy.window().then((win)=>{
+                let region_title;
+                const tip_id = 215;
+                cy.get(`[id=id-${tip_id}]`).should('be.visible').trigger('mouseover');
+                cy.get(`[id=id-${tip_id}]`).invoke('css','fill').then((tip_color)=>{
+                    region_title = Object.keys(win.tips[tip_id]['allregions'])[0];
+                    // expect(tip_color).to.equal(region_color_map[region_title])
+                })
+            })
+        })
+    })
+
+})
