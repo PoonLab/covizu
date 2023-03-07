@@ -51,6 +51,13 @@ async function getdata(url) {
   const response = await fetch(url);
   
   // Storing data as JSON
-  var data = await response.json();
+  var data;
+  try {
+    data = await response.json();
+  }
+  catch(err) {
+    data = undefined
+  }
+
   return data;
 }

@@ -1,3 +1,5 @@
+const fs = require('fs');
+
 // capture the NODE_ENV env var specified on command-line (if any)
 // NODE_ENV='TEST' node server.js
 var $HTTP_PORT;
@@ -47,10 +49,11 @@ if(!$HTTPS_PORT && $NODE_ENV=='PROD'){
     $HTTPS_PORT = 8002;
 }
 if(!$DATA_FOLDER){
-    throw new Error('.env is missing DATA_FOLDER env variable')
+    console.warn('.env is missing DATA_FOLDER env variable. Defaulting to data/')
+    $DATA_FOLDER = 'data'
 }
 if(!$NODE_ENV){
-    throw new Error('.env is missing NODE_ENV. Defaulting to DEV')
+    console.warn('.env is missing NODE_ENV. Defaulting to DEV')
     $NODE_ENV = 'DEV';
 }
 

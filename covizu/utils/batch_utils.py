@@ -98,7 +98,7 @@ def beadplot_serial(lineage, features, args, callback=None):
         beaddict.update({'sampled_variants': len(labels)})
         beaddict['nodes'].update({variant: []})
 
-        for coldate, accn, label1 in intermed:
+        for coldate, accn, location, label1 in intermed:
             beaddict['nodes'][variant].append([coldate, accn, label1])
         return beaddict
 

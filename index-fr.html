@@ -82,6 +82,8 @@
       tour_beadplot_desc: "Nous utilisons des diagrammes en perle pour visualiser les différentes variantes de SARS-CoV-2 au sein d'une lignée, où et quand elles ont été échantillonnées, et comment elles sont liées entre elles.",
       tour_bead_title: "Les perles",
       tour_bead_desc: "Les perles indiquent quand cette variante a été échantillonnée. La taille de la perle est proportionnelle au nombre de fois où la variante a été échantillonnée ce jour-là. Les couleurs représentent la région géographique la plus courante des échantillons.",
+      tour_variant_title: "Variante",
+      tour_variant_desc: "Chaque segment de ligne horizontale représente une variante - des virus ayant des génomes identiques. S'il n'y a pas de perles sur la ligne et qu'elle est grise, alors il s'agit d'une variante non échantillonnée: deux ou plusieurs variantes échantillonnées descendent d'une variante ancestrale qui n'a pas été directement observée.",
       tour_search_title: "Interface de recherche",
       tour_search_desc: `Vous pouvez utiliser la zone de texte pour trouver un échantillon spécifique dans une plage de dates spécifiée. Utilisez les boutons "Précédent" et "Suivant" pour itérer à travers les résultats de votre recherche, et le bouton "Effacer" pour réinitialiser l'interface de recherche.`,
       tour_tables_title: "Tableau synoptique",
@@ -254,7 +256,7 @@
     </div>
 
     <div class="app-right">
-      <div class="sticky">
+      <div>
         <div style="top: 0; right: 0; z-index: 10; width: 270px">
           <a href="https://github.com/PoonLab/covizu" target=“_new” class="github-corner" aria-label="View source on GitHub">
             <!-- https://github.com/tholman/github-corners -->
@@ -266,25 +268,27 @@
           </a>
         </div>
         <div class="rightbox">
-          <div style="padding-top: 10px; cursor: help;">
-            <h1><span onclick="$('#splash').dialog('open');">CoVizu</span></h1>
-          </div>
-          <div style="font-size: 8pt;">
-            <a href="index.html">en</a>
-            <a href="index-fr.html">fr</a>
-            <a href="index-es.html">es</a>
-            <a href="index-zh.html">zh</a>
-          </div>
-          <div style="padding-top: 10px; padding-right: 6px;">
-            <h3>Visualisation en temps r&eacute;el de la variation g&eacute;nomique du SRAS-CoV-2 (hCoV-19).</h3>
-          </div>
-          <span style="width: 250px">
-            <div class="gisaid">Bas&eacute; sur les donn&eacute;es de <a href="https://gisaid.org" target="_new">
-                <img src="https://www.gisaid.org/fileadmin/gisaid/img/schild.png"
-                     height="24px"/>
-              </a>
+          <div class="sticky">
+            <div style="padding-top: 10px; cursor: help;">
+              <h1><span id="intro" onclick="$('#splash').dialog('open');">CoVizu</span></h1>
             </div>
-          </span>
+            <div style="font-size: 8pt;">
+              <a href="index.html">en</a>
+              <a href="index-es.html">es</a>
+              <a href="index-fr.html">fr</a>
+              <a href="index-zh.html">zh</a>
+            </div>
+            <div style="padding-top: 10px; padding-right: 6px;">
+              <h3>Visualisation en temps r&eacute;el de la variation g&eacute;nomique du SRAS-CoV-2 (hCoV-19).</h3>
+            </div>
+            <span style="width: 250px">
+              <div class="gisaid">Bas&eacute; sur les donn&eacute;es de &nbsp;<a href="https://gisaid.org" target="_new">
+                  <img src="https://www.gisaid.org/fileadmin/gisaid/img/schild.png"
+                       height="24px"/> 
+                </a>
+              </div>
+            </span>
+          </div>
           <p>
             <div style="font-size: 0.9em;" id="div-last-update"></div>
             <div style="font-size: 0.9em;" id="div-number-genomes"></div>
@@ -309,7 +313,10 @@
             </div>
             <div id="tabs-3">
               <div id="muttable-hint" class="hint">
-                Annotations phénotypiques extraites de <a href="https://github.com/nodrogluap/pokay">Pokay</a>, organisées par <a href="https://people.ucalgary.ca/~gordonp/">Paul Gordon</a> et son équipe.
+                Annotations phénotypiques extraites de <a href="https://github.com/nodrogluap/pokay">Pokay</a>, 
+                organisées par <a href="https://people.ucalgary.ca/~gordonp/">Paul Gordon</a> et son équipe.
+                <br/>
+                <div class="clicker" title="T&eacute;l&eacute;charger les fréquences de mutation au format CSV" onclick="export_muttable();">&nbsp;&nbsp;CSV&nbsp;&nbsp;</div>
               </div>
               <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="mut-table"></div>
               <table id="muttable-legend" class="legend"></table>

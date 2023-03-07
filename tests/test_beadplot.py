@@ -151,5 +151,6 @@ class TestIssues(unittest.TestCase):
         # this raised an exception
         tree = beadplot.annotate_tree(tree, labels)
 
-
+if __name__ == '__main__':
+    unittest.main()
 

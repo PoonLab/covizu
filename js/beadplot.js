@@ -53,28 +53,6 @@ function unique(arr) {
   return (Object.keys(history));
 }
 
-
-/**
- * Tabulate values in array.
- * @param {Array} arr:  Array of values to tabulate
- * @returns {{}} Associative list of unique value: count pairs
- */
-function tabulate(arr) {
-  var val, counts = {};
-  for (var i=0; i<arr.length; i++) {
-    val = arr[i];
-    if (val === null) {
-      continue;
-    }
-    if (counts[val] === undefined) {
-      counts[val] = 0;
-    }
-    counts[val]++;
-  }
-  return(counts);
-}
-
-
 function parse_mutation_annotations(mut_annotations) {
   var mutations = [];
 
@@ -500,7 +478,7 @@ function expand() {
             tooltipText += `<b>${i18n_text.vedge_parent}:</b> ${d.parent}<br/><b>${i18n_text.vedge_distance}:</b> ${Math.round(d.dist*100)/100}<br/>`;
           }
           if (!d.unsampled) {
-            tooltipText += region_to_string(tabulate(d.region));
+            tooltipText += region_to_string(d.region);
             tooltipText += `<b>${i18n_text.hedge_unique_dates}:</b> ${d.numBeads}<br/>`;
             tooltipText += `<b>${i18n_text.hedge_coldates}:</b><br>${formatDate(d.x1)} / ${formatDate(d.x2)}`;
           }
@@ -634,7 +612,7 @@ function expand() {
         if (d.parent || d.dist) {
           tooltipText += `<b>Parent:</b> ${d.parent}<br/><b>${i18n_text.vedge_distance}:</b> ${Math.round(d.dist*100)/100}<br/>`;
         }
-        tooltipText += region_to_string(tabulate(d.region));
+        tooltipText += region_to_string(d.region);
         tooltipText += `<b>${i18n_text.vedge_coldate}:</b> ${formatDate(d.x)}`;
 
         // Tooltip appears 10 pixels left of the cursor

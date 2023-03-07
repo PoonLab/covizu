@@ -84,6 +84,8 @@
       tour_beadplot_desc: "We use beadplots to visualize the different variants of SARS-CoV-2 within a lineage, where and when they have been sampled, and how they are related to each other.",
       tour_bead_title: "Beads",
       tour_bead_desc: "Beads indicate when that variant was sampled. The area of the bead is scaled in proportion to the number of times the variant was sampled that day. Colours represent the most common geographic region of the samples.",
+      tour_variant_title: "Variants",
+      tour_variant_desc: "Each horizontal line segment represents a variant – viruses with identical genomes. If there are no beads on the line and it is grey, then it is an unsampled variant: two or more sampled variants descend from an ancestral variant that has not been directly observed.",
       tour_search_title: "Search Bar",
       tour_search_desc: 'You can use the text box to find a specific sample within a specified date range. Use the "Previous" and "Next" buttons to iterate through your search results, and the "Clear" button to reset the search interface.',
       tour_tables_title: "Summary Tables",
@@ -319,7 +321,10 @@
             </div>
             <div id="tabs-3">
               <div id="muttable-hint" class="hint">
-                Phenotype annotations retrieved from <a href="https://github.com/nodrogluap/pokay">Pokay</a>, curated by <a href="https://people.ucalgary.ca/~gordonp/">Paul Gordon</a> and his team.
+                Phenotype annotations retrieved from <a href="https://github.com/nodrogluap/pokay">Pokay</a>,
+                curated by <a href="https://people.ucalgary.ca/~gordonp/">Paul Gordon</a> and his team.
+                <br/>
+                <div class="clicker" title="Download mutation frequencies as CSV" onclick="export_muttable();">&nbsp;&nbsp;CSV&nbsp;&nbsp;</div>
               </div>
               <div style="overflow-y: auto; overflow-x: hidden; max-height: 200px" id="mut-table"></div>
               <table id="muttable-legend" class="legend"></table>

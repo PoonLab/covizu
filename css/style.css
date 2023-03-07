@@ -276,7 +276,7 @@ div.legend {
 
 .hint {
   border-bottom: 1px dotted #000;
-  cursor: help;
+  /* cursor: help; */
 }
 
 footer {
@@ -298,6 +298,7 @@ footer {
   margin: 1px;
   padding: 1px;
   display: inline-block;
+  cursor: pointer;
 }
 
 .clicker:hover {
