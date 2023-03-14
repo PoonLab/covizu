@@ -197,6 +197,10 @@ div.middlebox::-webkit-scrollbar {
 }
  */
 
+ div.right-header{
+  position: sticky;
+ }
+
 div.rightbox {
   box-sizing: border-box;
   position: absolute;
@@ -205,16 +209,16 @@ div.rightbox {
   right: 10px;
   width: 260px;
   height: 90%;
-  z-index: 0;
+  z-index: 2;
 }
 
 div.sticky {
   position: -webkit-sticky; /* for Safari */
   position: sticky;
-  top: 0;
+  top: 0px;
   align-self: flex-start; 
-  background-color: white;
   z-index: 1;
+  background-color: white;
 }
 
 div.legend-container {

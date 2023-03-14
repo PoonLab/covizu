@@ -36,6 +36,95 @@ $( "#splash" ).dialog({
   autoOpen: true,
   width: 600,
   buttons: [{
+    id: "tour-button",
+    text: i18n_text.tour,
+    disabled: true,
+    click: function() {
+      $( this ).dialog( "close" )
+
+      // Walkthrough
+      const driver = new Driver({
+        allowClose: false,
+        padding: 2.5
+      });
+
+      driver.defineSteps([
+        {
+          element: '#tree-axis',
+          popover: {
+            className: 'first-step-popover-class',
+            title: i18n_text.tour_tree_title,
+            description: i18n_text.tour_tree_desc,
+            position: 'right'
+          }
+        },
+        {
+          element: '.clicked',
+          popover: {
+            className: 'first-step-popover-class',
+            title: i18n_text.tour_lin_title,
+            description: i18n_text.tour_lin_desc,
+          }
+        },
+        {
+          element: '.legend-container',
+          popover: {
+            title: i18n_text.tour_legend_title,
+            description: i18n_text.tour_legend_desc,
+          }
+        },
+        {
+          element: '#beadplot-container',
+          popover: {
+            title: i18n_text.tour_beadplot_title,
+            description: i18n_text.tour_beadplot_desc,
+            position: 'right'
+          }
+        },
+        {
+          element: document.querySelector('#svg-cluster > svg > g > text'),
+          popover: {
+            title: i18n_text.tour_variant_title,
+            description: i18n_text.tour_variant_desc,
+            position: 'bottom-center'
+          }
+        },
+        {
+          element: document.querySelector('[idx="0"]'),
+          popover: {
+            title: i18n_text.tour_bead_title,
+            description: i18n_text.tour_bead_desc,
+            position: 'left-center'
+          }
+        },
+        {
+          element: '.search-bar-container',
+          popover: {
+            title: i18n_text.tour_search_title,
+            description: i18n_text.tour_search_desc,
+          }
+        },
+        {
+          element: '#tabs',
+          popover: {
+            title: i18n_text.tour_tables_title,
+            description: i18n_text.tour_tables_desc,
+            position: 'left-center'
+          }
+        },
+        {
+          element: '#intro',
+          popover: {
+            title: i18n_text.tour_end_title,
+            description: i18n_text.tour_end_desc,
+            position: 'bottom'
+          }
+        },
+      ]);
+      driver.start()
+    }
+  },
+  {
     id: "splash-button",
     text: i18n_text.okay,
     disabled: true,
@@ -187,6 +276,7 @@ req.done(async function() {
   var search = urlParams.get('search') || '';
 
   $("#splash-button").button("enable");
+  $("#tour-button").button("enable");
   $("#splash-extra").html("");  // remove loading animation
   
   mutations = parse_mutation_annotations(mut_annotations);
