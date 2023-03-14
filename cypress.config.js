@@ -7,6 +7,8 @@ module.exports = {
   viewportHeight: 1080,
   e2e: {
     testIsolation: false,
+    numTestsKeptInMemory:1,
+    experimentalMemoryManagement:true,
     baseUrl: 'http://localhost:8001',
     setupNodeEvents(on, config) {
       // implement node event listeners here
