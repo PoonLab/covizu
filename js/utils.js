@@ -64,3 +64,12 @@ function getUrlParameter(sParam) {
 */
 function jsonToURI(json){ return encodeURIComponent(JSON.stringify(json)); }
 
+/**
+ * Returns a date in UTC 
+ *
+ * @param {String} date: The date to be converted
+ */
+function utcDate(date) {
+   const dateObj = new Date(date);
+   return new Date(dateObj.getTime() + dateObj.getTimezoneOffset() * 60000);
+}
