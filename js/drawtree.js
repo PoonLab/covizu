@@ -198,9 +198,9 @@ function map_clusters_to_tips(df, clusters) {
     }
     coldates.sort();  // in place, ascending order
 
-    var first_date = new Date(coldates[0]),
-        last_date = new Date(coldates[coldates.length-1]);
-
+    var first_date = utcDate(coldates[0]),
+        last_date = utcDate(coldates[coldates.length-1]);
+    
     // augment data frame with cluster data
     tips[root_idx].cluster_idx = cidx;
     tips[root_idx].region1 = cluster.region1;
@@ -227,7 +227,7 @@ function map_clusters_to_tips(df, clusters) {
     tips[root_idx].nsamples = tip_stats.nsamples;
 
     // calculate residual from mean differences and mean collection date - fixes #241
-    let times = coldates.map(x => new Date(x).getTime()),
+    let times = coldates.map(x => utcDate(x).getTime()),
         origin = 18231,  // days between 2019-12-01 and UNIX epoch (1970-01-01)
         mean_time = times.reduce((x, y)=>x+y) / times.length / 8.64e7 - origin,
         rate = 0.0655342,  // subs per genome per day
