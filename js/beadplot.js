@@ -136,7 +136,6 @@ function parse_age(age_str) {
  */
 function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
   var vdata, pdata = [];
-
   if (variant.length === 0) {
     // handle unsampled internal node
     if (mindate === null || maxdate === null) {
@@ -146,8 +145,8 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
     vdata = {
       'accession': accn,
       'label': accn,
-      'x1': new Date(mindate + ' '),  // cluster min date
-      'x2': new Date(maxdate + ' '),  // cluster max date
+      'x1': new Date(mindate),  // cluster min date
+      'x2': new Date(maxdate),  // cluster max date
       'y1': y,
       'y2': y,
       'count': 0,
@@ -189,12 +188,11 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
         region_map[this_country] = this_region;
       }
     }
-
     vdata = {
       'accession': accn,
       'label': label,
-      'x1': new Date(coldates[0] + ' '),  // min date
-      'x2': new Date(coldates[coldates.length-1] + ' '),  // max date
+      'x1': new Date(coldates[0]),  // min date
+      'x2': new Date(coldates[coldates.length-1]),  // max date
       'y1': y,
       'y2': y,
       'count': coldates.length,
@@ -209,7 +207,6 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
       'dist': 0,
       'unsampled': false
     };
-
     for (let i=0; i<isodates.length; i++) {
       isodate = isodates[i];
 
@@ -222,7 +219,7 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
       pdata.push({
         cidx,
         'variant': accn,
-        'x': new Date(isodate + ' '),
+        'x': new Date(isodate),
         'y': y,
         'count': samples.length,
         'accessions': samples.map(x => x[1]),
