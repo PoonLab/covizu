@@ -291,16 +291,14 @@ function draw_clusters(tips) {
           .duration(50)
           .style("opacity", 0);
     })
-    .on("click", function(d) {
+    .on("click", async function(d) {
       var cluster_info = this;
       $('#error_message').text(``);
       $("#loading").show();
       $("#loading_text").text(`Loading. Please Wait...`);
-      setTimeout(function() {
-        click_cluster(d, cluster_info);
-        $("#loading").hide();
-        $("#loading_text").text(``);
-      }, 20);
+      await click_cluster(d, cluster_info);
+      $("#loading").hide();
+      $("#loading_text").text(``);
     });
 
   // generate colour palettes
@@ -577,7 +575,7 @@ function generate_legends() {
 }
 
 
-function click_cluster(d, cluster_info) {
+async function click_cluster(d, cluster_info) {
   cindex = d.cluster_idx;  // store index as global variable
   d3.selectAll("rect.clickedH").remove();
 
@@ -589,7 +587,7 @@ function click_cluster(d, cluster_info) {
   else
     d3.selectAll("rect.clicked").attr('class', "default");
 
-  beadplot(d.cluster_idx);
+  await beadplot(d.cluster_idx);
 
   // reset all rectangles to high transparency
   if ($('#search-input').val() === "") {
@@ -605,7 +603,7 @@ function click_cluster(d, cluster_info) {
 
     gentable(d);
     draw_region_distribution(d.region);
-    gen_details_table(beaddata[d.cluster_idx].points);  // update details table with all samples
+    gen_details_table(points);  // update details table with all samples
   }
   else if (cluster_info.className.baseVal !== "SelectedCluster"){
     if (search_results.get().total_points > 0) {
@@ -635,7 +633,7 @@ function click_cluster(d, cluster_info) {
 
     gentable(d);
     draw_region_distribution(d.region);
-    gen_details_table(beaddata[d.cluster_idx].points);  // update details table with all samples
+    gen_details_table(points);  // update details table with all samples
     
     // FIXME: this is the same div used for making barplot SVG
     $("#text-node").html(`Number of cases: ${d.count}<br/>Number of variants: ${d.varcount}<br/>`);

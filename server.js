@@ -21,7 +21,7 @@ try {
 
 const df = readTree(tree)
 const beaddata = parse_clusters(clusters)
-const { tips, recombinant_tips } = map_clusters_to_tips(df, clusters)
+const tips = map_clusters_to_tips(df, clusters)
 const accn_to_cid = index_accessions(clusters)
 const lineage_to_cid = index_lineage(clusters)
 const region_map = get_region_map()
@@ -35,51 +35,62 @@ const data = Object.keys(accn_to_cid).sort().concat(Object.keys(lineage_to_cid).
 ]);
 
 app.get('/api/edgeList/:cindex', (req, res) => {
+  console.log(req.url);
   res.send(beaddata[req.params.cindex].edgelist)
 });
 
 app.get('/api/points/:cindex', (req, res) => {
+  console.log(req.url);
   res.send(beaddata[req.params.cindex].points)
 });
 
 app.get('/api/variants/:cindex', (req, res) => {
+  console.log(req.url);
   res.send(beaddata[req.params.cindex].variants)
 });
 
 app.get('/api/tips', (req, res) => {
+  console.log(req.url);
   res.send(tips)
 });
 
 app.get('/api/df', (req, res) => {
+  console.log(req.url);
   res.send(df)
 });
 
 app.get('/api/regionmap', (req, res) => {
+  console.log(req.url);
   res.send(region_map)
 })
 
 app.get('/api/lineage/:cindex', (req, res) => {
+  console.log(req.url);
   res.send(clusters[req.params.cindex].lineage)
 });
 
 app.get('/api/cid/:accession', (req, res) => {
+  console.log(req.url);
   res.send(accn_to_cid[req.params.accession])
 });
 
 app.get('/api/cid', (req, res) => {
+  console.log(req.url);
   res.send(accn_to_cid)
 });
 
 app.get('/api/lineagetocid', (req, res) => {
+  console.log(req.url);
   res.send(lineage_to_cid)
 });
 
 app.get('/api/searchHits/:query/:start/:end', (req, res) => {
+  console.log(req.url);
   // Flatten the json data to an array with bead data only
   let flat_data = beaddata.map(bead => bead.points).flat();
   let start_date = utcDate(req.params.start);
   let end_date = utcDate(req.params.end)
-
+  console.log("SEARCH_BY_DATE",start_date,end_date);
   //Find all the beads that are a hit. Convert text_query to lower case and checks to see if there is a match
   let search_hits = flat_data.filter(function(bead) {
 	  temp = (bead.accessions.some(accession => (accession.toLowerCase()).includes(req.params.query.toLowerCase())) || 
@@ -92,6 +103,7 @@ app.get('/api/searchHits/:query/:start/:end', (req, res) => {
 });
 
 app.get('/api/getHits/:query', (req, res) => {
+  console.log(req.url);
   function as_label(search_data) {
     const [, accn] = search_data;
     return accn;
