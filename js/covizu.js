@@ -127,9 +127,9 @@ $.getJSON("data/countries.json", function(data) {
   countries = data;
 });
 
-
 var clusters, beaddata, tips,
-    accn_to_cid, cindex, lineage_to_cid;
+    accn_to_cid, cindex, lineage_to_cid, lineage;
+var edgelist = [], points = [], variants = []
 var map_cidx_to_id = [], id_to_cidx = [];
 
 // load cluster data from server

@@ -73,54 +73,6 @@ function draw_cluster_box(rect) {
 }
 
 /**
- * Rectangular layout of tree, update nodes in place with x,y coordinates
- * @param {object} root
- */
-function rectLayout(root) {
-  // assign vertical positions to tips by postorder traversal
-  var counter = 0;
-  for (const node of traverse(root, 'postorder')) {
-    if (node.children.length === 0) {
-      // assign position to tip
-      node.y = counter;
-      counter++;
-    } else {
-      // ancestral node position is average of child nodes
-      node.y = 0;
-      for (var i = 0; i < node.children.length; i++) {
-        var child = node.children[i];
-        node.y += child.y;
-      }
-      node.y /= node.children.length;
-    }
-  }
-
-  // assign horizontal positions by preorder traversal
-  for (const node of traverse(root, 'preorder')) {
-    if (node.parent === null) {
-      // assign root to x=0
-      node.x = 0.;
-    } else {
-      node.x = node.parent.x + node.branchLength;
-    }
-  }
-}
-
-
-/**
- * Get the data frame
- * @param {Object} timetree:  time-scaled phylogenetic tree imported as JSON
- */
-function getTimeTreeData(timetree) {
-  // generate tree layout (x, y coordinates
-  rectLayout(timetree);
-
-  var df = fortify(timetree);
-
-  return(df);
-}
-
-/**
  * Draw time-scaled tree in SVG
  * @param {Array} df:  data frame
  */

@@ -4,6 +4,7 @@
 var marginB = {top: 50, right: 10, bottom: 50, left: 10},
     widthB = document.getElementById("svg-cluster").clientWidth - marginB.left - marginB.right,
     heightB = 1000 - marginB.top - marginB.bottom;
+    ccid = -1;
 
 // set up plotting scales
 var xValueB = function(d) { return d.x },
@@ -526,9 +527,30 @@ function clear_selection() {
  * integer index <cid>) in the SVG.
  * @param {Number} cid:  integer index of cluster to draw as beadplot
  */
-function beadplot(cid) {
-  // Update global cindex for SVG and NWK filenames
-  cindex = cid;
+async function beadplot(cid) {
+    // Update global cindex for SVG and NWK filenames
+    if (cindex !== ccid) {
+      cindex = cid;
+      ccid = cindex
+      edgelist = await getdata(`/api/edgelist/${cindex}`);
+      edgelist.forEach(x => {
+        x.x1 = utcDate(x.x1),
+        x.x2 = utcDate(x.x2)
+      });
+      points = await getdata(`/api/points/${cindex}`);
+      points.forEach(d => {
+        d.x = utcDate(d.x)
+      });
+      variants = await getdata(`/api/variants/${cindex}`);
+      variants.forEach(x => {
+        x.x1 = utcDate(x.x1),
+        x.x2 = utcDate(x.x2)
+      });
+      await fetch(`/api/lineage/${cindex}`)
+      .then(response => response.text())
+      .then(lin => lineage=lin)
+    } 
+  
   
   var variants = beaddata[cid].variants,
       edgelist = beaddata[cid].edgelist,
