@@ -194,6 +194,7 @@ async function main_search(text_query, start_date, end_date) {
   }
 
   // The current cluster is also given the "clicked" class
+  cindex = cluster.datum().cluster_idx
   cluster.attr("class", "SelectedCluster clicked");
   await beadplot(cluster.datum().cluster_idx);
 

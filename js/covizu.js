@@ -122,9 +122,6 @@ $.ajax({
     nwk = data;
   }
 });
-// $.getJSON("data/countries.json", function(data) {
-//   countries = data;
-// });
 
 var clusters, tips,
     accn_to_cid, cindex, lineage_to_cid, lineage;
