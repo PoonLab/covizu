@@ -227,7 +227,7 @@ async function main_search(text_query, start_date, end_date) {
  * This function handles search by lineage
  * @param {String} text_query 
  */
-function lineage_search(text_query) {
+async function lineage_search(text_query) {
   var cidx = lineage_to_cid[text_query.toUpperCase()];
 
   // Terminates if there is no match
@@ -245,7 +245,9 @@ function lineage_search(text_query) {
 
   cluster.attr("class", "SelectedCluster clicked");
   var cluster_info = cluster.datum();
-  beadplot(cluster_info.cluster_idx);
+  console.log(`cindex=${cindex}`)
+  cindex = cluster.datum().cluster_idx;
+  await beadplot(cluster_info.cluster_idx);
   gentable(cluster_info);
   draw_region_distribution(cluster_info.region);
   gen_details_table(points); 
@@ -256,8 +258,8 @@ function lineage_search(text_query) {
  * This function handles search by accession
  * @param {String} text_query 
  */
-function accession_search(text_query) {
-  var cidx = accn_to_cid[text_query.toUpperCase()];
+async function accession_search(text_query) {
+  var cidx = await getdata(`/api/cid/${text_query.toUpperCase()}`);
 
   if (cidx === undefined) {
     $('#error_message').text(`No matches. Please try again.`);
@@ -265,14 +267,17 @@ function accession_search(text_query) {
   }
 
   var cluster = select_cluster("cidx-"+cidx);
+  console.log("cluster=",cluster);
 
   d3.select("#svg-timetree")
     .selectAll("rect:not(.clicked):not(.clickedH)")
     .attr("class","not_SelectedCluster");
 
   cluster.attr("class", "SelectedCluster clicked");
+  // d3.select("#cidx-"+cidx).attr("class", "clicked");
   
-  beadplot(cluster.datum().cluster_idx);
+  cindex = cluster.datum().cluster_idx;
+  await beadplot(cluster.datum().cluster_idx);
 
   var bead_hits = [];
   bead_hits[text_query.toUpperCase()] = 0;
@@ -311,8 +316,10 @@ function select_cluster(cidx) {
 
   d3.selectAll("circle").dispatch("mouseout");
   var cluster = d3.selectAll('rect[cidx="'+cidx+'"]');
-
+  // document.getElementsByClassName("tree-content")[0].scroll(10,1000)
+  // document.getElementsByClassName("tree-container")[0].offsetHeight/2
   draw_cluster_box(cluster);
+  console.log(cluster,cluster.nodes(),cluster.nodes()[0])
   cluster.nodes()[0].scrollIntoView({block: "center"});
 
   return cluster;
