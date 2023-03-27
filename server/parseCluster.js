@@ -333,7 +333,7 @@ const map_clusters_to_tips = (df, clusters) => {
     var labels = Object.keys(cluster["nodes"]),
         root = tip_labels.filter(value => value === cluster['lineage'])[0];
     if (root === undefined) {
-      if (cluster['lineage'][0] == 'X') {
+      if (cluster['lineage'].startsWith("X")) {
         recombinants.push(cidx)
         continue;
       }
