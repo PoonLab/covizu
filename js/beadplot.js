@@ -53,6 +53,46 @@ function unique(arr) {
 }
 
 
+function parse_mutation_annotations(mut_annotations) {
+  var mutations = [];
+
+  // Sorts tips according to cluster_idx
+  sorted_tips = [...tips, ...recombinant_tips]
+  sorted_tips.sort(function(a,b) {
+    return a.cluster_idx - b.cluster_idx
+  });
+
+  for (const cidx in sorted_tips) {
+    let phenotype = [],
+        mutations_list = [],
+        frequency_list = [],
+        tip = sorted_tips[cidx];
+    console.log(tip.mutations)
+    if (!('mutations' in tip)) {
+      tip['mutations'] = []
+    }
+    for (const [mutation, freq] of Object.entries(tip.mutations)) {
+      mutations_list.push(mutation);
+      frequency_list.push(parseFloat(freq).toFixed(2))
+
+      if (mutation in mut_annotations) {
+        phenotype.push(mut_annotations[mutation])
+      }
+      else {
+        phenotype.push([])
+      }
+    }
+    mutations.push({
+      'mutation': mutations_list,
+      'frequency' : frequency_list,
+      'phenotype': phenotype
+    })
+  }
+
+  return mutations
+}
+
+
 /**
  * Tabulate values in array.
  * @param {Array} arr:  Array of values to tabulate
@@ -736,6 +776,127 @@ function region_to_string(my_regions) {
 
   return regStr;
 }
+
+
+
+function gen_mut_table(obj) {
+  var mutations = [];
+
+  // Check for a list of samples
+  if (Array.isArray(obj)) {
+    // Iterate over each sample in the list
+    for (let j = 0; j < obj.length; j++) {
+      
+      // "zip" the sequence details of each sample
+      for (let i = 0; i < obj[j].mutation.length; i++) {
+        let sample_details = [
+          obj[j].mutation[i],
+          obj[j].frequency[i],
+          []
+          // obj[j].phenotype[i]  
+        ];
+        mutations.push(sample_details);
+      }
+    } 
+  }
+  else {
+    // "zip" the sequence details of each sample
+    for (let i = 0; i < obj.mutation.length; i++) {
+      let sample_details = [
+        obj.mutation[i],
+        obj.frequency[i],
+        []
+        // obj.phenotype[i]  
+      ];
+      mutations.push(sample_details);
+    }
+  }
+
+  mut_thead.html(""); // clear table headers
+  var sort_ascending = true;
+
+  var headers = mut_thead.append('tr')
+      .selectAll('th')
+      .data(mut_theaders)
+      .enter()
+      .append('th')
+      .on('click', function (x, i) {
+        // Reset sorting arrows
+        mut_thead.selectAll('a').classed('hide-before', false);
+        mut_thead.selectAll('a').classed('hide-after', false);
+
+        // Sort columns
+        if (sort_ascending) {
+          t_rows.sort(function(a, b) { return d3.ascending(b[i], a[i]); });
+          sort_ascending = false;
+          d3.select(this).select('a').classed('hide-after', true);
+          d3.select(this).select('a').classed('hide-before', false);
+        } else {
+          t_rows.sort(function(a, b) { return d3.descending(b[i], a[i]); });
+          sort_ascending = true;
+          d3.select(this).select('a').classed('hide-before', true);
+          d3.select(this).select('a').classed('hide-after', false);
+        }
+      })
+      .append('a')
+      .text(function (x) { return x; })
+      .classed('sort-by', true)
+      
+  // Create a row for each sample
+  mut_tbody.html("");
+  var t_rows = mut_tbody.selectAll('tr')
+      .data(mutations)
+      .enter()
+      .append('tr')
+      .on("mouseover", function (x) {
+        // Highlight row on mouseover
+        d3.select(this).style("background-color", "#e2e2e2");
+      })
+      .on("mouseout", function (x) {
+        // Remove highlighting on mouseout
+        d3.select(this).style("background-color", null);
+      });
+
+  // Create a cell for every row in the column
+  t_rows.selectAll('td')
+      .data(function (r) { return r.slice(0,3); })
+      .enter()
+      .append('td')
+      .append('span')
+      .on("mouseout", function() {
+        cTooltip.transition()
+            .duration(50)
+            .style("opacity", 0);
+      })
+      .text(function (x) { return x; })
+      .style("font", "0.875em/1.2 Lato, sans-serif");
+
+  var t_cells = document.querySelectorAll("#tabs-3 table tbody tr")
+  var phenotype_icons = {
+    'vaccine_neutralization_efficacy': 'img/red_circle.png', 
+    'anthropozoonotic_events': 'img/bat.png', 
+    'gene_expression_increase': 'img/orange_star.png', 
+    'ACE2_receptor_binding_affinity': 'img/purple_square.jpeg',
+    'monoclonal_antibody_serial_passage_escape': 'img/antibody.png', 
+    'convalescent_plasma_escape': 'img/green_pentagon.png', 
+    'antibody_epitope_effects': 'img/blue_triangle.png'
+  }
+  for (let j = 0; j < obj.phenotype.length; j++) {
+    var phenotype = t_cells[j].children[2];
+      for (let i = 0; i < obj.phenotype[j].length; i++) {
+        for (const [label, link] of Object.entries(phenotype_icons)) {
+          if(obj.phenotype[j][i] == label) {
+            var img = document.createElement("img");
+            img.src = link;
+            img.classList.add('phenotype_icon')
+            phenotype.appendChild(img);
+          }
+        }
+      }
+  }    
+}
+
+
 
 
 /**

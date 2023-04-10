@@ -120,6 +120,16 @@ var country_pal = {
   "South America": "#77AADD"
 };
 
+var phenotypes = {
+  'Vaccine neutralization efficacy': 'img/red_circle.png', 
+  'Anthropozoonotic events': 'img/bat.png', 
+  'Gene expression increase': 'img/orange_star.png', 
+  'ACE2 receptor binding affinity': 'img/purple_square.jpeg',
+  'Monoclonal antibody serial passage escape': 'img/antibody.png', 
+  'Convalescent plasma escape': 'img/green_pentagon.png', 
+  'Antibody epitope effects': 'img/blue_triangle.png'
+}
+
 // Tom Thomson - autumn birches 1916
 var province_pal = {
   "British Columbia": '#254617',
@@ -140,7 +150,7 @@ var province_pal = {
 }
 
 // load time-scaled phylogeny from server
-var nwk, df, countries;
+var nwk, df, countries, mut_annotations;
 $.ajax({
   url: "data/timetree.nwk",
   success: function(data) {
@@ -151,9 +161,13 @@ $.ajax({
 $.getJSON("data/countries.json", function(data) {
   countries = data;
 });
+$.getJSON("data/mut_annotations.json", function(data) {
+  mut_annotations = data;
+  console.log(data)
+});
 
 
-var clusters, beaddata, tips,
+var clusters, beaddata, tips, recombinant_tips,
     accn_to_cid, cindex, lineage_to_cid, lineage;
 var edgelist = [], points = [], variants = [];
 var map_cidx_to_id = [], id_to_cidx = [];
@@ -162,6 +176,15 @@ req = $.when(
   $.getJSON("/api/tips", function(data) {
     tips = data;
     tips.forEach(x => {
+      x.first_date = new Date(x.first_date)
+      x.last_date = new Date(x.last_date)
+      x.coldate = new Date(x.coldate)
+      x.mcoldate = new Date(x.mcoldate)
+    });
+  }),
+  $.getJSON("/api/recombtips", function(data) {
+    recombinant_tips = data;
+    recombinant_tips.forEach(x => {
       x.first_date = new Date(x.first_date)
       x.last_date = new Date(x.last_date)
       x.coldate = new Date(x.coldate)
@@ -186,6 +209,7 @@ req.done(async function() {
   drawtree(df);
   //spinner.stop();
   draw_clusters(tips);
+  mutations = parse_mutation_annotations(mut_annotations);
 
   var rect = d3.selectAll("#svg-timetree > svg > rect"),
       node = rect.nodes()[rect.size()-1];
@@ -205,6 +229,7 @@ req.done(async function() {
   gentable(node.__data__);
   draw_region_distribution(node.__data__.allregions);
   gen_details_table(points);  // update details table with all samples
+  gen_mut_table(mutations[cindex]);
   draw_cluster_box(d3.select(node));
 
   /*
@@ -651,6 +676,55 @@ var thead = seq_table.append('thead');
 var seq_theaders = i18n_text.sample_theaders;
 var seq_tbody = seq_table.append('tbody');
 
+// Populate mutation details table
+
+// Prepare the legend
+var mut_table_legend = []
+
+var num_labels = 0, phenotype_labels = [];
+for (const [label, link] of Object.entries(phenotypes)) {
+  if (num_labels != 0 && num_labels % 2 == 0) {
+    mut_table_legend.push(phenotype_labels);
+    phenotype_labels = []
+  }
+  phenotype_labels.push({
+    label: i18n_text.phenotypes[label],
+    src: link
+  });
+  num_labels++;
+}
+
+if (phenotype_labels.length !== 0) {
+  mut_table_legend.push(phenotype_labels)
+}
+
+var mut_table = d3.select('#mut-table').append('table');
+var mut_thead = mut_table.append('thead')
+var mut_theaders = i18n_text.mutation_threaders;
+var mut_tbody = mut_table.append("tbody")
+
+var mut_legend_rows = d3.select("#muttable-legend")
+                        .append("tbody")
+                        .selectAll("tr")
+                        .data(mut_table_legend)
+                        .enter()
+                        .append("tr")
+
+var mut_legend_cells = mut_legend_rows
+                        .selectAll("td")
+                        .data(function (r) { return r.slice(0,2); })
+                        .enter()
+                        .append("td")
+
+mut_legend_cells
+  .append("img")
+  .attr("src", function(d) { return d.src })
+  .attr("class", "phenotype_icon")
+
+mut_legend_cells
+  .append("text")
+  .text(function(d) { return d.label; })
+
 // implement acknowledgements dialog
 $( "#dialog" ).dialog({ autoOpen: false });
 
@@ -694,4 +768,28 @@ function export_csv() {
   csvFile = csvFile + "\n" + lineage_info.join("\n");
   blob = new Blob([csvFile], {type: "text/csv"});
   saveAs(blob, "lineage_stats.csv");
+}
+
+function export_muttable() {
+  // download mutation frequencies (>=50%) for every lineage as CSV file
+  var csvFile = 'lineage,mutation,frequency\n';
+  var mutation_info = [], muts;
+  for (lineage in dbstats['lineages']) {
+    muts = dbstats['lineages'][lineage]['mutations']
+    for (const [mut, count] of Object.entries(muts)) {
+      mutation_info.push([`${lineage},${mut},${count}`]);
+    }
+  }
+  csvFile = csvFile + mutation_info.join("\n") + "\n";
+  blob = new Blob([csvFile], {type: "text/csv"});
+  saveAs(blob, "mutations.csv");
+}
+
+function set_height() {
+  // Calculate the height for the tree container and beadplot container
+  $('#tree-vscroll').css('height',$(window).height() - $('#tree-vscroll').offset().top - 50)
+  $('.tree-content').css('height',$(window).height() - $('.tree-content').offset().top - 50)
+  $('#cutoff-line').css('height',$(window).height() - $('#cutoff-line').offset().top - 50)
+  $('.beadplot-content').css('height',$(window).height() - $('.beadplot-content').offset().top - 50)
+  $('#beadplot-vscroll').css('height',$(window).height() - $('#beadplot-vscroll').offset().top - 50)
 }
