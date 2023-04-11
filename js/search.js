@@ -55,7 +55,7 @@ function update_search_stats(stats) {
  * It also uses the results produced by the main_search function to populate the ui with the search results
  * When the user changes the search query this should be rerun.
  */
-function wrap_search() {
+async function wrap_search() {
   
   var start_date_text = $('#start-date').val();
   var end_date_text = $('#end-date').val();
@@ -94,11 +94,11 @@ function wrap_search() {
   }
 
   if (isAccn(query)) 
-    accession_search(query);
+    await accession_search(query);
   else if (isLineage(query))
-    lineage_search(query, start_date, end_date);
+    await lineage_search(query, start_date, end_date);
   else 
-    main_search(beaddata, query, start_date, end_date);
+    await main_search(query, start_date, end_date);
 }
 
 
@@ -108,28 +108,33 @@ function wrap_search() {
  * It returns an array that contains the total number of hits 
  * and the number of hits in each cluster.
  *
- * @param all_bead_data: all the bead data that should be compared against the searched quary.
  * @param text_query: a text string that should be compared against the searchtext property.
  * @param start_data: a date type indicating the search start date.
  * @param end_data: a date type indicating the search end date.
  */
-function main_search(all_bead_data, text_query, start_date, end_date) {
-  // Flatten the json data to an array with bead data only
-  flat_data = find_beads_points(all_bead_data);
+async function main_search(text_query, start_date, end_date) {
+  console.log("MAIN_SEARCHING",text_query, start_date, end_date);
+  // // Flatten the json data to an array with bead data only
+  // flat_data = find_beads_points(all_bead_data);
 
-  //Find all the beads that are a hit. Convert text_query to lower case and checks to see if there is a match
-  search_hits = flat_data.filter(function(bead) {
-	  temp = (bead.accessions.some(accession => (accession.toLowerCase()).includes(text_query.toLowerCase())) || 
-		  bead.labels.some(label => (label.toLowerCase()).includes(text_query.toLowerCase()))) && 
-		  (bead.x >= start_date && bead.x <= end_date);
-	  return temp;
-  });
+  // //Find all the beads that are a hit. Convert text_query to lower case and checks to see if there is a match
+  // search_hits = flat_data.filter(function(bead) {
+	//   temp = (bead.accessions.some(accession => (accession.toLowerCase()).includes(text_query.toLowerCase())) || 
+	// 	  bead.labels.some(label => (label.toLowerCase()).includes(text_query.toLowerCase()))) && 
+	// 	  (bead.x >= start_date && bead.x <= end_date);
+	//   return temp;
+  // });
+  search_hits = await getdata(`/api/searchHits/${text_query}/${start_date}/${end_date}`);
+  console.log("SEARCH_HIST",search_hits);
 
   // If there are no hits, then stops the main_search
   if (search_hits.length === 0) {
     $('#error_message').text(`No matches. Please try again.`);
     return;
   }
+  search_hits.forEach(d => {
+    d.x = utcDate(d.x)
+  });
 
   // Order the search results by cluster id, y cord, x cord 
   search_hits.sort(function(x, y) {
@@ -189,8 +194,9 @@ function main_search(all_bead_data, text_query, start_date, end_date) {
   }
 
   // The current cluster is also given the "clicked" class
+  cindex = cluster.datum().cluster_idx
   cluster.attr("class", "SelectedCluster clicked");
-  beadplot(cluster.datum().cluster_idx);
+  await beadplot(cluster.datum().cluster_idx);
 
   // Beads in Cluster
   points_ui = d3.selectAll("#svg-cluster > svg > g > circle")
@@ -221,7 +227,7 @@ function main_search(all_bead_data, text_query, start_date, end_date) {
  * This function handles search by lineage
  * @param {String} text_query 
  */
-function lineage_search(text_query) {
+async function lineage_search(text_query) {
   var cidx = lineage_to_cid[text_query.toUpperCase()];
 
   // Terminates if there is no match
@@ -239,10 +245,12 @@ function lineage_search(text_query) {
 
   cluster.attr("class", "SelectedCluster clicked");
   var cluster_info = cluster.datum();
-  beadplot(cluster_info.cluster_idx);
+  console.log(`cindex=${cindex}`)
+  cindex = cluster.datum().cluster_idx;
+  await beadplot(cluster_info.cluster_idx);
   gentable(cluster_info);
   draw_region_distribution(cluster_info.region);
-  gen_details_table(beaddata[cluster_info.cluster_idx].points); 
+  gen_details_table(points); 
 }
 
 
@@ -250,8 +258,8 @@ function lineage_search(text_query) {
  * This function handles search by accession
  * @param {String} text_query 
  */
-function accession_search(text_query) {
-  var cidx = accn_to_cid[text_query.toUpperCase()];
+async function accession_search(text_query) {
+  var cidx = await getdata(`/api/cid/${text_query.toUpperCase()}`);
 
   if (cidx === undefined) {
     $('#error_message').text(`No matches. Please try again.`);
@@ -259,14 +267,17 @@ function accession_search(text_query) {
   }
 
   var cluster = select_cluster("cidx-"+cidx);
+  console.log("cluster=",cluster);
 
   d3.select("#svg-timetree")
     .selectAll("rect:not(.clicked):not(.clickedH)")
     .attr("class","not_SelectedCluster");
 
   cluster.attr("class", "SelectedCluster clicked");
+  // d3.select("#cidx-"+cidx).attr("class", "clicked");
   
-  beadplot(cluster.datum().cluster_idx);
+  cindex = cluster.datum().cluster_idx;
+  await beadplot(cluster.datum().cluster_idx);
 
   var bead_hits = [];
   bead_hits[text_query.toUpperCase()] = 0;
@@ -305,8 +316,10 @@ function select_cluster(cidx) {
 
   d3.selectAll("circle").dispatch("mouseout");
   var cluster = d3.selectAll('rect[cidx="'+cidx+'"]');
-
+  // document.getElementsByClassName("tree-content")[0].scroll(10,1000)
+  // document.getElementsByClassName("tree-container")[0].offsetHeight/2
   draw_cluster_box(cluster);
+  console.log(cluster,cluster.nodes(),cluster.nodes()[0])
   cluster.nodes()[0].scrollIntoView({block: "center"});
 
   return cluster;
@@ -332,18 +345,52 @@ function update_table_individual_bead_front(bead) {
  * @param  bead_id_to_accession: Maps bead id to an accession 
  * @param  curr_bead: The next or previous bead id that needs to be selected
  */
-function select_next_prev_bead(bead_id_to_accession, curr_bead) {
+// async function select_next_prev_bead(bead_id_to_accession, curr_bead) {
+//   d3.selectAll('rect[class="clicked"]').attr('class', "not_SelectedCluster");
+//   d3.selectAll('rect[class="not_SelectedCluster clicked"]').attr('class', "not_SelectedCluster");
+
+//   var next_cluster = d3.selectAll('rect[cidx="cidx-'+accn_to_cid[bead_id_to_accession[curr_bead]]+'"]');
+//   d3.selectAll("rect.clickedH").remove();
+//   d3.selectAll(".SelectedCluster.clicked").attr('class', 'SelectedCluster'); 
+//   next_cluster.attr("class", "SelectedCluster clicked");
+//   draw_cluster_box(next_cluster);
+//   next_cluster.nodes()[0].scrollIntoView({block: "center"});
+
+//   await beadplot(next_cluster.datum().cluster_idx);
+
+//   // Beads in Cluster
+//   points_ui = d3.selectAll("#svg-cluster > svg > g > circle")
+//   .filter(function(d) {
+//     return bead_id_to_accession.includes(d.accessions[0])
+//   });
+//   selected = points_ui.nodes();
+//   deselect_all_beads();
+//   for (const node of selected) {
+//     selected_obj = d3.select(node);
+//     create_selection(selected_obj);
+//   }
+// }
+
+async function select_next_prev_bead(bead_id_to_accession, curr_bead) {
   d3.selectAll('rect[class="clicked"]').attr('class', "not_SelectedCluster");
   d3.selectAll('rect[class="not_SelectedCluster clicked"]').attr('class', "not_SelectedCluster");
 
-  var next_cluster = d3.selectAll('rect[cidx="cidx-'+accn_to_cid[bead_id_to_accession[curr_bead]]+'"]');
+  let curr_cid;
+  await fetch(`/api/cid/${bead_id_to_accession[curr_bead]}`)
+  .then(response => response.text())
+  .then(data => curr_cid = data);
+
+  var next_cluster = d3.selectAll('rect[cidx="cidx-'+curr_cid+'"]');
   d3.selectAll("rect.clickedH").remove();
-  d3.selectAll(".SelectedCluster.clicked").attr('class', 'SelectedCluster'); 
+  d3.selectAll(".SelectedCluster.clicked").attr('class', 'SelectedCluster');
+  d3.selectAll("text.clicked").attr('class', null)
   next_cluster.attr("class", "SelectedCluster clicked");
+  d3.select('#cidx-' + curr_cid).attr("class", "clicked")
   draw_cluster_box(next_cluster);
   next_cluster.nodes()[0].scrollIntoView({block: "center"});
 
-  beadplot(next_cluster.datum().cluster_idx);
+  cindex = curr_cid
+  await beadplot(next_cluster.datum().cluster_idx);
 
   // Beads in Cluster
   points_ui = d3.selectAll("#svg-cluster > svg > g > circle")
@@ -412,8 +459,11 @@ function deselect_all_beads() {
 }
 
 function select_working_bead(bead_id_to_accession, curr_bead) {
+  console.log("FUNCTION_ARGS",bead_id_to_accession,curr_bead,bead_id_to_accession[curr_bead]);
   var current_bead = d3.selectAll('circle[id="'+bead_id_to_accession[curr_bead]+'"]');
   var working_bead = current_bead.nodes()[0];
+  console.log("CURRENT_BEAAD",current_bead);
+  console.log("WORKING_BEAD",working_bead);
   current_bead.raise();
   working_bead.scrollIntoView({block: "center"});
   update_table_individual_bead_front(d3.select(working_bead).datum());
@@ -656,15 +706,6 @@ function index_accessions(clusters) {
 function as_label(search_data) {
 	const [, accn] = search_data;
 	return accn;
-}
-
-function index_lineage(clusters) {
-  var index = {};
-  for (const cid in clusters) {
-    var accns = clusters[cid].lineage
-    index[accns] = cid;
-  }
-  return index;
 }
 
 /**

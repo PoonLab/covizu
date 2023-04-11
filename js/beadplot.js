@@ -4,6 +4,7 @@
 var marginB = {top: 50, right: 10, bottom: 50, left: 10},
     widthB = document.getElementById("svg-cluster").clientWidth - marginB.left - marginB.right,
     heightB = 1000 - marginB.top - marginB.bottom;
+    ccid = -1;
 
 // set up plotting scales
 var xValueB = function(d) { return d.x },
@@ -363,88 +364,88 @@ function merge_tables(tables) {
  * easier to map to SVG.
  * @param {Object} clusters:
  */
-function parse_clusters(clusters) {
-  var cluster, variant, coldates, regions, labels,
-      accn, mindate, maxdate,
-      result, vdata, pdata,
-      variants,  // horizontal line segment data + labels
-      edgelist,  // vertical line segment data
-      points,  // the "beads"
-      beaddata = [];  // return value
+// function parse_clusters(clusters) {
+//   var cluster, variant, coldates, regions, labels,
+//       accn, mindate, maxdate,
+//       result, vdata, pdata,
+//       variants,  // horizontal line segment data + labels
+//       edgelist,  // vertical line segment data
+//       points,  // the "beads"
+//       // beaddata = [];  // return value
 
-  for (const cidx in clusters) {
-    cluster = clusters[cidx];
+//   for (const cidx in clusters) {
+//     cluster = clusters[cidx];
 
-    variants = [];
-    points = [];
-    edgelist = [];
+//     variants = [];
+//     points = [];
+//     edgelist = [];
 
-    // deal with edge case of cluster with only one variant, no edges
-    if (Object.keys(cluster["nodes"]).length === 1) {
-      variant = Object.values(cluster.nodes)[0];
-      accn = Object.keys(cluster.nodes)[0];
-      result = parse_variant(variant, 0, cidx, accn, null, null);
-      vdata = result['variant'];
-      variants.push(vdata);
+//     // deal with edge case of cluster with only one variant, no edges
+//     if (Object.keys(cluster["nodes"]).length === 1) {
+//       variant = Object.values(cluster.nodes)[0];
+//       accn = Object.keys(cluster.nodes)[0];
+//       result = parse_variant(variant, 0, cidx, accn, null, null);
+//       vdata = result['variant'];
+//       variants.push(vdata);
 
-      pdata = result['points'];
-      points = points.concat(pdata);
-    }
-    else {
-      // de-convolute edge list to get node list in preorder
-      var nodelist = unique(cluster.edges.map(x => x.slice(0, 2)).flat());
+//       pdata = result['points'];
+//       points = points.concat(pdata);
+//     }
+//     else {
+//       // de-convolute edge list to get node list in preorder
+//       var nodelist = unique(cluster.edges.map(x => x.slice(0, 2)).flat());
 
-      // date range of cluster
-      coldates = nodelist.map(a => cluster.nodes[a].map(x => x[3])).flat();
-      coldates.sort()
-      mindate = coldates[0];
-      maxdate = coldates[coldates.length - 1];
+//       // date range of cluster
+//       coldates = nodelist.map(a => cluster.nodes[a].map(x => x[3])).flat();
+//       coldates.sort()
+//       mindate = coldates[0];
+//       maxdate = coldates[coldates.length - 1];
 
-      // extract the date range for each variant in cluster
-      var y = 1;
-      for (const accn of nodelist) {
-        // extract collection dates for all samples of this variant
-        variant = cluster.nodes[accn];
-        result = parse_variant(variant, y, cidx, accn, mindate, maxdate);
-        variants.push(result['variant']);
-        points = points.concat(result['points']);
-        y++;
-      }
+//       // extract the date range for each variant in cluster
+//       var y = 1;
+//       for (const accn of nodelist) {
+//         // extract collection dates for all samples of this variant
+//         variant = cluster.nodes[accn];
+//         result = parse_variant(variant, y, cidx, accn, mindate, maxdate);
+//         variants.push(result['variant']);
+//         points = points.concat(result['points']);
+//         y++;
+//       }
 
-      edgelist = parse_edgelist(cluster, variants, points);
-    }
+//       edgelist = parse_edgelist(cluster, variants, points);
+//     }
 
-    beaddata.push({
-      'variants': variants,
-      'edgelist': edgelist,
-      'points': points
-    });
+//     beaddata.push({
+//       'variants': variants,
+//       'edgelist': edgelist,
+//       'points': points
+//     });
 
-    // calculate consensus region for cluster
-    // collect all region Arrays for all samples, all variants
-    cluster['region'] = merge_tables(points.map(x => x.region));
-    let max_freq = 0, max_region = '';
-    for (let row of Object.entries(cluster['region'])) {
-      if (row[1] > max_freq) {
-        max_freq = row[1];
-        max_region = row[0];
-      }
-    }
-    cluster['region1'] = max_region;  // most common region
+//     // calculate consensus region for cluster
+//     // collect all region Arrays for all samples, all variants
+//     cluster['region'] = merge_tables(points.map(x => x.region));
+//     let max_freq = 0, max_region = '';
+//     for (let row of Object.entries(cluster['region'])) {
+//       if (row[1] > max_freq) {
+//         max_freq = row[1];
+//         max_region = row[0];
+//       }
+//     }
+//     cluster['region1'] = max_region;  // most common region
 
-    // concatenate all sample labels within cluster for searching
-    labels = points.map(x => x.labels).flat();
+//     // concatenate all sample labels within cluster for searching
+//     labels = points.map(x => x.labels).flat();
 
-    // decompose labels and only keep unique substrings
-    let uniq = new Set(labels.map(x => x.split('/')).flat());
-    cluster['searchtext'] = Array.from(uniq).join();
-    cluster['label1'] = labels[0];
+//     // decompose labels and only keep unique substrings
+//     let uniq = new Set(labels.map(x => x.split('/')).flat());
+//     cluster['searchtext'] = Array.from(uniq).join();
+//     cluster['label1'] = labels[0];
 
-    // collect all countries
-    cluster['country'] = merge_tables(variants.map(x => x.country));
-  }
-  return beaddata;
-}
+//     // collect all countries
+//     cluster['country'] = merge_tables(variants.map(x => x.country));
+//   }
+//   return beaddata;
+// }
 
 
 function create_selection(selected_obj) {
@@ -526,13 +527,34 @@ function clear_selection() {
  * integer index <cid>) in the SVG.
  * @param {Number} cid:  integer index of cluster to draw as beadplot
  */
-function beadplot(cid) {
-  // Update global cindex for SVG and NWK filenames
-  cindex = cid;
+async function beadplot(cid) {
+    // Update global cindex for SVG and NWK filenames
+    if (cindex !== ccid) {
+      cindex = cid;
+      ccid = cindex
+      edgelist = await getdata(`/api/edgelist/${cindex}`);
+      edgelist.forEach(x => {
+        x.x1 = utcDate(x.x1),
+        x.x2 = utcDate(x.x2)
+      });
+      points = await getdata(`/api/points/${cindex}`);
+      points.forEach(d => {
+        d.x = utcDate(d.x)
+      });
+      variants = await getdata(`/api/variants/${cindex}`);
+      variants.forEach(x => {
+        x.x1 = utcDate(x.x1),
+        x.x2 = utcDate(x.x2)
+      });
+      await fetch(`/api/lineage/${cindex}`)
+      .then(response => response.text())
+      .then(lin => lineage=lin)
+    } 
   
-  var variants = beaddata[cid].variants,
-      edgelist = beaddata[cid].edgelist,
-      points = beaddata[cid].points;
+  // Moved these to separate /api endpoints
+  // var variants = beaddata[cid].variants,
+  //     edgelist = beaddata[cid].edgelist,
+  //     points = beaddata[cid].points;
 
   function redraw() {    
     currentWidth = document.getElementById("svg-cluster").clientWidth - marginB.left -  marginB.right;
@@ -1197,8 +1219,8 @@ function serialize_branch(parent, edgelist) {
 }
 
 function serialize_beadplot(cidx) {
-  var edgelist = beaddata[cidx].edgelist,
-      root = edgelist[0].parent;
+  // var edgelist = beaddata[cidx].edgelist,
+  var root = edgelist[0].parent;
   return serialize_branch(root, edgelist)+';';
 }
 

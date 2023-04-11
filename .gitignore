@@ -1,5 +1,7 @@
 .*
 data/*
+data/countries.json
+node_modules/
 .idea/
 treetime/*
 scripts/geckodriver.log

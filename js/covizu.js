@@ -7,24 +7,24 @@ $("#loading_text").text(``);
 $("#loading").hide();
 
 /*********************** Session ID check ***********************/
-var sid = getUrlParameter('sid') // Load vars from url
+// var sid = getUrlParameter('sid') // Load vars from url
 
-payload = jsonToURI({"cmd":"state/session/validate",
- "api": {"version":1},
- "client_id":"cid-e9418c5b4b6e",
- "sid": sid})
+// payload = jsonToURI({"cmd":"state/session/validate",
+//  "api": {"version":1},
+//  "client_id":"cid-e9418c5b4b6e",
+//  "sid": sid})
 
-$.post('https://gpsapi.epicov.org/epi3/gps_api?req='+ payload, function(data, status){
-  console.log(data)
-  //Not logged in
-  if (data.rc != "ok"){
-    var r = confirm('Unable to verify session credentials. Please access app through platform.gisaid.org. Press "OK" to redirect to GISAID homepage.')
-    if (r == true){
-      window.location.href = 'https://platform.gisaid.org'
-      }
-    throw new Error('Forbidden')
-  }
-});
+// $.post('https://gpsapi.epicov.org/epi3/gps_api?req='+ payload, function(data, status){
+//   console.log(data)
+//   //Not logged in
+//   if (data.rc != "ok"){
+//     var r = confirm('Unable to verify session credentials. Please access app through platform.gisaid.org. Press "OK" to redirect to GISAID homepage.')
+//     if (r == true){
+//       window.location.href = 'https://platform.gisaid.org'
+//       }
+//     throw new Error('Forbidden')
+//   }
+// });
 
 /*********************** DIALOGS ***********************/
 
@@ -115,34 +115,50 @@ var country_pal = {
 };
 
 // load time-scaled phylogeny from server
-var nwk, df, countries;
+var nwk, df, countries, region_map;
 $.ajax({
   url: "data/timetree.nwk",
   success: function(data) {
     nwk = data;
-    df = readTree(data);
   }
 });
-$.getJSON("data/countries.json", function(data) {
-  countries = data;
-});
 
-
-var clusters, beaddata, tips,
-    accn_to_cid, cindex, lineage_to_cid;
+var clusters, tips,
+    accn_to_cid, cindex, lineage_to_cid, lineage;
+var edgelist = [], points = [], variants = []
 var map_cidx_to_id = [], id_to_cidx = [];
 
-// load cluster data from server
-req = $.getJSON("data/clusters.json", function(data) {
-  clusters = data;
-});
+req = $.when(
+  $.getJSON("/api/tips", function(data) {
+    tips = data;
+    tips.forEach(x => {
+      x.first_date = new Date(x.first_date)
+      x.last_date = new Date(x.last_date)
+      x.coldate = new Date(x.coldate)
+      x.mcoldate = new Date(x.mcoldate)
+    });
+  }),
+  $.getJSON("/api/df", function(data) {
+    df = data;
+    df.forEach(x => {
+      x.first_date = x.first_date ? new Date(x.first_date) : undefined
+      x.last_date = x.last_date ? new Date(x.last_date) : undefined
+      x.coldate = x.coldate ? new Date(x.coldate) : undefined
+      x.mcoldate = x.coldate ? new Date(x.mcoldate) : undefined
+    });
+  }),
+  $.getJSON("/api/regionmap", function(data) {
+    region_map = data;
+  })
+);
 
-req.done(function() {
+
+req.done( async function() {
   $("#splash-button").button("enable");
   $("#splash-extra").html("");  // remove loading animation
 
-  beaddata = parse_clusters(clusters);
-  tips = map_clusters_to_tips(df, clusters);
+  // beaddata = parse_clusters(clusters);
+  // tips = map_clusters_to_tips(df, clusters);
   drawtree(df);
   //spinner.stop();
   draw_clusters(tips);
@@ -154,11 +170,11 @@ req.done(function() {
   // d3.select(node).dispatch("click");
   cindex = node.__data__.cluster_idx;
   d3.select(node).attr("class", "clicked");
-  beadplot(node.__data__.cluster_idx);
+  await beadplot(node.__data__.cluster_idx);
   $("#barplot").text(null);
   gentable(node.__data__);
   draw_region_distribution(node.__data__.region);
-  gen_details_table(beaddata[node.__data__.cluster_idx].points);  // update details table with all samples
+  gen_details_table(points);  // update details table with all samples
   draw_cluster_box(d3.select(node));
 
   /*
@@ -167,13 +183,35 @@ req.done(function() {
   d3.select(node).dispatch("click");//.dispatch("mouseover");
    */
 
-  accn_to_cid = index_accessions(clusters);
+  // Maps lineage to a cidx
+  await fetch(`/api/lineagetocid`)
+  .then(response => response.json())
+  .then(data => lineage_to_cid = data)
+
+  // accn_to_cid = index_accessions(clusters);
 
   // Maps lineage to a cidx
-  lineage_to_cid = index_lineage(clusters);
+  // lineage_to_cid = index_lineage(clusters);
 
   $('#search-input').autocomplete({
-    source: get_autocomplete_source_fn(accn_to_cid, lineage_to_cid),
+    source: function(req, res) {
+      $.ajax({
+        url: `/api/getHits/${req.term}`,
+        dataType: "json",
+        type: "GET",
+        data: {
+          term: req.term
+        },
+        success: function(data) {
+          res(data)
+        },
+        error: function(xhr) {
+          console.log(xhr.statusText)
+        }
+      })
+    },
+    minLength: 1,
+    delay: 0,
     select: function( event, ui ) {
         const accn = ui.item.value;
         //search(accn);
@@ -232,7 +270,7 @@ req.done(function() {
     }
   });
 
-  $('#search-input, #start-date, #end-date').on('keydown', function(e) {
+  $('#search-input, #start-date, #end-date').on('keydown', async function(e) {
     $('#error_message').text(``);
     // Only resets search results if the backspace key is pressed
     if (search_results.get().total_points > 0 && (e.keyCode == 8)) {
@@ -246,12 +284,10 @@ req.done(function() {
       $('#error_message').text(``);
       $("#loading").show();
       $("#loading_text").text(`Loading. Please Wait...`);
-      setTimeout(function() {
-        wrap_search();
-        enable_buttons();
-        $("#loading").hide();
-        $("#loading_text").text(``);
-      }, 20);
+      await wrap_search();
+      enable_buttons();
+      $("#loading").hide();
+      $("#loading_text").text(``);
     }
   });
 
@@ -321,16 +357,14 @@ req.done(function() {
     }
   });
 
-  $('#search-button').click(function() {
+  $('#search-button').click(async function() {
     $('#error_message').text(``);
     $("#loading").show();
     $("#loading_text").text(`Loading. Please Wait...`);
-    setTimeout(function() {
-      wrap_search();
-      enable_buttons();
-      $("#loading").hide();
-      $("#loading_text").text(``);
-    }, 20);
+    await wrap_search();
+    enable_buttons();
+    $("#loading").hide();
+    $("#loading_text").text(``);
   });
 
   // Clear search
@@ -344,7 +378,7 @@ req.done(function() {
     disable_buttons();
   });
 
-  $('#next_button').click(function() {
+  $('#next_button').click(async function() {
     var curr_bead = search_results.get().current_point;
     var bead_hits = search_results.get().beads;
     var bead_id_to_accession = Object.keys(bead_hits);
@@ -355,23 +389,28 @@ req.done(function() {
     if (curr_bead == 0 && (parseInt(d3.selectAll("rect.clicked").nodes()[0].id.substring(3)) > hit_ids[hit_ids.length - 1])) {
       $("#loading").show();
       $("#loading_text").text(`Loading. Please Wait...`);
-      setTimeout(function() {
-        select_next_prev_bead(bead_id_to_accession, curr_bead);
-        select_working_bead(bead_id_to_accession, curr_bead);
-        $("#loading").hide();
-        $("#loading_text").text(``);
-      }, 20);
+      await select_next_prev_bead(bead_id_to_accession, curr_bead);
+      select_working_bead(bead_id_to_accession, curr_bead);
+      $("#loading").hide();
+      $("#loading_text").text(``);
     }
     else if (curr_bead + 1 < search_results.get().total_points) {
-      if (accn_to_cid[bead_id_to_accession[curr_bead]] != accn_to_cid[bead_id_to_accession[curr_bead + 1]]) {
+      var curr_cid, next_cid;
+      await fetch(`/api/cid/${bead_id_to_accession[curr_bead]}`)
+      .then(response => response.text())
+      .then(data => curr_cid = data);
+
+      await fetch(`/api/cid/${bead_id_to_accession[curr_bead + 1]}`)
+      .then(response => response.text())
+      .then(data => next_cid = data);
+
+      if (curr_cid !== next_cid) {
         $("#loading").show();
-        $("#loading_text").text(`Loading. Please Wait...`);
-        setTimeout(function() {
-          select_next_prev_bead(bead_id_to_accession, curr_bead + 1);
-          select_working_bead(bead_id_to_accession, curr_bead + 1);
-          $("#loading").hide();
-          $("#loading_text").text(``);
-        }, 20);
+        $("#loading_text").text("Loading...");
+        await select_next_prev_bead(bead_id_to_accession, curr_bead+1);
+        $("#loading").hide();
+        $("#loading_text").text(``);
+        select_working_bead(bead_id_to_accession, curr_bead + 1);
       }
       else
         select_working_bead(bead_id_to_accession, curr_bead + 1);
@@ -382,10 +421,11 @@ req.done(function() {
       
       update_search_stats(stats);
     }
+
   });
 
 
-  $('#previous_button').click(function(){
+  $('#previous_button').click(async function() {
     var curr_bead = search_results.get().current_point;
     var bead_hits = search_results.get().beads;
     var bead_id_to_accession = Object.keys(bead_hits);
@@ -395,26 +435,31 @@ req.done(function() {
     if (current_selection.className.baseVal !== "SelectedCluster clicked") {
       if(parseInt(current_selection.id.substring(3)) < hit_ids[hit_ids.length - 1]) {
         $("#loading").show();
-        $("#loading_text").text(`Loading. Please Wait...`);
-        setTimeout(function() {
-          select_next_prev_bead(bead_id_to_accession, curr_bead);
-          select_working_bead(bead_id_to_accession, curr_bead);
-          $("#loading").hide();
-          $("#loading_text").text(``);
-        }, 20);
+        $("#loading_text").text("Loading...");
+        await select_next_prev_bead(bead_id_to_accession, curr_bead);
+        select_working_bead(bead_id_to_accession, curr_bead);
+        $("#loading").hide();
+        $("#loading_text").text(``);
       }
     }
     else if (curr_bead - 1 >= 0) {
+      var curr_cid, prev_cid;
+      await fetch(`/api/cid/${bead_id_to_accession[curr_bead]}`)
+      .then(response => response.text())
+      .then(data => curr_cid = data);
+
+      await fetch(`/api/cid/${bead_id_to_accession[curr_bead - 1]}`)
+      .then(response => response.text())
+      .then(data => prev_cid = data);
+
       // If the previous bead is not in the same cluster, selection of cluster needs to be modified
-      if (accn_to_cid[bead_id_to_accession[curr_bead]] != accn_to_cid[bead_id_to_accession[curr_bead - 1]]) {
+      if (curr_cid !== prev_cid) {
         $("#loading").show();
-        $("#loading_text").text(`Loading. Please Wait...`);
-        setTimeout(function() {
-          select_next_prev_bead(bead_id_to_accession, curr_bead-1);
-          select_working_bead(bead_id_to_accession, curr_bead-1);
-          $("#loading").hide();
-          $("#loading_text").text(``);
-        }, 20);
+        $("#loading_text").text("Loading...");
+        await select_next_prev_bead(bead_id_to_accession, curr_bead-1);
+        $("#loading").hide();
+        $("#loading_text").text(``);
+        select_working_bead(bead_id_to_accession, curr_bead-1);
       }
       else
         select_working_bead(bead_id_to_accession, curr_bead - 1);
@@ -426,6 +471,7 @@ req.done(function() {
       update_search_stats(stats);
     }
   });
+
 
   $(document).on('keydown', function(e) {
     // Ignore event if its inside an input field
@@ -497,7 +543,7 @@ function save_timetree() {
 function save_beadplot() {
   blob = new Blob([serialize_beadplot(cindex)],
       {type: "text/plain;charset=utf-8"});
-  saveAs(blob, clusters[cindex].lineage + ".nwk");
+  saveAs(blob, lineage + ".nwk");
 }
 
 /*  AP: pending testing on dev branch
@@ -510,7 +556,7 @@ $('#save_svg').click(function(){
 });
 */
 function export_svg() {
-  var config = {filename: clusters[cindex].lineage};
+  var config = {filename: lineage};
 
   // Creates a duplicate of the beadplot
   var svg_beadplot = d3.select('#svg-cluster>svg').clone(true);
