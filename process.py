@@ -122,6 +122,12 @@ def merge_data(fasta_file, metadata, minlen=29000, mindate=date(2019, 12, 1),
                 if callback:
                     callback("Rejected record with bad date: {}".format(label), level="WARN")
                 continue
+            
+            if metadata[label]['accession'] == "?":
+                if callback:
+                    callback("Rejecting record with bad accession: {}".format(label), level="WARN")
+                continue
+
             record.update(metadata[label])
             yield record
         else:
