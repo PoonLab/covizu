@@ -163,7 +163,6 @@ $.getJSON("data/countries.json", function(data) {
 });
 $.getJSON("data/mut_annotations.json", function(data) {
   mut_annotations = data;
-  console.log(data)
 });
 
 

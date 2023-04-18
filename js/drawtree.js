@@ -199,7 +199,7 @@ function date_to_xaxis(coldate) {
 
 function mutations_to_string(mutations) {
   let mutStr = `<b>${i18n_text.tip_mutations}:</b><br/>`;
-  for (mutation of mutations.slice(0,10)) {
+  for ([mutation, ] of mutations.slice(0,10)) {
     mutStr += `&nbsp;&nbsp;${mutation}<br/>`;
   }
   if (mutations.length > 10) {
@@ -209,9 +209,14 @@ function mutations_to_string(mutations) {
 }
 
 function sort_mutations(mutations) {
-  return mutations.map((e)=>e.split(":"))
-  .sort((first, second) => second[1] > first[1] ? -1 : 0 )
-  .map(e=>e.join(":"))
+    // Change dict to array 
+    var mutations_array = Object.keys(mutations).map(function(key) {
+      return [key, mutations[key]];
+    });
+    mutations_array.sort(function(first, second) {
+      return second[1] - first[1]
+    })
+    return mutations_array
 }
 
 /**

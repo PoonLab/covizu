@@ -67,7 +67,6 @@ function parse_mutation_annotations(mut_annotations) {
         mutations_list = [],
         frequency_list = [],
         tip = sorted_tips[cidx];
-    console.log(tip.mutations)
     if (!('mutations' in tip)) {
       tip['mutations'] = []
     }
