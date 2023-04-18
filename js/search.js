@@ -113,19 +113,7 @@ async function wrap_search() {
  * @param end_data: a date type indicating the search end date.
  */
 async function main_search(text_query, start_date, end_date) {
-  console.log("MAIN_SEARCHING",text_query, start_date, end_date);
-  // // Flatten the json data to an array with bead data only
-  // flat_data = find_beads_points(all_bead_data);
-
-  // //Find all the beads that are a hit. Convert text_query to lower case and checks to see if there is a match
-  // search_hits = flat_data.filter(function(bead) {
-	//   temp = (bead.accessions.some(accession => (accession.toLowerCase()).includes(text_query.toLowerCase())) || 
-	// 	  bead.labels.some(label => (label.toLowerCase()).includes(text_query.toLowerCase()))) && 
-	// 	  (bead.x >= start_date && bead.x <= end_date);
-	//   return temp;
-  // });
   search_hits = await getdata(`/api/searchHits/${text_query}/${start_date}/${end_date}`);
-  console.log("SEARCH_HIST",search_hits);
 
   // If there are no hits, then stops the main_search
   if (search_hits.length === 0) {
@@ -245,7 +233,6 @@ async function lineage_search(text_query) {
 
   cluster.attr("class", "SelectedCluster clicked");
   var cluster_info = cluster.datum();
-  console.log(`cindex=${cindex}`)
   cindex = cluster.datum().cluster_idx;
   await beadplot(cluster_info.cluster_idx);
   gentable(cluster_info);
@@ -267,7 +254,6 @@ async function accession_search(text_query) {
   }
 
   var cluster = select_cluster("cidx-"+cidx);
-  console.log("cluster=",cluster);
 
   d3.select("#svg-timetree")
     .selectAll("rect:not(.clicked):not(.clickedH)")
@@ -319,7 +305,6 @@ function select_cluster(cidx) {
   // document.getElementsByClassName("tree-content")[0].scroll(10,1000)
   // document.getElementsByClassName("tree-container")[0].offsetHeight/2
   draw_cluster_box(cluster);
-  console.log(cluster,cluster.nodes(),cluster.nodes()[0])
   cluster.nodes()[0].scrollIntoView({block: "center"});
 
   return cluster;
@@ -345,32 +330,6 @@ function update_table_individual_bead_front(bead) {
  * @param  bead_id_to_accession: Maps bead id to an accession 
  * @param  curr_bead: The next or previous bead id that needs to be selected
  */
-// async function select_next_prev_bead(bead_id_to_accession, curr_bead) {
-//   d3.selectAll('rect[class="clicked"]').attr('class', "not_SelectedCluster");
-//   d3.selectAll('rect[class="not_SelectedCluster clicked"]').attr('class', "not_SelectedCluster");
-
-//   var next_cluster = d3.selectAll('rect[cidx="cidx-'+accn_to_cid[bead_id_to_accession[curr_bead]]+'"]');
-//   d3.selectAll("rect.clickedH").remove();
-//   d3.selectAll(".SelectedCluster.clicked").attr('class', 'SelectedCluster'); 
-//   next_cluster.attr("class", "SelectedCluster clicked");
-//   draw_cluster_box(next_cluster);
-//   next_cluster.nodes()[0].scrollIntoView({block: "center"});
-
-//   await beadplot(next_cluster.datum().cluster_idx);
-
-//   // Beads in Cluster
-//   points_ui = d3.selectAll("#svg-cluster > svg > g > circle")
-//   .filter(function(d) {
-//     return bead_id_to_accession.includes(d.accessions[0])
-//   });
-//   selected = points_ui.nodes();
-//   deselect_all_beads();
-//   for (const node of selected) {
-//     selected_obj = d3.select(node);
-//     create_selection(selected_obj);
-//   }
-// }
-
 async function select_next_prev_bead(bead_id_to_accession, curr_bead) {
   d3.selectAll('rect[class="clicked"]').attr('class', "not_SelectedCluster");
   d3.selectAll('rect[class="not_SelectedCluster clicked"]').attr('class', "not_SelectedCluster");
@@ -459,11 +418,8 @@ function deselect_all_beads() {
 }
 
 function select_working_bead(bead_id_to_accession, curr_bead) {
-  console.log("FUNCTION_ARGS",bead_id_to_accession,curr_bead,bead_id_to_accession[curr_bead]);
   var current_bead = d3.selectAll('circle[id="'+bead_id_to_accession[curr_bead]+'"]');
   var working_bead = current_bead.nodes()[0];
-  console.log("CURRENT_BEAAD",current_bead);
-  console.log("WORKING_BEAD",working_bead);
   current_bead.raise();
   working_bead.scrollIntoView({block: "center"});
   update_table_individual_bead_front(d3.select(working_bead).datum());
@@ -761,8 +717,6 @@ function search() {
 
 
 function search_by_dates(start, end) {
-  console.log(start);
-  console.log(end);
   var rects = d3.selectAll("#svg-timetree > svg > rect:not(.clickedH)")
     .filter(function(d) { return d.first_date <= end && d.last_date >= start });
   select_clusters(rects);

@@ -7,24 +7,23 @@ $("#loading_text").text(``);
 $("#loading").hide();
 
 /*********************** Session ID check ***********************/
-// var sid = getUrlParameter('sid') // Load vars from url
+var sid = getUrlParameter('sid') // Load vars from url
 
-// payload = jsonToURI({"cmd":"state/session/validate",
-//  "api": {"version":1},
-//  "client_id":"cid-e9418c5b4b6e",
-//  "sid": sid})
+payload = jsonToURI({"cmd":"state/session/validate",
+ "api": {"version":1},
+ "client_id":"cid-e9418c5b4b6e",
+ "sid": sid})
 
-// $.post('https://gpsapi.epicov.org/epi3/gps_api?req='+ payload, function(data, status){
-//   console.log(data)
-//   //Not logged in
-//   if (data.rc != "ok"){
-//     var r = confirm('Unable to verify session credentials. Please access app through platform.gisaid.org. Press "OK" to redirect to GISAID homepage.')
-//     if (r == true){
-//       window.location.href = 'https://platform.gisaid.org'
-//       }
-//     throw new Error('Forbidden')
-//   }
-// });
+$.post('https://gpsapi.epicov.org/epi3/gps_api?req='+ payload, function(data, status){
+  //Not logged in
+  if (data.rc != "ok"){
+    var r = confirm('Unable to verify session credentials. Please access app through platform.gisaid.org. Press "OK" to redirect to GISAID homepage.')
+    if (r == true){
+      window.location.href = 'https://platform.gisaid.org'
+      }
+    throw new Error('Forbidden')
+  }
+});
 
 /*********************** DIALOGS ***********************/
 
@@ -157,10 +156,7 @@ req.done( async function() {
   $("#splash-button").button("enable");
   $("#splash-extra").html("");  // remove loading animation
 
-  // beaddata = parse_clusters(clusters);
-  // tips = map_clusters_to_tips(df, clusters);
   drawtree(df);
-  //spinner.stop();
   draw_clusters(tips);
 
   var rect = d3.selectAll("#svg-timetree > svg > rect"),
@@ -187,11 +183,6 @@ req.done( async function() {
   await fetch(`/api/lineagetocid`)
   .then(response => response.json())
   .then(data => lineage_to_cid = data)
-
-  // accn_to_cid = index_accessions(clusters);
-
-  // Maps lineage to a cidx
-  // lineage_to_cid = index_lineage(clusters);
 
   $('#search-input').autocomplete({
     source: function(req, res) {
@@ -384,7 +375,6 @@ req.done( async function() {
     var bead_id_to_accession = Object.keys(bead_hits);
     var hit_ids = search_results.get().hit_ids;
 
-    // console.log(first_bead.id);
     // Edge case: User clicks next from a cluster above the first cluster
     if (curr_bead == 0 && (parseInt(d3.selectAll("rect.clicked").nodes()[0].id.substring(3)) > hit_ids[hit_ids.length - 1])) {
       $("#loading").show();
