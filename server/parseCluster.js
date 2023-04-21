@@ -521,7 +521,7 @@ const parse_edgelist = (cluster, variants, points) => {
 		var accns = Object.entries(clusters[cid].nodes)
 			.map(x => x[1])
 			.flat()
-			.map(x => x[1]);
+			.map(x => x[4]);
 		for (const accn of accns) {
 			index[accn] = cid;
 		}
