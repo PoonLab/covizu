@@ -290,7 +290,7 @@ async function accession_search(text_query) {
   create_selection(bead);
   bead.node().scrollIntoView({block: "center"});
 
-  update_table_individual_bead(bead.datum());
+  update_table_individual_bead_front(bead.datum());
 }
 
 
