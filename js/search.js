@@ -113,7 +113,7 @@ async function wrap_search() {
  * @param end_data: a date type indicating the search end date.
  */
 async function main_search(text_query, start_date, end_date) {
-  search_hits = await getdata(`/api/searchHits/${text_query}/${start_date}/${end_date}`);
+  search_hits = await getdata(`/epicov_api/searchHits/${text_query}/${start_date}/${end_date}`);
 
   // If there are no hits, then stops the main_search
   if (search_hits.length === 0) {
@@ -246,7 +246,7 @@ async function lineage_search(text_query) {
  * @param {String} text_query 
  */
 async function accession_search(text_query) {
-  var cidx = await getdata(`/api/cid/${text_query.toUpperCase()}`);
+  var cidx = await getdata(`/epicov_api/cid/${text_query.toUpperCase()}`);
 
   if (cidx === undefined) {
     $('#error_message').text(`No matches. Please try again.`);
@@ -335,7 +335,7 @@ async function select_next_prev_bead(bead_id_to_accession, curr_bead) {
   d3.selectAll('rect[class="not_SelectedCluster clicked"]').attr('class', "not_SelectedCluster");
 
   let curr_cid;
-  await fetch(`/api/cid/${bead_id_to_accession[curr_bead]}`)
+  await fetch(`/epicov_api/cid/${bead_id_to_accession[curr_bead]}`)
   .then(response => response.text())
   .then(data => curr_cid = data);
 

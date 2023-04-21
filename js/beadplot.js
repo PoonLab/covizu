@@ -532,21 +532,21 @@ async function beadplot(cid) {
     if (cindex !== ccid) {
       cindex = cid;
       ccid = cindex
-      edgelist = await getdata(`/api/edgelist/${cindex}`);
+      edgelist = await getdata(`/epicov_api/edgelist/${cindex}`);
       edgelist.forEach(x => {
         x.x1 = utcDate(x.x1),
         x.x2 = utcDate(x.x2)
       });
-      points = await getdata(`/api/points/${cindex}`);
+      points = await getdata(`/epicov_api/points/${cindex}`);
       points.forEach(d => {
         d.x = utcDate(d.x)
       });
-      variants = await getdata(`/api/variants/${cindex}`);
+      variants = await getdata(`/epicov_api/variants/${cindex}`);
       variants.forEach(x => {
         x.x1 = utcDate(x.x1),
         x.x2 = utcDate(x.x2)
       });
-      await fetch(`/api/lineage/${cindex}`)
+      await fetch(`/epicov_api/lineage/${cindex}`)
       .then(response => response.text())
       .then(lin => lineage=lin)
     } 

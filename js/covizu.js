@@ -128,7 +128,7 @@ var edgelist = [], points = [], variants = []
 var map_cidx_to_id = [], id_to_cidx = [];
 
 req = $.when(
-  $.getJSON("/api/tips", function(data) {
+  $.getJSON("/epicov_api/tips", function(data) {
     tips = data;
     tips.forEach(x => {
       x.first_date = new Date(x.first_date)
@@ -137,7 +137,7 @@ req = $.when(
       x.mcoldate = new Date(x.mcoldate)
     });
   }),
-  $.getJSON("/api/df", function(data) {
+  $.getJSON("/epicov_api/df", function(data) {
     df = data;
     df.forEach(x => {
       x.first_date = x.first_date ? new Date(x.first_date) : undefined
@@ -146,7 +146,7 @@ req = $.when(
       x.mcoldate = x.coldate ? new Date(x.mcoldate) : undefined
     });
   }),
-  $.getJSON("/api/regionmap", function(data) {
+  $.getJSON("/epicov_api/regionmap", function(data) {
     region_map = data;
   })
 );
@@ -180,14 +180,14 @@ req.done( async function() {
    */
 
   // Maps lineage to a cidx
-  await fetch(`/api/lineagetocid`)
+  await fetch(`/epicov_api/lineagetocid`)
   .then(response => response.json())
   .then(data => lineage_to_cid = data)
 
   $('#search-input').autocomplete({
     source: function(req, res) {
       $.ajax({
-        url: `/api/getHits/${req.term}`,
+        url: `/epicov_api/getHits/${req.term}`,
         dataType: "json",
         type: "GET",
         data: {
@@ -386,11 +386,11 @@ req.done( async function() {
     }
     else if (curr_bead + 1 < search_results.get().total_points) {
       var curr_cid, next_cid;
-      await fetch(`/api/cid/${bead_id_to_accession[curr_bead]}`)
+      await fetch(`/epicov_api/cid/${bead_id_to_accession[curr_bead]}`)
       .then(response => response.text())
       .then(data => curr_cid = data);
 
-      await fetch(`/api/cid/${bead_id_to_accession[curr_bead + 1]}`)
+      await fetch(`/epicov_api/cid/${bead_id_to_accession[curr_bead + 1]}`)
       .then(response => response.text())
       .then(data => next_cid = data);
 
@@ -434,11 +434,11 @@ req.done( async function() {
     }
     else if (curr_bead - 1 >= 0) {
       var curr_cid, prev_cid;
-      await fetch(`/api/cid/${bead_id_to_accession[curr_bead]}`)
+      await fetch(`/epicov_api/cid/${bead_id_to_accession[curr_bead]}`)
       .then(response => response.text())
       .then(data => curr_cid = data);
 
-      await fetch(`/api/cid/${bead_id_to_accession[curr_bead - 1]}`)
+      await fetch(`/epicov_api/cid/${bead_id_to_accession[curr_bead - 1]}`)
       .then(response => response.text())
       .then(data => prev_cid = data);
 

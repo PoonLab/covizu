@@ -34,47 +34,47 @@ const data = Object.keys(accn_to_cid).sort().concat(Object.keys(lineage_to_cid).
   normalize(accn), accn
 ]);
 
-app.get('/api/edgeList/:cindex', (req, res) => {
+app.get('/epicov_api/edgeList/:cindex', (req, res) => {
   res.send(beaddata[req.params.cindex].edgelist)
 });
 
-app.get('/api/points/:cindex', (req, res) => {
+app.get('/epicov_api/points/:cindex', (req, res) => {
   res.send(beaddata[req.params.cindex].points)
 });
 
-app.get('/api/variants/:cindex', (req, res) => {
+app.get('/epicov_api/variants/:cindex', (req, res) => {
   res.send(beaddata[req.params.cindex].variants)
 });
 
-app.get('/api/tips', (req, res) => {
+app.get('/epicov_api/tips', (req, res) => {
   res.send(tips)
 });
 
-app.get('/api/df', (req, res) => {
+app.get('/epicov_api/df', (req, res) => {
   res.send(df)
 });
 
-app.get('/api/regionmap', (req, res) => {
+app.get('/epicov_api/regionmap', (req, res) => {
   res.send(region_map)
 })
 
-app.get('/api/lineage/:cindex', (req, res) => {
+app.get('/epicov_api/lineage/:cindex', (req, res) => {
   res.send(clusters[req.params.cindex].lineage)
 });
 
-app.get('/api/cid/:accession', (req, res) => {
+app.get('/epicov_api/cid/:accession', (req, res) => {
   res.send(accn_to_cid[req.params.accession])
 });
 
-app.get('/api/cid', (req, res) => {
+app.get('/epicov_api/cid', (req, res) => {
   res.send(accn_to_cid)
 });
 
-app.get('/api/lineagetocid', (req, res) => {
+app.get('/epicov_api/lineagetocid', (req, res) => {
   res.send(lineage_to_cid)
 });
 
-app.get('/api/searchHits/:query/:start/:end', (req, res) => {
+app.get('/epicov_api/searchHits/:query/:start/:end', (req, res) => {
   // Flatten the json data to an array with bead data only
   let flat_data = beaddata.map(bead => bead.points).flat();
   let start_date = utcDate(req.params.start);
@@ -90,7 +90,7 @@ app.get('/api/searchHits/:query/:start/:end', (req, res) => {
   res.send(search_hits)
 });
 
-app.get('/api/getHits/:query', (req, res) => {
+app.get('/epicov_api/getHits/:query', (req, res) => {
   function as_label(search_data) {
     const [, accn] = search_data;
     return accn;

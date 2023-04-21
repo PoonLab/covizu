@@ -41,12 +41,12 @@ if ($NODE_ENV=='PROD') {
 
 if(!$HTTP_PORT){
     console.warn(".env is missing HTTP_PORT. Defaulting to 8001")
-    $HTTP_PORT = 8001;
+    $HTTP_PORT = 8003;
 }
 
 if(!$HTTPS_PORT && $NODE_ENV=='PROD'){
     console.warn(".env is missing HTTPS_PORT. Defaulting to 8002")
-    $HTTPS_PORT = 8002;
+    $HTTPS_PORT = 8004;
 }
 if(!$DATA_FOLDER){
     console.warn('.env is missing DATA_FOLDER env variable. Defaulting to data/')
