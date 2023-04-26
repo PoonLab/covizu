@@ -223,12 +223,7 @@ var phenotypes = {
 
 // load time-scaled phylogeny from server
 var nwk, df, countries, mut_annotations, region_map;
-$.ajax({
-  url: "data/timetree.nwk",
-  success: function(data) {
-    nwk = data;
-  }
-});
+
 $.getJSON("data/mut_annotations.json", function(data) {
   mut_annotations = data;
 });
@@ -935,8 +930,14 @@ $( "#dialog" ).dialog({ autoOpen: false });
 // implement save buttons
 var blob;
 function save_timetree() {
-  blob = new Blob([nwk], {type: "text/plain;charset=utf-8"});
-  saveAs(blob, "timetree.nwk");
+  $.ajax({
+    url: "data/timetree.nwk",
+    success: function(data) {
+      nwk = data;
+      blob = new Blob([nwk], {type: "text/plain;charset=utf-8"});
+      saveAs(blob, "timetree.nwk");
+    }
+  });
 }
 
 function save_beadplot() {
