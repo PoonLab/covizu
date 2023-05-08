@@ -1,8 +1,12 @@
+import os
 import subprocess
 from Bio import Phylo
+import math
 from covizu import clustering, beadplot
 import sys
 import json
+import csv
+import tempfile
 import covizu.treetime
 
 
@@ -80,7 +84,7 @@ def build_timetree(by_lineage, args, callback=None):
     return covizu.treetime.parse_nexus(nexus_file, fasta)
 
 
-def beadplot_serial(lineage, features, args, callback=None):
+def beadplot_serial(lineage, features, args, callback=None): # pragma: no cover
     """ Compute distance matrices and reconstruct NJ trees """
     # bootstrap sampling and NJ tree reconstruction, serial mode
     trees, labels = clustering.build_trees(features, args, callback=callback)
@@ -113,7 +117,7 @@ def beadplot_serial(lineage, features, args, callback=None):
     return beaddict
 
 
-def import_labels(handle, callback=None):
+def import_labels(handle, callback=None): # pragma: no cover
     """ Load map of genome labels to tip indices from CSV file """
     result = {}
     _ = next(handle)  # skip header line
@@ -129,6 +133,87 @@ def import_labels(handle, callback=None):
             result.update({idx: []})
         result[idx].append(qname)
     return result
+
+
+def get_shannons(n_seqs_in_nodes):
+    """Find shannon's diversity from the seuqences in the tips"""
+    sample_size = sum(n_seqs_in_nodes)
+    shannons = 0
+    simpsons = 0
+    
+    for n_seq in n_seqs_in_nodes:
+        proportion = (n_seq/sample_size)
+        shannons += proportion*math.log(proportion)
+    
+    shannons = -shannons
+    
+    return (shannons)
+
+
+def manage_collapsed_nodes(labels, tree):
+    """Add collapsed node keys to the labels dictionary"""
+    new_labels = labels
+    for clade in tree.get_terminals() + tree.get_nonterminals():
+        name = clade.name
+        if name == None:
+            continue
+        elif '|' in name:
+            combined_list = []
+            for title in name.split('|'):
+                combined_list = combined_list + labels[title]
+            new_labels[name] = combined_list
+    return new_labels
+
+
+def get_tree_summary_stats(tree, Ne, label_dict, keep_temp = False):
+    """Write out file of summary stats including number of unsampled lineages,
+    diversity metrics and root to tip regression"""
+    internal_nodes = tree.get_nonterminals()
+    terminal_nodes = tree.get_terminals()
+   
+    #Unsampled nodes are nodes with no sequence ID associated with them
+    num_terminal_nodes = len(terminal_nodes)
+    seqs_in_term_nodes = [len(label_dict[node.name]) for node in terminal_nodes]
+    seqs_in_internal_nodes = []
+    for node in internal_nodes:
+        if node.name != None:
+            seqs_in_internal_nodes = seqs_in_internal_nodes + [len(label_dict[node.name])]
+        
+    #Calculate unsampled lineages and shannon's diversity
+    unsampled_count = sum([node.name==None for node in internal_nodes])
+    
+    diversity = get_shannons(seqs_in_term_nodes)
+    
+    #Create dictionary of summary stats
+    summary_stats = {'unsampled_lineage_count': unsampled_count,
+                         'shannons_diversity': diversity,
+                         'Ne': Ne
+                         }
+    return summary_stats
+
+
+def find_Ne(tree, labels_filename, keep_temp = False):
+    """Run beta skyline estimation implemented into R"""
+    
+    if (keep_temp):
+        tree_filename = "combined_tree.tree"
+    else:
+        #Make a temporary file containing the tree
+        temp_tree, tree_filename = tempfile.mkstemp(suffix =".tree")
+
+    Phylo.write(tree, tree_filename, "nexus")
+    
+    #Get the value of Ne
+    Ne = subprocess.Popen("Rscript " + os.path.dirname(__file__) + "/skyline_est.R -t " + 
+            tree_filename + " -l " + labels_filename, shell = True, 
+            stdout=subprocess.PIPE).stdout.read().decode() 
+    
+
+    if (not keep_temp):
+        #Remove the temporary file
+        os.remove(tree_filename)
+    
+    return Ne
 
 
 def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_lineages.txt',
@@ -239,9 +324,33 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
             ctree = clustering.consensus(trees, cutoff=args.boot_cutoff, callback=callback)
             outfile.close()  # done with Phylo.parse generator
 
+            # incorporate hunipie
+            with open('recoded.json') as recoded:
+                recoded = json.load(recoded)
+
+            label_dict = recoded[lineage]['labels']
+            clabel_dict = manage_collapsed_nodes(label_dict, ctree)
+
+            # Write labels to file for Ne estimation
+            with open('clabels_file.csv', 'w') as csv_file:
+                writer = csv.writer(csv_file)
+                for key, value in clabel_dict.items():
+                    writer.writerow([key, value])
+
+            cne = find_Ne(ctree, 'clabels_file.csv', False)
+
+            # Collapse tree and manage the collapsed nodes
+            ctree = beadplot.collapse_polytomies(ctree)
+            clabel_dict = manage_collapsed_nodes(clabel_dict, ctree)
+
+            csummary_stats = get_tree_summary_stats(ctree, cne, clabel_dict, False)
+
             ctree = beadplot.annotate_tree(ctree, label_dict)
             beaddict = beadplot.serialize_tree(ctree)
-            
+
+            beaddict = beaddict | csummary_stats
+        
+        outfile.close()  # done with Phylo.parse generator
         beaddict.update({'sampled_variants': len(label_dict)})
         beaddict.update({'lineage': lineage})
         result.append(beaddict)

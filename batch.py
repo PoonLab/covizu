@@ -188,7 +188,8 @@ if __name__ == "__main__":
                 'residual': residuals[lineage] if lineage in residuals else 0,
                 'max_ndiffs': max(ndiffs),
                 'mean_ndiffs': sum(ndiffs)/len(ndiffs),
-                'mutations': mutations[lineage]
+                'mutations': mutations[lineage],
+                'ne': result[lineage]['Ne']
             }
         json.dump(val, handle)
 
