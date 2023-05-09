@@ -29,7 +29,7 @@ try {
 
 const df = readTree(tree)
 const beaddata = parse_clusters(clusters)
-const { tips, recombinant_tips } = map_clusters_to_tips(df, clusters)
+const tips  = map_clusters_to_tips(df, clusters)
 const accn_to_cid = index_accessions(clusters)
 const lineage_to_cid = index_lineage(clusters)
 
@@ -75,10 +75,6 @@ app.get('/api/df', (req, res) => {
 
 app.get('/api/lineagetocid', (req, res) => {
   res.send(lineage_to_cid)
-});
-
-app.get('/api/recombtips', (req, res) => {
-  res.send(recombinant_tips)
 });
 
 // Returns all beads that match the query, within the start and end dates provided

@@ -158,15 +158,12 @@ $.ajax({
     df = readTree(data);
   }
 });
-$.getJSON("data/countries.json", function(data) {
-  countries = data;
-});
 $.getJSON("data/mut_annotations.json", function(data) {
   mut_annotations = data;
 });
 
 
-var clusters, beaddata, tips, recombinant_tips,
+var clusters, beaddata, tips,
     accn_to_cid, cindex, lineage_to_cid, lineage;
 var edgelist = [], points = [], variants = [];
 var map_cidx_to_id = [], id_to_cidx = [];
@@ -175,15 +172,6 @@ req = $.when(
   $.getJSON("/api/tips", function(data) {
     tips = data;
     tips.forEach(x => {
-      x.first_date = new Date(x.first_date)
-      x.last_date = new Date(x.last_date)
-      x.coldate = new Date(x.coldate)
-      x.mcoldate = new Date(x.mcoldate)
-    });
-  }),
-  $.getJSON("/api/recombtips", function(data) {
-    recombinant_tips = data;
-    recombinant_tips.forEach(x => {
       x.first_date = new Date(x.first_date)
       x.last_date = new Date(x.last_date)
       x.coldate = new Date(x.coldate)

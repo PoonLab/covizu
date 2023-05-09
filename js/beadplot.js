@@ -57,12 +57,12 @@ function parse_mutation_annotations(mut_annotations) {
   var mutations = [];
 
   // Sorts tips according to cluster_idx
-  sorted_tips = [...tips, ...recombinant_tips]
+  sorted_tips = [...tips]
   sorted_tips.sort(function(a,b) {
     return a.cluster_idx - b.cluster_idx
   });
 
-  for (const cidx in sorted_tips) {
+  for (const cidx in tips) {
     let phenotype = [],
         mutations_list = [],
         frequency_list = [],
