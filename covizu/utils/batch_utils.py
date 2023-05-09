@@ -243,7 +243,7 @@ def get_mutations(by_lineage):
                     counts.update({feat: 0})
                 counts[feat] += 1
         # filter for mutations that occur in at least half of samples
-        common = [feat for feat, count in counts.items() if count/len(samples) >= 0.5]
+        common = dict([(feat, count/len(samples)) for feat, count in counts.items() if count/len(samples) >= 0.5])
         result.update({lineage: common})
     return result
 

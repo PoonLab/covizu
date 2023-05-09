@@ -122,6 +122,12 @@ def merge_data(fasta_file, metadata, minlen=29000, mindate=date(2019, 12, 1),
                 if callback:
                     callback("Rejected record with bad date: {}".format(label), level="WARN")
                 continue
+            
+            if metadata[label]['accession'] == "?":
+                if callback:
+                    callback("Rejecting record with bad accession: {}".format(label), level="WARN")
+                continue
+
             record.update(metadata[label])
             yield record
         else:
@@ -170,8 +176,8 @@ def analyze_feed(feed, args, callback=None):
     locator = SC2Locator()
     mutations = {}
     for lineage, features in get_mutations(by_lineage).items():
-        annots = [locator.parse_mutation(f) for f in features]
-        mutations.update({lineage: [a for a in annots if a is not None]})
+        annots = {locator.parse_mutation(f) : freq for f, freq in features.items()}
+        mutations.update({lineage: {a : freq for a, freq in annots.items() if a is not None}})
 
     # write data stats
     dbstat_file = os.path.join(args.outdir, 'dbstats.{}.json'.format(timestamp))

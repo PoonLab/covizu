@@ -29,7 +29,7 @@ try {
 
 const df = readTree(tree)
 const beaddata = parse_clusters(clusters)
-const tips = map_clusters_to_tips(df, clusters)
+const tips  = map_clusters_to_tips(df, clusters)
 const accn_to_cid = index_accessions(clusters)
 const lineage_to_cid = index_lineage(clusters)
 

@@ -1,7 +1,6 @@
 // regular expression to remove redundant sequence name components
 const pat = /^hCoV-19\/(.+\/.+)\/20[0-9]{2}$/gi;
 const { unique, mode, tabulate, merge_tables, utcDate } = require('./utils')
-const countries = require('../data/countries.json')
 const dbstats = require('../data/dbstats.json')
 const d3 = require('../js/d3.js')
 
@@ -409,7 +408,9 @@ const parse_edgelist = (cluster, variants, points) => {
     tips[root_idx].residual = tip_stats.mean_ndiffs - exp_diffs;  // tip_stats.residual;
     tips[root_idx].mcoldate = d3.timeDay.offset(first_date, mean_date);
   }
-  return tips;
+
+  return tips ;
+
 }
 
 
@@ -427,7 +428,7 @@ const parse_edgelist = (cluster, variants, points) => {
 		var accns = Object.entries(clusters[cid].nodes)
 			.map(x => x[1])
 			.flat()
-			.map(x => x[1]);
+			.map(x => x[4]);
 		for (const accn of accns) {
 			index[accn] = cid;
 		}
