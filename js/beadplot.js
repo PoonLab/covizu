@@ -448,7 +448,7 @@ function expand() {
       .enter().append("line")
       .attr("class", "lines hLine")
       .attr("id", function(d) {
-        return d.label.replace(/'/g, '-').replace(/\./g,'-').replace('/', '-').replace(' ', '_');
+        return d.label.replace(/'/g, '-').replace(/\./g,'-').replace('/', '-').replace(' ', '_').replace('&', '_');
       })
       .attr("x1", xMap1B)
       .attr("x2", xMap2B)
@@ -550,11 +550,11 @@ function expand() {
         for (i=0; i < filtered_edgelist.length; i++) {
           let edge_label = edge.data()[0].label
           if(filtered_edgelist[i].child == edge_label) {
-            parent_variant = filtered_edgelist[i].parent.replace(/\./g,'-').replace('/', '-').replace(' ', '_')
+            parent_variant = filtered_edgelist[i].parent.replace(/\./g,'-').replace('/', '-').replace(' ', '_').replace('&', '_')
             d3.select(`#${parent_variant}`).attr("stroke-width", 5).attr("class", "lines hLine selectionLH");
           }
           else if(filtered_edgelist[i].parent == edge_label) {
-            child_variant = filtered_edgelist[i].child.replace(/\./g,'-').replace('/', '-').replace(' ', '_')
+            child_variant = filtered_edgelist[i].child.replace(/\./g,'-').replace('/', '-').replace(' ', '_').replace('&', '_')
             d3.select(`#${child_variant}`).attr("stroke-width", 5).attr("class", "lines hLine selectionLH");
           }
         }
@@ -748,8 +748,8 @@ function draw_vertical_edges(vLines) {
       var edge = d3.select(this);
       edge.attr("stroke-width", 3);
 
-      let parent_variant = d3.select(".lines#"+d.parent.replace(/'/g, '-').replace(/\./g,'-').replace('/', '-').replace(' ', '_')),
-          child_variant = d3.select(".lines#"+d.child.replace(/'/g, '-').replace(/\./g,'-').replace('/', '-').replace(' ', '_'));
+      let parent_variant = d3.select(".lines#"+d.parent.replace(/'/g, '-').replace(/\./g,'-').replace('/', '-').replace(' ', '_').replace('&', '_')),
+          child_variant = d3.select(".lines#"+d.child.replace(/'/g, '-').replace(/\./g,'-').replace('/', '-').replace(' ', '_').replace('&', '_'));
 
       if (!parent_variant.empty()) {
         if (parent_variant.datum().count > 0) {
@@ -819,8 +819,8 @@ function draw_vertical_edges(vLines) {
         d3.select(this).attr("stroke-width", 1);
       }
 
-      let parent_variant = d3.select(".lines#"+d.parent.replace(/'/g, '-').replace(/\./g,'-').replace('/', '-').replace(' ', '_')),
-          child_variant = d3.select(".lines#"+d.child.replace(/'/g, '-').replace(/\./g,'-').replace('/', '-').replace(' ', '_'));
+      let parent_variant = d3.select(".lines#"+d.parent.replace(/'/g, '-').replace(/\./g,'-').replace('/', '-').replace(' ', '_').replace('&', '_')),
+          child_variant = d3.select(".lines#"+d.child.replace(/'/g, '-').replace(/\./g,'-').replace('/', '-').replace(' ', '_').replace('&', '_'));
 
       if (!parent_variant.empty()) {
         if (parent_variant.datum().count > 0) {
@@ -879,8 +879,8 @@ function draw_vertical_edges(vLines) {
       var edge = d3.select(this);
       edge.attr("class", "lines vLine selectionL");
 
-      let parent_variant = d3.select(".lines#"+d.parent.replace(/'/g, '-').replace(/\./g,'-').replace('/', '-').replace(' ', '_')),
-          child_variant = d3.select(".lines#"+d.child.replace(/'/g, '-').replace(/\./g,'-').replace('/', '-').replace(' ', '_'));
+      let parent_variant = d3.select(".lines#"+d.parent.replace(/'/g, '-').replace(/\./g,'-').replace('/', '-').replace(' ', '_').replace('&', '_')),
+          child_variant = d3.select(".lines#"+d.child.replace(/'/g, '-').replace(/\./g,'-').replace('/', '-').replace(' ', '_').replace('&', '_'));
 
       parent_variant.attr("class", "lines hLine selectionLH");
       child_variant.attr("class", "lines hLine selectionLH");
