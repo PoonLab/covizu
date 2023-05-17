@@ -332,15 +332,15 @@ const map_clusters_to_tips = (df, clusters) => {
     // find variant in cluster that matches a tip label
     var labels = Object.keys(cluster["nodes"]),
         root = tip_labels.filter(value => value === cluster['lineage'])[0];
+   
+    if (cluster['lineage'].startsWith("X")) {
+      recombinants.push(cidx)
+      continue;
+    }
+
     if (root === undefined) {
-      if (cluster['lineage'][0] == 'X') {
-        recombinants.push(cidx)
-        continue;
-      }
-      else {
         console.log("Failed to match cluster of index ", cidx, " to a tip in the tree");
         continue;
-      }
     }
 
     var root_idx = tip_labels.indexOf(root),  // row index in data frame

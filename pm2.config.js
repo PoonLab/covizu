@@ -3,7 +3,10 @@ module.exports = {
         name: "app",
         script: "server.js",
         wait_ready: true,
-        listen_timeout: 15000,
+        env_production: {
+          NODE_ENV: "PROD"
+        },
+        listen_timeout: 60000,
         instances : 2,
         exec_mode : "cluster"
     }]

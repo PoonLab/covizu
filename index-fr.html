@@ -7,6 +7,7 @@
         content="CoVizu: analyse et visualisation en temps r&eacute;el de la diversit&eacute; globale des g&eacute;nomes du SRAS-CoV-2.">
   <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/driver.min.css">
 
   <script src="js/jquery.js"></script>
   <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
@@ -14,6 +15,7 @@
   <script src="js/d3-scale.js"></script>
   <script src="js/FileSaver.js"></script>
   <script src="js/d3-save-svg.min.js"></script>
+  <script src="js/driver.min.js"></script>
 </head>
 
 <body>
@@ -71,9 +73,36 @@
       sample_subm_lab: "Laboratoire de soumission",
       sample_authors: "Auteurs",
 
+      // walkthrough tour
+      tour_tree_title: "Arbre phylogénétique",
+      tour_tree_desc: "Voici un arbre phylogénétique chronologique résumant décrivant les relations de parenté entre les différentes lignées de SARS-CoV-2.",
+      tour_lin_title: "Les lignées",
+      tour_lin_desc: "Pour chaque lignée, nous dessinons un rectangle pour représenter la plage de dates de collecte d'échantillons. Pour explorer les échantillons au sein d'une lignée, cliquez sur le rectangle pour récupérer le diagramme en perle.",
+      tour_legend_title: "Colorier l'arbre",
+      tour_legend_desc: "Actuellement, l'arbre est coloré par divergence. Parcourez la liste déroulante pour explorer d'autres options.",
+      tour_beadplot_title: "Diagramme en perle",
+      tour_beadplot_desc: "Nous utilisons des diagrammes en perle pour visualiser les différentes variantes de SARS-CoV-2 au sein d'une lignée, où et quand ils ont été échantillonnées, et comment ils sont liés entre eux.",
+      tour_bead_title: "Les perles",
+      tour_bead_desc: "Les perles indiquent quand ce variant a été échantillonnée. La taille de la perle est proportionnelle au nombre de fois où le variant a été échantillonnée ce jour-là. Les couleurs représentent la région géographique majoritaire dans les échantillons.",
+      tour_variant_title: "Variant",
+      tour_variant_desc: "Chaque segment de ligne horizontale représente un variant - des virus ayant des génomes identiques. S'il n'y a pas de perles sur la ligne et qu'elle est grise, alors il s'agit d'un variant non échantillonnée: deux ou plusieurs variantes échantillonnées descendent d'un variant ancestral qui n'a pas été directement observée.",
+      tour_search_title: "Interface de recherche",
+      tour_search_desc: `Vous pouvez utiliser la zone de texte pour trouver un échantillon spécifique dans la plage de dates spécifiée. Utilisez les boutons «Précédent» et «Suivant» pour parcourir les résultats de votre recherche, et le bouton «Effacer» pour réinitialiser l'interface de recherche.`,
+      tour_tables_title: "Tableau synoptique",
+      tour_tables_desc: "Parcourez les différents onglets pour voir un résumé des pays, des échantillons et des mutations d'un diagramme en perle ou d'une perle particulière.",
+      tour_end_title: "C'est ça!",
+      tour_end_desc: `Cliquez ici si vous voulez revoir la visite rapide à tout moment. Pour plus d'aide, vous pouvez également cliquer sur les icônes
+            <a style="text-decoration: none;" href="https://en.wikipedia.org/wiki/Shoshinsha_mark" target="_new">
+              &#128304;</a>.`,
+      next_bttn: 'Suivant',
+      previous_bttn: 'Précédent',
+      close_bttn: 'Fermer',
+      done_bttn: 'Finir',
+
       // miscellaneous
       okay: "D'accord!",
       got_it: "J'ai compris!",
+      tour: "Tour rapide",
       loading: `Chargement en cours.  Un moment, s'il vous plait...`,
       loading_json: "Chargement les donn&eacute;es JSON depuis le serveur (~10 sec)...",
       country_theaders: ["Région", "Pays", "Compte"],

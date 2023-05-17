@@ -7,6 +7,7 @@
         content="CoVizu: Real-time analysis and visualization of the global diversity of SARS-CoV-2 genomes.">
   <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/driver.min.css">
 
   <script src="js/jquery.js"></script>
   <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
@@ -14,6 +15,7 @@
   <script src="js/d3-scale.js"></script>
   <script src="js/FileSaver.js"></script>
   <script src="js/d3-save-svg.min.js"></script>
+  <script src="js/driver.min.js"></script>
 </head>
 
 <body>
@@ -72,9 +74,36 @@
       sample_subm_lab: "提交实验室",
       sample_authors: "作者",
 
+      // walkthrough tour
+      tour_tree_title: "系统发育树",
+      tour_tree_desc: "这是一个时间尺度的系统发育树,总结了不同SARS-CoV-2谱系的共同祖先.",
+      tour_lin_title: "谱系",
+      tour_lin_desc: "对于每个谱系，我们绘制一个矩形来表示样本收集日期的范围。要探索谱系内的样本，请单击矩形以检索相关的珠图.",
+      tour_legend_title: "给树着色",
+      tour_legend_desc: "现在，树是按分歧着色的。浏览下拉菜单以探索其他选项.",
+      tour_beadplot_title: "珠图",
+      tour_beadplot_desc: "我们使用珠图来可视化谱系内不同的SARS-CoV-2变体，它们被采样的时间和位置，以及它们彼此之间的关系.",
+      tour_bead_title: "珠子",
+      tour_bead_desc: "每个珠子表示该变异体何时被采样。珠子的面积按该变异体当天被采样的次数成比例缩放。颜色表示样本的最常见地理区域.",
+      tour_variant_title: "变体",
+      tour_variant_desc: "每个水平线段代表一个变异体——具有相同基因组的病毒。如果线上没有珠子并且是灰色的，那么它是一个未采样的变异体：两个或两个以上的已采样变异体源自一个尚未直接观察到的祖先变异体。",
+      tour_search_title: "搜索栏",
+      tour_search_desc: '您可以使用文本框在指定的日期范围内查找特定的样本。使用“上一个”和“下一个”按钮遍历搜索结果，使用“清除”按钮重置搜索界面.',
+      tour_tables_title: "概要表格",
+      tour_tables_desc: "切换不同的选项卡以查看特定珠图或珠子的国家、样本和突变概要.",
+      tour_end_title: "就这样!",
+      tour_end_desc: `如果您想重新查看快速浏览，请单击此处。如需更多帮助，您也可以单击
+            <a style="text-decoration: none;" href="https://en.wikipedia.org/wiki/Shoshinsha_mark" target="_new">
+              &#128304;</a>图标.`,
+      next_bttn: '下一项',
+      previous_bttn: '上一项',
+      close_bttn: '关闭',
+      done_bttn: '完毕',
+
       // miscellaneous
       okay: "好的",
       got_it: "知道了",
+      tour: "快速浏览",
       loading: `加载请稍候...`,
       loading_json: "从服务器加载JSON数据 (~十秒)...",
       country_theaders: ["地区", "国家", "数"],

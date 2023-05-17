@@ -67,7 +67,7 @@ def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None,
             # remove unused data
             record = dict([(k, record[k]) for k in fields])
 
-            qname = record['covv_virus_name'].strip().replace(',', '_')  # issue #206
+            qname = record['covv_virus_name'].strip().replace(',', '_').replace('|', '_')  # issue #206,#464
             country = qname.split('/')[1]
             if country == '' or country[0].islower():
                 # reject mangled labels and non-human isolates

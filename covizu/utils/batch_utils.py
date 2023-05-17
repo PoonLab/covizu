@@ -62,9 +62,6 @@ def build_timetree(by_lineage, args, callback=None):
             if callback:
                 callback("Warning: There is an issue with the line '{}' in lineages.csv".format(line), level='WARN')
 
-    # filter recombinants
-    by_lineage = {lineage : records for lineage, records in by_lineage.items() if lineage[0] != 'X'}
-
     if callback:
         callback("Identifying lineage representative genomes")
     fasta = covizu.treetime.retrieve_genomes(by_lineage, known_seqs=lineages, ref_file=args.ref,
@@ -98,7 +95,7 @@ def beadplot_serial(lineage, features, args, callback=None):
         beaddict.update({'sampled_variants': len(labels)})
         beaddict['nodes'].update({variant: []})
 
-        for coldate, accn, label1 in intermed:
+        for coldate, accn, location, label1 in intermed:
             beaddict['nodes'][variant].append([coldate, accn, label1])
         return beaddict
 
