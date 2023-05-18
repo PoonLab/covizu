@@ -297,7 +297,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
     # parse output files
     if callback:
         callback("Parsing output files")
-    result = []
+    result = {}
     for lineage in recoded:
         # import trees
         lineage_name = lineage.replace('/', '_')  # issue #297
@@ -352,8 +352,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
         
         outfile.close()  # done with Phylo.parse generator
         beaddict.update({'sampled_variants': len(label_dict)})
-        beaddict.update({'lineage': lineage})
-        result.append(beaddict)
+        result[lineage] = beaddict
 
     return result
 

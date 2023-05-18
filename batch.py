@@ -189,7 +189,7 @@ if __name__ == "__main__":
                 'max_ndiffs': max(ndiffs),
                 'mean_ndiffs': sum(ndiffs)/len(ndiffs),
                 'mutations': mutations[lineage],
-                'ne': result[lineage]['Ne']
+                'ne': result[lineage].get('Ne', 0)
             }
         json.dump(val, handle)
 
