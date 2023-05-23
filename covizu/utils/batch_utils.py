@@ -192,7 +192,7 @@ def get_tree_summary_stats(tree, Ne, label_dict, keep_temp = False):
     return summary_stats
 
 
-def find_Ne(tree, labels_filename, keep_temp = False):
+def find_Ne(tree, labels_filename, sequence_labels, keep_temp = False):
     """Run beta skyline estimation implemented into R"""
     
     if (keep_temp):
