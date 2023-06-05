@@ -321,7 +321,9 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
     # parse output files
     if callback:
         callback("Parsing output files")
+
     result = []
+    inf_predict = {}
 
     # Load required R packages
     tidyquant = importr('tidyquant')
@@ -364,6 +366,8 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
 
             for coldate, accn, location, label1 in intermed:
                 beaddict['nodes'][variant].append([coldate, accn, location, label1])
+            
+            inf_predict.update({lineage: 0})
         else:
             # generate beadplot data
             ctree = clustering.consensus(trees, cutoff=args.boot_cutoff, callback=callback)
@@ -403,23 +407,30 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
 
             robjects.r('''
             increasing_predict_prob <- estimate_vals(increasing_mods, sum_stat_dat)
-            mean_predict_prob <- colMeans(increasing_predict_prob, na.rm = T)
+            
+            if(!is.nan(sum_stat_dat$Ne)) {
+                pred_prob <- increasing_predict_prob[which(rownames(increasing_predict_prob) == "HUNePi.1"), ]
+            } else {
+                pred_prob <- increasing_predict_prob[which(rownames(increasing_predict_prob) == "HUPi.1"), ]
+            }
 
-            predicted_increase <- as.numeric(mean_predict_prob) > 0.5
+            predicted_increase <- pred_prob > 0.5
 
             if(predicted_increase){
                 infections_predictions <- 
                     estimate_vals(infections_mods, sum_stat_dat, exp = T)
+                if(!is.nan(sum_stat_dat$Ne)) {
+                    predicted_infections <- infections_predictions[which(rownames(infections_predictions) == "HUNePi.1"), ]
+                } else {
+                    predicted_infections <- infections_predictions[which(rownames(infections_predictions) == "HUPi.1"), ]
+                }
             } else {
-                infections_predictions <- c(-1, -1, -1, -1, -1, -1, -1, -1)
+                predicted_infections <- -1
             }
             ''')
 
-            infections_predictions = list(robjects.r('infections_predictions'))
-
-            # Use HuPi prediction instead of HuNePi
-            if cne == '' or cne == 'NaN':
-                callback("Ne is empty or NaN")
+            predicted_infections = list(robjects.r('predicted_infections'))[0]
+            inf_predict.update({lineage: predicted_infections})
 
             # csummary_stats = get_tree_summary_stats(ctree, cne, clabel_dict, False)
 
@@ -431,8 +442,9 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
         outfile.close()  # done with Phylo.parse generator
         beaddict.update({'sampled_variants': len(label_dict)})
         beaddict.update({'lineage': lineage})
+        result.append(beaddict)
 
-    return result
+    return result, inf_predict
 
 
 def get_mutations(by_lineage):
