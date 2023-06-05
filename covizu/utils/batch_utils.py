@@ -144,6 +144,7 @@ def parse_alias(alias_file):
                 alias.update({k: v})
     return alias
 
+
 def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_lineages.txt',
                    recode_file="recoded.json"):
     """
@@ -200,8 +201,6 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
     if t0:
         cmd.extend(["--timestamp", str(t0)])
     subprocess.check_call(cmd)
-
-    alias = parse_alias(args.alias)
 
     # process major lineages
     for lineage, features in by_lineage.items():
@@ -260,10 +259,6 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
         beaddict.update({'sampled_variants': len(label_dict)})
         beaddict.update({'lineage': lineage})
 
-        prefix = lineage.split('.')[0]
-        lname = lineage.replace(prefix, alias[prefix]) if not prefix.startswith('X') else lineage
-
-        beaddict.update({'raw_lineage': lname})
         result.append(beaddict)
 
     return result
