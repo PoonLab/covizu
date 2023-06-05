@@ -187,7 +187,7 @@ if __name__ == "__main__":
         }
         for lineage, records in by_lineage.items():
             prefix = lineage.split('.')[0]
-            lname = lineage.replace(prefix, alias[prefix]) if not prefix.startswith('X') and alias[prefix] != '' else lineage
+            lname = lineage.replace(prefix, alias[prefix]) if lineage != 'unclassifiable' and not prefix.startswith('X') and alias[prefix] != '' else lineage
             samples = unpack_records(records)
             ndiffs = [len(x['diffs']) for x in samples]
             val['lineages'][lineage] = {
