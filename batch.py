@@ -61,6 +61,9 @@ def parse_args():
     parser.add_argument('--ft2bin', default='fasttree2',
                         help='option, path to fasttree2 binary executable')
 
+    parser.add_argument('--alias', type=str,
+                        default=os.path.join(covizu.__path__[0], "data/pango-designation/pango_designation/alias_key.json"),
+                        help="optional, path to JSON file containing alias.")
     parser.add_argument('--lineages', type=str,
                         default=os.path.join(covizu.__path__[0], "data/pango-designation/lineages.csv"),
                         help="optional, path to CSV file containing Pango lineage designations.")
