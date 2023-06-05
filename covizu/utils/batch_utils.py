@@ -5,10 +5,14 @@ import math
 from covizu import clustering, beadplot
 import sys
 import json
+from yaml import dump
 import csv
 import tempfile
 import covizu.treetime
-
+import rpy2.robjects as robjects
+from rpy2.robjects.packages import importr
+import covizu
+import math
 
 def unpack_records(records):
     """
@@ -216,6 +220,26 @@ def find_Ne(tree, labels_filename, keep_temp = False):
     return Ne
 
 
+def get_diversity(indexed, labels):
+    """
+    Calculate an analogue to the nucleotide diversity (the expected number of
+    differences between two randomly sampled genomes).
+    :param indexed:  list, sets of feature indices for each variant
+    :param labels:  dict, {variant number: [sequence names]}
+    """
+    nvar = len(indexed)
+    counts = [len(v) for v in labels]  # number of genomes per variant
+    total = sum(counts)
+    result = 0
+    for i in range(0, nvar-1):
+        fi = counts[i] / total  # frequency of i-th variant
+        for j in range(i+1, nvar):
+            fj = counts[j] / total
+            ndiff = len(indexed[i] ^ indexed[j])  # symmetric difference
+            result += 2*ndiff * fi * fj
+    return (result * (total / (total-1)))
+
+
 def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_lineages.txt',
                    recode_file="recoded.json"):
     """
@@ -297,7 +321,28 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
     # parse output files
     if callback:
         callback("Parsing output files")
-    result = {}
+    result = []
+
+    # Load required R packages
+    tidyquant = importr('tidyquant')
+    yaml = importr('yaml')
+    matrixStats = importr('matrixStats')
+
+    # Read Models
+    robjects.r('increasing_mods <- readRDS("{}")'.format(os.path.join(covizu.__path__[0], "hunepi/infections_increasing_model_comparisons.rds")))
+    robjects.r('infections_mods <- readRDS("{}")'.format(os.path.join(covizu.__path__[0], "hunepi/num_infections_model_comparisons.rds")))
+
+    # Function to make estimates from each model
+    robjects.r('''
+    estimate_vals <- function(models, predict_dat, exp = FALSE){
+        prediction_df <- data.frame(sapply(models, predict, newdata = predict_dat, type = "response"))
+        if (exp) {
+            prediction_df <- exp(prediction_df)
+        }
+        return(prediction_df)
+    }
+    ''')
+
     for lineage in recoded:
         # import trees
         lineage_name = lineage.replace('/', '_')  # issue #297
@@ -325,10 +370,6 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
             outfile.close()  # done with Phylo.parse generator
 
             # incorporate hunipie
-            with open('recoded.json') as recoded:
-                recoded = json.load(recoded)
-
-            label_dict = recoded[lineage]['labels']
             clabel_dict = manage_collapsed_nodes(label_dict, ctree)
 
             # Write labels to file for Ne estimation
@@ -340,19 +381,56 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
             cne = find_Ne(ctree, 'clabels_file.csv', False)
 
             # Collapse tree and manage the collapsed nodes
-            ctree = beadplot.collapse_polytomies(ctree)
-            clabel_dict = manage_collapsed_nodes(clabel_dict, ctree)
+            tree = beadplot.collapse_polytomies(ctree)
+            clabel_dict = manage_collapsed_nodes(label_dict, tree)
+            summary_stats = get_tree_summary_stats(tree, cne, clabel_dict, False)
 
-            csummary_stats = get_tree_summary_stats(ctree, cne, clabel_dict, False)
+            indexed = [set(l) for l in recoded[lineage]['indexed']]
+            pi = get_diversity(indexed, label_dict)
+            summary_stats['pi'] = pi
+            summary_stats['sample_size'] = len(by_lineage[lineage])
+
+            if cne == '':
+                summary_stats['Ne'] = 'NaN'
+
+            with open('{}.yml'.format(lineage), 'w') as yml:
+                #Write out files from the script
+                dump(summary_stats, yml)
+          
+            # Read in yaml data
+            robjects.r('sum_stat_dat <- as.data.frame(read_yaml("{}.yml"))'.format(lineage))
+            robjects.r('sum_stat_dat$Ne <- as.numeric(sum_stat_dat$Ne)')
+
+            robjects.r('''
+            increasing_predict_prob <- estimate_vals(increasing_mods, sum_stat_dat)
+            mean_predict_prob <- colMeans(increasing_predict_prob, na.rm = T)
+
+            predicted_increase <- as.numeric(mean_predict_prob) > 0.5
+
+            if(predicted_increase){
+                infections_predictions <- 
+                    estimate_vals(infections_mods, sum_stat_dat, exp = T)
+            } else {
+                infections_predictions <- c(-1, -1, -1, -1, -1, -1, -1, -1)
+            }
+            ''')
+
+            infections_predictions = list(robjects.r('infections_predictions'))
+
+            # Use HuPi prediction instead of HuNePi
+            if cne == '' or cne == 'NaN':
+                callback("Ne is empty or NaN")
+
+            # csummary_stats = get_tree_summary_stats(ctree, cne, clabel_dict, False)
 
             ctree = beadplot.annotate_tree(ctree, label_dict)
             beaddict = beadplot.serialize_tree(ctree)
 
-            beaddict = beaddict | csummary_stats
+            # beaddict = beaddict | csummary_stats
         
         outfile.close()  # done with Phylo.parse generator
         beaddict.update({'sampled_variants': len(label_dict)})
-        result[lineage] = beaddict
+        beaddict.update({'lineage': lineage})
 
     return result
 
