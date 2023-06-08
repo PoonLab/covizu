@@ -61,6 +61,9 @@ def parse_args():
     parser.add_argument('--ft2bin', default='fasttree2',
                         help='option, path to fasttree2 binary executable')
 
+    parser.add_argument('--alias', type=str,
+                        default=os.path.join(covizu.__path__[0], "data/pango-designation/pango_designation/alias_key.json"),
+                        help="optional, path to JSON file containing alias.")
     parser.add_argument('--lineages', type=str,
                         default=os.path.join(covizu.__path__[0], "data/pango-designation/lineages.csv"),
                         help="optional, path to CSV file containing Pango lineage designations.")
@@ -168,6 +171,9 @@ if __name__ == "__main__":
 
     # write data stats
     dbstat_file = os.path.join(args.outdir, 'dbstats.{}.json'.format(timestamp))
+
+    alias = parse_alias(args.alias)
+
     with open(dbstat_file, 'w') as handle:
         # total number of sequences
         nseqs = 0
@@ -180,6 +186,8 @@ if __name__ == "__main__":
             'lineages': {}
         }
         for lineage, records in by_lineage.items():
+            prefix = lineage.split('.')[0]
+            lname = lineage.replace(prefix, alias[prefix]) if lineage.lower() not in ['unclassifiable', 'unassigned'] and not prefix.startswith('X') and alias[prefix] != '' else lineage
             samples = unpack_records(records)
             ndiffs = [len(x['diffs']) for x in samples]
             val['lineages'][lineage] = {
@@ -188,7 +196,8 @@ if __name__ == "__main__":
                 'residual': residuals[lineage] if lineage in residuals else 0,
                 'max_ndiffs': max(ndiffs),
                 'mean_ndiffs': sum(ndiffs)/len(ndiffs),
-                'mutations': mutations[lineage]
+                'mutations': mutations[lineage],
+                'raw_lineage': lname
             }
         json.dump(val, handle)
 

@@ -131,6 +131,20 @@ def import_labels(handle, callback=None):
     return result
 
 
+def parse_alias(alias_file):
+    """
+    Parse PANGO alias_key.json file contents, excluding entries with empty string values.
+    :param alias_file:  str, path to JSON file
+    """
+    alias = {} 
+    with open(alias_file, 'r') as handle:
+        alias = json.loads(handle.read())
+        for k, v in alias.items():
+            if v != '':
+                alias.update({k: v})
+    return alias
+
+
 def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_lineages.txt',
                    recode_file="recoded.json"):
     """
@@ -244,6 +258,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
             
         beaddict.update({'sampled_variants': len(label_dict)})
         beaddict.update({'lineage': lineage})
+
         result.append(beaddict)
 
     return result
