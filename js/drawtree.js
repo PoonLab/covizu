@@ -820,7 +820,7 @@ async function redraw_tree(cutoff_date, redraw=true, partial_redraw=false) {
 
   // filter for tips with a collection date after the cutoff
   var filtered_df = df_copy.filter(x => {
-    if (formatDate(x.coldate) >= cutoff_date && x.isTip == true && !x.thisLabel.startsWith("X")) return x;
+    if (formatDate(x.coldate) >= cutoff_date && x.isTip == true && !x.rawLabel.startsWith("X")) return x;
   });
 
   if(filtered_df.length > 0) {

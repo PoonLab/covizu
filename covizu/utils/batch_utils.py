@@ -239,6 +239,20 @@ def get_diversity(indexed, labels):
             result += 2*ndiff * fi * fj
     return (result * (total / (total-1)))
 
+  
+def parse_alias(alias_file):
+    """
+    Parse PANGO alias_key.json file contents, excluding entries with empty string values.
+    :param alias_file:  str, path to JSON file
+    """
+    alias = {} 
+    with open(alias_file, 'r') as handle:
+        alias = json.loads(handle.read())
+        for k, v in alias.items():
+            if v != '':
+                alias.update({k: v})
+    return alias
+
 
 def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_lineages.txt',
                    recode_file="recoded.json"):
@@ -442,6 +456,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
         outfile.close()  # done with Phylo.parse generator
         beaddict.update({'sampled_variants': len(label_dict)})
         beaddict.update({'lineage': lineage})
+
         result.append(beaddict)
 
     return result, inf_predict

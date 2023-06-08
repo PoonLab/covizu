@@ -1,3 +1,6 @@
+const {$DATA_FOLDER} = require("../config")
+const dbstats = require(`../${$DATA_FOLDER}/dbstats.json`)
+
 /**
  * Parse a Newick tree string into a doubly-linked
  * list of JS Objects.  Assigns node labels, branch
@@ -131,6 +134,7 @@ function fortify(tree, sort=true) {
         'parentLabel': null,
         'thisId': node.id,
         'thisLabel': node.label,
+        'rawLabel': dbstats["lineages"][node.label] ? dbstats["lineages"][node.label]["raw_lineage"] : null,
         'children': node.children.map(x=>x.id),
         'branchLength': 0.,
         'isTip': (node.children.length===0),
@@ -145,6 +149,7 @@ function fortify(tree, sort=true) {
       'parentLabel': node.parent.label,
       'thisId': node.id,
       'thisLabel': node.label,
+      'rawLabel': dbstats["lineages"][node.label] ? dbstats["lineages"][node.label]["raw_lineage"] : null,
       'children': node.children.map(x=>x.id),
       'branchLength': node.branchLength,
       'isTip': (node.children.length===0),

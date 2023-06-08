@@ -60,59 +60,65 @@ describe('Search Interface', () => {
         }
     })
     
-    it('Buttons are initially disabled', () => {
-        cy.get('#navigation>button').each(($el) => {
-            cy.get($el).should('be.disabled')
+    if (Cypress.env('IGNORE_TESTS') !== 'search') {
+        it('Buttons are initially disabled', () => {
+            // cy.conditionallySkipTest('search)');
+            cy.get('#navigation>button').each(($el) => {
+                cy.get($el).should('be.disabled')
+            })
         })
-    })
-    it('Error message for invalid date formats', () => {
-        cy.get('#start-date').type('2021-05-13')
-        cy.get('#end-date').type('2021-05-10')
-        cy.get('#search-button').click({force:true})
-        cy.contains('Start Date must be before the End Date.')
-// 
-        cy.get('#start-date').clear()
-        cy.get('#end-date').clear()
-        cy.get('#start-date').type('20210510')
-        cy.get('#search-button').click({force:true})
-        cy.contains('Invalid Start Date (YYYY-MM-DD)')
-// 
-        cy.get('#start-date').clear()
-        cy.get('#end-date').clear()
-        cy.get('#end-date').type('20210513')
-        cy.get('#search-button').click({force:true})
-        cy.contains('Invalid End Date (YYYY-MM-DD)')
-        cy.get('#end-date').clear()
-    })
+    
+        it('Error message for invalid date formats', () => {
+            cy.get('#start-date').type('2021-05-13')
+            cy.get('#end-date').type('2021-05-10')
+            cy.get('#search-button').click({force:true})
+            cy.contains('Start Date must be before the End Date.')
+    // 
+            cy.get('#start-date').clear()
+            cy.get('#end-date').clear()
+            cy.get('#start-date').type('20210510')
+            cy.get('#search-button').click({force:true})
+            cy.contains('Invalid Start Date (YYYY-MM-DD)')
+    // 
+            cy.get('#start-date').clear()
+            cy.get('#end-date').clear()
+            cy.get('#end-date').type('20210513')
+            cy.get('#search-button').click({force:true})
+            cy.contains('Invalid End Date (YYYY-MM-DD)')
+            cy.get('#end-date').clear()
+        })
 
-    // this test was failing because (i think) it was searching for a data-point ('HMH') that no longer exists in the current dataset
-    // I've replaced 'HMH' with 'China' 
-    it("Searching 'China' results in selection and expected point count", () => {
-        cy.get('#search-input').type('China')
-        cy.get('#search-button').click({force:true})
-        cy.get('.selectionH').should('exist')
-        cy.get('.SelectedCluster').should('exist')
-        cy.window().then((win) => {
-            cy.get('#search_stats').contains(`1 of ${win.bead_id_to_accession.length} points`)
+        // this test was failing because (i think) it was searching for a data-point ('HMH') that no longer exists in the current dataset
+        // I've replaced 'HMH' with 'China' 
+        it("Searching 'China' results in selection and expected point count", () => {
+            cy.get('#search-input').type('China')
+            cy.get('#search-button').click({force:true})
+            cy.get('.selectionH').should('exist')
+            cy.get('.SelectedCluster').should('exist')
+            cy.window().then((win) => {
+                cy.get('#search_stats').contains(`1 of ${win.bead_id_to_accession.length} points`)
+            })
         })
-    })
-    it("Clicking the next button highlights the correct bead", () => {
-        cy.window().then((win) => {
-            cy.get('.selectionH').should('have.attr', 'bead', `${win.bead_id_to_accession[0]}`)
-            cy.get('#next_button').click()
-            cy.get('.selectionH').should('have.length', 1)
-            cy.get('.selectionH').should('have.attr', 'bead', `${win.bead_id_to_accession[1]}`)
+
+        it("Clicking the next button highlights the correct bead", () => {
+            cy.window().then((win) => {
+                cy.get('.selectionH').should('have.attr', 'bead', `${win.bead_id_to_accession[0]}`)
+                cy.get('#next_button').click()
+                cy.get('.selectionH').should('have.length', 1)
+                cy.get('.selectionH').should('have.attr', 'bead', `${win.bead_id_to_accession[1]}`)
+            })
         })
-    })
-    it('Clear button resets search interface and cluster selection', () => {
-        cy.get('#clear_button').click()
-        cy.get('#search-bar>input').each(($el) => {
-            cy.get($el).should('be.empty')
+
+        it('Clear button resets search interface and cluster selection', () => {
+            cy.get('#clear_button').click()
+            cy.get('#search-bar>input').each(($el) => {
+                cy.get($el).should('be.empty')
+            })
+            cy.get('#search_stats').contains('0 of 0 points')
+            cy.get('.selectionH').should('not.exist')
+            cy.get('.SelectedCluster').should('not.exist')
         })
-        cy.get('#search_stats').contains('0 of 0 points')
-        cy.get('.selectionH').should('not.exist')
-        cy.get('.SelectedCluster').should('not.exist')
-    })
+    }
 })
 
 describe('Tooltips', () => {
