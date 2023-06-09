@@ -1,22 +1,16 @@
 options(warn = -1)
 
 library(ape)
-library(rphyloxml)
 library("optparse")
 library(phytools)
 library(LambdaSkyline)
-library(data.table)
-
 
 set.seed(123456)
-# nboots <- 10
 
 #Get key parameters controlling the simulations
 list_of_options = list(
   make_option(c("-t", "--tree_file"), type = "character", 
               help = "phyloxml file containing the tree to be analyzed"),
-  make_option(c("-d", "--dates_file"), type = "character", 
-              help = "file containing dates associated with each tip"),
   make_option(c("-l", "--sequence_labels_file"), type = "character", 
               help = "file containing labels for all tips")
 )
@@ -55,31 +49,3 @@ skyline = (skyline.multi.phylo(tree, alpha$p1))
 #Output skyline estimation
 pop_sizes <- head(skyline$population.size, n = 5)
 cat(mean(pop_sizes, na.rm = TRUE))
-
-
-# 
-# #Function to run boostrapping on data, drops one branch of the phylogeny
-# get_pop_sizes <- function(rand_tips, tree){
-#   boot_tree <- drop.tip(tree, rand_tips)
-#   alpha = betacoal.maxlik(boot_tree)
-#   skyline = (skyline.multi.phylo(boot_tree, alpha$p1))
-#   pop_sizes <- head(skyline$population.size, n = 5)
-#   return(mean(pop_sizes, na.rm = TRUE))
-# }
-# 
-# 
-# ntips <- length(tree$tip.label)
-# replicate_pop_size <- apply(matrix(sample.int(ntips, nboots*ceiling(ntips*0.05), replace = F), ncol = round(ntips*0.05)), 
-#                             MARGIN = 1,
-#                             get_pop_sizes, 
-#                             tree = tree)
-# replicate_pop_size <- replicate_pop_size[order(replicate_pop_size)]
-# t0 <- mean(replicate_pop_size)
-# lb <- replicate_pop_size[ceiling(0.025* nboots)]
-# ub <- replicate_pop_size[round(0.975* nboots)]
-# 
-# 
-# cat(paste(t0, lb,ub, sep = ","))
-# 
-# 
-# 
