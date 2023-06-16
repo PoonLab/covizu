@@ -29,7 +29,7 @@ def parse_args():
                         help="path to write JSON of features by lineage")
 
     parser.add_argument('--lineages', type=str,
-                        default=os.path.join(covizu.__path__[0], "data/lineages.csv"),
+                        default=os.path.join(covizu.__path__[0], "data/pango-designation/lineages.csv"),
                         help="optional, path to CSV file containing Pango lineage designations.")
 
     parser.add_argument('--minlen', type=int, default=29000, help='minimum genome length (nt)')
@@ -100,7 +100,7 @@ def stream_local(path, lineage_file, minlen=29000, mindate='2019-12-01', callbac
 
     # parse CSV output from Pangolin
     reader = DictReader(lineage_file)
-    if reader.fieldnames != ['taxon', 'lineage', 'probability', 'pangoLEARN_version', 'status', 'note']:
+    if reader.fieldnames != ['taxon', 'lineage', 'conflict', 'ambiguity_score', 'scorpio_call', 'scorpio_support', 'scorpio_conflict', 'scorpio_notes', 'version', 'pangolin_version', 'scorpio_version', 'constellation_version', 'is_designated', 'qc_status', 'qc_notes', 'note']:
         if callback:
             callback("Lineage CSV header does not match expected.", level='ERROR')
         sys.exit()
@@ -145,7 +145,8 @@ def stream_local(path, lineage_file, minlen=29000, mindate='2019-12-01', callbac
             'covv_accession_id': accn,
             'sequence': seq,
             'covv_collection_date': coldate,
-            'covv_lineage': lineage
+            'covv_lineage': lineage,
+            'covv_location': country
         }
         yield record
 
@@ -210,9 +211,9 @@ if __name__ == "__main__":
 
     # generate beadplots and serialize to file
     result = make_beadplots(by_lineage, args, cb.callback, t0=cb.t0.timestamp())
-    outfile = open(os.path.join(args.outdir, 'clusters.{}.json'.format(timestamp)), 'w')
-    outfile.write(json.dumps(result))  # serialize results to JSON
-    outfile.close()
+    outfile = os.path.join(args.outdir, 'clusters.{}.json'.format(timestamp))
+    with open(outfile, 'w') as handle:  # serialize results to JSON
+        json.dump(result, fp=handle)
 
     # get mutation info
     locator = SC2Locator()
@@ -231,11 +232,12 @@ if __name__ == "__main__":
             'lineages': {}
         }
         for lineage, samples in by_lineage.items():
+            samples = unpack_records(samples)
             ndiffs = [len(x['diffs']) for x in samples]
             val['lineages'][lineage] = {
                 'nsamples': len(samples),
                 'lastcoldate': max(x['covv_collection_date'] for x in samples),
-                'residual': residuals[lineage],
+                'residual': residuals.get(lineage, 0),
                 'max_ndiffs': max(ndiffs),
                 'mean_ndiffs': sum(ndiffs)/len(ndiffs),
                 'mutations': mutations[lineage]
