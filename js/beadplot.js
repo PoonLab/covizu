@@ -937,6 +937,7 @@ function region_to_string(my_regions) {
  */
 
 function gen_mut_table(obj) {
+  console.log("GEERNATING MUTATION TABLE ", obj)
   var mutations = [];
 
   // Check for a list of samples
@@ -1373,6 +1374,7 @@ function serialize_branch(parent, edgelist) {
     // terminal node, emit string
     // TODO: add count information (number of samples per variant)
     coldate = branch[0].x1.toISOString().split('T')[0];
+    console.log("coldate=",coldate);
     return branch[0].child+'|'+coldate+':'+branch[0].dist;  // node name : branch length
   }
   else {

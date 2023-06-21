@@ -776,7 +776,6 @@ async function click_cluster(d, cluster_info) {
 async function redraw_tree(cutoff_date, redraw=true, partial_redraw=false) {
   // deep copy the df and clear all references to children
   df_copy = structuredClone(df);
-
   var df_copy = df_copy.map(x => {
     x.children = [];
     return x;
@@ -784,6 +783,7 @@ async function redraw_tree(cutoff_date, redraw=true, partial_redraw=false) {
 
   // filter for tips with a collection date after the cutoff
   var filtered_df = df_copy.filter(x => {
+    // console.log(x,x.coldate,formatDate(x.coldate),cutoff_date,x.isTip,x.thisLabel);
     if (formatDate(x.coldate) >= cutoff_date && x.isTip == true && !x.thisLabel.startsWith("X")) return x;
   });
 
