@@ -395,6 +395,7 @@ const map_clusters_to_tips = (df, clusters) => {
     tips[root_idx].mean_ndiffs = tip_stats.mean_ndiffs;
     tips[root_idx].nsamples = tip_stats.nsamples;
     tips[root_idx].mutations = tip_stats.mutations;
+    tips[root_idx].infections = tip_stats.infections;
 
     // calculate residual from mean differences and mean collection date - fixes #241
     let times = coldates.map(x => utcDate(x).getTime()),
@@ -483,7 +484,8 @@ const map_clusters_to_tips = (df, clusters) => {
       nsamples: tip_stats.nsamples,
       mutations: tip_stats.mutations,
       residual: tip_stats.mean_ndiffs - exp_diffs,  // tip_stats.residual;
-      mcoldate: first_date.addDays(mean_date)
+      mcoldate: first_date.addDays(mean_date),
+      infections: tip_stats.infections
     })
   }
 
