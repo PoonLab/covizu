@@ -210,7 +210,7 @@ if __name__ == "__main__":
         Phylo.write(timetree, file=handle, format='newick')
 
     # generate beadplots and serialize to file
-    result = make_beadplots(by_lineage, args, cb.callback, t0=cb.t0.timestamp())
+    result, infection_prediction = make_beadplots(by_lineage, args, cb.callback, t0=cb.t0.timestamp())
     outfile = os.path.join(args.outdir, 'clusters.{}.json'.format(timestamp))
     with open(outfile, 'w') as handle:  # serialize results to JSON
         json.dump(result, fp=handle)
@@ -238,9 +238,11 @@ if __name__ == "__main__":
                 'nsamples': len(samples),
                 'lastcoldate': max(x['covv_collection_date'] for x in samples),
                 'residual': residuals.get(lineage, 0),
+                'residual': residuals.get(lineage, 0),
                 'max_ndiffs': max(ndiffs),
                 'mean_ndiffs': sum(ndiffs)/len(ndiffs),
-                'mutations': mutations[lineage]
+                'mutations': mutations[lineage],
+                'infections': infection_prediction[lineage]
             }
         json.dump(val, handle)
 
