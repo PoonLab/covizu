@@ -421,13 +421,18 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
             # incorporate hunipie
             clabel_dict = manage_collapsed_nodes(label_dict, ctree)
 
-            # Write labels to file for Ne estimation
-            with open('clabels_file.csv', 'w') as csv_file:
-                writer = csv.writer(csv_file)
-                for key, value in clabel_dict.items():
-                    writer.writerow([key, value])
+            labels_filename = NamedTemporaryFile('w', delete=False)
 
-            cne = find_Ne(ctree, 'clabels_file.csv')
+            # Write labels to file for Ne estimation
+            writer = csv.writer(labels_filename)
+            for key, value in clabel_dict.items():
+                writer.writerow([key, value])
+            labels_filename.close()
+
+            cne = find_Ne(ctree, labels_filename.name)
+
+            # Remove temporary file with labels
+            os.remove(labels_filename.name)
 
             # Collapse tree and manage the collapsed nodes
             tree = beadplot.collapse_polytomies(ctree)
