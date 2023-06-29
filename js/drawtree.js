@@ -42,6 +42,9 @@ var axis = d3.select("div#svg-timetreeaxis")
 let cTooltip = d3.select("#tooltipContainer")
     .style("opacity", 0);
 
+var dsc_infections_colour = '#303030';
+var null_infections_colour = '#b5b5b5';
+
 /**
  * Draw an open rectangle around the filled rectangle representing
  * a cluster/lineage in the time-scaled tree.
@@ -346,6 +349,9 @@ function draw_clusters(tips, recombinant_tips, redraw=false) {
       .domain(d3.extent(tips, function(d) { return d.last_date; }));
   diverge_pal = d3.scaleSequential(d3.interpolatePlasma)
       .domain(d3.extent(tips, function(d) { return d.residual; }));
+  infections_pal = d3.scaleSequential(d3.interpolateViridis)
+      .domain([0, d3.max(tips, function(d) { return d.infections; })]);
+
   generate_legends();
   changeTreeColour();
 
@@ -421,7 +427,8 @@ function changeTreeColour() {
   $("div#svg-sample-legend").hide();
   $("div#svg-coldate-legend").hide();
   $("div#svg-diverge-legend").hide();
-
+  $("div#svg-infections-legend").hide();
+  
   vis.selectAll("rect")
       .transition()
       .duration(300)
@@ -439,6 +446,12 @@ function changeTreeColour() {
           else if (opt === "Collection date") {
             $("div#svg-coldate-legend").show();
             return(coldate_pal(d.last_date));
+          }
+          else if (opt === "Infections") {
+            $("div#svg-infections-legend").show();
+            if (d.infections > 0) return infections_pal(d.infections);
+            else if (d.infections == 0) return null_infections_colour;
+            else return dsc_infections_colour;
           }
           else {  // Divergence
             $("div#svg-diverge-legend").show();
@@ -464,6 +477,12 @@ function changeTreeColour() {
           else if (opt === "Collection date") {
             $("div#svg-coldate-legend").show();
             return(coldate_pal(d.last_date));
+          }
+          else if (opt === "Infections") {
+            $("div#svg-infections-legend").show();
+            if (d.infections > 0) return infections_pal(d.infections);
+            else if (d.infections == 0) return null_infections_colour;
+            else return dsc_infections_colour;
           }
           else {  // Divergence
             $("div#svg-diverge-legend").show();
@@ -666,6 +685,23 @@ function generate_legends() {
     title: i18n_text.diverge_legend,
     width: 240
   })).hide();
+
+  let l = legend({
+    color: infections_pal,
+    title: i18n_text.infections_legend,
+    width: 240
+  }).outerHTML
+
+  l += `<div class="legend-item">`;
+  l += `<div class="legend-swatch" style="background:${dsc_infections_colour};"></div>`;
+  l += `<div class="legend-label" style="margin-right:10px;" title="${i18n_text.dsc_infections}">${i18n_text.dsc_infections}</div>`;
+ 
+  l += `<div class="legend-item">`;
+  l += `<div class="legend-swatch" style="background:${null_infections_colour};"></div>`;
+  l += `<div class="legend-label" title="${i18n_text.null_infections}">${i18n_text.null_infections}</div>`;
+
+  // infections legend
+  $("div#svg-infections-legend").html(l).hide();
 }
 
 
@@ -784,7 +820,7 @@ async function redraw_tree(cutoff_date, redraw=true, partial_redraw=false) {
 
   // filter for tips with a collection date after the cutoff
   var filtered_df = df_copy.filter(x => {
-    if (formatDate(x.coldate) >= cutoff_date && x.isTip == true && !x.thisLabel.startsWith("X")) return x;
+    if (formatDate(x.coldate) >= cutoff_date && x.isTip == true && !x.rawLabel.startsWith("X")) return x;
   });
 
   if(filtered_df.length > 0) {

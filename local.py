@@ -64,6 +64,10 @@ def parse_args():
 
     parser.add_argument('--ft2bin', default='fasttree2',
                         help='path to fasttree2 binary executable')
+    
+    parser.add_argument('--alias', type=str,
+                        default=os.path.join(covizu.__path__[0], "data/pango-designation/pango_designation/alias_key.json"),
+                        help="optional, path to JSON file containing alias.")
 
     parser.add_argument('--ttbin', default='treetime',
                         help='path to treetime binary executable')
@@ -100,7 +104,7 @@ def stream_local(path, lineage_file, minlen=29000, mindate='2019-12-01', callbac
 
     # parse CSV output from Pangolin
     reader = DictReader(lineage_file)
-    if reader.fieldnames != ['taxon', 'lineage', 'conflict', 'ambiguity_score', 'scorpio_call', 'scorpio_support', 'scorpio_conflict', 'scorpio_notes', 'version', 'pangolin_version', 'scorpio_version', 'constellation_version', 'is_designated', 'qc_status', 'qc_notes', 'note']:
+    if ['taxon', 'lineage'] in reader.fieldnames:
         if callback:
             callback("Lineage CSV header does not match expected.", level='ERROR')
         sys.exit()
@@ -224,6 +228,9 @@ if __name__ == "__main__":
 
     # write data stats
     dbstat_file = os.path.join(args.outdir, 'dbstats.{}.json'.format(timestamp))
+
+    alias = parse_alias(args.alias)
+
     with open(dbstat_file, 'w') as handle:
         nseqs = sum([len(rows) for rows in by_lineage.values()])
         val = {
@@ -232,12 +239,13 @@ if __name__ == "__main__":
             'lineages': {}
         }
         for lineage, samples in by_lineage.items():
+            prefix = lineage.split('.')[0]
+            lname = lineage.replace(prefix, alias[prefix]) if lineage.lower() not in ['unclassifiable', 'unassigned'] and not prefix.startswith('X') and alias[prefix] != '' else lineage
             samples = unpack_records(samples)
             ndiffs = [len(x['diffs']) for x in samples]
             val['lineages'][lineage] = {
                 'nsamples': len(samples),
                 'lastcoldate': max(x['covv_collection_date'] for x in samples),
-                'residual': residuals.get(lineage, 0),
                 'residual': residuals.get(lineage, 0),
                 'max_ndiffs': max(ndiffs),
                 'mean_ndiffs': sum(ndiffs)/len(ndiffs),
