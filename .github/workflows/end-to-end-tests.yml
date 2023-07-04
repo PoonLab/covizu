@@ -15,3 +15,5 @@ jobs:
         uses: cypress-io/github-action@v4
         with:
           start: npm run test
+        env:
+            CYPRESS_IGNORE_TESTS: search

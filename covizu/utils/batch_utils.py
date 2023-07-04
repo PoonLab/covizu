@@ -5,9 +5,8 @@ import math
 from covizu import clustering, beadplot
 import sys
 import json
-from yaml import dump
 import csv
-import tempfile
+from tempfile import NamedTemporaryFile
 import covizu.treetime
 import rpy2.robjects as robjects
 from rpy2.robjects.packages import importr
@@ -169,7 +168,7 @@ def manage_collapsed_nodes(labels, tree):
     return new_labels
 
 
-def get_tree_summary_stats(tree, Ne, label_dict, keep_temp = False):
+def get_tree_summary_stats(tree, Ne, label_dict):
     """Write out file of summary stats including number of unsampled lineages,
     diversity metrics and root to tip regression"""
     internal_nodes = tree.get_nonterminals()
@@ -196,26 +195,59 @@ def get_tree_summary_stats(tree, Ne, label_dict, keep_temp = False):
     return summary_stats
 
 
-def find_Ne(tree, labels_filename, keep_temp = False):
+def find_Ne(tree, labels_filename):
     """Run beta skyline estimation implemented into R"""
     
-    if (keep_temp):
-        tree_filename = "combined_tree.tree"
-    else:
-        #Make a temporary file containing the tree
-        temp_tree, tree_filename = tempfile.mkstemp(suffix =".tree")
-
-    Phylo.write(tree, tree_filename, "nexus")
+    #Make a temporary file containing the tree
+    tree_filename = NamedTemporaryFile('w', delete=False)
+    Phylo.write(tree, tree_filename.name, "nexus")
+    tree_filename.close()
     
-    #Get the value of Ne
-    Ne = subprocess.Popen("Rscript " + os.path.dirname(__file__) + "/skyline_est.R -t " + 
-            tree_filename + " -l " + labels_filename, shell = True, 
-            stdout=subprocess.PIPE).stdout.read().decode() 
+    # Load required R packages
+    ape = importr('ape')
+    phytools = importr('phytools')
+    LambdaSkyline = importr('LambdaSkyline')
+  
+    robjects.r.assign("tree_filename", tree_filename.name)
+    robjects.r.assign("sequence_labels_file", labels_filename)
     
+    try:
+        robjects.r('''
+        set.seed(123456)
 
-    if (not keep_temp):
-        #Remove the temporary file
-        os.remove(tree_filename)
+        tree = read.nexus(tree_filename)
+        sequence_labels = read.csv(sequence_labels_file)
+        colnames(sequence_labels) = c("index", "value")
+
+        #Adjust tree to include branches of length 0 on identical sequences
+        tip_count = table(sequence_labels$index)
+        add_tip_count = data.frame(tip_count - 1)
+
+        for (tip_place_in_table in 1:nrow(add_tip_count)){
+            tip_name = add_tip_count[tip_place_in_table,1]
+            freq = add_tip_count[tip_place_in_table,2]
+            if(freq != 0){
+                for (counter in 1:freq){
+                tree <- bind.tip(tree, paste0(tip_name,"_", counter), edge.length = 0, 
+                                    where=which(tree$tip.label == tip_name))
+                }
+            }
+        }
+
+        #Run skyline estimation
+        alpha = betacoal.maxlik(tree)
+        skyline = (skyline.multi.phylo(tree, alpha$p1))
+
+        #Output skyline estimation
+        pop_sizes <- head(skyline$population.size, n = 5)
+        mean_pop_size <- mean(pop_sizes, na.rm = TRUE)
+        ''')
+        Ne = list(robjects.r('mean_pop_size'))[0]
+    except:
+        Ne = ''    
+
+    #Remove the temporary file
+    os.remove(tree_filename.name)
     
     return Ne
 
@@ -238,6 +270,20 @@ def get_diversity(indexed, labels):
             ndiff = len(indexed[i] ^ indexed[j])  # symmetric difference
             result += 2*ndiff * fi * fj
     return (result * (total / (total-1)))
+
+  
+def parse_alias(alias_file):
+    """
+    Parse PANGO alias_key.json file contents, excluding entries with empty string values.
+    :param alias_file:  str, path to JSON file
+    """
+    alias = {} 
+    with open(alias_file, 'r') as handle:
+        alias = json.loads(handle.read())
+        for k, v in alias.items():
+            if v != '':
+                alias.update({k: v})
+    return alias
 
 
 def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_lineages.txt',
@@ -327,7 +373,6 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
 
     # Load required R packages
     tidyquant = importr('tidyquant')
-    yaml = importr('yaml')
     matrixStats = importr('matrixStats')
 
     # Read Models
@@ -376,18 +421,23 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
             # incorporate hunipie
             clabel_dict = manage_collapsed_nodes(label_dict, ctree)
 
-            # Write labels to file for Ne estimation
-            with open('clabels_file.csv', 'w') as csv_file:
-                writer = csv.writer(csv_file)
-                for key, value in clabel_dict.items():
-                    writer.writerow([key, value])
+            labels_filename = NamedTemporaryFile('w', delete=False)
 
-            cne = find_Ne(ctree, 'clabels_file.csv', False)
+            # Write labels to file for Ne estimation
+            writer = csv.writer(labels_filename)
+            for key, value in clabel_dict.items():
+                writer.writerow([key, value])
+            labels_filename.close()
+
+            cne = find_Ne(ctree, labels_filename.name)
+
+            # Remove temporary file with labels
+            os.remove(labels_filename.name)
 
             # Collapse tree and manage the collapsed nodes
             tree = beadplot.collapse_polytomies(ctree)
             clabel_dict = manage_collapsed_nodes(label_dict, tree)
-            summary_stats = get_tree_summary_stats(tree, cne, clabel_dict, False)
+            summary_stats = get_tree_summary_stats(tree, cne, clabel_dict)
 
             indexed = [set(l) for l in recoded[lineage]['indexed']]
             pi = get_diversity(indexed, label_dict)
@@ -397,15 +447,11 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
             if cne == '':
                 summary_stats['Ne'] = 'NaN'
 
-            with open('{}.yml'.format(lineage), 'w') as yml:
-                #Write out files from the script
-                dump(summary_stats, yml)
+            sum_stat_dat = robjects.vectors.DataFrame(summary_stats)
+            robjects.r.assign('sum_stat_dat', sum_stat_dat)
           
-            # Read in yaml data
-            robjects.r('sum_stat_dat <- as.data.frame(read_yaml("{}.yml"))'.format(lineage))
-            robjects.r('sum_stat_dat$Ne <- as.numeric(sum_stat_dat$Ne)')
-
             robjects.r('''
+            sum_stat_dat$Ne <- as.numeric(sum_stat_dat$Ne)
             increasing_predict_prob <- estimate_vals(increasing_mods, sum_stat_dat)
             
             if(!is.nan(sum_stat_dat$Ne)) {
@@ -432,16 +478,13 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
             predicted_infections = list(robjects.r('predicted_infections'))[0]
             inf_predict.update({lineage: predicted_infections})
 
-            # csummary_stats = get_tree_summary_stats(ctree, cne, clabel_dict, False)
-
             ctree = beadplot.annotate_tree(ctree, label_dict)
             beaddict = beadplot.serialize_tree(ctree)
-
-            # beaddict = beaddict | csummary_stats
         
         outfile.close()  # done with Phylo.parse generator
         beaddict.update({'sampled_variants': len(label_dict)})
         beaddict.update({'lineage': lineage})
+
         result.append(beaddict)
 
     return result, inf_predict

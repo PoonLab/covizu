@@ -45,7 +45,11 @@ $( "#splash" ).dialog({
       // Walkthrough
       const driver = new Driver({
         allowClose: false,
-        padding: 2.5
+        padding: 2.5,
+        doneBtnText: i18n_text.done_bttn,
+        closeBtnText: i18n_text.close_bttn,
+        nextBtnText: i18n_text.next_bttn,
+        prevBtnText: i18n_text.previous_bttn,
       });
 
       driver.defineSteps([
