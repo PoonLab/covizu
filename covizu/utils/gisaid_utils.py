@@ -7,6 +7,7 @@ import sys
 import subprocess
 from datetime import datetime
 import getpass
+import sqlite3
 
 import covizu
 from covizu import minimap2
@@ -56,6 +57,17 @@ def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None,
 
     :yield:  dict, contents of each GISAID record
     """
+
+    # initialize database objects
+    conn = sqlite3.connect('covizu/data/gsaid.db')
+    cur = conn.cursor()
+
+    # create sequences table
+    seqs_table = '''CREATE TABLE IF NOT EXISTS SEQUENCES (accession VARCHAR(255)
+                    PRIMARY KEY, name VARCHAR(255), lineage VARCHAR(255),
+                    date VARCHAR(255), location VARCHAR(255), sequence VARCHAR(30000))'''
+    cur.execute(seqs_table)
+
     mindate = fromisoformat(mindate)
     rejects = {'short': 0, 'baddate': 0, 'nonhuman': 0, 'nolineage': 0}
     with lzma.open(path, 'rb') as handle:
@@ -67,6 +79,15 @@ def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None,
             # remove unused data
             record = dict([(k, record[k]) for k in fields])
 
+            data = cur.execute("SELECT accession FROM SEQUENCES WHERE accession = ?",
+                                (record["covv_accession_id"],)).fetchone()
+            
+            if data == None:
+                cur.execute("REPLACE INTO SEQUENCES VALUES(?, ?, ?, ?, ?, ?)",
+                             [item for item in record.values()])
+            else:
+                continue
+            
             qname = record['covv_virus_name'].strip().replace(',', '_').replace('|', '_')  # issue #206,#464
             country = qname.split('/')[1]
             if country == '' or country[0].islower():
@@ -94,6 +115,9 @@ def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None,
                 continue
 
             yield record
+
+    conn.commit()
+    conn.close()
 
     if callback:
         callback("Rejected {short} short genomes\n"
