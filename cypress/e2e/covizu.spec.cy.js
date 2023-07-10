@@ -168,11 +168,12 @@ describe("Colour tree", () => {
         cy.visit("http://localhost:8001");
         cy.get("#splash-button").click();
         cy.get("#select-tree-colours").children().should(($options)=>{
-            expect($options).to.have.length(4);// number of options
+            expect($options).to.have.length(5);// number of options
             expect($options.eq(0)).to.contain('Region')
             expect($options.eq(1)).to.contain('No. samples');
             expect($options.eq(2)).to.contain('Collection date');
             expect($options.eq(3)).to.contain('Divergence');
+            expect($options.eq(4)).to.contain('Infections');
         })
     })
 

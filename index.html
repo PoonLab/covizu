@@ -39,9 +39,13 @@
       sample_legend: "Sample size (log10)",
       coldate_legend: "Last collection date",
       diverge_legend: "Divergence (strict molecular clock)",
+      infections_legend: "Predicted infections (increasing)",
+      infections_tooltip: "Predicted infections",
       total: "Total",
       sampled: "Sampled",
       displayed: "Displayed",
+      dsc_infections: "Decreasing infections",
+      null_infections: "N/A",
 
       // side bar data statistics
       last_update: "Last update",
@@ -142,12 +146,14 @@
             <option value="Region">Region</option>
             <option value="No. samples">No. samples</option>
             <option value="Collection date">Collection date</option>
-            <option value="Divergence" selected>Divergence</option>
+            <option value="Divergence">Divergence</option>
+            <option value="Infections" selected>Infections</option>
           </select>
           <div class="legend" id="div-region-legend"></div>
           <div class="legend" id="svg-sample-legend"></div>
           <div class="legend" id="svg-coldate-legend"></div>
           <div class="legend" id="svg-diverge-legend"></div>
+          <div class="legend" id="svg-infections-legend"></div>
         </div>
         <!-- </span> -->
 

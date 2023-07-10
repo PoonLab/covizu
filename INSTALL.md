@@ -11,9 +11,18 @@
 * [git](https://git-scm.com/)
 * [Node.js](https://nodejs.org/en/download/) version 18.0.0+
 * [npm](https://docs.npmjs.com/about-npm-versions)
+* [rpy2](https://rpy2.github.io/doc/latest/html/index.html) version 3.5.13+
+* [R](https://cran.r-project.org/) (tested on 4.2.1) and the following packages:
+  * [tidyquant](https://cran.r-project.org/web/packages/tidyquant/index.html)
+  * [matrixStats](https://cran.rstudio.com/web/packages/matrixStats/index.html)
+  * [ape](https://cran.r-project.org/web/packages/ape/index.html)
+  * [phytools](https://cran.r-project.org/web/packages/phytools/index.html)
+  * [devtools](https://cran.r-project.org/web/packages/devtools/index.html)
+  * [LambdaSkyline](https://github.com/phoscheit/LambdaSkyline)
 
 If running locally (without dedicated GISAID feed):
 * [Pangolin](https://github.com/cov-lineages/pangolin/)
+* [Requests](https://pypi.org/project/requests/)
 
 
 ## Installation
