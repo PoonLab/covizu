@@ -246,6 +246,11 @@ function draw_clusters(tips, recombinant_tips, redraw=false) {
     ctooltipText += `<b>${i18n_text.tip_varcount}:</b><br>`;
     ctooltipText += `&nbsp;&nbsp; ${i18n_text.sampled}: ${d.varcount}<br>`;
     ctooltipText += `&nbsp;&nbsp; ${i18n_text.displayed}: ${d.sampled_varcount}<br>`;
+
+    if(d.infections > 0) {
+      ctooltipText += `<b>${i18n_text.infections_tooltip}:</b> ${Math.round(d.infections)}<br>`;
+    } 
+
     ctooltipText += `<b>${i18n_text.tip_coldates}:</b><br>${formatDate(d.first_date)} / ${formatDate(d.last_date)}`;
 
     // Tooltip appears 10 pixels left of the cursor

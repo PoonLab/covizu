@@ -1,14 +1,22 @@
 FROM ubuntu:latest
 
+ENV DEBIAN_FRONTEND noninteractive
+
 RUN apt-get -qy update && \
-    apt-get -qqy install python3.10-dev python3.10-distutils binutils build-essential git python3-scipy openmpi-bin openmpi-doc libopenmpi-dev 
+    apt-get -qqy install python3.10-dev python3.10-distutils binutils build-essential git python3-scipy openmpi-bin openmpi-doc libopenmpi-dev r-cran-devtools
 
 ENV OMPI_ALLOW_RUN_AS_ROOT=1 OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
 
 ADD https://bootstrap.pypa.io/get-pip.py /tmp/get-pip.py
 
 RUN python3.10 /tmp/get-pip.py
-RUN /usr/local/bin/pip install biopython mpi4py
+RUN /usr/local/bin/pip install biopython mpi4py rpy2
+
+RUN R -e "install.packages('tidyquant',dependencies=TRUE, repos='http://cran.rstudio.com/')"
+RUN R -e "install.packages('matrixStats',dependencies=TRUE, repos='http://cran.rstudio.com/')"
+RUN R -e "install.packages('ape',dependencies=TRUE, repos='http://cran.rstudio.com/')"
+RUN R -e "install.packages('phytools',dependencies=TRUE, repos='http://cran.rstudio.com/')"
+RUN R -e "devtools::install_github('phoscheit/LambdaSkyline')"
 
 ADD http://www.microbesonline.org/fasttree/FastTree.c /root/FastTree.c
 RUN gcc -DUSE_DOUBLE -O3 -finline-functions -funroll-loops -Wall -o /usr/local/bin/fasttree2 /root/FastTree.c -lm && \
