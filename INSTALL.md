@@ -22,6 +22,7 @@
 
 If running locally (without dedicated GISAID feed):
 * [Pangolin](https://github.com/cov-lineages/pangolin/)
+* [Requests](https://pypi.org/project/requests/)
 
 
 ## Installation

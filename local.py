@@ -4,6 +4,7 @@ import sys
 import json
 from datetime import datetime, date
 from csv import DictReader
+import requests
 
 import covizu
 from covizu.utils import seq_utils, gisaid_utils
@@ -98,7 +99,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def stream_local(path, lineage_file, minlen=29000, mindate='2019-12-01', callback=None):
+def stream_local(path, lineage_file, regions, minlen=29000, mindate='2019-12-01', callback=None):
     """ Convert local FASTA file to feed-like object - replaces load_gisaid() """
     mindate = seq_utils.fromisoformat(mindate)
 
@@ -144,13 +145,15 @@ def stream_local(path, lineage_file, minlen=29000, mindate='2019-12-01', callbac
                 )
             sys.exit()
 
+        region = regions.get(country.lower().replace('_', ' '), None)
+
         record = {
             'covv_virus_name': label,
             'covv_accession_id': accn,
             'sequence': seq,
             'covv_collection_date': coldate,
             'covv_lineage': lineage,
-            'covv_location': country
+            'covv_location': country if region is None else "{} / {}".format(region, country)
         }
         yield record
 
@@ -159,12 +162,12 @@ def stream_local(path, lineage_file, minlen=29000, mindate='2019-12-01', callbac
                  "dates\n         {nonhuman} non-human genomes".format(**rejects))
 
 
-def process_local(args, callback=None):
+def process_local(args, regions, callback=None):
     """ Analyze genome sequences from local FASTA file """
     with open(args.ref) as handle:
         reflen = len(seq_utils.convert_fasta(handle)[0][1])
 
-    loader = stream_local(args.infile, args.pangolineages, minlen=args.minlen,
+    loader = stream_local(args.infile, args.pangolineages, regions, minlen=args.minlen,
                           mindate=args.mindate, callback=callback)
     batcher = gisaid_utils.batch_fasta(loader, size=args.batchsize)
     aligned = gisaid_utils.extract_features(batcher, ref_file=args.ref, binpath=args.mmbin,
@@ -201,7 +204,11 @@ if __name__ == "__main__":
         cb.callback("Error updating submodules")
         sys.exit()
 
-    by_lineage = process_local(args, cb.callback)
+    response = requests.get("https://geoenrich.arcgis.com/arcgis/rest/services/World/geoenrichmentserver/Geoenrichment/countries?f=pjson")
+    res = response.json()
+    regions = {c['name'].lower() : c['continent'] for c in res['countries']} | {c['abbr3'].lower() : c['continent'] for c in res['countries']}
+
+    by_lineage = process_local(args, regions, cb.callback)
     with open(args.bylineage, 'w') as handle:
         # export to file to process large lineages with MPI
         json.dump(by_lineage, handle)
@@ -250,7 +257,8 @@ if __name__ == "__main__":
                 'max_ndiffs': max(ndiffs),
                 'mean_ndiffs': sum(ndiffs)/len(ndiffs),
                 'mutations': mutations[lineage],
-                'infections': infection_prediction[lineage]
+                'infections': infection_prediction[lineage],
+                'raw_lineage': lname
             }
         json.dump(val, handle)
 
