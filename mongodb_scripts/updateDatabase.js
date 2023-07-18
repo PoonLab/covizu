@@ -1,3 +1,4 @@
+const { MongoClient } = require("mongodb");
 const readline = require("readline");
 const fs = require('fs');
 
@@ -11,10 +12,12 @@ const {
   map_clusters_to_tips,
   index_accessions,
   index_lineage
-} = require('./server/parseCluster')
+} = require('../server/parseCluster')
+
+const { readTree } = require("../server/phylo");
 
 // we have to use globalVariables because the parse_clusters updates the global.region_map on the fly.
-require("./globalVariables")
+require("../globalVariables")
 
 const {
   $ADMIN_CONNECTION_URI,
@@ -29,13 +32,12 @@ const {
   $COLLECTION__DF_TREE,
   $COLLECTION__AUTOCOMPLETE_DATA,
   $COLLECTION__FLAT_DATA,
+  $PROJECT_ROOT,
   $JSON_DATA_FOLDER,
   $JSONFILE__CLUSTERS,
   $NWKFILE__TREE,
-} = require('./config/dbconfig')
+} = require('../config/dbconfig')
 
-const { MongoClient } = require("mongodb");
-const { readTree } = require("./server/phylo");
 
 const adminUserConnection = new MongoClient($ADMIN_CONNECTION_URI);
 console.log(
@@ -51,10 +53,16 @@ console.log(
    COLLECTION__DF_TREE              ${$COLLECTION__DF_TREE}
    COLLECTION__AUTOCOMPLETE_DATA    ${$COLLECTION__AUTOCOMPLETE_DATA}
    COLLECTION__FLAT_DATA            ${$COLLECTION__FLAT_DATA}
+   PROJECT_ROOT                     ${$PROJECT_ROOT}
    JSON_DATA_FOLDER                 ${$JSON_DATA_FOLDER}
    JSONFILE__CLUSTERS               ${$JSONFILE__CLUSTERS}
    NWKFILE_TREE                     ${$NWKFILE__TREE}`
 )
+
+if(!$ACTIVE_DATABASE)
+{
+    throw new Error("Environment variable DBNUMBER must be 1 or 2");
+}
 
 async function updateDatabase() {
 
@@ -74,41 +82,37 @@ async function updateDatabase() {
       let db;
 
       db = adminUserConnection.db($ACTIVE_DATABASE);
-      const existingCollections = await db.listCollections().toArray();
-      console.log(existingCollections)
-
-      /** delete all collections */
-      // console.log(`Deleting collections ${$ACTIVE_DATABASE}.${$COLLECTION__BEADDATA}`)
-      // db.collection($COLLECTION__BEADDATA).drop();
-      // console.log(`Deleting collections ${$ACTIVE_DATABASE}.${$COLLECTION__TIPS}`)
-      // db.collection($COLLECTION__TIPS).drop();
-      // console.log(`Deleting collections ${$ACTIVE_DATABASE}.${$COLLECTION__RECOMBINANT_TIPS}`)
-      // db.collection($COLLECTION__RECOMBINANT_TIPS).drop();
-      // console.log(`Deleting collections ${$ACTIVE_DATABASE}.${$COLLECTION__ACCN_TO_CID}`)
-      // db.collection($COLLECTION__ACCN_TO_CID).drop();
-      // console.log(`Deleting collections ${$ACTIVE_DATABASE}.${$COLLECTION__LINEAGE_TO_CID}`)
-      // db.collection($COLLECTION__LINEAGE_TO_CID).drop();
-      // console.log(`Deleting collections ${$ACTIVE_DATABASE}.${$COLLECTION__REGION_MAP}`)
-      // db.collection($COLLECTION__REGION_MAP).drop();
-      // console.log(`Deleting collections ${$ACTIVE_DATABASE}.${$COLLECTION__DF_TREE}`)
-      // db.collection($COLLECTION__DF_TREE).drop();
-      // console.log(`Deleting collections ${$ACTIVE_DATABASE}.${$COLLECTION__AUTOCOMPLETE_DATA}`)
-      // db.collection($COLLECTION__AUTOCOMPLETE_DATA).drop();
-      // console.log(`Deleting collections ${$ACTIVE_DATABASE}.${$COLLECTION__FLAT_DATA}`)
-      // db.collection($COLLECTION__FLAT_DATA).drop();
-
-
-      console.log(`Reading ${$JSON_DATA_FOLDER}/${$JSONFILE__CLUSTERS}`);
-      global.clusters = require($JSON_DATA_FOLDER + "/" + $JSONFILE__CLUSTERS);
       
-      console.log(`Reading ${$JSON_DATA_FOLDER}/${$NWKFILE__TREE}`);
+      /** delete all collections */
+      const existingCollections = await db.listCollections().toArray();
+      existingCollections.forEach((e)=>{
+        console.log(`Deleting collection ${$ACTIVE_DATABASE}.${e.name}`);
+        db.collection(e.name).drop();
+      })
+      
+      let textfile;
+      textfile = $PROJECT_ROOT+"/"+$JSON_DATA_FOLDER+"/"+$NWKFILE__TREE;
+      console.log(`Reading ${textfile}`);
       try {
-        global.tree = fs.readFileSync(`${$JSON_DATA_FOLDER}/${$NWKFILE__TREE}`, 'utf8');
+        // global.tree = fs.readFileSync(`${$JSON_DATA_FOLDER}/${$NWKFILE__TREE}`, 'utf8');
+        global.tree = fs.readFileSync(textfile, 'utf8');
       }
       catch (e) {
-        console.error(`Failed reading ${$JSON_DATA_FOLDER}/${$NWKFILE__TREE} : `, e);
+        console.error(`Failed reading ${textfile} : `, e);
         return;
       }
+
+      textfile = $PROJECT_ROOT+"/"+$JSON_DATA_FOLDER+"/"+$JSONFILE__CLUSTERS;
+      console.log(`Reading ${textfile}`);
+      try{
+        global.clusters = require(textfile);
+      }
+      catch(e)
+      {
+        console.error(`Failed reading ${textfile} : `, e);
+      }
+      
+
       
       console.log("Preparing beaddata from clusters");
       global.beaddata = parse_clusters(global.clusters);
@@ -154,7 +158,6 @@ async function updateDatabase() {
       res = await db.collection($COLLECTION__RECOMBINANT_TIPS).insertMany(global.recombinant_tips);
       console.log(`Created ${res.insertedCount} documents in ${$ACTIVE_DATABASE}.${$COLLECTION__RECOMBINANT_TIPS}`);
       delete global.recombinant_tips;
-      
       
       /** MongoDB has a size-limit of ~17MB per record. So accn_to_cid needs to be broken down into an array of objects*/
       res = await db.collection($COLLECTION__ACCN_TO_CID).insertMany(Object.entries(global.accn_to_cid).map(el => { j = {}; j[el[0]] = el[1]; return j }));
@@ -210,4 +213,5 @@ const userConfirmationCallback = function (answer) {
     rl.question(question_warning, userConfirmationCallback);
   }
 }
+
 rl.question(question_warning, userConfirmationCallback)

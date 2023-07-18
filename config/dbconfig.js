@@ -1,4 +1,7 @@
-const $JSON_DATA_FOLDER = "./data"
+const path = require('path');
+
+const $PROJECT_ROOT = path.resolve(__dirname+"/../");
+const $JSON_DATA_FOLDER = "data"
 const $DATABASE__PRIMARY = "covizu_1";
 const $DATABASE__SECONDARY = "covizu_2";
 const $COLLECTION__CLUSTERS = "clusters";
@@ -11,7 +14,6 @@ const $COLLECTION__REGION_MAP = "region_map";
 const $COLLECTION__DF_TREE = "df_tree";
 const $COLLECTION__AUTOCOMPLETE_DATA = "autocomplete_data";
 const $COLLECTION__FLAT_DATA = "flat_data";
-
 
 const $JSONFILE__CLUSTERS = "clusters.json";
 const $NWKFILE__TREE = "timetree.nwk";
@@ -43,8 +45,7 @@ if($NODE_ENV != 'TEST'){
     }
     else
     {
-        throw new Error("Environment variable DBNUMBER must be 1 or 2. Received: ", $DBNUMBER);
-        return;
+        $ACTIVE_DATABASE = undefined;
     }
 }
 
@@ -61,6 +62,13 @@ const $ADMIN_CONNECTION_URI = `mongodb://${$ADMIN_USERNAME}:${$ADMIN_PASSWORD}@$
 const $COVIZU_CONNECTION_URI = `mongodb://${$COVIZU_USERNAME}:${$COVIZU_PASSWORD}@${$DB_URL}/?authMechanism=${$AUTHMECHANISM}`;
 
 module.exports = {
+    $DATABASE__PRIMARY,
+    $DATABASE__SECONDARY,
+    $ADMIN_USERNAME,
+    $ADMIN_PASSWORD,
+    $COVIZU_USERNAME,
+    $COVIZU_PASSWORD,
+    $DB_URL,
     $ADMIN_CONNECTION_URI,
     $COVIZU_CONNECTION_URI,
     $ACTIVE_DATABASE,
@@ -74,6 +82,7 @@ module.exports = {
     $COLLECTION__DF_TREE,
     $COLLECTION__AUTOCOMPLETE_DATA,
     $COLLECTION__FLAT_DATA,
+    $PROJECT_ROOT,
     $JSON_DATA_FOLDER,
     $JSONFILE__CLUSTERS,
     $NWKFILE__TREE,
