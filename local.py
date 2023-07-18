@@ -4,6 +4,7 @@ import sys
 import json
 from datetime import datetime, date
 from csv import DictReader
+import requests
 
 import covizu
 from covizu.utils import seq_utils, gisaid_utils
@@ -29,7 +30,7 @@ def parse_args():
                         help="path to write JSON of features by lineage")
 
     parser.add_argument('--lineages', type=str,
-                        default=os.path.join(covizu.__path__[0], "data/lineages.csv"),
+                        default=os.path.join(covizu.__path__[0], "data/pango-designation/lineages.csv"),
                         help="optional, path to CSV file containing Pango lineage designations.")
 
     parser.add_argument('--minlen', type=int, default=29000, help='minimum genome length (nt)')
@@ -64,6 +65,10 @@ def parse_args():
 
     parser.add_argument('--ft2bin', default='fasttree2',
                         help='path to fasttree2 binary executable')
+    
+    parser.add_argument('--alias', type=str,
+                        default=os.path.join(covizu.__path__[0], "data/pango-designation/pango_designation/alias_key.json"),
+                        help="optional, path to JSON file containing alias.")
 
     parser.add_argument('--ttbin', default='treetime',
                         help='path to treetime binary executable')
@@ -94,13 +99,13 @@ def parse_args():
     return parser.parse_args()
 
 
-def stream_local(path, lineage_file, minlen=29000, mindate='2019-12-01', callback=None):
+def stream_local(path, lineage_file, regions, minlen=29000, mindate='2019-12-01', callback=None):
     """ Convert local FASTA file to feed-like object - replaces load_gisaid() """
     mindate = seq_utils.fromisoformat(mindate)
 
     # parse CSV output from Pangolin
     reader = DictReader(lineage_file)
-    if reader.fieldnames != ['taxon', 'lineage', 'probability', 'pangoLEARN_version', 'status', 'note']:
+    if ['taxon', 'lineage'] in reader.fieldnames:
         if callback:
             callback("Lineage CSV header does not match expected.", level='ERROR')
         sys.exit()
@@ -140,12 +145,15 @@ def stream_local(path, lineage_file, minlen=29000, mindate='2019-12-01', callbac
                 )
             sys.exit()
 
+        region = regions.get(country.lower().replace('_', ' '), None)
+
         record = {
             'covv_virus_name': label,
             'covv_accession_id': accn,
             'sequence': seq,
             'covv_collection_date': coldate,
-            'covv_lineage': lineage
+            'covv_lineage': lineage,
+            'covv_location': country if region is None else "{} / {}".format(region, country)
         }
         yield record
 
@@ -154,12 +162,12 @@ def stream_local(path, lineage_file, minlen=29000, mindate='2019-12-01', callbac
                  "dates\n         {nonhuman} non-human genomes".format(**rejects))
 
 
-def process_local(args, callback=None):
+def process_local(args, regions, callback=None):
     """ Analyze genome sequences from local FASTA file """
     with open(args.ref) as handle:
         reflen = len(seq_utils.convert_fasta(handle)[0][1])
 
-    loader = stream_local(args.infile, args.pangolineages, minlen=args.minlen,
+    loader = stream_local(args.infile, args.pangolineages, regions, minlen=args.minlen,
                           mindate=args.mindate, callback=callback)
     batcher = gisaid_utils.batch_fasta(loader, size=args.batchsize)
     aligned = gisaid_utils.extract_features(batcher, ref_file=args.ref, binpath=args.mmbin,
@@ -196,7 +204,11 @@ if __name__ == "__main__":
         cb.callback("Error updating submodules")
         sys.exit()
 
-    by_lineage = process_local(args, cb.callback)
+    response = requests.get("https://geoenrich.arcgis.com/arcgis/rest/services/World/geoenrichmentserver/Geoenrichment/countries?f=pjson")
+    res = response.json()
+    regions = {c['name'].lower() : c['continent'] for c in res['countries']} | {c['abbr3'].lower() : c['continent'] for c in res['countries']}
+
+    by_lineage = process_local(args, regions, cb.callback)
     with open(args.bylineage, 'w') as handle:
         # export to file to process large lineages with MPI
         json.dump(by_lineage, handle)
@@ -209,10 +221,10 @@ if __name__ == "__main__":
         Phylo.write(timetree, file=handle, format='newick')
 
     # generate beadplots and serialize to file
-    result = make_beadplots(by_lineage, args, cb.callback, t0=cb.t0.timestamp())
-    outfile = open(os.path.join(args.outdir, 'clusters.{}.json'.format(timestamp)), 'w')
-    outfile.write(json.dumps(result))  # serialize results to JSON
-    outfile.close()
+    result, infection_prediction = make_beadplots(by_lineage, args, cb.callback, t0=cb.t0.timestamp())
+    outfile = os.path.join(args.outdir, 'clusters.{}.json'.format(timestamp))
+    with open(outfile, 'w') as handle:  # serialize results to JSON
+        json.dump(result, fp=handle)
 
     # get mutation info
     locator = SC2Locator()
@@ -223,6 +235,9 @@ if __name__ == "__main__":
 
     # write data stats
     dbstat_file = os.path.join(args.outdir, 'dbstats.{}.json'.format(timestamp))
+
+    alias = parse_alias(args.alias)
+
     with open(dbstat_file, 'w') as handle:
         nseqs = sum([len(rows) for rows in by_lineage.values()])
         val = {
@@ -231,14 +246,19 @@ if __name__ == "__main__":
             'lineages': {}
         }
         for lineage, samples in by_lineage.items():
+            prefix = lineage.split('.')[0]
+            lname = lineage.replace(prefix, alias[prefix]) if lineage.lower() not in ['unclassifiable', 'unassigned'] and not prefix.startswith('X') and alias[prefix] != '' else lineage
+            samples = unpack_records(samples)
             ndiffs = [len(x['diffs']) for x in samples]
             val['lineages'][lineage] = {
                 'nsamples': len(samples),
                 'lastcoldate': max(x['covv_collection_date'] for x in samples),
-                'residual': residuals[lineage],
+                'residual': residuals.get(lineage, 0),
                 'max_ndiffs': max(ndiffs),
                 'mean_ndiffs': sum(ndiffs)/len(ndiffs),
-                'mutations': mutations[lineage]
+                'mutations': mutations[lineage],
+                'infections': infection_prediction[lineage],
+                'raw_lineage': lname
             }
         json.dump(val, handle)
 

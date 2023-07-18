@@ -1,10 +1,17 @@
+import os
 import subprocess
 from Bio import Phylo
+import math
 from covizu import clustering, beadplot
 import sys
 import json
+import csv
+from tempfile import NamedTemporaryFile
 import covizu.treetime
-
+import rpy2.robjects as robjects
+from rpy2.robjects.packages import importr
+import covizu
+import math
 
 def unpack_records(records):
     """
@@ -80,7 +87,7 @@ def build_timetree(by_lineage, args, callback=None):
     return covizu.treetime.parse_nexus(nexus_file, fasta)
 
 
-def beadplot_serial(lineage, features, args, callback=None):
+def beadplot_serial(lineage, features, args, callback=None): # pragma: no cover
     """ Compute distance matrices and reconstruct NJ trees """
     # bootstrap sampling and NJ tree reconstruction, serial mode
     trees, labels = clustering.build_trees(features, args, callback=callback)
@@ -113,7 +120,7 @@ def beadplot_serial(lineage, features, args, callback=None):
     return beaddict
 
 
-def import_labels(handle, callback=None):
+def import_labels(handle, callback=None): # pragma: no cover
     """ Load map of genome labels to tip indices from CSV file """
     result = {}
     _ = next(handle)  # skip header line
@@ -129,6 +136,154 @@ def import_labels(handle, callback=None):
             result.update({idx: []})
         result[idx].append(qname)
     return result
+
+
+def get_shannons(n_seqs_in_nodes):
+    """Find shannon's diversity from the seuqences in the tips"""
+    sample_size = sum(n_seqs_in_nodes)
+    shannons = 0
+    simpsons = 0
+    
+    for n_seq in n_seqs_in_nodes:
+        proportion = (n_seq/sample_size)
+        shannons += proportion*math.log(proportion)
+    
+    shannons = -shannons
+    
+    return (shannons)
+
+
+def manage_collapsed_nodes(labels, tree):
+    """Add collapsed node keys to the labels dictionary"""
+    new_labels = labels
+    for clade in tree.get_terminals() + tree.get_nonterminals():
+        name = clade.name
+        if name == None:
+            continue
+        elif '|' in name:
+            combined_list = []
+            for title in name.split('|'):
+                combined_list = combined_list + labels[title]
+            new_labels[name] = combined_list
+    return new_labels
+
+
+def get_tree_summary_stats(tree, Ne, label_dict):
+    """Write out file of summary stats including number of unsampled lineages,
+    diversity metrics and root to tip regression"""
+    internal_nodes = tree.get_nonterminals()
+    terminal_nodes = tree.get_terminals()
+   
+    #Unsampled nodes are nodes with no sequence ID associated with them
+    num_terminal_nodes = len(terminal_nodes)
+    seqs_in_term_nodes = [len(label_dict[node.name]) for node in terminal_nodes]
+    seqs_in_internal_nodes = []
+    for node in internal_nodes:
+        if node.name != None:
+            seqs_in_internal_nodes = seqs_in_internal_nodes + [len(label_dict[node.name])]
+        
+    #Calculate unsampled lineages and shannon's diversity
+    unsampled_count = sum([node.name==None for node in internal_nodes])
+    
+    diversity = get_shannons(seqs_in_term_nodes)
+    
+    #Create dictionary of summary stats
+    summary_stats = {'unsampled_lineage_count': unsampled_count,
+                         'shannons_diversity': diversity,
+                         'Ne': Ne
+                         }
+    return summary_stats
+
+
+def find_Ne(tree, labels_filename):
+    """Run beta skyline estimation implemented into R"""
+    
+    #Make a temporary file containing the tree
+    tree_filename = NamedTemporaryFile('w', delete=False)
+    Phylo.write(tree, tree_filename.name, "nexus")
+    tree_filename.close()
+    
+    # Load required R packages
+    ape = importr('ape')
+    phytools = importr('phytools')
+    LambdaSkyline = importr('LambdaSkyline')
+  
+    robjects.r.assign("tree_filename", tree_filename.name)
+    robjects.r.assign("sequence_labels_file", labels_filename)
+    
+    try:
+        robjects.r('''
+        set.seed(123456)
+
+        tree = read.nexus(tree_filename)
+        sequence_labels = read.csv(sequence_labels_file)
+        colnames(sequence_labels) = c("index", "value")
+
+        #Adjust tree to include branches of length 0 on identical sequences
+        tip_count = table(sequence_labels$index)
+        add_tip_count = data.frame(tip_count - 1)
+
+        for (tip_place_in_table in 1:nrow(add_tip_count)){
+            tip_name = add_tip_count[tip_place_in_table,1]
+            freq = add_tip_count[tip_place_in_table,2]
+            if(freq != 0){
+                for (counter in 1:freq){
+                tree <- bind.tip(tree, paste0(tip_name,"_", counter), edge.length = 0, 
+                                    where=which(tree$tip.label == tip_name))
+                }
+            }
+        }
+
+        #Run skyline estimation
+        alpha = betacoal.maxlik(tree)
+        skyline = (skyline.multi.phylo(tree, alpha$p1))
+
+        #Output skyline estimation
+        pop_sizes <- head(skyline$population.size, n = 5)
+        mean_pop_size <- mean(pop_sizes, na.rm = TRUE)
+        ''')
+        Ne = list(robjects.r('mean_pop_size'))[0]
+    except:
+        Ne = ''    
+
+    #Remove the temporary file
+    os.remove(tree_filename.name)
+    
+    return Ne
+
+
+def get_diversity(indexed, labels):
+    """
+    Calculate an analogue to the nucleotide diversity (the expected number of
+    differences between two randomly sampled genomes).
+    :param indexed:  list, sets of feature indices for each variant
+    :param labels:  dict, {variant number: [sequence names]}
+    """
+    nvar = len(indexed)
+    counts = [len(v) for v in labels]  # number of genomes per variant
+    total = sum(counts)
+    result = 0
+    for i in range(0, nvar-1):
+        fi = counts[i] / total  # frequency of i-th variant
+        for j in range(i+1, nvar):
+            fj = counts[j] / total
+            ndiff = len(indexed[i] ^ indexed[j])  # symmetric difference
+            result += 2*ndiff * fi * fj
+    return (result * (total / (total-1)))
+
+  
+def parse_alias(alias_file):
+    """
+    Parse PANGO alias_key.json file contents, excluding entries with empty string values.
+    :param alias_file:  str, path to JSON file
+    """
+    alias = {} 
+    with open(alias_file, 'r') as handle:
+        alias = json.loads(handle.read())
+        for k, v in alias.items():
+            if v != '':
+                alias.update({k: v})
+    return alias
 
 
 def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_lineages.txt',
@@ -212,7 +367,29 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
     # parse output files
     if callback:
         callback("Parsing output files")
+
     result = []
+    inf_predict = {}
+
+    # Load required R packages
+    tidyquant = importr('tidyquant')
+    matrixStats = importr('matrixStats')
+
+    # Read Models
+    robjects.r('increasing_mods <- readRDS("{}")'.format(os.path.join(covizu.__path__[0], "hunepi/infections_increasing_model_comparisons.rds")))
+    robjects.r('infections_mods <- readRDS("{}")'.format(os.path.join(covizu.__path__[0], "hunepi/num_infections_model_comparisons.rds")))
+
+    # Function to make estimates from each model
+    robjects.r('''
+    estimate_vals <- function(models, predict_dat, exp = FALSE){
+        prediction_df <- data.frame(sapply(models, predict, newdata = predict_dat, type = "response"))
+        if (exp) {
+            prediction_df <- exp(prediction_df)
+        }
+        return(prediction_df)
+    }
+    ''')
+
     for lineage in recoded:
         # import trees
         lineage_name = lineage.replace('/', '_')  # issue #297
@@ -234,19 +411,83 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
 
             for coldate, accn, location, label1 in intermed:
                 beaddict['nodes'][variant].append([coldate, accn, location, label1])
+            
+            inf_predict.update({lineage: 0})
         else:
             # generate beadplot data
             ctree = clustering.consensus(trees, cutoff=args.boot_cutoff, callback=callback)
             outfile.close()  # done with Phylo.parse generator
 
+            # incorporate hunipie
+            clabel_dict = manage_collapsed_nodes(label_dict, ctree)
+
+            labels_filename = NamedTemporaryFile('w', delete=False)
+
+            # Write labels to file for Ne estimation
+            writer = csv.writer(labels_filename)
+            for key, value in clabel_dict.items():
+                writer.writerow([key, value])
+            labels_filename.close()
+
+            cne = find_Ne(ctree, labels_filename.name)
+
+            # Remove temporary file with labels
+            os.remove(labels_filename.name)
+
+            # Collapse tree and manage the collapsed nodes
+            tree = beadplot.collapse_polytomies(ctree)
+            clabel_dict = manage_collapsed_nodes(label_dict, tree)
+            summary_stats = get_tree_summary_stats(tree, cne, clabel_dict)
+
+            indexed = [set(l) for l in recoded[lineage]['indexed']]
+            pi = get_diversity(indexed, label_dict)
+            summary_stats['pi'] = pi
+            summary_stats['sample_size'] = len(by_lineage[lineage])
+
+            if cne == '':
+                summary_stats['Ne'] = 'NaN'
+
+            sum_stat_dat = robjects.vectors.DataFrame(summary_stats)
+            robjects.r.assign('sum_stat_dat', sum_stat_dat)
+          
+            robjects.r('''
+            sum_stat_dat$Ne <- as.numeric(sum_stat_dat$Ne)
+            increasing_predict_prob <- estimate_vals(increasing_mods, sum_stat_dat)
+            
+            if(!is.nan(sum_stat_dat$Ne)) {
+                pred_prob <- increasing_predict_prob[which(rownames(increasing_predict_prob) == "HUNePi.1"), ]
+            } else {
+                pred_prob <- increasing_predict_prob[which(rownames(increasing_predict_prob) == "HUPi.1"), ]
+            }
+
+            predicted_increase <- pred_prob > 0.5
+
+            if(predicted_increase){
+                infections_predictions <- 
+                    estimate_vals(infections_mods, sum_stat_dat, exp = T)
+                if(!is.nan(sum_stat_dat$Ne)) {
+                    predicted_infections <- infections_predictions[which(rownames(infections_predictions) == "HUNePi.1"), ]
+                } else {
+                    predicted_infections <- infections_predictions[which(rownames(infections_predictions) == "HUPi.1"), ]
+                }
+            } else {
+                predicted_infections <- -1
+            }
+            ''')
+
+            predicted_infections = list(robjects.r('predicted_infections'))[0]
+            inf_predict.update({lineage: predicted_infections})
+
             ctree = beadplot.annotate_tree(ctree, label_dict)
             beaddict = beadplot.serialize_tree(ctree)
-            
+        
+        outfile.close()  # done with Phylo.parse generator
         beaddict.update({'sampled_variants': len(label_dict)})
         beaddict.update({'lineage': lineage})
+
         result.append(beaddict)
 
-    return result
+    return result, inf_predict
 
 
 def get_mutations(by_lineage):
