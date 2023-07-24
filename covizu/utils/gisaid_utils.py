@@ -83,7 +83,7 @@ def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None,
                                 (record["covv_accession_id"],)).fetchone()
             
             if data == None:
-                cur.execute("REPLACE INTO SEQUENCES VALUES(?, ?, ?, ?, ?, ?)",
+                cur.execute("INSERT INTO SEQUENCES (accession, name, lineage, date, location, sequence) VALUES(?, ?, ?, ?, ?, ?)",
                              [item for item in record.values()])
             else:
                 continue
@@ -262,6 +262,17 @@ def sort_by_lineage(records, callback=None, interval=10000):
     :return:  dict, lists of records keyed by lineage
     """
     result = {}
+
+    # initialize database objects
+    conn = sqlite3.connect('covizu/data/gsaid.db')
+    cur = conn.cursor()
+
+    # create feature vectors table
+    fvecs_table = '''CREATE TABLE IF NOT EXISTS FEATURES (accession VARCHAR(255),
+                    name VARCHAR(255), lineage VARCHAR(255), date VARCHAR(255),
+                    location VARCHAR(255), vectors VARCHAR(1000) PRIMARY KEY)'''
+    cur.execute(fvecs_table)
+
     for i, record in enumerate(records):
         if callback and i % interval == 0:
             callback('aligned {} records'.format(i))
@@ -276,12 +287,38 @@ def sort_by_lineage(records, callback=None, interval=10000):
             # discard uncategorized genomes, #324, #335
             continue
 
+        data = cur.execute('''SELECT accession, name, lineage, date, location 
+                              FROM FEATURES WHERE vectors = ?;''',
+                            (key,)).fetchone()
+            
+        if data == None:
+            cur.execute("INSERT INTO FEATURES VALUES(?, ?, ?, ?, ?, ?)",
+                        [v for k, v in record.items() if k != 'missing'] + [key])
+        else:
+            zip_obj = list(zip(data, record.values()))
+            if all([old == new for old, new in zip_obj]):
+                continue
+            else:
+                cur.execute('''
+                            UPDATE FEATURES 
+                            SET accession = ?,
+                                date = ?,
+                                lineage = ?,
+                                location = ?,
+                                name = ?
+                            WHERE vectors = ?''',
+                            [f'{old},{new}' for old, new in zip_obj] + [key])
+
+        conn.commit()
+
         if lineage not in result:
             result.update({lineage: {}})
         if key not in result[lineage]:
             result[lineage].update({key: []})
 
         result[lineage][key].append(record)
+
+    conn.close()
 
     return result
 
