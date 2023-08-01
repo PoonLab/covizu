@@ -18,6 +18,38 @@ from covizu.utils.progress_utils import Callback
 import gc
 
 
+def open_connection(database):
+    """ open connection to database, initialize tables if they don't exist
+        :params:
+            :database: str, name of database
+        :out:
+            :cursor: interactive sql object containing tables
+    """
+    # if not os.path.exists(database):
+    #     print("ERROR: Failed to open sqlite3 connection, path {} does not exist".format(database))
+    #     sys.exit()
+
+    conn = sqlite3.connect(database, check_same_thread=False)
+    cur = conn.cursor()
+
+    # create tables if they don't exist
+    seqs_table = '''CREATE TABLE IF NOT EXISTS SEQUENCES (accession VARCHAR(255)
+                    PRIMARY KEY, name VARCHAR(255), lineage VARCHAR(255),
+                    date VARCHAR(255), location VARCHAR(255))'''
+    cur.execute(seqs_table)
+
+    fvecs_table = '''CREATE TABLE IF NOT EXISTS FEATURES (accession VARCHAR(255),
+                    name VARCHAR(255), lineage VARCHAR(255), date VARCHAR(255),
+                    location VARCHAR(255), vectors VARCHAR(1000) PRIMARY KEY)'''
+    cur.execute(fvecs_table)
+
+    # create index on vectors column
+    cur.execute('''CREATE INDEX IF NOT EXISTS FVECS_INDEX ON FEATURES (vectors)''')
+
+    conn.commit()
+    return cur, conn
+
+
 def download_feed(url, user, password):
     """
     Download xz file from GISAID.  Note this requires confidential URL, user and password
@@ -41,6 +73,7 @@ def download_feed(url, user, password):
 
 
 def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None,
+                database='covizu/data/gsaid.db',
                 fields=("covv_accession_id", "covv_virus_name", "covv_lineage",
                         "covv_collection_date", "covv_location", "sequence"),
                 debug=None
@@ -59,14 +92,7 @@ def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None,
     """
 
     # initialize database objects
-    conn = sqlite3.connect('covizu/data/gsaid.db')
-    cur = conn.cursor()
-
-    # create sequences table
-    seqs_table = '''CREATE TABLE IF NOT EXISTS SEQUENCES (accession VARCHAR(255)
-                    PRIMARY KEY, name VARCHAR(255), lineage VARCHAR(255),
-                    date VARCHAR(255), location VARCHAR(255), sequence VARCHAR(30000))'''
-    cur.execute(seqs_table)
+    cur, conn = open_connection(database)
 
     mindate = fromisoformat(mindate)
     rejects = {'short': 0, 'baddate': 0, 'nonhuman': 0, 'nolineage': 0}
@@ -83,8 +109,8 @@ def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None,
                                 (record["covv_accession_id"],)).fetchone()
             
             if data == None:
-                cur.execute("INSERT INTO SEQUENCES (accession, name, lineage, date, location, sequence) VALUES(?, ?, ?, ?, ?, ?)",
-                             [item for item in record.values()])
+                cur.execute("INSERT INTO SEQUENCES (accession, name, lineage, date, location) VALUES(?, ?, ?, ?, ?)",
+                             [v for k, v in record.items() if k != 'sequence'])
             else:
                 continue
             
@@ -251,7 +277,7 @@ def filter_problematic(records, origin='2019-12-01', rate=0.0655, cutoff=0.005,
         callback("         {} genomes with excess divergence".format(n_outlier))
 
 
-def sort_by_lineage(records, callback=None, interval=10000):
+def sort_by_lineage(records, callback=None, database='covizu/data/gsaid.db', interval=10000):
     """
     Resolve stream into a dictionary keyed by Pangolin lineage.
     Note: records yielded from generator accumulate in this function.
@@ -264,14 +290,7 @@ def sort_by_lineage(records, callback=None, interval=10000):
     result = {}
 
     # initialize database objects
-    conn = sqlite3.connect('covizu/data/gsaid.db')
-    cur = conn.cursor()
-
-    # create feature vectors table
-    fvecs_table = '''CREATE TABLE IF NOT EXISTS FEATURES (accession VARCHAR(255),
-                    name VARCHAR(255), lineage VARCHAR(255), date VARCHAR(255),
-                    location VARCHAR(255), vectors VARCHAR(1000) PRIMARY KEY)'''
-    cur.execute(fvecs_table)
+    cur, conn = open_connection(database)
 
     for i, record in enumerate(records):
         if callback and i % interval == 0:
