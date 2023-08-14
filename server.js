@@ -33,49 +33,42 @@ if ($NODE_ENV == 'DEV' || $NODE_ENV == 'PROD') {
 }
 
 app.get('/api/edgeList/:cindex', (req, res) => {
-  console.log(req.url)
   dbManager.get_edgeList(req.params.cindex).then(result=>{
     res.send(result);
   })
 });
 
 app.get('/api/points/:cindex', (req, res) => {
-  console.log(req.url)
   dbManager.get_points(req.params.cindex).then(result=>{
     res.send(result);
   })
 });
 
 app.get('/api/variants/:cindex', (req, res) => {
-  console.log(req.url)
   dbManager.get_variants(req.params.cindex).then(result=>{
     res.send(result);
   })
 });
 
 app.get('/api/lineage/:cindex', (req, res) => {
-  console.log(req.url)
   dbManager.get_lineage(req.params.cindex).then(result=>{
     res.send(result);
   })
 });
 
 app.get('/api/tips', (req, res) => {
-  console.log(req.url)
   dbManager.get_tips().then(result=>{
     res.send(result);
   })
 });
 
 app.get('/api/df', (req, res) => {
-  console.log(req.url)
   dbManager.get_df().then(result=>{
     res.send(result)
   })
 });
 
 app.get('/api/regionmap', (req, res) => {
-  console.log(req.url)
   dbManager.get_regionMap().then(result=>{
     res.send(result);
   })
@@ -83,16 +76,13 @@ app.get('/api/regionmap', (req, res) => {
 })
 
 app.get('/api/cid/:accession', (req, res) => {
-  console.log(req.url,req.params.accession)
   dbManager.get_accession(req.params.accession).then(result=>{
-    console.log("result=",result)
     res.send(result);
   })
 });
 
 // this endpoint serves a massive file ~60MB. should we keep it?
 app.get('/api/cid', (req, res) => {
-  console.log(req.url)
   dbManager.get_cid().then(result=>{
     res.send(result);
   })
@@ -100,7 +90,6 @@ app.get('/api/cid', (req, res) => {
 });
 
 app.get('/api/lineagetocid', (req, res) => {
-  console.log(req.url)
   dbManager.get_lineageToCid().then(result=>{
     res.send(result);
   })
@@ -108,7 +97,6 @@ app.get('/api/lineagetocid', (req, res) => {
 });
 
 app.get('/api/recombtips', (req, res) => {
-  console.log(req.url)
   dbManager.get_recombinantTips().then(result=>{
     res.send(result);
   })
@@ -116,7 +104,6 @@ app.get('/api/recombtips', (req, res) => {
 });
 
 app.get('/api/searchHits/:query/:start/:end', (req, res) => {
-  console.log(req.url)
   const start_date = utcDate(req.params.start);
   const end_date = utcDate(req.params.end);
   const query = req.params.query.toLocaleLowerCase();
@@ -127,7 +114,6 @@ app.get('/api/searchHits/:query/:start/:end', (req, res) => {
 });
 
 app.get('/api/getHits/:query', (req, res) => {
-  console.log(req.url)
   const term = req.params.query
   dbManager.get_hits(term).then(result=>{
     res.send(result);
@@ -136,10 +122,10 @@ app.get('/api/getHits/:query', (req, res) => {
 });
 
 // For the prod environment, need to create a https server
-// if ($NODE_ENV=='PROD') {
-//   var httpsServer = https.createServer($SSL_CREDENTIALS, app);
-//   httpsServer.listen($HTTPS_PORT, () => console.log(`Listening on Port ${$HTTPS_PORT}...`))
-// }
+if ($NODE_ENV=='PROD') {
+  var httpsServer = https.createServer($SSL_CREDENTIALS, app);
+  httpsServer.listen($HTTPS_PORT, () => console.log(`Listening on Port ${$HTTPS_PORT}...`))
+}
 
 var httpServer = http.createServer(app);
 httpServer.listen($HTTP_PORT, () => console.log(`Listening on Port ${$HTTP_PORT}...`));

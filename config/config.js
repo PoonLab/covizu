@@ -23,7 +23,6 @@ $NODE_ENV = process.env.NODE_ENV;//in case we didnt specify the NODE_ENV on the 
 $DATA_FOLDER = process.env.DATA_FOLDER;
 $HTTP_PORT = process.env.HTTP_PORT;
 $HTTPS_PORT = process.env.HTTPS_PORT;
-console.log("NODEENV=", $NODE_ENV)
 
 if ($NODE_ENV == 'PROD') {
     try {

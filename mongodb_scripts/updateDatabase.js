@@ -155,9 +155,11 @@ async function updateDatabase() {
       console.log(`Created ${res.insertedCount} documents in ${$ACTIVE_DATABASE}.${$COLLECTION__TIPS}`);
       delete global.tips;
 
-      res = await db.collection($COLLECTION__RECOMBINANT_TIPS).insertMany(global.recombinant_tips);
-      console.log(`Created ${res.insertedCount} documents in ${$ACTIVE_DATABASE}.${$COLLECTION__RECOMBINANT_TIPS}`);
-      delete global.recombinant_tips;
+      if (global.recombinant_tips.length > 0) {
+        res = await db.collection($COLLECTION__RECOMBINANT_TIPS).insertMany(global.recombinant_tips);
+        console.log(`Created ${res.insertedCount} documents in ${$ACTIVE_DATABASE}.${$COLLECTION__RECOMBINANT_TIPS}`);
+        delete global.recombinant_tips;
+      }
       
       /** MongoDB has a size-limit of ~17MB per record. So accn_to_cid needs to be broken down into an array of objects*/
       res = await db.collection($COLLECTION__ACCN_TO_CID).insertMany(Object.entries(global.accn_to_cid).map(el => { j = {}; j[el[0]] = el[1]; return j }));

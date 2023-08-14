@@ -40,7 +40,6 @@ class DBManager {
         this.dbName_ = dbName;
     }
     get_edgeList(cindex) {
-        console.log("GETTING EDGELIST ", cindex)
         cindex = +cindex;
         return this.db_.collection($COLLECTION__BEADDATA).find().skip(cindex).limit(1).toArray().then((docs,err)=>{
             if(err){
@@ -52,7 +51,6 @@ class DBManager {
                 console.log(`dbmanager::get_edgelist found no records for cindex=${cindex}`);
                 return [];
             }
-            console.log(docs)
             return docs[0].edgelist;
         })
     }
@@ -68,7 +66,6 @@ class DBManager {
                 console.log(`dbmanager::get_points found no records for cindex=${cindex}`);
                 return [];
             }
-            console.log(docs)
             return docs[0].points;
         })
     }
@@ -85,13 +82,11 @@ class DBManager {
                 console.log(`dbmanager::variants found no records for cindex=${cindex}`);
                 return [];
             }
-            console.log(docs)
             return docs[0].variants;
         })
     }
 
     get_tips() {
-        console.log("GETTING TIPS")
         return this.db_.collection($COLLECTION__TIPS).find().toArray()
     }
 
@@ -111,7 +106,6 @@ class DBManager {
     }
 
     get_lineage(cindex) {
-        console.log("GETTING EDGELIST ", cindex)
         cindex = +cindex;
         return this.db_.collection($COLLECTION__CLUSTERS).find().skip(cindex).limit(1).toArray().then((docs,err)=>{
             if(err){
@@ -123,7 +117,6 @@ class DBManager {
                 console.log(`dbmanager::get_lineage found no records for cindex=${cindex}`);
                 return [];
             }
-            console.log(docs)
             return docs[0].lineage;
         })
     }
@@ -184,7 +177,6 @@ class DBManager {
                 return ;
             }
             if(docs && docs.length == 1){
-                // console.log("found docs",docs);
                 return docs[0];
             }
             else{
@@ -241,7 +233,6 @@ class DBManager {
                 console.log(`dbmanager::get_searchHits no docs found ${start_date},${end_date},${query}`);
                 return [];
             }
-            // console.log("FOUND get_searchHIts", docs);
             return docs;
         })
     }
@@ -255,7 +246,6 @@ class DBManager {
             console.log(`dbmanager::get_hits found 0 docs ${term}`);
             return [];
         }
-        // console.log(docs.map(e=>e['accn']));
         return docs.map(e=>e['accn']);
     }
 
