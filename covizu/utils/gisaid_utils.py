@@ -305,28 +305,9 @@ def sort_by_lineage(records, callback=None, database='covizu/data/gsaid.db', int
         if str(lineage) == "None" or lineage == '':
             # discard uncategorized genomes, #324, #335
             continue
-
-        data = cur.execute('''SELECT accession, name, lineage, date, location 
-                              FROM FEATURES WHERE vectors = ?;''',
-                            (key,)).fetchone()
             
-        if data == None:
-            cur.execute("INSERT INTO FEATURES VALUES(?, ?, ?, ?, ?, ?)",
-                        [v for k, v in record.items() if k != 'missing'] + [key])
-        else:
-            zip_obj = list(zip(data, record.values()))
-            if all([old == new for old, new in zip_obj]):
-                continue
-            else:
-                cur.execute('''
-                            UPDATE FEATURES 
-                            SET accession = ?,
-                                date = ?,
-                                lineage = ?,
-                                location = ?,
-                                name = ?
-                            WHERE vectors = ?''',
-                            [f'{old},{new}' for old, new in zip_obj] + [key])
+        cur.execute("INSERT INTO FEATURES VALUES(?, ?, ?, ?, ?, ?)",
+                    [v for k, v in record.items() if k != 'missing'] + [key])
 
         conn.commit()
 
