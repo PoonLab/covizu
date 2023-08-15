@@ -101,20 +101,20 @@ def apply_features(diffs, missing, refseq):
     :param refseq:  str, reference genome
     :return:  str, aligned genome
     """
-    # result = list(refseq)  # strings are not mutable
+    result = refseq  
 
     # apply missing intervals
     for left, right in missing:
-        refseq = '%s%s%s'%(refseq[:left], 'N'*(right - left), refseq[right:])
+        result = '%s%s%s'%(result[:left], 'N'*(right - left), result[right:])
 
     # apply substitutions and deletions (skip insertions)
     for dtype, pos, diff in diffs:
         if dtype == '~':
-            refseq = '%s%s%s'%(refseq[:pos], diff, refseq[pos + 1:])
+            result = '%s%s%s'%(result[:pos], diff, result[pos + 1:])
         elif dtype == '-':
-            refseq = '%s%s%s'%(refseq[:pos], '-'*(diff), refseq[pos + diff:])
+            result = '%s%s%s'%(result[:pos], '-'*(diff), result[pos + diff:])
 
-    return refseq
+    return result
 
 
 def fromisoformat(dt):
