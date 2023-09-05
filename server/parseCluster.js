@@ -1,11 +1,10 @@
 // regular expression to remove redundant sequence name components
 const pat = /^hCoV-19\/(.+\/.+)\/20[0-9]{2}$/gi;
 const { unique, mode, tabulate, merge_tables, utcDate } = require('./utils')
-const {$DATA_FOLDER} = require("../config")
+const {$DATA_FOLDER} = require("../config/config")
 const dbstats = require(`../${$DATA_FOLDER}/dbstats.json`)
 const d3 = require('../js/d3')
-var recombinants = []
-var region_map = {} // map country to region
+require("../globalVariables")
 
 /**
  * Parse nodes that belong to the same variant.
@@ -68,8 +67,8 @@ const parse_variant = (variant, y, cidx, accn, mindate, maxdate) => {
     for (let i=0; i < country.length; i++) {
       let this_country = country[i],
           this_region = region[i];
-      if (region_map[this_country] === undefined) {
-        region_map[this_country] = this_region;
+      if (global.region_map[this_country] === undefined) {
+        global.region_map[this_country] = this_region;
       }
     }
 
@@ -318,6 +317,7 @@ const parse_clusters = (clusters) => {
  * @returns {Array} subset of data frame annotated with cluster data
  */
 const map_clusters_to_tips = (df, clusters) => {
+  let recombinants = [];
   // extract accession numbers from phylogeny data frame
   var tips = df.filter(x => x.children.length===0),
       tip_labels = tips.map(x => x.thisLabel),  // accessions
@@ -534,20 +534,9 @@ function index_lineage(clusters) {
 }
 
 
-function get_recombinants() {
-  return recombinants;
-}
-
-function get_region_map() {
-  return region_map;
-}
-
-
 module.exports = {
   parse_clusters,
   map_clusters_to_tips,
   index_accessions,
   index_lineage,
-  get_recombinants,
-  get_region_map
 };

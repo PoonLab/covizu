@@ -197,6 +197,7 @@ $.ajaxSetup({
 var dbstats, req;
 req = $.getJSON("data/dbstats.json", function(data) {
   dbstats = data;
+  console.log("dbstats = ", dbstats)
   dbstats.nlineages = Object.keys(dbstats.lineages).length;
 });
 req.done(function() {
@@ -227,15 +228,11 @@ var phenotypes = {
 
 // load time-scaled phylogeny from server
 var nwk, df, countries, mut_annotations, region_map;
-$.ajax({
-  url: "data/timetree.nwk",
-  success: function(data) {
-    nwk = data;
-  }
-});
-$.getJSON("data/mut_annotations.json", function(data) {
-  mut_annotations = data;
-});
+
+// $.getJSON("data/mut_annotations.json", function(data) {
+//   mut_annotations = data;
+//   console.log("MUTATION ANNOTATION ",data)
+// });
 
 var clusters, beaddata, tips, recombinant_tips,
     accn_to_cid, cindex, lineage_to_cid, lineage;
@@ -243,6 +240,12 @@ var edgelist = [], points = [], variants = []
 var map_cidx_to_id = [], id_to_cidx = [];
 
 req = $.when(
+  
+  $.getJSON("data/mut_annotations.json", function(data) {
+    mut_annotations = data;
+    console.log("MUTATION ANNOTATION ",data)
+  }),
+
   $.getJSON("/api/tips", function(data) {
     tips = data;
     tips.forEach(x => {
@@ -276,6 +279,7 @@ req = $.when(
 );
 
 req.done(async function() {
+
   var urlParams = new URLSearchParams(window.location.search);
   var search = urlParams.get('search') || '';
 
@@ -291,6 +295,9 @@ req.done(async function() {
   // Maps id to a cidx
   const reverse_recombinant_tips = [...recombinant_tips].reverse()
   var all_tips = [...tips, ...reverse_recombinant_tips]
+  console.log("tips = ",tips)
+  console.log("recombinant_tips = ",recombinant_tips)
+  console.log("all_tips = ",all_tips)
   for (i in all_tips) {
     id_to_cidx[i] = 'cidx-' + all_tips[i].cluster_idx
   }
@@ -308,6 +315,7 @@ req.done(async function() {
   // initial display
   // d3.select(node).dispatch("click");
   cindex = node.__data__.cluster_idx;
+  console.log("NODE = ",node);
   d3.select(node).attr("class", "clicked");
   window.addEventListener("resize", expand, true);
 
@@ -321,6 +329,7 @@ req.done(async function() {
   await fetch(`/api/lineagetocid`)
   .then(response => response.json())
   .then(data => lineage_to_cid = data)
+  .then(()=>{console.log("lineage_to_cid",lineage_to_cid)})
 
   $('#search-input').autocomplete({
     source: function(req, res) {
@@ -411,6 +420,7 @@ req.done(async function() {
     gentable(node.__data__);
     draw_region_distribution(node.__data__.allregions);
     gen_details_table(points);  // update details table with all samples
+    console.log("Generating with ", mutations,cindex)
     gen_mut_table(mutations[cindex]);
     draw_cluster_box(d3.select(node));
   }
@@ -939,8 +949,14 @@ $( "#dialog" ).dialog({ autoOpen: false });
 // implement save buttons
 var blob;
 function save_timetree() {
-  blob = new Blob([nwk], {type: "text/plain;charset=utf-8"});
-  saveAs(blob, "timetree.nwk");
+  $.ajax({
+    url: "data/timetree.nwk",
+    success: function(data) {
+      nwk = data;
+      blob = new Blob([nwk], {type: "text/plain;charset=utf-8"});
+      saveAs(blob, "timetree.nwk");
+    }
+  });
 }
 
 function save_beadplot() {

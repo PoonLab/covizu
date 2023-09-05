@@ -58,6 +58,11 @@ DATA_FOLDER='data_test'
 HTTP_PORT='8001'
 NODE_ENV='DEV'
 DATA_FOLDER='data'
+ADMIN_USERNAME='admin'
+ADMIN_PASSWORD='password'
+COVIZU_USERNAME='covizu'
+COVIZU_PASSWORD='password'
+DB_URL='localhost:27017'
 ```
 #### `.env.prod` (if running a production server with SSL enabled)
 ```
@@ -67,13 +72,20 @@ NODE_ENV='PROD'
 DATA_FOLDER='data'
 PRVTKEY='/path/to/private-key-file.pem'
 CRT='/path/to/certificate-file.crt'
+ADMIN_USERNAME='admin'
+ADMIN_PASSWORD='password'
+COVIZU_USERNAME='covizu'
+COVIZU_PASSWORD='password'
+DB_URL='localhost:27017'
 ```
+
+Install and configure the `MongoDB` database by following these [instructions](DBINSTALL.md)
 
 Finally, run the following commands:
 ```
  cd covizu
  npm install
- npm start
+ npm run start-db1
 ```
 
 Once you launch the local webserver with `npm start`, allow up to a minute for the server to initialize and then navigate your browser to `localhost:8001`.
@@ -86,3 +98,4 @@ and in a new terminal terminal window run
 ```
 npx cypress run
 ```
+
