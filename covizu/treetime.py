@@ -157,8 +157,12 @@ def parse_nexus(nexus_file, fasta, callback=None):
 
     # normalize residuals and append to tip labels
     rvals = residuals.values()
-    rmean = statistics.mean(rvals)
-    rstdev = statistics.stdev(rvals)
+    try:
+        rmean = statistics.mean(rvals)
+        rstdev = statistics.stdev(rvals)
+    except statistics.StatisticsError:
+        callback("Provided records are already stored.")
+
     for tip, resid in residuals.items():
         residuals[tip] = (resid-rmean) / rstdev
 

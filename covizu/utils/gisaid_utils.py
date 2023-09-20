@@ -8,6 +8,7 @@ import subprocess
 from datetime import datetime
 import getpass
 import sqlite3
+import psycopg2
 
 import covizu
 from covizu import minimap2
@@ -29,7 +30,9 @@ def open_connection(database):
     #     print("ERROR: Failed to open sqlite3 connection, path {} does not exist".format(database))
     #     sys.exit()
 
-    conn = sqlite3.connect(database, check_same_thread=False)
+    # conn = sqlite3.connect(database, check_same_thread=False)
+    conn = psycopg2.connect(host="localhost", dbname="gsaid_db", user="postgres",
+                            password="12345", port="5432")
     cur = conn.cursor()
 
     # create tables if they don't exist
@@ -40,7 +43,7 @@ def open_connection(database):
 
     fvecs_table = '''CREATE TABLE IF NOT EXISTS FEATURES (accession VARCHAR(255),
                     name VARCHAR(255), lineage VARCHAR(255), date VARCHAR(255),
-                    location VARCHAR(255), vectors VARCHAR(1000) PRIMARY KEY)'''
+                    location VARCHAR(255), vectors VARCHAR(1000))'''
     cur.execute(fvecs_table)
 
     # create index on vectors column
@@ -105,11 +108,15 @@ def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None,
             # remove unused data
             record = dict([(k, record[k]) for k in fields])
 
-            data = cur.execute("SELECT accession FROM SEQUENCES WHERE accession = ?",
-                                (record["covv_accession_id"],)).fetchone()
-            
+            # data = cur.execute("SELECT accession FROM SEQUENCES WHERE accession = ?",
+            #                     (record["covv_accession_id"],)).fetchone()
+            cur.execute("SELECT accession FROM SEQUENCES WHERE accession = '%s'"%(record["covv_accession_id"],))
+            data = cur.fetchone()
+
             if data == None:
-                cur.execute("INSERT INTO SEQUENCES (accession, name, lineage, date, location) VALUES(?, ?, ?, ?, ?)",
+                # cur.execute("INSERT INTO SEQUENCES (accession, name, lineage, date, location) VALUES(?, ?, ?, ?, ?)",
+                #              [v for k, v in record.items() if k != 'sequence'])
+                cur.execute("INSERT INTO SEQUENCES (accession, name, lineage, date, location) VALUES(%s, %s, %s, %s, %s)",
                              [v for k, v in record.items() if k != 'sequence'])
             else:
                 continue
@@ -306,9 +313,10 @@ def sort_by_lineage(records, callback=None, database='covizu/data/gsaid.db', int
             # discard uncategorized genomes, #324, #335
             continue
             
-        cur.execute("INSERT INTO FEATURES VALUES(?, ?, ?, ?, ?, ?)",
+        # cur.execute("INSERT INTO FEATURES VALUES(?, ?, ?, ?, ?, ?)",
+        #             [v for k, v in record.items() if k != 'missing'] + [key])
+        cur.execute("INSERT INTO FEATURES VALUES(%s, %s, %s, %s, %s, %s)",
                     [v for k, v in record.items() if k != 'missing'] + [key])
-
         conn.commit()
 
         if lineage not in result:

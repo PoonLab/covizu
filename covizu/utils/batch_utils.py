@@ -84,7 +84,7 @@ def build_timetree(by_lineage, args, callback=None):
                                    clock=args.clock, verbosity=0)
 
     # writes output to treetime.nwk at `nexus_file` path
-    return covizu.treetime.parse_nexus(nexus_file, fasta)
+    return covizu.treetime.parse_nexus(nexus_file, fasta, callback)
 
 
 def beadplot_serial(lineage, features, args, callback=None): # pragma: no cover
