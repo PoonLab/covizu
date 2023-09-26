@@ -1,6 +1,7 @@
 .*
 !.github
 data/*
+data_test/*
 !data/*mut_annotations.json
 .idea/
 treetime/*
