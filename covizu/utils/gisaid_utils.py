@@ -13,6 +13,7 @@ from covizu import minimap2
 #from covizu.minimap2 import minimap2, encode_diffs
 from covizu.utils.seq_utils import *
 from covizu.utils.progress_utils import Callback
+from pymongo import MongoClient
 
 import gc
 
@@ -110,12 +111,20 @@ def batch_fasta(gen, size=100):
     :param size:  int, number of records per batch
     :yield:  str, list; FASTA-format string and list of records (dict) in batch
     """
+    client = MongoClient("mongodb://root:password@localhost:27018/?authSource=admin")
+    db = client["sequences"]
+    collection = db["records"]
+
     stdin = ''
     batch = []
     for i, record in enumerate(gen, 1):
         qname = record['covv_virus_name']
         sequence = record.pop('sequence')
-        stdin += '>{}\n{}\n'.format(qname, sequence)
+        result = collection.find_one({"covv_virus_name": qname})
+        if result:
+            record.update({'diffs': result["diffs"], 'missing': result["missing"]})
+        else:
+            stdin += '>{}\n{}\n'.format(qname, sequence)
         batch.append(record)
         if i > 0 and i % size == 0:
             yield stdin, batch
@@ -142,14 +151,31 @@ def extract_features(batcher, ref_file, binpath='minimap2', nthread=3, minlen=29
     with open(ref_file) as handle:
         reflen = len(convert_fasta(handle)[0][1])
 
+    client = MongoClient("mongodb://root:password@localhost:27018/?authSource=admin")
+    db = client["sequences"]
+    collection = db["records"]
+
     for fasta, batch in batcher:
+        new_records = {}
+        for record in batch:
+            if 'diffs' in record:
+                yield record
+            else:
+                new_records[record['covv_virus_name']] = record
+
+        # If fasta is empty, no need to run minimap2
+        if len(fasta) == 0:
+            continue
+
         mm2 = minimap2.minimap2(fasta, ref_file, stream=True, path=binpath, nthread=nthread,
                        minlen=minlen)
         result = list(minimap2.encode_diffs(mm2, reflen=reflen))
-        for row, record in zip(result, batch):
+        for row in result:
             # reconcile minimap2 output with GISAID record
             qname, diffs, missing = row
+            record = new_records[qname]
             record.update({'diffs': diffs, 'missing': missing})
+            collection.insert_one(record)
             yield record
 
 
