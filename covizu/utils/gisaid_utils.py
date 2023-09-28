@@ -13,7 +13,6 @@ from covizu import minimap2
 #from covizu.minimap2 import minimap2, encode_diffs
 from covizu.utils.seq_utils import *
 from covizu.utils.progress_utils import Callback
-from pymongo import MongoClient
 
 import gc
 
@@ -103,18 +102,15 @@ def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None,
                  "         {nonhuman} non-human genomes".format(**rejects))
 
 
-def batch_fasta(gen, size=100):
+def batch_fasta(gen, collection, size=100):
     """
     Concatenate sequence records in stream into FASTA-formatted text in batches of
     <size> records.
     :param gen:  generator, return value of load_gisaid()
+    :param collection: Collection, reference to MongoDB sequence collection
     :param size:  int, number of records per batch
     :yield:  str, list; FASTA-format string and list of records (dict) in batch
     """
-    client = MongoClient("mongodb://root:password@localhost:27018/?authSource=admin")
-    db = client["sequences"]
-    collection = db["records"]
-
     stdin = ''
     batch = []
     for i, record in enumerate(gen, 1):
@@ -135,12 +131,13 @@ def batch_fasta(gen, size=100):
         yield stdin, batch
 
 
-def extract_features(batcher, ref_file, binpath='minimap2', nthread=3, minlen=29000):
+def extract_features(batcher, collection, ref_file, binpath='minimap2', nthread=3, minlen=29000):
     """
     Stream output from JSON.xz file via load_gisaid() into minimap2
     via subprocess.
 
     :param batcher:  generator, returned by batch_fasta()
+    :param collection: Collection, reference to MongoDB sequence collection
     :param ref_file:  str, path to reference genome (FASTA format)
     :param binpath:  str, path to minimap2 binary executable
     :param nthread:  int, number of threads to run minimap2
@@ -150,10 +147,6 @@ def extract_features(batcher, ref_file, binpath='minimap2', nthread=3, minlen=29
     """
     with open(ref_file) as handle:
         reflen = len(convert_fasta(handle)[0][1])
-
-    client = MongoClient("mongodb://root:password@localhost:27018/?authSource=admin")
-    db = client["sequences"]
-    collection = db["records"]
 
     for fasta, batch in batcher:
         new_records = {}
@@ -170,9 +163,8 @@ def extract_features(batcher, ref_file, binpath='minimap2', nthread=3, minlen=29
         mm2 = minimap2.minimap2(fasta, ref_file, stream=True, path=binpath, nthread=nthread,
                        minlen=minlen)
         result = list(minimap2.encode_diffs(mm2, reflen=reflen))
-        for row in result:
+        for qname, diffs, missing in result:
             # reconcile minimap2 output with GISAID record
-            qname, diffs, missing = row
             record = new_records[qname]
             record.update({'diffs': diffs, 'missing': missing})
             collection.insert_one(record)

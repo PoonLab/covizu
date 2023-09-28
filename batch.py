@@ -10,6 +10,7 @@ from covizu.utils.progress_utils import Callback
 from covizu.utils.batch_utils import *
 from covizu.utils.seq_utils import SC2Locator
 from tempfile import NamedTemporaryFile
+from pymongo import MongoClient
 
 
 def parse_args():
@@ -102,13 +103,13 @@ def parse_args():
     return parser.parse_args()
 
 
-def process_feed(args, callback=None):
+def process_feed(args, collection, callback=None):
     """ Process feed data """
     if callback:
         callback("Processing GISAID feed data")
     loader = gisaid_utils.load_gisaid(args.infile, minlen=args.minlen, mindate=args.mindate)
-    batcher = gisaid_utils.batch_fasta(loader, size=args.batchsize)
-    aligned = gisaid_utils.extract_features(batcher, ref_file=args.ref, binpath=args.mmbin,
+    batcher = gisaid_utils.batch_fasta(loader, collection, size=args.batchsize)
+    aligned = gisaid_utils.extract_features(batcher, collection, ref_file=args.ref, binpath=args.mmbin,
                                             nthread=args.mmthreads, minlen=args.minlen)
     filtered = gisaid_utils.filter_problematic(aligned, vcf_file=args.vcf, cutoff=args.poisson_cutoff,
                                                callback=callback)
@@ -118,6 +119,9 @@ def process_feed(args, callback=None):
 if __name__ == "__main__":
     args = parse_args()
     cb = Callback()
+    client = MongoClient("mongodb://root:password@localhost:27018/?authSource=admin")
+    db = client["sequences"]
+    collection = db["records"]
 
     # check that user has loaded openmpi module
     try:
@@ -147,7 +151,7 @@ if __name__ == "__main__":
         args.infile = gisaid_utils.download_feed(args.url, args.user, args.password)
 
     # filter data, align genomes, extract features, sort by lineage
-    by_lineage = process_feed(args, cb.callback)
+    by_lineage = process_feed(args, collection, cb.callback)
 
     # reconstruct time-scaled tree relating lineages
     timetree, residuals = build_timetree(by_lineage, args, cb.callback)
@@ -222,4 +226,6 @@ if __name__ == "__main__":
         fp.close()
         subprocess.check_call(['scp', fp.name, '{}/clusters.json'.format(server_epicov)])
 
+    # CLose MongoDb connection
+    client.close()
     cb.callback("All done!")
