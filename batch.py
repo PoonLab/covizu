@@ -10,7 +10,8 @@ from covizu.utils.progress_utils import Callback
 from covizu.utils.batch_utils import *
 from covizu.utils.seq_utils import SC2Locator
 from tempfile import NamedTemporaryFile
-
+import psycopg2
+import psycopg2.extras
 
 def parse_args():
     parser = argparse.ArgumentParser(description="CoVizu analysis pipeline automation")
@@ -102,13 +103,33 @@ def parse_args():
     return parser.parse_args()
 
 
-def process_feed(args, callback=None):
+def open_connection():
+    """ open connection to database, initialize tables if they don't exist
+        :out:
+            :cursor: interactive sql object containing tables
+    """
+    conn = psycopg2.connect(host="localhost", dbname="gsaid_db", user="postgres",
+                            password="12345", port="5432")
+    cur = conn.cursor(cursor_factory = psycopg2.extras.RealDictCursor)
+
+    # create tables if they don't exist
+    seqs_table = '''CREATE TABLE IF NOT EXISTS SEQUENCES (accession VARCHAR(255)
+                    PRIMARY KEY, qname VARCHAR(255), lineage VARCHAR(255),
+                    date VARCHAR(255), location VARCHAR(255),
+                    diffs VARCHAR, missing VARCHAR)'''
+    cur.execute(seqs_table)
+
+    conn.commit()
+    return cur, conn
+
+
+def process_feed(args, cur, callback=None):
     """ Process feed data """
     if callback:
         callback("Processing GISAID feed data")
     loader = gisaid_utils.load_gisaid(args.infile, minlen=args.minlen, mindate=args.mindate)
-    batcher = gisaid_utils.batch_fasta(loader, size=args.batchsize)
-    aligned = gisaid_utils.extract_features(batcher, ref_file=args.ref, binpath=args.mmbin,
+    batcher = gisaid_utils.batch_fasta(loader, cur, size=args.batchsize)
+    aligned = gisaid_utils.extract_features(batcher, ref_file=args.ref, cur=cur, binpath=args.mmbin,
                                             nthread=args.mmthreads, minlen=args.minlen)
     filtered = gisaid_utils.filter_problematic(aligned, vcf_file=args.vcf, cutoff=args.poisson_cutoff,
                                                callback=callback)
@@ -118,6 +139,8 @@ def process_feed(args, callback=None):
 if __name__ == "__main__":
     args = parse_args()
     cb = Callback()
+
+    cur, conn = open_connection()
 
     # check that user has loaded openmpi module
     try:
@@ -147,7 +170,7 @@ if __name__ == "__main__":
         args.infile = gisaid_utils.download_feed(args.url, args.user, args.password)
 
     # filter data, align genomes, extract features, sort by lineage
-    by_lineage = process_feed(args, cb.callback)
+    by_lineage = process_feed(args, cur, cb.callback)
 
     # reconstruct time-scaled tree relating lineages
     timetree, residuals = build_timetree(by_lineage, args, cb.callback)
@@ -222,4 +245,5 @@ if __name__ == "__main__":
         fp.close()
         subprocess.check_call(['scp', fp.name, '{}/clusters.json'.format(server_epicov)])
 
+    conn.commit()
     cb.callback("All done!")

@@ -7,8 +7,6 @@ import sys
 import subprocess
 from datetime import datetime
 import getpass
-import sqlite3
-import psycopg2
 
 import covizu
 from covizu import minimap2
@@ -17,40 +15,6 @@ from covizu.utils.seq_utils import *
 from covizu.utils.progress_utils import Callback
 
 import gc
-
-
-def open_connection(database):
-    """ open connection to database, initialize tables if they don't exist
-        :params:
-            :database: str, name of database
-        :out:
-            :cursor: interactive sql object containing tables
-    """
-    # if not os.path.exists(database):
-    #     print("ERROR: Failed to open sqlite3 connection, path {} does not exist".format(database))
-    #     sys.exit()
-
-    # conn = sqlite3.connect(database, check_same_thread=False)
-    conn = psycopg2.connect(host="localhost", dbname="gsaid_db", user="postgres",
-                            password="12345", port="5432")
-    cur = conn.cursor()
-
-    # create tables if they don't exist
-    seqs_table = '''CREATE TABLE IF NOT EXISTS SEQUENCES (accession VARCHAR(255)
-                    PRIMARY KEY, name VARCHAR(255), lineage VARCHAR(255),
-                    date VARCHAR(255), location VARCHAR(255))'''
-    cur.execute(seqs_table)
-
-    fvecs_table = '''CREATE TABLE IF NOT EXISTS FEATURES (accession VARCHAR(255),
-                    name VARCHAR(255), lineage VARCHAR(255), date VARCHAR(255),
-                    location VARCHAR(255), vectors VARCHAR(1000))'''
-    cur.execute(fvecs_table)
-
-    # create index on vectors column
-    cur.execute('''CREATE INDEX IF NOT EXISTS FVECS_INDEX ON FEATURES (vectors)''')
-
-    conn.commit()
-    return cur, conn
 
 
 def download_feed(url, user, password):
@@ -76,7 +40,6 @@ def download_feed(url, user, password):
 
 
 def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None,
-                database='covizu/data/gsaid.db',
                 fields=("covv_accession_id", "covv_virus_name", "covv_lineage",
                         "covv_collection_date", "covv_location", "sequence"),
                 debug=None
@@ -93,10 +56,6 @@ def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None,
 
     :yield:  dict, contents of each GISAID record
     """
-
-    # initialize database objects
-    cur, conn = open_connection(database)
-
     mindate = fromisoformat(mindate)
     rejects = {'short': 0, 'baddate': 0, 'nonhuman': 0, 'nolineage': 0}
     with lzma.open(path, 'rb') as handle:
@@ -108,19 +67,6 @@ def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None,
             # remove unused data
             record = dict([(k, record[k]) for k in fields])
 
-            # data = cur.execute("SELECT accession FROM SEQUENCES WHERE accession = ?",
-            #                     (record["covv_accession_id"],)).fetchone()
-            cur.execute("SELECT accession FROM SEQUENCES WHERE accession = '%s'"%(record["covv_accession_id"],))
-            data = cur.fetchone()
-
-            if data == None:
-                # cur.execute("INSERT INTO SEQUENCES (accession, name, lineage, date, location) VALUES(?, ?, ?, ?, ?)",
-                #              [v for k, v in record.items() if k != 'sequence'])
-                cur.execute("INSERT INTO SEQUENCES (accession, name, lineage, date, location) VALUES(%s, %s, %s, %s, %s)",
-                             [v for k, v in record.items() if k != 'sequence'])
-            else:
-                continue
-            
             qname = record['covv_virus_name'].strip().replace(',', '_').replace('|', '_')  # issue #206,#464
             country = qname.split('/')[1]
             if country == '' or country[0].islower():
@@ -149,9 +95,6 @@ def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None,
 
             yield record
 
-    conn.commit()
-    conn.close()
-
     if callback:
         callback("Rejected {short} short genomes\n"
                  "         {nolineage} with no lineage assignment\n"
@@ -159,7 +102,7 @@ def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None,
                  "         {nonhuman} non-human genomes".format(**rejects))
 
 
-def batch_fasta(gen, size=100):
+def batch_fasta(gen, cur, size=100):
     """
     Concatenate sequence records in stream into FASTA-formatted text in batches of
     <size> records.
@@ -169,10 +112,17 @@ def batch_fasta(gen, size=100):
     """
     stdin = ''
     batch = []
+
     for i, record in enumerate(gen, 1):
         qname = record['covv_virus_name']
         sequence = record.pop('sequence')
-        stdin += '>{}\n{}\n'.format(qname, sequence)
+        
+        cur.execute("SELECT * FROM SEQUENCES WHERE qname = '%s'"%qname)
+        result = cur.fetchone()
+        if result:
+            record.update({'diffs': result["diffs"], 'missing': result["missing"]})
+        else:
+            stdin += '>{}\n{}\n'.format(qname, sequence)
         batch.append(record)
         if i > 0 and i % size == 0:
             yield stdin, batch
@@ -183,7 +133,7 @@ def batch_fasta(gen, size=100):
         yield stdin, batch
 
 
-def extract_features(batcher, ref_file, binpath='minimap2', nthread=3, minlen=29000):
+def extract_features(batcher, ref_file, cur, binpath='minimap2', nthread=3, minlen=29000):
     """
     Stream output from JSON.xz file via load_gisaid() into minimap2
     via subprocess.
@@ -200,13 +150,28 @@ def extract_features(batcher, ref_file, binpath='minimap2', nthread=3, minlen=29
         reflen = len(convert_fasta(handle)[0][1])
 
     for fasta, batch in batcher:
+        new_records = {}
+        for record in batch:
+            if 'diffs' in record:
+                yield record
+            else:
+                new_records[record['covv_virus_name']] = record
+
+        # If fasta is empty, no need to run minimap2
+        if len(fasta) == 0:
+            continue
+
         mm2 = minimap2.minimap2(fasta, ref_file, stream=True, path=binpath, nthread=nthread,
                        minlen=minlen)
         result = list(minimap2.encode_diffs(mm2, reflen=reflen))
-        for row, record in zip(result, batch):
+        for qname, diffs, missing in result:
             # reconcile minimap2 output with GISAID record
-            qname, diffs, missing = row
+            record = new_records[qname]
             record.update({'diffs': diffs, 'missing': missing})
+
+            # inserting diffs and missing as json strings
+            cur.execute("INSERT INTO SEQUENCES VALUES(%s, %s, %s, %s, %s, %s, %s)",
+                        [json.dumps(v) if k in ['diffs', 'missing'] else v for k, v in record.items()])
             yield record
 
 
@@ -243,7 +208,15 @@ def filter_problematic(records, origin='2019-12-01', rate=0.0655, cutoff=0.005,
         if type(record) is not dict:
             qname, diffs, missing = record  # unpack tuple
         else:
-            diffs = record['diffs']
+            try:
+                # loading json strings of old records
+                record['diffs'] = json.loads(record['diffs'])
+                record['missing'] = json.loads(record['missing'])
+            except TypeError:
+                # passing for new records
+                pass
+            finally:
+                diffs = record['diffs']
 
         # exclude problematic sites
         filtered = []
@@ -296,9 +269,6 @@ def sort_by_lineage(records, callback=None, database='covizu/data/gsaid.db', int
     """
     result = {}
 
-    # initialize database objects
-    cur, conn = open_connection(database)
-
     for i, record in enumerate(records):
         if callback and i % interval == 0:
             callback('aligned {} records'.format(i))
@@ -312,12 +282,6 @@ def sort_by_lineage(records, callback=None, database='covizu/data/gsaid.db', int
         if str(lineage) == "None" or lineage == '':
             # discard uncategorized genomes, #324, #335
             continue
-            
-        # cur.execute("INSERT INTO FEATURES VALUES(?, ?, ?, ?, ?, ?)",
-        #             [v for k, v in record.items() if k != 'missing'] + [key])
-        cur.execute("INSERT INTO FEATURES VALUES(%s, %s, %s, %s, %s, %s)",
-                    [v for k, v in record.items() if k != 'missing'] + [key])
-        conn.commit()
 
         if lineage not in result:
             result.update({lineage: {}})
@@ -325,8 +289,6 @@ def sort_by_lineage(records, callback=None, database='covizu/data/gsaid.db', int
             result[lineage].update({key: []})
 
         result[lineage][key].append(record)
-
-    conn.close()
 
     return result
 
