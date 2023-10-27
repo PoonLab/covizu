@@ -190,13 +190,13 @@ if __name__ == "__main__":
     with open(nwk_file, 'w') as handle:
         Phylo.write(timetree, file=handle, format='newick')
 
-    if xbb:
-        timetree_xbb, residuals_xbb = build_timetree(xbb, args, cb.callback)
-        residuals.update(residuals_xbb)
-        nwk_file = os.path.join(args.outdir, 'xbbtree.{}.nwk'.format(timestamp))
-        with open(nwk_file, 'w') as handle:
+    xbb_file = os.path.join(args.outdir, 'xbbtree.{}.nwk'.format(timestamp))
+    with open(xbb_file, 'w') as handle:
+        if xbb is not None:
+            timetree_xbb, residuals_xbb = build_timetree(xbb, args, cb.callback)
+            residuals.update(residuals_xbb)
             Phylo.write(timetree_xbb, file=handle, format='newick')
-
+        # else empty file
 
     # clustering analysis of lineages
     result, infection_prediction = make_beadplots(by_lineage, args, cb.callback, t0=cb.t0.timestamp())
