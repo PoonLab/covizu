@@ -169,6 +169,11 @@ if __name__ == "__main__":
     xbb = {}
     other_recomb = {}
     for lineage, ldata in by_lineage.items():
+        # Put unassigned lineages in non-recombinant category
+        if lineage == "Unassigned":
+            non_recomb.update({lineage: ldata})
+            continue
+
         prefix = lineage.split('.')[0]
         category = designation[prefix]['type']
         if category == 'non-recombinant':
