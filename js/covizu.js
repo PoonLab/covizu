@@ -227,7 +227,7 @@ var phenotypes = {
 }
 
 // load time-scaled phylogeny from server
-var nwk, df, countries, mut_annotations, region_map;
+var nwk, df, df_xbb, countries, mut_annotations, region_map;
 
 // $.getJSON("data/mut_annotations.json", function(data) {
 //   mut_annotations = data;
@@ -273,6 +273,15 @@ req = $.when(
       x.mcoldate = x.coldate ? new Date(x.mcoldate) : undefined
     });
   }),
+  $.getJSON("/api/xbb", function(data) {
+    df_xbb = data;
+    df_xbb.forEach(x => {
+      x.first_date = x.first_date ? new Date(x.first_date) : undefined
+      x.last_date = x.last_date ? new Date(x.last_date) : undefined
+      x.coldate = x.coldate ? new Date(x.coldate) : undefined
+      x.mcoldate = x.coldate ? new Date(x.mcoldate) : undefined
+    });
+  }),
   $.getJSON("/api/regionmap", function(data) {
     region_map = data;
   })
@@ -306,7 +315,14 @@ req.done(async function() {
   const reverseMapping = o => Object.keys(o).reduce((r, k) => Object.assign(r, { [o[k]]: (r[o[k]] || parseInt(k)) }), {})
   map_cidx_to_id = reverseMapping(id_to_cidx)
 
-  await redraw_tree(formatDate(curr_date), redraw=false);
+  switch($("#display-tree").val()) {
+    case "XBB Lineages":
+      await redraw_tree(df_xbb, formatDate(curr_date), redraw=false);
+      break;
+    case "Recombinants":
+    default:
+      await redraw_tree(df, formatDate(curr_date), redraw=false);
+  }
 
   //spinner.stop();
   var rect = d3.selectAll("#svg-timetree > svg > rect"),
@@ -608,19 +624,6 @@ req.done(async function() {
     expand();
   });
 
-  $('#display-option').on('change', function() {
-    if (!$('#display-option').attr('checked')) {
-      $('#display-option').attr('checked', 'checked');
-      $(".recombinant-tree-content").show()
-      $(".recombtitle").show()
-    }
-    else {
-      $('#display-option').removeAttr('checked');
-      $(".recombinant-tree-content").hide()
-      $(".recombtitle").hide()
-    }
-  });
-
   $(window).on('resize', set_height);
 
   // Sets the scrolling speed when scrolling through the beadplot
@@ -661,14 +664,14 @@ req.done(async function() {
 
     $("#tree-slider").slider({
       create: function( event, ui ) {
-        cutoff_date.text(xaxis_to_date($( this ).slider( "value" )/tree_multiplier, tips[0]));
+        cutoff_date.text(xaxis_to_date($( this ).slider( "value" )/tree_multiplier, tips[0], d3.min(tips, function(d) {return d.first_date}), d3.max(tips, function(d) {return d.last_date})));
         var cutoff_pos = handle.position().left;
         tree_cutoff.css('left', cutoff_pos);
       },
       slide: async function( event, ui ) {
         move_arrow();
         
-        cutoff_date.text(xaxis_to_date(ui.value/tree_multiplier, tips[0]));
+        cutoff_date.text(xaxis_to_date(ui.value/tree_multiplier, tips[0], d3.min(tips, function(d) {return d.first_date}), d3.max(tips, function(d) {return d.last_date})));
         await handle.change()
           
         cutoff_line.css('visibility', 'visible');
@@ -684,7 +687,13 @@ req.done(async function() {
   
           $("#loading").show();
           $("#loading_text").text(i18n_text.loading);
-          await redraw_tree(cutoff_date.text());
+          switch($("#display-tree").val()) {
+            case "XBB Lineages":
+              await redraw_tree(df_xbb, cutoff_date.text());
+              break;
+            default:
+              await redraw_tree(df, cutoff_date.text());
+          }
           $("#loading").hide();
           $("#loading_text").text(``);
         }

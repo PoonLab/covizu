@@ -34,9 +34,21 @@ class TestDBManager {
         });
     }
 
+    get_xbb_tips() {
+        return new Promise((resolve,reject)=>{
+            resolve(global.xbb_tips);
+        });
+    }
+
     get_df() {
         return new Promise((resolve,reject)=>{
             resolve(global.df);
+        });
+    }
+
+    get_xbb_df() {
+        return new Promise((resolve,reject)=>{
+            resolve(global.df_xbb);
         });
     }
 
@@ -121,9 +133,17 @@ class TestDBManager {
         catch (e) {
             console.log('Error:', e.stack);
         }
+        try {
+            global.xbbtree = fs.readFileSync(`./${$DATA_FOLDER}/xbbtree.nwk`, 'utf8');
+        }
+        catch (e) {
+            console.log('Error:', e.stack);
+        }
         global.df = readTree(global.tree)
-        const { tips, recombinant_tips } = map_clusters_to_tips(global.df, global.clusters);
+        global.df_xbb = readTree(global.xbbtree)
+        const { tips, tips_xbb, recombinant_tips } = map_clusters_to_tips(global.df, df_xbb, global.clusters);
         global.tips = tips;
+        global.xbb_tips = tips_xbb;
         global.recombinant_tips = recombinant_tips;
         global.accn_to_cid = index_accessions(global.clusters);
         global.lineage_to_cid = index_lineage(global.clusters);

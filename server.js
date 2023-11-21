@@ -62,8 +62,20 @@ app.get('/api/tips', (req, res) => {
   })
 });
 
+app.get('/api/xbbtips', (req, res) => {
+  dbManager.get_xbb_tips().then(result=>{
+    res.send(result);
+  })
+});
+
 app.get('/api/df', (req, res) => {
   dbManager.get_df().then(result=>{
+    res.send(result)
+  })
+});
+
+app.get('/api/xbb', (req, res) => {
+  dbManager.get_xbb_df().then(result=>{
     res.send(result)
   })
 });
