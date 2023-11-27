@@ -122,6 +122,7 @@ if __name__ == "__main__":
     client = MongoClient("mongodb://root:password@localhost:27018/?authSource=admin")
     db = client["sequences"]
     collection = db["records"]
+    collection.create_index('covv_virus_name', unique = True)
 
     # check that user has loaded openmpi module
     try:
