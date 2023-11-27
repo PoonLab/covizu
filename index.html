@@ -198,18 +198,22 @@
         </div>
         <div class="leftbox" id="leftbox">
           <div class="floattitle" id="tree-title">
-            Time-scaled tree
-            <span class="clicker" title="Download time-scaled tree" onclick="save_timetree()">
-              &nbsp;&nbsp;NWK&nbsp;&nbsp;
-            </span>
-            <div class="clicker" title="Download lineage statistics as CSV" onclick="export_csv();">&nbsp;&nbsp;CSV&nbsp;&nbsp;</div>
-            <span title="Timetree help" onclick="$('#help-timetree').dialog('open');" style="cursor: help">&#128304;</span>
-            <label for="display-tree">Display:</label>
-            <select name="display-tree" id="display-tree">
-              <option value="XBB Lineages">XBB Lineages</option>
-              <option value="Recombinants">Recombinants</option>
-              <option value="Non-Recombinants" selected="selected">Non-Recombinants</option>
-            </select>
+            <div>
+              Time-scaled tree
+              <span class="clicker" id="nwk-button" title="Download time-scaled tree" onclick="save_timetree()">
+                &nbsp;&nbsp;NWK&nbsp;&nbsp;
+              </span>
+              <div class="clicker" title="Download lineage statistics as CSV" onclick="export_csv();">&nbsp;&nbsp;CSV&nbsp;&nbsp;</div>
+              <span title="Timetree help" onclick="$('#help-timetree').dialog('open');" style="cursor: help">&#128304;</span>  
+            </div>
+            <div>
+              <label for="display-tree">Display:</label>
+              <select name="display-tree" id="display-tree">
+                <option value="XBB Lineages">XBB Lineages</option>
+                <option value="Recombinants">Recombinants</option>
+                <option value="Non-Recombinants" selected="selected">Non-Recombinants</option>
+              </select>
+            </div>
           </div>
           <div id="tree-cutoff" style="position: relative;">
             <div id="cutoff-date"></div>

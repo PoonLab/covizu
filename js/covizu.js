@@ -958,12 +958,14 @@ $( "#dialog" ).dialog({ autoOpen: false });
 // implement save buttons
 var blob;
 function save_timetree() {
+  var filename = $("#display-tree").val() === "XBB Lineages" ? "xbbtree.nwk" : "timetree.nwk"
+
   $.ajax({
-    url: "data/timetree.nwk",
+    url: `data/${filename}`,
     success: function(data) {
       nwk = data;
       blob = new Blob([nwk], {type: "text/plain;charset=utf-8"});
-      saveAs(blob, "timetree.nwk");
+      saveAs(blob, filename);
     }
   });
 }
@@ -993,11 +995,14 @@ function export_svg() {
 }
 
 function export_csv() {
+  var all_tips = [...tips, ...recombinant_tips, ...df_xbb];
+
   // write lineage-level information to CSV file for download
   var csvFile = 'lineage,mean.diffs,clock.residual,num.cases,num.variants,min.coldate,max.coldate,mean.coldate';
   var lineage_info = []
-  for (tip of tips) {
-    lineage_info.push([`${tip.thisLabel},${Math.round(100*tip.mean_ndiffs)/100.},${Math.round(100*tip.residual)/100.},${tip.nsamples},${tip.varcount},${formatDate(tip.first_date)},${formatDate(tip.last_date)},${formatDate(tip.mcoldate)}`]);
+  for (tip of all_tips) {
+    if (tip.isTip === undefined || tip.isTip)
+      lineage_info.push([`${tip.thisLabel === undefined ? tip.label1 : tip.thisLabel},${Math.round(100*tip.mean_ndiffs)/100.},${Math.round(100*tip.residual)/100.},${tip.nsamples},${tip.varcount},${formatDate(tip.first_date)},${formatDate(tip.last_date)},${formatDate(tip.mcoldate)}`]);
   }
   csvFile = csvFile + "\n" + lineage_info.join("\n");
   blob = new Blob([csvFile], {type: "text/csv"});

@@ -562,12 +562,15 @@ $("#display-tree").change(async function() {
   var tips_obj;
   switch($("#display-tree").val()) {
     case "XBB Lineages":
+      $('#nwk-button').show();
       tips_obj = df_xbb;
       break;
     case "Recombinants":
+      $('#nwk-button').hide();
       tips_obj = recombinant_tips;
       break;
     default:
+      $('#nwk-button').show();
       tips_obj = df;
   }
 
