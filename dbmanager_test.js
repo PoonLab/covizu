@@ -3,7 +3,7 @@ const { readTree } = require('./server/phylo')
 const fs = require('fs');
 
 const { $DATA_FOLDER } = require('./config/config');
-
+const dbstats = require(`./${$DATA_FOLDER}/dbstats.json`)
 require("./globalVariables")
 
 class TestDBManager {
@@ -62,6 +62,18 @@ class TestDBManager {
         return new Promise((resolve,reject)=>{
             resolve(global.clusters[cindex].lineage);
         })
+    }
+
+    get_display(cindex) {
+        return new Promise((resolve,reject)=>{
+            var rawLineage = dbstats["lineages"][global.clusters[cindex].lineage]["raw_lineage"];
+            if (rawLineage.startsWith("XBB"))
+                resolve(["XBB Lineages"]);
+            else if (rawLineage.startsWith("X"))
+                resolve(["Recombinants"]);
+            else
+                resolve(["Non-Recombinants"]);
+        });
     }
 
     get_accession(accession) {

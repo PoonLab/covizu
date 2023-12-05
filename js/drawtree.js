@@ -549,10 +549,10 @@ $("#select-tree-colours").change(function() {
 });
 
 
-$("#display-tree").change(async function() {
+async function changeDisplay() {
   var curr_date = new Date();
   curr_date.setFullYear(curr_date.getFullYear() - 1);
-  const tree_multiplier = 100000000; 
+  const tree_multiplier = 100000000;
 
   var handle = $( "#tree-slider-handle" );
   var cutoff_date = $( "#cutoff-date" );
@@ -580,14 +580,13 @@ $("#display-tree").change(async function() {
   $("#tree-slider").slider("option", "min", min);
   $("#tree-slider").slider("option", "max", max);
   $("#tree-slider").slider("option", "value",  (start_value > min && start_value < max) ? start_value : min);
-  
+
   $("#cutoff-date").text(xaxis_to_date($("#tree-slider").slider("option", "value")/tree_multiplier, tips_obj[0], d3.min(tips_obj, function(d) {return d.first_date}), d3.max(tips_obj, function(d) {return d.last_date})));
   $("#tree-cutoff").css('left',  $("#tree-slider-handle").position().left);
 
-  $("#tree-slider").slider("option", "slide", async function( event, ui ) {        
+  $("#tree-slider").slider("option", "slide", async function( event, ui ) {
     cutoff_date.text(xaxis_to_date(ui.value/tree_multiplier, tips_obj[0], d3.min(tips_obj, function(d) {return d.first_date}), d3.max(tips_obj, function(d) {return d.last_date})));
     await handle.change()
-      
     cutoff_line.css('visibility', 'visible');
     var cutoff_pos = handle.position().left;
     cutoff_line.css('left', cutoff_pos + 29);
@@ -602,12 +601,16 @@ $("#display-tree").change(async function() {
   cindex = node.__data__.cluster_idx;
   d3.select('#cidx-' + cindex).attr("class", "clicked");
   draw_cluster_box(d3.select(node));
-  
+
   await beadplot(cindex);
   gentable(node.__data__);
   draw_region_distribution(node.__data__.allregions);
   gen_details_table(points);  // update details table with all samples
   gen_mut_table(mutations[cindex]);
+}
+
+$("#display-tree").change(async function() {
+  await changeDisplay();
 });
 
 

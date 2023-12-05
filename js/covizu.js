@@ -303,7 +303,7 @@ req.done(async function() {
 
   // Maps id to a cidx
   const reverse_recombinant_tips = [...recombinant_tips].reverse()
-  var all_tips = [...tips, ...reverse_recombinant_tips]
+  var all_tips = [...tips, ...reverse_recombinant_tips, ...df_xbb]
   console.log("tips = ",tips)
   console.log("recombinant_tips = ",recombinant_tips)
   console.log("all_tips = ",all_tips)
@@ -417,7 +417,6 @@ req.done(async function() {
     $('#error_message').text(``);
     $('#search-button').removeAttr("disabled");
     $('#clear_button').removeAttr("disabled");
-    reset_tree();
     wrap_search();
     enable_buttons();
 
@@ -471,7 +470,6 @@ req.done(async function() {
       $('#error_message').text(``);
       $("#loading").show();
       $("#loading_text").text(i18n_text.loading);
-      await reset_tree(partial_redraw=true);
       await wrap_search();
       enable_buttons();
 
@@ -548,7 +546,6 @@ req.done(async function() {
     $('#error_message').text(``);
     $("#loading").show();
     $("#loading_text").text(i18n_text.loading);
-    await reset_tree(partial_redraw=true);
     await wrap_search();
     enable_buttons();
     $("#loading").hide();

@@ -236,6 +236,16 @@ async function lineage_search(text_query) {
     return;
   }
 
+  // Get the lineage to determine if the tree needs to be redrawn
+  var display = await getdata(`/api/display/${cidx}`);
+
+  if (!($("#display-tree").val() === display[0])) {
+    await $("#display-tree").val(display[0])
+    await changeDisplay();
+  }
+
+  await reset_tree(partial_redraw=true);
+
   var cluster = select_cluster("cidx-"+cidx);
 
   // Reduces the opacity of all clusters
@@ -267,6 +277,16 @@ async function accession_search(text_query) {
     $('#error_message').text(`No matches. Please try again.`);
     return;
   }
+
+  // Get the lineage to determine if the tree needs to be redrawn
+  var display = await getdata(`/api/display/${cidx}`);
+
+  if (!($("#display-tree").val() === display[0])) {
+    await $("#display-tree").val(display[0])
+    await changeDisplay();
+  }
+
+  await reset_tree(partial_redraw=true);
 
   var cluster = select_cluster("cidx-"+cidx);
 
