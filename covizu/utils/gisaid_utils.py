@@ -257,7 +257,7 @@ def filter_problematic(records, origin='2019-12-01', rate=0.0655, cutoff=0.005,
         callback("         {} genomes with excess divergence".format(n_outlier))
 
 
-def sort_by_lineage(records, callback=None, database='covizu/data/gsaid.db', interval=10000):
+def sort_by_lineage(records, callback=None, interval=10000):
     """
     Resolve stream into a dictionary keyed by Pangolin lineage.
     Note: records yielded from generator accumulate in this function.

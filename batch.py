@@ -119,6 +119,8 @@ def open_connection():
                     diffs VARCHAR, missing VARCHAR)'''
     cur.execute(seqs_table)
 
+    cur.execute('''CREATE INDEX IF NOT EXISTS qname_index ON SEQUENCES (qname)''')
+
     conn.commit()
     return cur, conn
 
