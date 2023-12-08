@@ -170,11 +170,14 @@ async function main_search(all_bead_data, text_query, start_date, end_date) {
     return a - b;
   });
 
+  await reset_tree(partial_redraw=true);
+  d3.selectAll("rect[class='clicked']").attr("class", "default")
+
   // Keeps track of the clicked cluster
   var curr_cluster = d3.selectAll(".clicked").nodes()[0].attributes.id.nodeValue;
   var selected_cidx = id_to_cidx[closest_match(curr_cluster, hit_id)];
 
-  var selections = d3.selectAll("#svg-timetree > svg > rect:not(.clickedH), #svg-recombinants > svg > rect:not(.clickedH)")
+  var selections = d3.selectAll("#svg-timetree > svg > rect:not(.clickedH)")
     .filter(function() {
       return hit_id.includes(parseInt(this.id.substring(3)))
     });

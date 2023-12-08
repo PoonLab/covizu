@@ -599,7 +599,7 @@ async function changeDisplay() {
       node = $("#display-tree").val() === "Recombinants" ? rect.nodes()[0] : rect.nodes()[rect.size()-1];
 
   cindex = node.__data__.cluster_idx;
-  d3.select('#cidx-' + cindex).attr("class", "clicked");
+  d3.select(node).attr("class", "clicked");
   draw_cluster_box(d3.select(node));
 
   await beadplot(cindex);
