@@ -237,7 +237,7 @@ var nwk, df, df_xbb, countries, mut_annotations, region_map;
 var clusters, beaddata, tips, recombinant_tips,
     accn_to_cid, cindex, lineage_to_cid, lineage;
 var edgelist = [], points = [], variants = []
-var map_cidx_to_id = [], id_to_cidx = [];
+var map_cidx_to_id = [], id_to_cidx = [], display_id = {};
 
 req = $.when(
   
@@ -303,13 +303,27 @@ req.done(async function() {
 
   // Maps id to a cidx
   const reverse_recombinant_tips = [...recombinant_tips].reverse()
-  var all_tips = [...tips, ...reverse_recombinant_tips, ...df_xbb]
-  console.log("tips = ",tips)
-  console.log("recombinant_tips = ",recombinant_tips)
-  console.log("all_tips = ",all_tips)
-  for (i in all_tips) {
-    id_to_cidx[i] = 'cidx-' + all_tips[i].cluster_idx
+  var i = 0, first, last;
+  first = i;
+  for (const index in reverse_recombinant_tips) {
+    id_to_cidx[i++] = 'cidx-' + reverse_recombinant_tips[index].cluster_idx;
   }
+  last = i - 1;
+  display_id["recombinants"] = {"first": first, "last": last};
+
+  first = i;
+  for (const index in df_xbb) {
+    id_to_cidx[i++] = 'cidx-' + df_xbb[index].cluster_idx;
+  }
+  last = i - 1;
+  display_id["xbb"] = {"first": first, "last": last};
+
+  first = i;
+  for (const index in tips) {
+    id_to_cidx[i++] = 'cidx-' + tips[index].cluster_idx;
+  }
+  last = i - 1;
+  display_id["non_recombinants"] = {"first": first, "last": last};
 
   // Maps cidx to an id
   const reverseMapping = o => Object.keys(o).reduce((r, k) => Object.assign(r, { [o[k]]: (r[o[k]] || parseInt(k)) }), {})
