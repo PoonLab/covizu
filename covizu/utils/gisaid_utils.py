@@ -120,7 +120,12 @@ def batch_fasta(gen, cur, size=100):
         cur.execute("SELECT * FROM SEQUENCES WHERE qname = '%s'"%qname)
         result = cur.fetchone()
         if result:
-            record.update({'diffs': result["diffs"], 'missing': result["missing"]})
+            # reading old records from database
+            # and handling list to tuple conversion
+            record.update({
+                'diffs': list(map(tuple, json.loads(result["diffs"]))),
+                'missing': list(map(tuple, json.loads(result["missing"])))
+            })
         else:
             stdin += '>{}\n{}\n'.format(qname, sequence)
         batch.append(record)
@@ -208,15 +213,7 @@ def filter_problematic(records, origin='2019-12-01', rate=0.0655, cutoff=0.005,
         if type(record) is not dict:
             qname, diffs, missing = record  # unpack tuple
         else:
-            try:
-                # loading json strings of old records
-                record['diffs'] = json.loads(record['diffs'])
-                record['missing'] = json.loads(record['missing'])
-            except TypeError:
-                # passing for new records
-                pass
-            finally:
-                diffs = record['diffs']
+            diffs = record['diffs']
 
         # exclude problematic sites
         filtered = []

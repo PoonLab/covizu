@@ -393,7 +393,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
     for lineage in recoded:
         # import trees
         lineage_name = lineage.replace('/', '_')  # issue #297
-        outfile = open('data/{}.nwk'.format(lineage_name))
+        outfile = open('{}/{}.nwk'.format(args.outdir, lineage_name))
         trees = Phylo.parse(outfile, 'newick')  # note this returns a generator
 
         label_dict = recoded[lineage]['labels']

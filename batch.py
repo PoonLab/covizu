@@ -174,6 +174,9 @@ if __name__ == "__main__":
     # filter data, align genomes, extract features, sort by lineage
     by_lineage = process_feed(args, cur, cb.callback)
 
+    # calling commit immediately after db transactions
+    conn.commit()
+
     # reconstruct time-scaled tree relating lineages
     timetree, residuals = build_timetree(by_lineage, args, cb.callback)
     timestamp = datetime.now().isoformat().split('.')[0]
@@ -247,5 +250,4 @@ if __name__ == "__main__":
         fp.close()
         subprocess.check_call(['scp', fp.name, '{}/clusters.json'.format(server_epicov)])
 
-    conn.commit()
     cb.callback("All done!")
