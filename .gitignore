@@ -2,6 +2,10 @@
 !.github
 data/*
 data_test/*
+!data_test/timetree.nwk
+!data_test/xbbtree.nwk
+!data_test/clusters.json
+!data_test/dbstats.json
 !data/*mut_annotations.json
 .idea/
 treetime/*
