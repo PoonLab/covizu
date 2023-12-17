@@ -62,12 +62,6 @@ app.get('/api/tips', (req, res) => {
   })
 });
 
-app.get('/api/xbbtips', (req, res) => {
-  dbManager.get_xbb_tips().then(result=>{
-    res.send(result);
-  })
-});
-
 app.get('/api/display/:cindex', (req, res) => {
   dbManager.get_display(req.params.cindex).then(result=>{
     res.send(result);

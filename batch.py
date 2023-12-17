@@ -170,7 +170,7 @@ if __name__ == "__main__":
     other_recomb = {}
     for lineage, ldata in by_lineage.items():
         # Put unassigned lineages in non-recombinant category
-        if lineage == "Unassigned":
+        if lineage.lower() == "unassigned":
             non_recomb.update({lineage: ldata})
             continue
 
@@ -258,6 +258,7 @@ if __name__ == "__main__":
     if not args.dry_run:
         server_root = 'filogeneti.ca:/var/www/html/covizu/data'
         subprocess.check_call(['scp', nwk_file, '{}/timetree.nwk'.format(server_root)])
+        subprocess.check_call(['scp', xbb_file, '{}/xbbtree.nwk'.format(server_root)])
         subprocess.check_call(['scp', clust_file, '{}/clusters.json'.format(server_root)])
         subprocess.check_call(['scp', dbstat_file, '{}/dbstats.json'.format(server_root)])
 
