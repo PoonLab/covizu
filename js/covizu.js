@@ -668,21 +668,21 @@ req.done(async function() {
     var cutoff_line = $("#cutoff-line");
     var tree_cutoff = $("#tree-cutoff");
 
-    const tree_multiplier = 100000000; 
-    var min = Math.floor((d3.min(df, xValue)-0.05) * tree_multiplier);
-    var max = Math.ceil(date_to_xaxis(d3.max(df, function(d) {return d.last_date})) * tree_multiplier);
+    const tree_multiplier = 100000; // Slider value needs to be an integer
+    var min = (d3.min(df, xValue)-0.05) * tree_multiplier;
+    var max = date_to_xaxis(d3.max(df, function(d) {return d.last_date})) * tree_multiplier;
     var start_value = date_to_xaxis(curr_date) * tree_multiplier;
 
     $("#tree-slider").slider({
       create: function( event, ui ) {
-        cutoff_date.text(xaxis_to_date($( this ).slider( "value" )/tree_multiplier, tips[0], d3.min(tips, function(d) {return d.first_date}), d3.max(tips, function(d) {return d.last_date})));
+        cutoff_date.text(xaxis_to_date($( this ).slider( "value" )/tree_multiplier, df[0], d3.min(df, function(d) {return d.first_date}), d3.max(df, function(d) {return d.last_date})));
         var cutoff_pos = handle.position().left;
         tree_cutoff.css('left', cutoff_pos);
       },
       slide: async function( event, ui ) {
         move_arrow();
         
-        cutoff_date.text(xaxis_to_date(ui.value/tree_multiplier, tips[0], d3.min(tips, function(d) {return d.first_date}), d3.max(tips, function(d) {return d.last_date})));
+        cutoff_date.text(xaxis_to_date(ui.value/tree_multiplier, df[0], d3.min(df, function(d) {return d.first_date}), d3.max(df, function(d) {return d.last_date})));
         await handle.change()
           
         cutoff_line.css('visibility', 'visible');

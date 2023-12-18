@@ -288,8 +288,10 @@ function draw_clusters(tips, filtered_recombinant_tips, redraw=false) {
         switch($("#display-tree").val()) {
           case "Recombinants":
             return xaxis_to_date(d, recombinant_tips[0], d3.min(recombinant_tips, function(d) {return d.first_date}), d3.max(recombinant_tips, function(d) {return d.last_date}))
+          case "XBB Lineages":
+            return xaxis_to_date(d, df_xbb[0], d3.min(df_xbb, function(d) {return d.first_date}), d3.max(df_xbb, function(d) {return d.last_date}))
           default:
-            return xaxis_to_date(d, tips[0], d3.min(tips, function(d) {return d.first_date}), d3.max(tips, function(d) {return d.last_date}))
+            return xaxis_to_date(d, df[0], d3.min(df, function(d) {return d.first_date}), d3.max(df, function(d) {return d.last_date}))
         }
       })
     );
@@ -552,7 +554,6 @@ $("#select-tree-colours").change(function() {
 async function changeDisplay() {
   var curr_date = new Date();
   curr_date.setFullYear(curr_date.getFullYear() - 1);
-  const tree_multiplier = 100000000;
 
   var handle = $( "#tree-slider-handle" );
   var cutoff_date = $( "#cutoff-date" );
@@ -574,9 +575,11 @@ async function changeDisplay() {
       tips_obj = df;
   }
 
-  var min = Math.floor((d3.min(tips_obj, xValue)-0.05) * tree_multiplier);
-  var max = Math.ceil(date_to_xaxis(d3.max(tips_obj, function(d) {return d.last_date})) * tree_multiplier);
+  const tree_multiplier = 100000; // Slider value needs to be an integer
+  var min = (d3.min(tips_obj, xValue)-0.05) * tree_multiplier;
+  var max = date_to_xaxis(d3.max(tips_obj, function(d) {return d.last_date})) * tree_multiplier;
   var start_value = date_to_xaxis(curr_date) * tree_multiplier;
+
   $("#tree-slider").slider("option", "min", min);
   $("#tree-slider").slider("option", "max", max);
   $("#tree-slider").slider("option", "value",  (start_value > min && start_value < max) ? start_value : min);
