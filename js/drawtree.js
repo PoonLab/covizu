@@ -164,9 +164,9 @@ function drawtree(df, org_df, redraw=true) {
         .attr("y2", yMap2)
         .attr("stroke-width", 1.5)
         .attr("stroke", "#777");
-  }
 
-    $('#tree-inner-vscroll').css('height', $('.tree-content > svg').height()); 
+      $('#tree-inner-vscroll').css('height', $('.tree-content > svg').height());
+  }
 }
 
 
@@ -417,9 +417,10 @@ function draw_clusters(tips, filtered_recombinant_tips, redraw=false) {
         });
 
         vis
-          .attr("height", filtered_recombinant_tips.length * 12.1)
+          .attr("height", filtered_recombinant_tips.length * 12) // Height of a rect element is 10
         
         tip_obj = recombinant_tips;
+        $('#tree-inner-vscroll').css('height', $('.tree-content > svg').height());
   }
 
   // generate colour palettes
@@ -538,8 +539,12 @@ function changeTreeColour() {
             else return dsc_infections_colour;
           }
           else {  // Divergence
-            $("div#svg-diverge-legend").show();
-            return(diverge_pal(d.residual));
+            // Issue 489 - Do not colour other recombinants
+            if ($("#display-tree").val() !== "Recombinants") {
+              $("div#svg-diverge-legend").show();
+              return(diverge_pal(d.residual));
+            }
+            return '#949391';
           }
         }
       })
