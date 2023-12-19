@@ -178,8 +178,8 @@ async function main_search(all_bead_data, text_query, start_date, end_date) {
       curr_cluster = d3.selectAll(".clicked").nodes()[0].attributes.id.nodeValue;
 
   switch($("#display-tree").val()) {
-    case "Recombinants":
-      selected_cidx = closest_display_match(curr_cluster, hit_id, display_id.recombinants.first, display_id.recombinants.last);
+    case "Other Recombinants":
+      selected_cidx = closest_display_match(curr_cluster, hit_id, display_id.other_recombinants.first, display_id.other_recombinants.last);
       break;
     case "XBB Lineages":
       selected_cidx = closest_display_match(curr_cluster, hit_id, display_id.xbb.first, display_id.xbb.last);

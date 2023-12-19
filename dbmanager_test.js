@@ -70,7 +70,7 @@ class TestDBManager {
             if (rawLineage.startsWith("XBB"))
                 resolve(["XBB Lineages"]);
             else if (rawLineage.startsWith("X"))
-                resolve(["Recombinants"]);
+                resolve(["Other Recombinants"]);
             else
                 resolve(["Non-Recombinants"]);
         });

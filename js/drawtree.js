@@ -76,7 +76,7 @@ function draw_cluster_box(rect) {
         .attr("fill-opacity", 1)
         .attr("stroke-width", 2);
       break;
-    case "Recombinants":
+    case "Other Recombinants":
       vis.append("rect")
         .attr('class', "clickedH")
         .attr("x", function() {
@@ -122,7 +122,7 @@ function drawtree(df, org_df, redraw=true) {
   // adjust d3 scales to data frame
   if(!redraw) {
     switch($("#display-tree").val()) {
-      case "Recombinants":
+      case "Other Recombinants":
         xScale.domain([
           axis_padding,
           date_to_xaxis(d3.max(recombinant_tips, function(d) {return d.last_date}))
@@ -138,7 +138,7 @@ function drawtree(df, org_df, redraw=true) {
   }
 
   switch($("#display-tree").val()) {
-    case "Recombinants":
+    case "Other Recombinants":
       break;
     default:
       // rescale SVG for size of tree
@@ -183,7 +183,7 @@ function xaxis_to_date(x, tip, earliest, latest) {
   var coldate = new Date(tip.first_date);  // collection date of reference tip
   var interval = d3.timeDay.count(earliest, latest)/numTicks
   switch($("#display-tree").val()) {
-    case "Recombinants":
+    case "Other Recombinants":
       coldate = d3.timeDay.offset(coldate, interval*x);
       break;
     default:
@@ -208,7 +208,7 @@ function date_to_xaxis(coldate) {
     case "Non-Recombinants":
       tip_obj = df;
       break;
-    case "Recombinants":
+    case "Other Recombinants":
       tip_obj = recombinant_tips;
   }
 
@@ -259,7 +259,7 @@ function draw_clusters(tips, filtered_recombinant_tips, redraw=false) {
       minVal = d3.min(df, xValue)-axis_padding_trees;
       maxVal = date_to_xaxis(d3.max(df, function(d) {return d.last_date}));
       break;
-    case "Recombinants":
+    case "Other Recombinants":
       console.log(d3.min(recombinant_tips, function(d) {return d.first_date}))
       minVal = axis_padding;
       maxVal = date_to_xaxis(d3.max(recombinant_tips, function(d) {return d.last_date}));
@@ -286,7 +286,7 @@ function draw_clusters(tips, filtered_recombinant_tips, redraw=false) {
       .tickValues(tickVals)
       .tickFormat(function(d) {
         switch($("#display-tree").val()) {
-          case "Recombinants":
+          case "Other Recombinants":
             return xaxis_to_date(d, recombinant_tips[0], d3.min(recombinant_tips, function(d) {return d.first_date}), d3.max(recombinant_tips, function(d) {return d.last_date}))
           case "XBB Lineages":
             return xaxis_to_date(d, df_xbb[0], d3.min(df_xbb, function(d) {return d.first_date}), d3.max(df_xbb, function(d) {return d.last_date}))
@@ -375,7 +375,7 @@ function draw_clusters(tips, filtered_recombinant_tips, redraw=false) {
       tip_obj = tips;
 
       break;
-    case "Recombinants":
+    case "Other Recombinants":
       vis.selectAll("rect")
         .data(filtered_recombinant_tips)
         .enter()
@@ -540,7 +540,7 @@ function changeTreeColour() {
           }
           else {  // Divergence
             // Issue 489 - Do not colour other recombinants
-            if ($("#display-tree").val() !== "Recombinants") {
+            if ($("#display-tree").val() !== "Other Recombinants") {
               $("div#svg-diverge-legend").show();
               return(diverge_pal(d.residual));
             }
@@ -571,7 +571,7 @@ async function changeDisplay() {
       $('#nwk-button').show();
       tips_obj = df_xbb;
       break;
-    case "Recombinants":
+    case "Other Recombinants":
       $('#nwk-button').hide();
       tips_obj = recombinant_tips;
       break;
@@ -604,7 +604,7 @@ async function changeDisplay() {
 
   // Draw beadplot and update tables
   var rect = d3.selectAll("#svg-timetree > svg > rect"),
-      node = $("#display-tree").val() === "Recombinants" ? rect.nodes()[0] : rect.nodes()[rect.size()-1];
+      node = $("#display-tree").val() === "Other Recombinants" ? rect.nodes()[0] : rect.nodes()[rect.size()-1];
 
   cindex = node.__data__.cluster_idx;
   d3.select(node).attr("class", "clicked");

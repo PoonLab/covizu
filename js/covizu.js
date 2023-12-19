@@ -309,7 +309,7 @@ req.done(async function() {
     id_to_cidx[i++] = 'cidx-' + reverse_recombinant_tips[index].cluster_idx;
   }
   last = i - 1;
-  display_id["recombinants"] = {"first": first, "last": last};
+  display_id["other_recombinants"] = {"first": first, "last": last};
 
   first = i;
   for (const index in df_xbb) {
@@ -333,7 +333,7 @@ req.done(async function() {
     case "XBB Lineages":
       await redraw_tree(df_xbb, formatDate(curr_date), redraw=false);
       break;
-    case "Recombinants":
+    case "Other Recombinants":
     default:
       await redraw_tree(df, formatDate(curr_date), redraw=false);
   }
