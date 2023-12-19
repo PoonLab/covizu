@@ -5,6 +5,7 @@ const { MongoClient } = require("mongodb");
 const { $DATA_FOLDER } = require('./config/config');
 const {
     $COLLECTION__CLUSTERS,
+    $COLLECTION__DBSTATS,
     $COLLECTION__BEADDATA,
     $COLLECTION__TIPS,
     $COLLECTION__RECOMBINANT_TIPS,
@@ -12,6 +13,7 @@ const {
     $COLLECTION__LINEAGE_TO_CID,
     $COLLECTION__REGION_MAP,
     $COLLECTION__DF_TREE,
+    $COLLECTION__XBB_TREE,
     $COLLECTION__AUTOCOMPLETE_DATA,
     $COLLECTION__FLAT_DATA
 } = require("./config/dbconfig")
@@ -94,6 +96,10 @@ class DBManager {
         return this.db_.collection($COLLECTION__DF_TREE).find().toArray();
     }
 
+    get_xbb_df() {
+        return this.db_.collection($COLLECTION__XBB_TREE).find().toArray();
+    }
+
     get_regionMap() {
         return this.db_.collection($COLLECTION__REGION_MAP).find().toArray().then((docs,err)=>{
             if(err){
@@ -103,6 +109,22 @@ class DBManager {
             return docs[0];
         });
         // return global.region_map;
+    }
+
+    get_display(lineage) {
+        return this.db_.collection($COLLECTION__DBSTATS).findOne({ _id : lineage }).then((doc, err) => {
+            if(err){
+                console.log(`dbmanager::get_display error`,err);
+                return ;
+            }
+            var rawLineage = doc["raw_lineage"];
+            if (rawLineage.startsWith("XBB"))
+                return ["XBB Lineages"];
+            else if (rawLineage.startsWith("X"))
+                return ["Other Recombinants"];
+            else
+                return ["Non-Recombinants"];
+        })
     }
 
     get_lineage(cindex) {

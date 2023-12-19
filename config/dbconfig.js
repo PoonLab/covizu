@@ -5,6 +5,7 @@ const $JSON_DATA_FOLDER = "data"
 const $DATABASE__PRIMARY = "covizu_1";
 const $DATABASE__SECONDARY = "covizu_2";
 const $COLLECTION__CLUSTERS = "clusters";
+const $COLLECTION__DBSTATS = "dbstats";
 const $COLLECTION__BEADDATA = "beaddata";
 const $COLLECTION__TIPS = "tips";
 const $COLLECTION__RECOMBINANT_TIPS = "recombinant_tips";
@@ -12,11 +13,14 @@ const $COLLECTION__ACCN_TO_CID = "accn_to_cid";
 const $COLLECTION__LINEAGE_TO_CID = "lineage_to_cid";
 const $COLLECTION__REGION_MAP = "region_map";
 const $COLLECTION__DF_TREE = "df_tree";
+const $COLLECTION__XBB_TREE = "xbb_tree";
 const $COLLECTION__AUTOCOMPLETE_DATA = "autocomplete_data";
 const $COLLECTION__FLAT_DATA = "flat_data";
 
 const $JSONFILE__CLUSTERS = "clusters.json";
+const $JSONFILE__DBSTATS = "dbstats.json";
 const $NWKFILE__TREE = "timetree.nwk";
+const $XBB__TREE = "xbbtree.nwk";
 
 var $NODE_ENV = process.env.NODE_ENV;
 
@@ -73,6 +77,7 @@ module.exports = {
     $COVIZU_CONNECTION_URI,
     $ACTIVE_DATABASE,
     $COLLECTION__CLUSTERS,
+    $COLLECTION__DBSTATS,
     $COLLECTION__BEADDATA,
     $COLLECTION__TIPS,
     $COLLECTION__RECOMBINANT_TIPS,
@@ -80,10 +85,13 @@ module.exports = {
     $COLLECTION__LINEAGE_TO_CID,
     $COLLECTION__REGION_MAP,
     $COLLECTION__DF_TREE,
+    $COLLECTION__XBB_TREE,
     $COLLECTION__AUTOCOMPLETE_DATA,
     $COLLECTION__FLAT_DATA,
     $PROJECT_ROOT,
     $JSON_DATA_FOLDER,
     $JSONFILE__CLUSTERS,
+    $JSONFILE__DBSTATS,
     $NWKFILE__TREE,
+    $XBB__TREE
 }

@@ -34,12 +34,6 @@ class TestDBManager {
         });
     }
 
-    get_xbb_tips() {
-        return new Promise((resolve,reject)=>{
-            resolve(global.xbb_tips);
-        });
-    }
-
     get_df() {
         return new Promise((resolve,reject)=>{
             resolve(global.df);
@@ -64,9 +58,9 @@ class TestDBManager {
         })
     }
 
-    get_display(cindex) {
+    get_display(lineage) {
         return new Promise((resolve,reject)=>{
-            var rawLineage = dbstats["lineages"][global.clusters[cindex].lineage]["raw_lineage"];
+            var rawLineage = dbstats["lineages"][lineage]["raw_lineage"];
             if (rawLineage.startsWith("XBB"))
                 resolve(["XBB Lineages"]);
             else if (rawLineage.startsWith("X"))
@@ -155,7 +149,6 @@ class TestDBManager {
         global.df_xbb = readTree(global.xbbtree)
         const { tips, tips_xbb, recombinant_tips } = map_clusters_to_tips(global.df, df_xbb, global.clusters);
         global.tips = tips;
-        global.xbb_tips = tips_xbb;
         global.recombinant_tips = recombinant_tips;
         global.accn_to_cid = index_accessions(global.clusters);
         global.lineage_to_cid = index_lineage(global.clusters);

@@ -63,8 +63,10 @@ app.get('/api/tips', (req, res) => {
 });
 
 app.get('/api/display/:cindex', (req, res) => {
-  dbManager.get_display(req.params.cindex).then(result=>{
-    res.send(result);
+  dbManager.get_lineage(req.params.cindex).then(result => {
+    dbManager.get_display(result).then(display => {
+      res.send(display);
+    })
   })
 });
 
