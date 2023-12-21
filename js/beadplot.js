@@ -409,6 +409,11 @@ function expand() {
 
   }
 
+  if (edgelist.length === 0)
+      $('#beadplot-nwk').hide();
+  else
+      $('#beadplot-nwk').show();
+
   // update vertical range for consistent spacing between variants
   heightB = max_y * 10 + 40;
   $("#svg-cluster > svg").attr("height", heightB + marginB.top + marginB.bottom);
