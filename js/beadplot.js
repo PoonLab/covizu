@@ -57,7 +57,7 @@ function parse_mutation_annotations(mut_annotations) {
   var mutations = [];
 
   // Sorts tips according to cluster_idx
-  sorted_tips = [...tips, ...recombinant_tips]
+  sorted_tips = [...tips, ...recombinant_tips, ...df_xbb]
   sorted_tips.sort(function(a,b) {
     return a.cluster_idx - b.cluster_idx
   });
@@ -408,6 +408,11 @@ function expand() {
     $('#svg-clusteraxis').css('padding-bottom', $('#inner-hscroll').height())
 
   }
+
+  if (edgelist.length === 0)
+      $('#beadplot-nwk').hide();
+  else
+      $('#beadplot-nwk').show();
 
   // update vertical range for consistent spacing between variants
   heightB = max_y * 10 + 40;

@@ -227,7 +227,7 @@ var phenotypes = {
 }
 
 // load time-scaled phylogeny from server
-var nwk, df, countries, mut_annotations, region_map;
+var nwk, df, df_xbb, countries, mut_annotations, region_map;
 
 // $.getJSON("data/mut_annotations.json", function(data) {
 //   mut_annotations = data;
@@ -237,7 +237,7 @@ var nwk, df, countries, mut_annotations, region_map;
 var clusters, beaddata, tips, recombinant_tips,
     accn_to_cid, cindex, lineage_to_cid, lineage;
 var edgelist = [], points = [], variants = []
-var map_cidx_to_id = [], id_to_cidx = [];
+var map_cidx_to_id = [], id_to_cidx = [], display_id = {};
 
 req = $.when(
   
@@ -273,6 +273,15 @@ req = $.when(
       x.mcoldate = x.coldate ? new Date(x.mcoldate) : undefined
     });
   }),
+  $.getJSON("/api/xbb", function(data) {
+    df_xbb = data;
+    df_xbb.forEach(x => {
+      x.first_date = x.first_date ? new Date(x.first_date) : undefined
+      x.last_date = x.last_date ? new Date(x.last_date) : undefined
+      x.coldate = x.coldate ? new Date(x.coldate) : undefined
+      x.mcoldate = x.coldate ? new Date(x.mcoldate) : undefined
+    });
+  }),
   $.getJSON("/api/regionmap", function(data) {
     region_map = data;
   })
@@ -294,19 +303,41 @@ req.done(async function() {
 
   // Maps id to a cidx
   const reverse_recombinant_tips = [...recombinant_tips].reverse()
-  var all_tips = [...tips, ...reverse_recombinant_tips]
-  console.log("tips = ",tips)
-  console.log("recombinant_tips = ",recombinant_tips)
-  console.log("all_tips = ",all_tips)
-  for (i in all_tips) {
-    id_to_cidx[i] = 'cidx-' + all_tips[i].cluster_idx
+  var i = 0, first, last;
+  first = i;
+  for (const index in reverse_recombinant_tips) {
+    id_to_cidx[i++] = 'cidx-' + reverse_recombinant_tips[index].cluster_idx;
   }
+  last = i - 1;
+  display_id["other_recombinants"] = {"first": first, "last": last};
+
+  first = i;
+  var xbb_tips = df_xbb.filter(x=>x.isTip);
+  for (const index in xbb_tips) {
+    id_to_cidx[i++] = 'cidx-' + xbb_tips[index].cluster_idx;
+  }
+  last = i - 1;
+  display_id["xbb"] = {"first": first, "last": last};
+
+  first = i;
+  for (const index in tips) {
+    id_to_cidx[i++] = 'cidx-' + tips[index].cluster_idx;
+  }
+  last = i - 1;
+  display_id["non_recombinants"] = {"first": first, "last": last};
 
   // Maps cidx to an id
   const reverseMapping = o => Object.keys(o).reduce((r, k) => Object.assign(r, { [o[k]]: (r[o[k]] || parseInt(k)) }), {})
   map_cidx_to_id = reverseMapping(id_to_cidx)
 
-  await redraw_tree(formatDate(curr_date), redraw=false);
+  switch($("#display-tree").val()) {
+    case "XBB Lineages":
+      await redraw_tree(df_xbb, formatDate(curr_date), redraw=false);
+      break;
+    case "Other Recombinants":
+    default:
+      await redraw_tree(df, formatDate(curr_date), redraw=false);
+  }
 
   //spinner.stop();
   var rect = d3.selectAll("#svg-timetree > svg > rect"),
@@ -401,7 +432,6 @@ req.done(async function() {
     $('#error_message').text(``);
     $('#search-button').removeAttr("disabled");
     $('#clear_button').removeAttr("disabled");
-    reset_tree();
     wrap_search();
     enable_buttons();
 
@@ -455,7 +485,6 @@ req.done(async function() {
       $('#error_message').text(``);
       $("#loading").show();
       $("#loading_text").text(i18n_text.loading);
-      await reset_tree(partial_redraw=true);
       await wrap_search();
       enable_buttons();
 
@@ -532,7 +561,6 @@ req.done(async function() {
     $('#error_message').text(``);
     $("#loading").show();
     $("#loading_text").text(i18n_text.loading);
-    await reset_tree(partial_redraw=true);
     await wrap_search();
     enable_buttons();
     $("#loading").hide();
@@ -608,19 +636,6 @@ req.done(async function() {
     expand();
   });
 
-  $('#display-option').on('change', function() {
-    if (!$('#display-option').attr('checked')) {
-      $('#display-option').attr('checked', 'checked');
-      $(".recombinant-tree-content").show()
-      $(".recombtitle").show()
-    }
-    else {
-      $('#display-option').removeAttr('checked');
-      $(".recombinant-tree-content").hide()
-      $(".recombtitle").hide()
-    }
-  });
-
   $(window).on('resize', set_height);
 
   // Sets the scrolling speed when scrolling through the beadplot
@@ -654,21 +669,21 @@ req.done(async function() {
     var cutoff_line = $("#cutoff-line");
     var tree_cutoff = $("#tree-cutoff");
 
-    const tree_multiplier = 100000000; 
-    var min = Math.floor((d3.min(df, xValue)-0.05) * tree_multiplier);
-    var max = Math.ceil(date_to_xaxis(d3.max(df, function(d) {return d.last_date})) * tree_multiplier);
+    const tree_multiplier = 100000; // Slider value needs to be an integer
+    var min = (d3.min(df, xValue)-0.05) * tree_multiplier;
+    var max = date_to_xaxis(d3.max(df, function(d) {return d.last_date})) * tree_multiplier;
     var start_value = date_to_xaxis(curr_date) * tree_multiplier;
 
     $("#tree-slider").slider({
       create: function( event, ui ) {
-        cutoff_date.text(xaxis_to_date($( this ).slider( "value" )/tree_multiplier, tips[0]));
+        cutoff_date.text(xaxis_to_date($( this ).slider( "value" )/tree_multiplier, df[0], d3.min(df, function(d) {return d.first_date}), d3.max(df, function(d) {return d.last_date})));
         var cutoff_pos = handle.position().left;
         tree_cutoff.css('left', cutoff_pos);
       },
       slide: async function( event, ui ) {
         move_arrow();
         
-        cutoff_date.text(xaxis_to_date(ui.value/tree_multiplier, tips[0]));
+        cutoff_date.text(xaxis_to_date(ui.value/tree_multiplier, df[0], d3.min(df, function(d) {return d.first_date}), d3.max(df, function(d) {return d.last_date})));
         await handle.change()
           
         cutoff_line.css('visibility', 'visible');
@@ -684,7 +699,13 @@ req.done(async function() {
   
           $("#loading").show();
           $("#loading_text").text(i18n_text.loading);
-          await redraw_tree(cutoff_date.text());
+          switch($("#display-tree").val()) {
+            case "XBB Lineages":
+              await redraw_tree(df_xbb, cutoff_date.text());
+              break;
+            default:
+              await redraw_tree(df, cutoff_date.text());
+          }
           $("#loading").hide();
           $("#loading_text").text(``);
         }
@@ -949,12 +970,14 @@ $( "#dialog" ).dialog({ autoOpen: false });
 // implement save buttons
 var blob;
 function save_timetree() {
+  var filename = $("#display-tree").val() === "XBB Lineages" ? "xbbtree.nwk" : "timetree.nwk"
+
   $.ajax({
-    url: "data/timetree.nwk",
+    url: `data/${filename}`,
     success: function(data) {
       nwk = data;
       blob = new Blob([nwk], {type: "text/plain;charset=utf-8"});
-      saveAs(blob, "timetree.nwk");
+      saveAs(blob, filename);
     }
   });
 }
@@ -984,11 +1007,14 @@ function export_svg() {
 }
 
 function export_csv() {
+  var all_tips = [...tips, ...recombinant_tips, ...df_xbb];
+
   // write lineage-level information to CSV file for download
   var csvFile = 'lineage,mean.diffs,clock.residual,num.cases,num.variants,min.coldate,max.coldate,mean.coldate';
   var lineage_info = []
-  for (tip of tips) {
-    lineage_info.push([`${tip.thisLabel},${Math.round(100*tip.mean_ndiffs)/100.},${Math.round(100*tip.residual)/100.},${tip.nsamples},${tip.varcount},${formatDate(tip.first_date)},${formatDate(tip.last_date)},${formatDate(tip.mcoldate)}`]);
+  for (tip of all_tips) {
+    if (tip.isTip === undefined || tip.isTip)
+      lineage_info.push([`${tip.thisLabel === undefined ? tip.label1 : tip.thisLabel},${Math.round(100*tip.mean_ndiffs)/100.},${Math.round(100*tip.residual)/100.},${tip.nsamples},${tip.varcount},${formatDate(tip.first_date)},${formatDate(tip.last_date)},${formatDate(tip.mcoldate)}`]);
   }
   csvFile = csvFile + "\n" + lineage_info.join("\n");
   blob = new Blob([csvFile], {type: "text/csv"});

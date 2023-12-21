@@ -3,7 +3,7 @@ const { readTree } = require('./server/phylo')
 const fs = require('fs');
 
 const { $DATA_FOLDER } = require('./config/config');
-
+const dbstats = require(`./${$DATA_FOLDER}/dbstats.json`)
 require("./globalVariables")
 
 class TestDBManager {
@@ -40,6 +40,12 @@ class TestDBManager {
         });
     }
 
+    get_xbb_df() {
+        return new Promise((resolve,reject)=>{
+            resolve(global.df_xbb);
+        });
+    }
+
     get_regionMap() {
         return new Promise((resolve,reject)=>{
             resolve(global.region_map);
@@ -50,6 +56,18 @@ class TestDBManager {
         return new Promise((resolve,reject)=>{
             resolve(global.clusters[cindex].lineage);
         })
+    }
+
+    get_display(lineage) {
+        return new Promise((resolve,reject)=>{
+            var rawLineage = dbstats["lineages"][lineage]["raw_lineage"];
+            if (rawLineage.startsWith("XBB"))
+                resolve(["XBB Lineages"]);
+            else if (rawLineage.startsWith("X"))
+                resolve(["Other Recombinants"]);
+            else
+                resolve(["Non-Recombinants"]);
+        });
     }
 
     get_accession(accession) {
@@ -121,8 +139,15 @@ class TestDBManager {
         catch (e) {
             console.log('Error:', e.stack);
         }
+        try {
+            global.xbbtree = fs.readFileSync(`./${$DATA_FOLDER}/xbbtree.nwk`, 'utf8');
+        }
+        catch (e) {
+            console.log('Error:', e.stack);
+        }
         global.df = readTree(global.tree)
-        const { tips, recombinant_tips } = map_clusters_to_tips(global.df, global.clusters);
+        global.df_xbb = readTree(global.xbbtree)
+        const { tips, tips_xbb, recombinant_tips } = map_clusters_to_tips(global.df, df_xbb, global.clusters);
         global.tips = tips;
         global.recombinant_tips = recombinant_tips;
         global.accn_to_cid = index_accessions(global.clusters);

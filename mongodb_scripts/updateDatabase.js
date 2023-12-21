@@ -23,6 +23,7 @@ const {
   $ADMIN_CONNECTION_URI,
   $ACTIVE_DATABASE,
   $COLLECTION__CLUSTERS,
+  $COLLECTION__DBSTATS,
   $COLLECTION__BEADDATA,
   $COLLECTION__TIPS,
   $COLLECTION__RECOMBINANT_TIPS,
@@ -30,12 +31,15 @@ const {
   $COLLECTION__LINEAGE_TO_CID,
   $COLLECTION__REGION_MAP,
   $COLLECTION__DF_TREE,
+  $COLLECTION__XBB_TREE,
   $COLLECTION__AUTOCOMPLETE_DATA,
   $COLLECTION__FLAT_DATA,
   $PROJECT_ROOT,
   $JSON_DATA_FOLDER,
   $JSONFILE__CLUSTERS,
+  $JSONFILE__DBSTATS,
   $NWKFILE__TREE,
+  $XBB__TREE
 } = require('../config/dbconfig')
 
 
@@ -56,7 +60,9 @@ console.log(
    PROJECT_ROOT                     ${$PROJECT_ROOT}
    JSON_DATA_FOLDER                 ${$JSON_DATA_FOLDER}
    JSONFILE__CLUSTERS               ${$JSONFILE__CLUSTERS}
-   NWKFILE_TREE                     ${$NWKFILE__TREE}`
+   JSONFILE__DBSTATS                ${$JSONFILE__DBSTATS}
+   NWKFILE_TREE                     ${$NWKFILE__TREE}
+   XBB__TREE                        ${$XBB__TREE}`
 )
 
 if(!$ACTIVE_DATABASE)
@@ -102,6 +108,16 @@ async function updateDatabase() {
         return;
       }
 
+      textfile = $PROJECT_ROOT+"/"+$JSON_DATA_FOLDER+"/"+$XBB__TREE;
+      console.log(`Reading ${textfile}`);
+      try {
+        global.xbbtree = fs.readFileSync(textfile, 'utf8');
+      }
+      catch (e) {
+        console.error(`Failed reading ${textfile} : `, e);
+        return;
+      }
+
       textfile = $PROJECT_ROOT+"/"+$JSON_DATA_FOLDER+"/"+$JSONFILE__CLUSTERS;
       console.log(`Reading ${textfile}`);
       try{
@@ -111,17 +127,26 @@ async function updateDatabase() {
       {
         console.error(`Failed reading ${textfile} : `, e);
       }
-      
 
+      textfile = $PROJECT_ROOT+"/"+$JSON_DATA_FOLDER+"/"+$JSONFILE__DBSTATS;
+      console.log(`Reading ${textfile}`);
+      try{
+        global.dbstats = require(textfile);
+      }
+      catch(e)
+      {
+        console.error(`Failed reading ${textfile} : `, e);
+      }
       
       console.log("Preparing beaddata from clusters");
       global.beaddata = parse_clusters(global.clusters);
 
       console.log("Preparing df from tree");
       global.df = readTree(global.tree);
+      global.df_xbb = readTree(global.xbbtree);
 
       console.log("Preparing tips, recombinant_tips from df,clusters")
-      const { tips, recombinant_tips } = map_clusters_to_tips(global.df, global.clusters);
+      const { tips, tips_xbb, recombinant_tips } = map_clusters_to_tips(global.df, global.df_xbb, global.clusters);
       global.tips = tips;
       global.recombinant_tips = recombinant_tips;
 
@@ -146,6 +171,12 @@ async function updateDatabase() {
       res = await db.collection($COLLECTION__CLUSTERS).insertMany(global.clusters);
       console.log(`Created ${res.insertedCount} documents in ${$ACTIVE_DATABASE}.${$COLLECTION__CLUSTERS}`);
       delete global.clusters;
+
+      global.lineage_stats = Object.entries(global.dbstats['lineages']).map(([key, value]) => ({ _id: key, ...value}));
+      res = await db.collection($COLLECTION__DBSTATS).insertMany(global.lineage_stats);
+      console.log(`Created ${res.insertedCount} documents in ${$ACTIVE_DATABASE}.${$COLLECTION__DBSTATS}`);
+      delete global.dbstats;
+      delete global.lineage_stats;
 
       res = await db.collection($COLLECTION__BEADDATA).insertMany(global.beaddata);
       console.log(`Created ${res.insertedCount} documents in ${$ACTIVE_DATABASE}.${$COLLECTION__BEADDATA}`);
@@ -178,6 +209,10 @@ async function updateDatabase() {
       res = await db.collection($COLLECTION__DF_TREE).insertMany(global.df);
       console.log(`Created ${res.insertedCount} documents in ${$ACTIVE_DATABASE}.${$COLLECTION__DF_TREE}`);
       delete global.df;
+
+      res = await db.collection($COLLECTION__XBB_TREE).insertMany(global.df_xbb);
+      console.log(`Created ${res.insertedCount} documents in ${$ACTIVE_DATABASE}.${$COLLECTION__DF_TREE}`);
+      delete global.df_xbb;
 
       res = await db.collection($COLLECTION__AUTOCOMPLETE_DATA).insertMany(global.autocomplete_data.map(subArray => {return {'norm': subArray[0],'accn': subArray[1]};}))
       console.log(`Created ${res.insertedCount} documents in ${$ACTIVE_DATABASE}.${$COLLECTION__AUTOCOMPLETE_DATA}`);

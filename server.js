@@ -62,8 +62,22 @@ app.get('/api/tips', (req, res) => {
   })
 });
 
+app.get('/api/display/:cindex', (req, res) => {
+  dbManager.get_lineage(req.params.cindex).then(result => {
+    dbManager.get_display(result).then(display => {
+      res.send(display);
+    })
+  })
+});
+
 app.get('/api/df', (req, res) => {
   dbManager.get_df().then(result=>{
+    res.send(result)
+  })
+});
+
+app.get('/api/xbb', (req, res) => {
+  dbManager.get_xbb_df().then(result=>{
     res.send(result)
   })
 });

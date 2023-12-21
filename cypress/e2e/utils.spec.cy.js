@@ -13,8 +13,8 @@ describe('isLineage Function', () => {
     it('Retruns true if the string is a lineage ', () => {
         cy.window().then((win) => {
             expect(win.isLineage("B.101.511")).to.eq(false)
-            expect(win.isLineage("B.4.1")).to.eq(true)
-            expect(win.isLineage("B.1.446")).to.eq(true)
+            expect(win.isLineage("BA.5.3")).to.eq(true)
+            expect(win.isLineage("CZ.2")).to.eq(true)
         })
     })
 })
