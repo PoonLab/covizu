@@ -127,7 +127,6 @@ describe('Tooltips', () => {
             win.reset_tree(true);
             const tip_id = win.display_id.non_recombinants.last;
             cy.get(`[id=id-${tip_id}]`).trigger('mouseover');
-            cy.get('[id=id-563]').trigger('mouseover');
             cy.get('.tooltip').should('be.visible').should('have.length', 1)
         });
     })
@@ -169,9 +168,38 @@ describe('Tooltips', () => {
     })
 })
 
+describe("Display options", () => {
+    it("Verify options within the Display dropdown", () => {
+        cy.visit("http://localhost:8001");
+        cy.get("#splash-button").click();
+        cy.get("#display-tree").children().should(($options) => {
+            expect($options).to.have.length(3);
+            expect($options.eq(0)).to.contain('Non-Recombinants');
+            expect($options.eq(1)).to.contain('XBB Lineages');
+            expect($options.eq(2)).to.contain('Other Recombinants')
+        })
+    })
+
+    it("Selecting 'XBB Lineages' Display option", () => {
+        cy.get("#display-tree").select(1).should('have.value','XBB Lineages')
+        cy.window().then((win)=> {
+            win.reset_tree(true);
+            cy.get(`[id=id-${win.display_id.xbb.last}]`).should('be.visible').trigger('mouseover');
+            cy.get(`[id=id-${win.display_id.xbb.first}]`).should('be.visible').trigger('mouseover');
+        })
+    })
+
+    it("Selecting 'Other Recombinants' Display option", () => {
+        cy.get("#display-tree").select(2).should('have.value','Other Recombinants')
+        cy.window().then((win)=> {
+            win.reset_tree(true);
+            cy.get(`[id=id-${win.display_id.other_recombinants.last}]`).should('be.visible').trigger('mouseover');
+            cy.get(`[id=id-${win.display_id.other_recombinants.first}]`).should('be.visible').trigger('mouseover');
+        })
+    })
+})
 
 describe("Colour tree", () => {
-    
     it("Verify <options> within <select> Colour tree", ()=>{
         cy.visit("http://localhost:8001");
         cy.get("#splash-button").click();

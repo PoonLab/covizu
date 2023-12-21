@@ -312,7 +312,7 @@ req.done(async function() {
   display_id["other_recombinants"] = {"first": first, "last": last};
 
   first = i;
-  for (const index in df_xbb) {
+  for (const index in df_xbb.filter(x=>x.isTip)) {
     id_to_cidx[i++] = 'cidx-' + df_xbb[index].cluster_idx;
   }
   last = i - 1;
@@ -1006,7 +1006,7 @@ function export_svg() {
 }
 
 function export_csv() {
-  var all_tips = [...tips, ...recombinant_tips, ...df_xbb];
+  var all_tips = [...tips, ...recombinant_tips, ...df_xbb.filter(x=>x.isTip)];
 
   // write lineage-level information to CSV file for download
   var csvFile = 'lineage,mean.diffs,clock.residual,num.cases,num.variants,min.coldate,max.coldate,mean.coldate';
