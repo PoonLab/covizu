@@ -4,7 +4,8 @@
   * [BioPython](https://biopython.org/) version 1.7+
   * [mpi4py](https://pypi.org/project/mpi4py/)
   * [SciPy](https://www.scipy.org/) version 1.5+
-  * [psycopg2](https://pypi.org/project/psycopg/) version 2.9.6+
+  * [conda](https://conda.io/projects/conda)
+  * [psycopg2](https://pypi.org/project/psycopg2/) version 2.9.6+
 * [minimap2](https://github.com/lh3/minimap2) version 2.1+ 
 * [FastTree2](http://www.microbesonline.org/fasttree/) version 2.1.10+, compiled for [double precision](http://www.microbesonline.org/fasttree/#BranchLen)
 * [TreeTime](https://github.com/neherlab/treetime) version 0.7.5+
@@ -85,4 +86,31 @@ npm test
 and in a new terminal terminal window run 
 ```
 npx cypress run
+```
+
+## postgresql installation in conda
+#### create and activate conda environment
+```
+conda create --name venv
+conda activate venv
+```
+
+#### install postgresql via conda
+```
+conda install -y -c conda-forge postgresql
+```
+
+#### create a local database
+```
+initdb -D gsaid_db
+```
+
+#### create an inner database inside local database
+```
+createdb --owner=nonsuperuser inner_db
+```
+
+#### create a non-superuser
+```
+createuser --encrypted --pwprompt nonsuperuser
 ```
