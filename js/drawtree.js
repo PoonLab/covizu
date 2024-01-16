@@ -9,6 +9,7 @@ var sample_pal, coldate_pal, diverge_pal;
 // set up plotting scales
 var xValue = function(d) { return d.x; },
   xScale = d3.scaleLinear().range([0, width]),
+  xMap = function(d) { return xScale(d.x); },
   xMap1 = function(d) { return xScale(d.x1); },  // lines
   xMap2 = function(d) { return xScale(d.x2); },
   xWide = function(d) { return xScale(d.x2 - d.x1)};
@@ -29,15 +30,17 @@ var vis = d3.select("div#svg-timetree")
   //.attr("height", height + margin.top + margin.bottom);
   //.append("g");
 
-var vis_recombinant = d3.select("div#svg-recombinants")
-  .append("svg")
-  .attr("width", width + margin.left + margin.right + padding.right);
-
 var axis = d3.select("div#svg-timetreeaxis")
   .append("svg")
   .attr("width", width + margin.left + margin.right + padding.right)
   .attr("height", 25)
   .append("g");
+
+var timetree_axis,
+    axis_padding = -0.05,
+    axis_padding_trees = 0.05,
+    cluster_box_padding = 2,
+    numTicks = 3;
 
 let cTooltip = d3.select("#tooltipContainer")
     .style("opacity", 0);
@@ -52,48 +55,49 @@ var null_infections_colour = '#b5b5b5';
  */
 function draw_cluster_box(rect) {
   var d = rect.datum();
-  var rectWidth = xScale(date_to_xaxis(d.last_date)) - xScale(d.x2);
+  var rectWidth = xScale(date_to_xaxis(d.last_date) - d.x);
 
-  if (d.label1[0] == 'X') {
-    vis_recombinant.append("rect")
-      .attr('class', "clickedH")
-      .attr("x", function() {
-        return xScale(date_to_xaxis(d.first_date)) - 2;
-      })
-      .attr("y", function() {
-        return d.y*11;
-      })
-      .attr("width", function() {
-        rectWidth = (xScale(date_to_xaxis(d.last_date)) - xScale(date_to_xaxis(d.first_date))) + 4;
-        if (rectWidth < minRectWidth)
-          return minRectWidth + 4
-        return rectWidth
-      })
-      .attr("height", 14)
-      .attr("fill", "white")
-      .attr("stroke", "grey")
-      .attr("fill-opacity", 1)
-      .attr("stroke-width", 2);
+  switch($("#display-tree").val()) {
+    case "Non-Recombinants":
+    case "XBB Lineages":
+      // draw a box around the cluster rectangle
+      vis.append("rect")
+        .attr('class', "clickedH")
+        .attr("x", xMap(d) - 2)
+        .attr("y", yMap(d) - 2)
+        .attr("width", function() {
+          if (rectWidth < minRectWidth)
+            return minRectWidth + 4
+          return xScale(date_to_xaxis(d.last_date) - d.x) + (cluster_box_padding * 2)
+        })
+        .attr("height", 14)
+        .attr("fill", "white")
+        .attr("stroke", "grey")
+        .attr("fill-opacity", 1)
+        .attr("stroke-width", 2);
+      break;
+    case "Other Recombinants":
+      vis.append("rect")
+        .attr('class', "clickedH")
+        .attr("x", function() {
+          return xScale(date_to_xaxis(d.first_date)) - cluster_box_padding;
+        })
+        .attr("y", function() {
+          return d.y*11;
+        })
+        .attr("width", function() {
+          rectWidth = xScale(date_to_xaxis(d.last_date) - date_to_xaxis(d.first_date));
+          if (rectWidth < minRectWidth)
+            return minRectWidth + (cluster_box_padding * 2)
+          return rectWidth + (cluster_box_padding * 2)
+        })
+        .attr("height", 14)
+        .attr("fill", "white")
+        .attr("stroke", "grey")
+        .attr("fill-opacity", 1)
+        .attr("stroke-width", 2);
   }
-  else {
-    // draw a box around the cluster rectangle
-    vis.append("rect")
-      .attr('class', "clickedH")
-      .attr("x", xMap2(d) - 2)
-      .attr("y", yMap(d) - 2)
-      .attr("width", function() {
-        if (rectWidth < minRectWidth)
-          return minRectWidth + 4
-        return xScale(date_to_xaxis(d.last_date)) - xScale(d.x2) + 4
-      })
-      .attr("height", 14)
-      .attr("fill", "white")
-      .attr("stroke", "grey")
-      .attr("fill-opacity", 1)
-      .attr("stroke-width", 2);
-  }
-
-
+  
   // move the box to the background by promoting other objects
   rect.raise();
   d3.select("#svg-timetree")
@@ -115,39 +119,54 @@ function drawtree(df, org_df, redraw=true) {
   $('#tree-vscroll').css('margin-top', document.getElementById("tree-title").clientHeight + document.getElementById("svg-timetreeaxis").clientHeight + $('#inner-hscroll').height() + 5);
   $('#svg-timetreeaxis').css('padding-bottom', $('#inner-hscroll').height())
 
-  var edgeset = edges(df, rectangular=true);
-
-  // rescale SVG for size of tree
-  var ntips = df.map(x => x.children.length === 0).reduce((x,y) => x+y);
-  height = ntips*11 + margin.top + margin.bottom;
-  vis.attr("height", height);
-  yScale = d3.scaleLinear().range([height, 10]);  // add room for time axis
-
   // adjust d3 scales to data frame
   if(!redraw) {
-    xScale.domain([
-      d3.min(org_df, xValue)-0.05, 
-      date_to_xaxis(d3.max(org_df, function(d) {return d.last_date})) 
-    ]);
+    switch($("#display-tree").val()) {
+      case "Other Recombinants":
+        xScale.domain([
+          axis_padding,
+          date_to_xaxis(d3.max(recombinant_tips, function(d) {return d.last_date}))
+        ]);
+        break;
+      default:
+        xScale.domain([
+          d3.min(org_df, xValue)-axis_padding_trees, 
+          date_to_xaxis(d3.max(org_df, function(d) {return d.last_date})) 
+        ]);
+        break;
+    }
   }
 
-  yScale.domain([
-    d3.min(df, yValue)-1, d3.max(df, yValue)+1
-  ]);
+  switch($("#display-tree").val()) {
+    case "Other Recombinants":
+      break;
+    default:
+      // rescale SVG for size of tree
+      var ntips = df.map(x => x.children.length === 0).reduce((x,y) => x+y);
+      height = ntips*11 + margin.top + margin.bottom;
+      vis.attr("height", height);
+      yScale = d3.scaleLinear().range([height, 10]);  // add room for time axis
 
-  // draw lines
-  vis.selectAll("lines")
-    .data(edgeset)
-    .enter().append("line")
-    .attr("class", "lines")
-    .attr("x1", xMap1)
-    .attr("y1", yMap1)
-    .attr("x2", xMap2)
-    .attr("y2", yMap2)
-    .attr("stroke-width", 1.5)
-    .attr("stroke", "#777");
+      yScale.domain([
+        d3.min(df, yValue)-1, d3.max(df, yValue)+1
+      ]);
 
-    $('#tree-inner-vscroll').css('height', $('.tree-content > svg').height()); 
+      var edgeset = edges(df, rectangular=true);
+
+      // draw lines
+      vis.selectAll("lines")
+        .data(edgeset)
+        .enter().append("line")
+        .attr("class", "lines")
+        .attr("x1", xMap1)
+        .attr("y1", yMap1)
+        .attr("x2", xMap2)
+        .attr("y2", yMap2)
+        .attr("stroke-width", 1.5)
+        .attr("stroke", "#777");
+
+      $('#tree-inner-vscroll').css('height', $('.tree-content > svg').height());
+  }
 }
 
 
@@ -160,9 +179,16 @@ function drawtree(df, org_df, redraw=true) {
  * @param tip:  Object, representing a reference tip in the tree
  * @returns {string}  new date in ISO format (yyyy-mm-dd)
  */
-function xaxis_to_date(x, tip) {
+function xaxis_to_date(x, tip, earliest, latest) {
   var coldate = new Date(tip.first_date);  // collection date of reference tip
-  coldate = d3.timeDay.offset(coldate, 365.25*(x - tip.x));
+  var interval = d3.timeDay.count(earliest, latest)/numTicks
+  switch($("#display-tree").val()) {
+    case "Other Recombinants":
+      coldate = d3.timeDay.offset(coldate, interval*x);
+      break;
+    default:
+      coldate = d3.timeDay.offset(coldate, interval*(x - tip.x));
+  }
   return (coldate.toISOString().split('T')[0]);
 }
 
@@ -174,8 +200,23 @@ function xaxis_to_date(x, tip) {
  * @returns {float} x-coordinate value 
  */
 function date_to_xaxis(coldate) {
-  var numDays = d3.timeDay.count(tips[0].first_date, coldate)
-  return (numDays/365.25) + tips[0].x;
+  var numDays, earliest, latest, interval, tip_obj;
+  switch ($("#display-tree").val()) {
+    case "XBB Lineages":
+      tip_obj = df_xbb;
+      break;
+    case "Non-Recombinants":
+      tip_obj = df;
+      break;
+    case "Other Recombinants":
+      tip_obj = recombinant_tips;
+  }
+
+  numDays = d3.timeDay.count(tip_obj[0].first_date, coldate);
+  earliest = d3.min(tip_obj, function(d) {return d.first_date});
+  latest = d3.max(tip_obj, function(d) {return d.last_date});
+  interval = d3.timeDay.count(earliest, latest)/numTicks;
+  return (numDays/interval) + tip_obj[0].x;
 }
 
 
@@ -206,27 +247,52 @@ function sort_mutations(mutations) {
  * Add subtree objects to time-scaled tree.
  * @param {Array} tips, clusters that have been mapped to tips of tree
  */
-function draw_clusters(tips, recombinant_tips, redraw=false) {
+function draw_clusters(tips, filtered_recombinant_tips, redraw=false) {
 
-  var tickVals = [],
-      minVal = d3.min(df, xValue)-0.05,
-      maxVal = date_to_xaxis(d3.max(df, function(d) {return d.last_date})),
-      interval = (maxVal - minVal)/3;
+  var tickVals = [], minVal, maxVal, interval, tip_obj;
+  switch ($("#display-tree").val()) {
+    case "XBB Lineages":
+      minVal = d3.min(df_xbb, xValue)-axis_padding_trees;
+      maxVal = date_to_xaxis(d3.max(df_xbb, function(d) {return d.last_date}));
+      break;
+    case "Non-Recombinants":
+      minVal = d3.min(df, xValue)-axis_padding_trees;
+      maxVal = date_to_xaxis(d3.max(df, function(d) {return d.last_date}));
+      break;
+    case "Other Recombinants":
+      console.log(d3.min(recombinant_tips, function(d) {return d.first_date}))
+      minVal = axis_padding;
+      maxVal = date_to_xaxis(d3.max(recombinant_tips, function(d) {return d.last_date}));
+      break;
+  }
+
+  interval = (maxVal - minVal)/3;
 
   for (var i = 0; i < 3; i++) {
     tickVals.push(minVal + (interval/2) + (i*interval));
   }
   
   if(!redraw) {
+    if (timetree_axis) {
+      timetree_axis.remove();
+    }
+
     // Draws the axis for the time scaled tree
-    axis.append("g")
+    timetree_axis = axis.append("g")
     .attr("class", "treeaxis")
     .attr("transform", "translate(0,20)")
     .call(d3.axisTop(xScale)
-      .ticks(3)
+      .ticks(numTicks)
       .tickValues(tickVals)
       .tickFormat(function(d) {
-        return xaxis_to_date(d, tips[0])
+        switch($("#display-tree").val()) {
+          case "Other Recombinants":
+            return xaxis_to_date(d, recombinant_tips[0], d3.min(recombinant_tips, function(d) {return d.first_date}), d3.max(recombinant_tips, function(d) {return d.last_date}))
+          case "XBB Lineages":
+            return xaxis_to_date(d, df_xbb[0], d3.min(df_xbb, function(d) {return d.first_date}), d3.max(df_xbb, function(d) {return d.last_date}))
+          default:
+            return xaxis_to_date(d, df[0], d3.min(df, function(d) {return d.first_date}), d3.max(df, function(d) {return d.last_date}))
+        }
       })
     );
   }
@@ -266,96 +332,106 @@ function draw_clusters(tips, recombinant_tips, redraw=false) {
         });
   }
 
-  vis.selectAll("rect")
-    .data(tips)
-    .enter()
-    .lower()
-    .append("rect")
-    //.attr("selected", false)
-    .attr("x", xMap2)
-    .attr("y", yMap)
-    .attr("width", function(d) {
-      var rectWidth = xScale(date_to_xaxis(d.last_date)) - xScale(d.x2);
-      if (rectWidth < minRectWidth)
-        return minRectWidth;
-      return rectWidth;
-    })
-    .attr("height", 10)
-    .attr("class", "default")
-    .attr("cidx", function(d) { return "cidx-" + d.cluster_idx; })
-    .attr("id", function(d, i) { return "id-" + map_cidx_to_id['cidx-' + d.cluster_idx]; })
-    .on('mouseover', mouseover)
-    .on("mouseout", function() {
-      d3.select(this)
-        .attr("txt_hover", null);
+  // Add logic for XBB Tree
+  switch ($("#display-tree").val()) {
+    case "XBB Lineages":
+    case "Non-Recombinants":
+      vis.selectAll("rect")
+      .data(tips)
+      .enter()
+      .lower()
+      .append("rect")
+      .attr("x", xMap)
+      .attr("y", yMap)
+      .attr("width", function(d) {
+        var rectWidth = xScale(date_to_xaxis(d.last_date) - d.x) + axis_padding_trees;
+        if (rectWidth < minRectWidth)
+          return minRectWidth;
+        return rectWidth;
+      })
+      .attr("height", 10)
+      .attr("class", "default")
+      .attr("cidx", function(d) { return "cidx-" + d.cluster_idx; })
+      .attr("id", function(d, i) { return "id-" + map_cidx_to_id['cidx-' + d.cluster_idx]; })
+      .on('mouseover', mouseover)
+      .on("mouseout", function() {
+        d3.select(this)
+          .attr("txt_hover", null);
 
-      cTooltip.transition()     // Hide tooltip
-          .duration(50)
-          .style("opacity", 0);
-    })
-    .on("click", async function(d) {
-      var cluster_info = this;
-      $('#error_message').text(``);
-      $("#loading").show();
-      $("#loading_text").text(`Loading. Please Wait...`);
-      await click_cluster(d, cluster_info);
-      $("#loading").hide();
-      $("#loading_text").text(``);
-    });
+        cTooltip.transition()     // Hide tooltip
+            .duration(50)
+            .style("opacity", 0);
+      })
+      .on("click", async function(d) {
+        var cluster_info = this;
+        $('#error_message').text(``);
+        $("#loading").show();
+        $("#loading_text").text(`Loading. Please Wait...`);
+        await click_cluster(d, cluster_info);
+        $("#loading").hide();
+        $("#loading_text").text(``);
+      });
 
-  vis_recombinant
-  .attr("height", recombinant_tips.length * 11.1)
+      tip_obj = tips;
 
-  vis_recombinant.selectAll("rect")
-    .data(recombinant_tips)
-    .enter()
-    .lower()
-    .append("rect")
-    //.attr("selected", false)
-    .attr("x", function(d) {
-      return xScale(date_to_xaxis(d.first_date))
-    })
-    .attr("y", function(d) {
-      return d.y*11 + 2;
-    })
-    .attr("width", function(d) {
-      var rectWidth = xScale(date_to_xaxis(d.last_date)) - xScale(date_to_xaxis(d.first_date));
-      if (rectWidth < minRectWidth)
-        return minRectWidth;
-      return rectWidth;
-    })
-    .attr("height", 10)
-    .attr("class", "default recombinant")
-    .attr("cidx", function(d) { return "cidx-" + d.cluster_idx; })
-    .attr("id", function(d, i) { return "id-" + map_cidx_to_id['cidx-' + d.cluster_idx]; })
-    .on('mouseover', mouseover)
-    .on("mouseout", function() {
-      d3.select(this)
-        .attr("txt_hover", null);
+      break;
+    case "Other Recombinants":
+      vis.selectAll("rect")
+        .data(filtered_recombinant_tips)
+        .enter()
+        .lower()
+        .append("rect")
+        .attr("x", function(d) {
+          return xScale(date_to_xaxis(d.first_date))
+        })
+        .attr("y", function(d) {
+          return d.y*11 + 2;
+        })
+        .attr("width", function(d) {
+          var rectWidth = xScale(date_to_xaxis(d.last_date) - date_to_xaxis(d.first_date));
+          if (rectWidth < minRectWidth)
+            return minRectWidth;
+          return rectWidth;
+        })
+        .attr("height", 10)
+        .attr("class", "default recombinant")
+        .attr("cidx", function(d) { return "cidx-" + d.cluster_idx; })
+        .attr("id", function(d, i) { return "id-" + map_cidx_to_id['cidx-' + d.cluster_idx]; })
+        .on('mouseover', mouseover)
+        .on("mouseout", function() {
+          d3.select(this)
+            .attr("txt_hover", null);
 
-      cTooltip.transition()     // Hide tooltip
-          .duration(50)
-          .style("opacity", 0);
-    })
-    .on("click", async function(d) {
-      var cluster_info = this;
-      $('#error_message').text(``);
-      $("#loading").show();
-      $("#loading_text").text(`Loading. Please Wait...`);
-      await click_cluster(d, cluster_info);
-      $("#loading").hide();
-      $("#loading_text").text(``);
-    });
+          cTooltip.transition()     // Hide tooltip
+              .duration(50)
+              .style("opacity", 0);
+        })
+        .on("click", async function(d) {
+          var cluster_info = this;
+          $('#error_message').text(``);
+          $("#loading").show();
+          $("#loading_text").text(`Loading. Please Wait...`);
+          await click_cluster(d, cluster_info);
+          $("#loading").hide();
+          $("#loading_text").text(``);
+        });
+
+        vis
+          .attr("height", filtered_recombinant_tips.length * 12) // Height of a rect element is 10
+        
+        tip_obj = recombinant_tips;
+        $('#tree-inner-vscroll').css('height', $('.tree-content > svg').height());
+  }
 
   // generate colour palettes
   sample_pal = d3.scaleSequential(d3.interpolatePuBu)
-      .domain(d3.extent(tips, function(d) { return Math.log10(d.nsamples); }));
+      .domain(d3.extent(tip_obj, function(d) { return Math.log10(d.nsamples); }));
   coldate_pal = d3.scaleSequential(d3.interpolateCividis)
-      .domain(d3.extent(tips, function(d) { return d.last_date; }));
+      .domain(d3.extent(tip_obj, function(d) { return d.last_date; }));
   diverge_pal = d3.scaleSequential(d3.interpolatePlasma)
-      .domain(d3.extent(tips, function(d) { return d.residual; }));
+      .domain(d3.extent(tip_obj, function(d) { return d.residual; }));
   infections_pal = d3.scaleSequential(d3.interpolateViridis)
-      .domain([0, d3.max(tips, function(d) { return d.infections; })]);
+      .domain([0, d3.max(tip_obj, function(d) { return d.infections; })]);
 
   generate_legends();
   changeTreeColour();
@@ -364,62 +440,66 @@ function draw_clusters(tips, recombinant_tips, redraw=false) {
   .selectAll("line")
   .raise();
 
-  vis.selectAll("text")
-      .data(tips)
-      .enter().append("text")
-      .style("font-size", "10px")
-      .attr("text-anchor", "start")
-      .attr("alignment-baseline", "middle")
-      .attr("cursor", "default")
-      .attr("id", function(d) { return "cidx-" + d.cluster_idx; })
-      .attr("x", function(d) {
-        var rectWidth = xScale(date_to_xaxis(d.last_date)) - xScale(d.x2);
-        if (rectWidth < minRectWidth)
-          return xScale(d.x2) + minRectWidth + 3;
-        return xScale(d.x2) + rectWidth + 3;
-      })
-      .attr("y", function(d) {
-        return(yScale(d.y-0.15));
-      })
-      .text(function(d) { return(d.label1); })
-      .on("mouseover", function(d) {
-	      mouseover(d);
-      })
-      .on("mouseout", function(d) {
-        d3.select("[cidx=cidx-" + d.cluster_idx + "]").dispatch('mouseout');
-      })
-      .on("click", function(d) {
-        d3.select("[cidx=cidx-" + d.cluster_idx + "]").dispatch('click');
-      });
-
-    vis_recombinant.selectAll("text")
-      .data(recombinant_tips)
-      .enter().append("text")
-      .style("font-size", "10px")
-      .attr("text-anchor", "start")
-      .attr("alignment-baseline", "middle")
-      .attr("cursor", "default")
-      .attr("id", function(d) { return "cidx-" + d.cluster_idx; })
-      .attr("x", function(d) {
-        var rectWidth = xScale(date_to_xaxis(d.last_date)) - xScale(date_to_xaxis(d.first_date));
-        if (rectWidth < minRectWidth)
-          return xScale(date_to_xaxis(d.first_date)) + minRectWidth + 3;
-        return xScale(date_to_xaxis(d.first_date)) + rectWidth + 3;
-      })
-      .attr("y", function(d) {
-        // return(yScale(d.y-0.15));
-        return d.y*11 + 7;
-      })
-      .text(function(d) { return(d.label1); })
-      .on("mouseover", function(d) {
-	      mouseover(d);
-      })
-      .on("mouseout", function(d) {
-        d3.select("[cidx=cidx-" + d.cluster_idx + "]").dispatch('mouseout');
-      })
-      .on("click", function(d) {
-        d3.select("[cidx=cidx-" + d.cluster_idx + "]").dispatch('click');
-      });
+  switch ($("#display-tree").val()) {
+    case "XBB Lineages":
+    case "Non-Recombinants":
+      vis.selectAll("text")
+        .data(tips)
+        .enter().append("text")
+        .style("font-size", "10px")
+        .attr("text-anchor", "start")
+        .attr("alignment-baseline", "middle")
+        .attr("cursor", "default")
+        .attr("id", function(d) { return "cidx-" + d.cluster_idx; })
+        .attr("x", function(d) {
+          var rectWidth = xScale(date_to_xaxis(d.last_date) - d.x) + axis_padding_trees + 4;
+          if (rectWidth < minRectWidth)
+            return xScale(d.x) + minRectWidth + cluster_box_padding;
+          return xScale(d.x) + rectWidth + cluster_box_padding;
+        })
+        .attr("y", function(d) {
+          return(yScale(d.y-0.15));
+        })
+        .text(function(d) { return(d.label1); })
+        .on("mouseover", function(d) {
+          mouseover(d);
+        })
+        .on("mouseout", function(d) {
+          d3.select("[cidx=cidx-" + d.cluster_idx + "]").dispatch('mouseout');
+        })
+        .on("click", function(d) {
+          d3.select("[cidx=cidx-" + d.cluster_idx + "]").dispatch('click');
+        });
+      break;
+    default:
+      vis.selectAll("text")
+        .data(filtered_recombinant_tips)
+        .enter().append("text")
+        .style("font-size", "10px")
+        .attr("text-anchor", "start")
+        .attr("alignment-baseline", "middle")
+        .attr("cursor", "default")
+        .attr("id", function(d) { return "cidx-" + d.cluster_idx; })
+        .attr("x", function(d) {
+          var rectWidth = xScale(date_to_xaxis(d.last_date) - date_to_xaxis(d.first_date));
+          if (rectWidth < minRectWidth)
+            return xScale(date_to_xaxis(d.first_date)) + minRectWidth + (cluster_box_padding + 1);
+          return xScale(date_to_xaxis(d.first_date)) + rectWidth + (cluster_box_padding + 1);
+        })
+        .attr("y", function(d) {
+          return d.y*11 + 7;
+        })
+        .text(function(d) { return(d.label1); })
+        .on("mouseover", function(d) {
+          mouseover(d);
+        })
+        .on("mouseout", function(d) {
+          d3.select("[cidx=cidx-" + d.cluster_idx + "]").dispatch('mouseout');
+        })
+        .on("click", function(d) {
+          d3.select("[cidx=cidx-" + d.cluster_idx + "]").dispatch('click');
+        });
+    }
 }
 
 
@@ -459,39 +539,12 @@ function changeTreeColour() {
             else return dsc_infections_colour;
           }
           else {  // Divergence
-            $("div#svg-diverge-legend").show();
-            return(diverge_pal(d.residual));
-          }
-        }
-      })
-
-    vis_recombinant.selectAll("rect")
-      .transition()
-      .duration(300)
-      .style("fill", function(d) {
-        if (d !== undefined) {
-          let opt = $("#select-tree-colours").val();
-          if (opt === "Region") {
-            $("#div-region-legend").show();
-            return(country_pal[d.region]);
-          }
-          else if (opt === "No. samples") {
-            $("div#svg-sample-legend").show();
-            return(sample_pal(Math.log10(d.nsamples)));  // placeholder values
-          }
-          else if (opt === "Collection date") {
-            $("div#svg-coldate-legend").show();
-            return(coldate_pal(d.last_date));
-          }
-          else if (opt === "Infections") {
-            $("div#svg-infections-legend").show();
-            if (d.infections > 0) return infections_pal(d.infections);
-            else if (d.infections == 0) return null_infections_colour;
-            else return dsc_infections_colour;
-          }
-          else {  // Divergence
-            $("div#svg-diverge-legend").show();
-            return(diverge_pal(d.residual));
+            // Issue 489 - Do not colour other recombinants
+            if ($("#display-tree").val() !== "Other Recombinants") {
+              $("div#svg-diverge-legend").show();
+              return(diverge_pal(d.residual));
+            }
+            return '#949391';
           }
         }
       })
@@ -500,6 +553,72 @@ function changeTreeColour() {
 // bind to element
 $("#select-tree-colours").change(function() {
   changeTreeColour();
+});
+
+
+async function changeDisplay() {
+  var curr_date = new Date();
+  curr_date.setFullYear(curr_date.getFullYear() - 1);
+
+  var handle = $( "#tree-slider-handle" );
+  var cutoff_date = $( "#cutoff-date" );
+  var cutoff_line = $("#cutoff-line");
+  var tree_cutoff = $("#tree-cutoff");
+
+  var tips_obj;
+  switch($("#display-tree").val()) {
+    case "XBB Lineages":
+      $('#nwk-button').show();
+      tips_obj = df_xbb;
+      break;
+    case "Other Recombinants":
+      $('#nwk-button').hide();
+      tips_obj = recombinant_tips;
+      break;
+    default:
+      $('#nwk-button').show();
+      tips_obj = df;
+  }
+
+  const tree_multiplier = 100000; // Slider value needs to be an integer
+  var min = (d3.min(tips_obj, xValue)-0.05) * tree_multiplier;
+  var max = date_to_xaxis(d3.max(tips_obj, function(d) {return d.last_date})) * tree_multiplier;
+  var start_value = date_to_xaxis(curr_date) * tree_multiplier;
+
+  $("#tree-slider").slider("option", "min", min);
+  $("#tree-slider").slider("option", "max", max);
+  $("#tree-slider").slider("option", "value",  (start_value > min && start_value < max) ? start_value : min);
+
+  $("#cutoff-date").text(xaxis_to_date($("#tree-slider").slider("option", "value")/tree_multiplier, tips_obj[0], d3.min(tips_obj, function(d) {return d.first_date}), d3.max(tips_obj, function(d) {return d.last_date})));
+  $("#tree-cutoff").css('left',  $("#tree-slider-handle").position().left);
+
+  $("#tree-slider").slider("option", "slide", async function( event, ui ) {
+    cutoff_date.text(xaxis_to_date(ui.value/tree_multiplier, tips_obj[0], d3.min(tips_obj, function(d) {return d.first_date}), d3.max(tips_obj, function(d) {return d.last_date})));
+    await handle.change()
+    cutoff_line.css('visibility', 'visible');
+    var cutoff_pos = handle.position().left;
+    cutoff_line.css('left', cutoff_pos + 29);
+    tree_cutoff.css('left', cutoff_pos);
+  });
+  await redraw_tree(tips_obj, formatDate(curr_date), redraw=false);
+
+  // Draw beadplot and update tables
+  var rect = d3.selectAll("#svg-timetree > svg > rect"),
+      node = $("#display-tree").val() === "Other Recombinants" ? rect.nodes()[0] : rect.nodes()[rect.size()-1];
+
+  cindex = node.__data__.cluster_idx;
+  d3.select(node).attr("class", "clicked");
+  draw_cluster_box(d3.select(node));
+
+  await beadplot(cindex);
+  gentable(node.__data__);
+  draw_region_distribution(node.__data__.allregions);
+  gen_details_table(points);  // update details table with all samples
+  gen_mut_table(mutations[cindex]);
+}
+
+$("#display-tree").change(async function() {
+  await changeDisplay();
 });
 
 
@@ -814,10 +933,9 @@ async function click_cluster(d, cluster_info) {
   draw_cluster_box(d3.select(cluster_info));
 }
 
-async function redraw_tree(cutoff_date, redraw=true, partial_redraw=false) {
+async function redraw_tree(df, cutoff_date, redraw=true, partial_redraw=false) {
   // deep copy the df and clear all references to children
   df_copy = structuredClone(df);
-
   var df_copy = df_copy.map(x => {
     x.children = [];
     return x;
@@ -825,7 +943,7 @@ async function redraw_tree(cutoff_date, redraw=true, partial_redraw=false) {
 
   // filter for tips with a collection date after the cutoff
   var filtered_df = df_copy.filter(x => {
-    if (formatDate(x.coldate) >= cutoff_date && x.isTip == true && !x.rawLabel.startsWith("X")) return x;
+    if (formatDate(x.coldate) >= cutoff_date && x.isTip == true) return x;
   });
 
   if(filtered_df.length > 0) {
@@ -914,18 +1032,7 @@ async function redraw_tree(cutoff_date, redraw=true, partial_redraw=false) {
     x.y = i   
   })
 
-  if (filtered_recomb_tips.length === 0) {
-    $(".recombinant-tree-content").hide()
-    $(".recombtitle").hide()
-  }
-  else if ($('#display-option').attr('checked')) {
-    $(".recombinant-tree-content").show()
-    $(".recombtitle").show()
-  }
-
-
   document.querySelector("#svg-timetree > svg").innerHTML = ''; 
-  document.querySelector("#svg-recombinants > svg").innerHTML = '';
   if (partial_redraw) {
     drawtree(final_df, df_copy, redraw=partial_redraw);
     draw_clusters(filtered_tips, filtered_recomb_tips, partial_redraw);
@@ -961,6 +1068,12 @@ function reset_tree(partial_redraw=false) {
   $("#cutoff-date").text(min_date);
   $("#tree-cutoff").css('left',  $("#tree-slider-handle").position().left);
   $("#tree-slider").slider({ disabled: true});
-  redraw_tree(min_date, redraw=true, partial_redraw=partial_redraw);
+  switch($("#display-tree").val()) {
+    case "XBB Lineages":
+      redraw_tree(df_xbb, min_date, redraw=true, partial_redraw=partial_redraw);
+      break;
+    default:
+      redraw_tree(df, min_date, redraw=true, partial_redraw=partial_redraw);
+  }
   if (partial_redraw) d3.select('#cidx-' + cindex).attr("class", "clicked");
 }

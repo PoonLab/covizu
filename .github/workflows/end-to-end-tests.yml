@@ -14,6 +14,7 @@ jobs:
       - name: Cypress run
         uses: cypress-io/github-action@v4
         with:
+          config-file: config/cypress.config.js
           start: npm run test
         env:
             CYPRESS_IGNORE_TESTS: search

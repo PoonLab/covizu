@@ -1,4 +1,4 @@
-const {$DATA_FOLDER} = require("../config")
+const {$DATA_FOLDER} = require("../config/config")
 const dbstats = require(`../${$DATA_FOLDER}/dbstats.json`)
 
 /**

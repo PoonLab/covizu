@@ -89,9 +89,9 @@ describe('Search Interface', () => {
         })
 
         // this test was failing because (i think) it was searching for a data-point ('HMH') that no longer exists in the current dataset
-        // I've replaced 'HMH' with 'China' 
-        it("Searching 'China' results in selection and expected point count", () => {
-            cy.get('#search-input').type('China')
+        // I've replaced 'HMH' with 'Japan'
+        it("Searching 'Japan' results in selection and expected point count", () => {
+            cy.get('#search-input').type('Japan')
             cy.get('#search-button').click({force:true})
             cy.get('.selectionH').should('exist')
             cy.get('.SelectedCluster').should('exist')
@@ -123,20 +123,27 @@ describe('Search Interface', () => {
 
 describe('Tooltips', () => {
     it('Appear on hover over cluster', () => {
-        cy.get('[id=id-0]').trigger('mouseover');
-        cy.get('.tooltip').should('be.visible').should('have.length', 1)
+        cy.window().then((win)=>{
+            win.reset_tree(true);
+            const tip_id = win.display_id.non_recombinants.last;
+            cy.get(`[id=id-${tip_id}]`).trigger('mouseover');
+            cy.get('.tooltip').should('be.visible').should('have.length', 1)
+        });
     })
     it('Cluster tooltips contain relevant and correct information', () => {
-        cy.get('[id=id-0]').trigger('mouseover');
         cy.window().then((win)=>{
-            cy.get('.tooltip').contains(`Sampled: ${win.tips[0]['varcount']}`)
-            cy.get('.tooltip').contains(`Displayed: ${win.tips[0]['sampled_varcount']}`)
-            cy.wrap(Object.keys(win.tips[0]['allregions'])).each(($el, index) => {
-                cy.get('.tooltip').contains(`${$el}: ${Object.values(win.tips[0]['allregions'])[index]}`)
+            win.reset_tree(true);
+            const tip_id = win.display_id.non_recombinants.last;
+            const last_index = win.tips.length - 1;
+            cy.get(`[id=id-${tip_id}]`).trigger('mouseover');
+            cy.get('.tooltip').contains(`Sampled: ${win.tips[last_index]['varcount']}`)
+            cy.get('.tooltip').contains(`Displayed: ${win.tips[last_index]['sampled_varcount']}`)
+            cy.wrap(Object.keys(win.tips[last_index]['allregions'])).each(($el, index) => {
+                cy.get('.tooltip').contains(`${$el}: ${Object.values(win.tips[last_index]['allregions'])[index]}`)
             })
-            cy.get('.tooltip').contains(`Mean diffs from root: ${Math.round(100*win.tips[0]['mean_ndiffs'])/100}`) 
-            cy.get('.tooltip').contains(`Deviation from clock: ${win.tips[0]['residual'].toFixed(2)}`)
-            cy.get('.tooltip').contains(`${win.tips[0]['first_date'].toISOString().slice(0, 10)} / ${win.tips[0]['last_date'].toISOString().slice(0, 10)}`)
+            cy.get('.tooltip').contains(`Mean diffs from root: ${Math.round(100*win.tips[last_index]['mean_ndiffs'])/100}`)
+            cy.get('.tooltip').contains(`Deviation from clock: ${win.tips[last_index]['residual'].toFixed(2)}`)
+            cy.get('.tooltip').contains(`${win.tips[last_index]['first_date'].toISOString().slice(0, 10)} / ${win.tips[last_index]['last_date'].toISOString().slice(0, 10)}`)
         })
     })
     it('Appear on hover over bead', () => {
@@ -161,9 +168,38 @@ describe('Tooltips', () => {
     })
 })
 
+describe("Display options", () => {
+    it("Verify options within the Display dropdown", () => {
+        cy.visit("http://localhost:8001");
+        cy.get("#splash-button").click();
+        cy.get("#display-tree").children().should(($options) => {
+            expect($options).to.have.length(3);
+            expect($options.eq(0)).to.contain('Non-Recombinants');
+            expect($options.eq(1)).to.contain('XBB Lineages');
+            expect($options.eq(2)).to.contain('Other Recombinants')
+        })
+    })
+
+    it("Selecting 'XBB Lineages' Display option", () => {
+        cy.get("#display-tree").select(1).should('have.value','XBB Lineages')
+        cy.window().then((win)=> {
+            win.reset_tree(true);
+            cy.get(`[id=id-${win.display_id.xbb.last}]`).should('be.visible').trigger('mouseover');
+            cy.get(`[id=id-${win.display_id.xbb.first}]`).should('be.visible').trigger('mouseover');
+        })
+    })
+
+    it("Selecting 'Other Recombinants' Display option", () => {
+        cy.get("#display-tree").select(2).should('have.value','Other Recombinants')
+        cy.window().then((win)=> {
+            win.reset_tree(true);
+            cy.get(`[id=id-${win.display_id.other_recombinants.last}]`).should('be.visible').trigger('mouseover');
+            cy.get(`[id=id-${win.display_id.other_recombinants.first}]`).should('be.visible').trigger('mouseover');
+        })
+    })
+})
 
 describe("Colour tree", () => {
-    
     it("Verify <options> within <select> Colour tree", ()=>{
         cy.visit("http://localhost:8001");
         cy.get("#splash-button").click();
@@ -182,7 +218,7 @@ describe("Colour tree", () => {
         let region_color_map = {};
         cy.get("#select-tree-colours").select(0).should('have.value','Region')
         cy.window().then((win)=>{
-            regions = [...Array.from(new Set(Object.values(win.region_map))),"China"]
+            regions = [...Array.from(new Set(Object.values(win.region_map))),"China", "South America", "Oceania"]
             return regions;
         })
         .then(()=>{
@@ -214,14 +250,14 @@ describe("Colour tree", () => {
             // check and see if this region_color_map is correctly represented in the tree graph
             cy.window().then((win)=>{
                 let region_title;
-                const tip_id = 215;
+                win.reset_tree(true);
+                const tip_id = win.display_id.non_recombinants.last;
                 cy.get(`[id=id-${tip_id}]`).should('be.visible').trigger('mouseover');
                 cy.get(`[id=id-${tip_id}]`).invoke('css','fill').then((tip_color)=>{
-                    region_title = Object.keys(win.tips[tip_id]['allregions'])[0];
+                    region_title = Object.keys(win.tips[win.tips.length - 1]['allregions'])[0];
                     // expect(tip_color).to.equal(region_color_map[region_title])
                 })
             })
         })
     })
-
 })
