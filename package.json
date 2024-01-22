@@ -39,6 +39,6 @@
     "mongodb": "^5.1.0"
   },
   "devDependencies": {
-    "cypress": "^12.1.0"
+    "cypress": "^13.6.2"
   }
 }
