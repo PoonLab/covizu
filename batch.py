@@ -12,6 +12,8 @@ from covizu.utils.seq_utils import SC2Locator
 from tempfile import NamedTemporaryFile
 import psycopg2
 import psycopg2.extras
+from psycopg2 import sql
+from psycopg2.errors import DuplicateDatabase
 
 def parse_args():
     parser = argparse.ArgumentParser(description="CoVizu analysis pipeline automation")
@@ -96,6 +98,18 @@ def parse_args():
     parser.add_argument("--boot-cutoff", type=float, default=0.5,
                         help="Bootstrap cutoff for consensus tree (default 0.5). "
                              "Only used if --cons is specified.")
+    
+    parser.add_argument('--dbname', type=str, default=os.environ.get("POSTGRESQL_DBNAME", "gisaid_db"),
+                        help="Postgresql database name")
+    parser.add_argument('--dbhost', type=str, default=os.environ.get("POSTGRESQL_HOST", "localhost"),
+                        help="Postgresql database host address")
+    parser.add_argument('--dbport', type=str, default=os.environ.get("POSTGRESQL_PORT", "5432"),
+                        help="Connection to port number")
+    parser.add_argument('--dbuser', type=str, default=os.environ.get("POSTGRESQL_USER", None),
+                        help="Postgresl user")
+    parser.add_argument('--dbpswd', type=str, default=os.environ.get("POSTGRESQL_PSWD", None),
+                        help="Postgresl password")
+    
 
     parser.add_argument("--dry-run", action="store_true",
                         help="Do not upload output files to webserver.")
@@ -103,13 +117,12 @@ def parse_args():
     return parser.parse_args()
 
 
-def open_connection():
+def open_connection(connection_parameters):
     """ open connection to database, initialize tables if they don't exist
         :out:
             :cursor: interactive sql object containing tables
     """
-    conn = psycopg2.connect(host="localhost", dbname="gsaid_db", user="postgres",
-                            password="12345", port="5432")
+    conn = psycopg2.connect(**connection_parameters)
     cur = conn.cursor(cursor_factory = psycopg2.extras.RealDictCursor)
 
     # create tables if they don't exist
@@ -142,7 +155,36 @@ if __name__ == "__main__":
     args = parse_args()
     cb = Callback()
 
-    cur, conn = open_connection()
+    # Check if database exists
+    connection_parameters = {
+        "host": args.dbhost,
+        "port": args.dbport,
+        "user": args.dbuser,
+        "password": args.dbpswd,
+    }
+
+    connection = None
+    try:
+        connection = psycopg2.connect(**connection_parameters)
+        connection.autocommit = True
+
+        cursor = connection.cursor()
+        cursor.execute(sql.SQL('CREATE DATABASE {}').format(sql.Identifier(args.dbname)))
+        cb.callback("Database {} created successfully.".format(args.dbname))
+
+
+    except DuplicateDatabase:
+        cb.callback("Database {} already exists.".format(args.dbname))
+    except psycopg2.Error as e:
+        cb.callback("Error initiating connection to database: {}".format(e))
+        sys.exit()
+    finally:
+        if connection is not None:
+            cursor.close()
+            connection.close()
+
+    connection_parameters['dbname'] = args.dbname
+    cur, conn = open_connection(connection_parameters)
 
     # check that user has loaded openmpi module
     try:
