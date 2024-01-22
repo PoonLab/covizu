@@ -2,17 +2,22 @@ import clusters from '../../data_test/clusters.json'
 
 describe('Beadplot components', () => {
     it('Edge Labels', ()=> {
-        cy.get('.beadplot-content>svg>g>text').should(($text) => {
-            expect($text).to.have.length(14)
-            expect($text.eq(0)).to.contain('USA/AZ-CDC-LC0932884')
-            expect($text.eq(1)).to.contain('USA/AZ-CDC-STM-TNFPTQHEE')
-            expect($text.eq(2)).to.contain('USA/AZ-CDC-LC0951048')
-        }) 
+        cy.window().then((win) => {
+            win.reset_tree(true);
+            const tip_id = win.display_id.non_recombinants.last - 2;
+            cy.get(`[id=id-${tip_id}]`).trigger('click');
+            cy.get('.beadplot-content>svg>g>text').should(($text) => {
+                expect($text).to.have.length(14)
+                expect($text.eq(0)).to.contain('USA/AZ-CDC-LC0932884')
+                expect($text.eq(1)).to.contain('USA/AZ-CDC-STM-TNFPTQHEE')
+                expect($text.eq(2)).to.contain('USA/AZ-CDC-LC0951048')
+            }); 
+        });
     })
     it('Samples', () => {
         cy.get('.beadplot-content>svg>g>circle').then(($circ) => {
             expect($circ).to.have.length(23)
-            for (let i = 0; i < 7; i++) {
+            for (let i = 0; i < 8; i++) {
                 cy.get($circ.eq(i)).should('have.attr', 'cy', 20)
             }
         })
@@ -74,17 +79,17 @@ describe('Edge slider', () => {
 
 describe('Tooltips', () => {
     it('Horizontal Edge', () => {
-        cy.get('#USA-AZ-CDC-LC0983866').first().trigger('mouseover')
+        cy.get('#USA-AZ-CDC-LC0956766').first().trigger('mouseover')
         cy.get('.tooltip').contains('Parent: USA/AZ-CDC-LC0932884')
         cy.get('.tooltip').contains('North America: 2')
         cy.get('.tooltip').contains('Unique collection dates: 2')
-        cy.get('.tooltip').contains('2023-01-02 / 2023-01-07')
+        cy.get('.tooltip').contains('2022-12-05 / 2022-12-12')
     })
     it('Bead', () => {
-        cy.get('#EPI_ISL_1054790').first().trigger('mouseover')
-        cy.get('.tooltip').contains('Parent: unsampled0')
-        cy.get('.tooltip').contains('Genomic distance: 1.82')
+        cy.get('#EPI_ISL_1048746').first().trigger('mouseover')
+        cy.get('.tooltip').contains('Parent: USA/AZ-CDC-LC0932884')
+        cy.get('.tooltip').contains('Genomic distance: 4.06')
         cy.get('.tooltip').contains('North America: 1')
-        cy.get('.tooltip').contains('Collection date: 2022-11-12')
+        cy.get('.tooltip').contains('Collection date: 2022-12-05')
     })
 })
