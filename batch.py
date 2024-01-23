@@ -99,15 +99,15 @@ def parse_args():
                         help="Bootstrap cutoff for consensus tree (default 0.5). "
                              "Only used if --cons is specified.")
     
-    parser.add_argument('--dbname', type=str, default=os.environ.get("POSTGRESQL_DBNAME", "gisaid_db"),
+    parser.add_argument('--dbname', type=str, default=os.environ.get("POSTGRES_DB", "gisaid_db"),
                         help="Postgresql database name")
-    parser.add_argument('--dbhost', type=str, default=os.environ.get("POSTGRESQL_HOST", "localhost"),
+    parser.add_argument('--dbhost', type=str, default=os.environ.get("POSTGRES_HOST", "localhost"),
                         help="Postgresql database host address")
-    parser.add_argument('--dbport', type=str, default=os.environ.get("POSTGRESQL_PORT", "5432"),
+    parser.add_argument('--dbport', type=str, default=os.environ.get("POSTGRES_PORT", "5432"),
                         help="Connection to port number")
-    parser.add_argument('--dbuser', type=str, default=os.environ.get("POSTGRESQL_USER", None),
+    parser.add_argument('--dbuser', type=str, default=os.environ.get("POSTGRES_USER", None),
                         help="Postgresl user")
-    parser.add_argument('--dbpswd', type=str, default=os.environ.get("POSTGRESQL_PSWD", None),
+    parser.add_argument('--dbpswd', type=str, default=os.environ.get("POSTGRES_PASSWORD", None),
                         help="Postgresl password")
     
 
