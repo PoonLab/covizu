@@ -10,7 +10,10 @@ from covizu.utils.progress_utils import Callback
 from covizu.utils.batch_utils import *
 from covizu.utils.seq_utils import SC2Locator
 from tempfile import NamedTemporaryFile
-
+import psycopg2
+import psycopg2.extras
+from psycopg2 import sql
+from psycopg2.errors import DuplicateDatabase
 
 def parse_args():
     parser = argparse.ArgumentParser(description="CoVizu analysis pipeline automation")
@@ -95,6 +98,18 @@ def parse_args():
     parser.add_argument("--boot-cutoff", type=float, default=0.5,
                         help="Bootstrap cutoff for consensus tree (default 0.5). "
                              "Only used if --cons is specified.")
+    
+    parser.add_argument('--dbname', type=str, default=os.environ.get("POSTGRES_DB", "gisaid_db"),
+                        help="Postgresql database name")
+    parser.add_argument('--dbhost', type=str, default=os.environ.get("POSTGRES_HOST", "localhost"),
+                        help="Postgresql database host address")
+    parser.add_argument('--dbport', type=str, default=os.environ.get("POSTGRES_PORT", "5432"),
+                        help="Connection to port number")
+    parser.add_argument('--dbuser', type=str, default=os.environ.get("POSTGRES_USER", None),
+                        help="Postgresl user")
+    parser.add_argument('--dbpswd', type=str, default=os.environ.get("POSTGRES_PASSWORD", None),
+                        help="Postgresl password")
+    
 
     parser.add_argument("--dry-run", action="store_true",
                         help="Do not upload output files to webserver.")
@@ -102,13 +117,34 @@ def parse_args():
     return parser.parse_args()
 
 
-def process_feed(args, callback=None):
+def open_connection(connection_parameters):
+    """ open connection to database, initialize tables if they don't exist
+        :out:
+            :cursor: interactive sql object containing tables
+    """
+    conn = psycopg2.connect(**connection_parameters)
+    cur = conn.cursor(cursor_factory = psycopg2.extras.RealDictCursor)
+
+    # create tables if they don't exist
+    seqs_table = '''CREATE TABLE IF NOT EXISTS SEQUENCES (accession VARCHAR(255)
+                    PRIMARY KEY, qname VARCHAR(255), lineage VARCHAR(255),
+                    date VARCHAR(255), location VARCHAR(255),
+                    diffs VARCHAR, missing VARCHAR)'''
+    cur.execute(seqs_table)
+
+    cur.execute('''CREATE INDEX IF NOT EXISTS qname_index ON SEQUENCES (qname)''')
+
+    conn.commit()
+    return cur, conn
+
+
+def process_feed(args, cur, callback=None):
     """ Process feed data """
     if callback:
         callback("Processing GISAID feed data")
     loader = gisaid_utils.load_gisaid(args.infile, minlen=args.minlen, mindate=args.mindate)
-    batcher = gisaid_utils.batch_fasta(loader, size=args.batchsize)
-    aligned = gisaid_utils.extract_features(batcher, ref_file=args.ref, binpath=args.mmbin,
+    batcher = gisaid_utils.batch_fasta(loader, cur, size=args.batchsize)
+    aligned = gisaid_utils.extract_features(batcher, ref_file=args.ref, cur=cur, binpath=args.mmbin,
                                             nthread=args.mmthreads, minlen=args.minlen)
     filtered = gisaid_utils.filter_problematic(aligned, vcf_file=args.vcf, cutoff=args.poisson_cutoff,
                                                callback=callback)
@@ -118,6 +154,37 @@ def process_feed(args, callback=None):
 if __name__ == "__main__":
     args = parse_args()
     cb = Callback()
+
+    # Check if database exists
+    connection_parameters = {
+        "host": args.dbhost,
+        "port": args.dbport,
+        "user": args.dbuser,
+        "password": args.dbpswd,
+    }
+
+    connection = None
+    try:
+        connection = psycopg2.connect(**connection_parameters)
+        connection.autocommit = True
+
+        cursor = connection.cursor()
+        cursor.execute(sql.SQL('CREATE DATABASE {}').format(sql.Identifier(args.dbname)))
+        cb.callback("Database {} created successfully.".format(args.dbname))
+
+
+    except DuplicateDatabase:
+        cb.callback("Database {} already exists.".format(args.dbname))
+    except psycopg2.Error as e:
+        cb.callback("Error initiating connection to database: {}".format(e))
+        sys.exit()
+    finally:
+        if connection is not None:
+            cursor.close()
+            connection.close()
+
+    connection_parameters['dbname'] = args.dbname
+    cur, conn = open_connection(connection_parameters)
 
     # check that user has loaded openmpi module
     try:
@@ -147,7 +214,10 @@ if __name__ == "__main__":
         args.infile = gisaid_utils.download_feed(args.url, args.user, args.password)
 
     # filter data, align genomes, extract features, sort by lineage
-    by_lineage = process_feed(args, cb.callback)
+    by_lineage = process_feed(args, cur, cb.callback)
+
+    # calling commit immediately after db transactions
+    conn.commit()
 
     # separate XBB and other recombinant lineages
     aliases = parse_alias(args.alias)

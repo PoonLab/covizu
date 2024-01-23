@@ -84,7 +84,7 @@ def build_timetree(by_lineage, args, callback=None):
                                    clock=args.clock, verbosity=0)
 
     # writes output to treetime.nwk at `nexus_file` path
-    return covizu.treetime.parse_nexus(nexus_file, fasta)
+    return covizu.treetime.parse_nexus(nexus_file, fasta, callback)
 
 
 def beadplot_serial(lineage, features, args, callback=None): # pragma: no cover
@@ -393,7 +393,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
     for lineage in recoded:
         # import trees
         lineage_name = lineage.replace('/', '_')  # issue #297
-        outfile = open('data/{}.nwk'.format(lineage_name))
+        outfile = open('{}/{}.nwk'.format(args.outdir, lineage_name))
         trees = Phylo.parse(outfile, 'newick')  # note this returns a generator
 
         label_dict = recoded[lineage]['labels']
