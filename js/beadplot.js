@@ -57,7 +57,7 @@ function parse_mutation_annotations(mut_annotations) {
   var mutations = [];
 
   // Sorts tips according to cluster_idx
-  sorted_tips = [...tips, ...recombinant_tips]
+  sorted_tips = [...tips, ...recombinant_tips, ...df_xbb]
   sorted_tips.sort(function(a,b) {
     return a.cluster_idx - b.cluster_idx
   });
@@ -408,6 +408,11 @@ function expand() {
     $('#svg-clusteraxis').css('padding-bottom', $('#inner-hscroll').height())
 
   }
+
+  if (edgelist.length === 0)
+      $('#beadplot-nwk').hide();
+  else
+      $('#beadplot-nwk').show();
 
   // update vertical range for consistent spacing between variants
   heightB = max_y * 10 + 40;
@@ -937,6 +942,7 @@ function region_to_string(my_regions) {
  */
 
 function gen_mut_table(obj) {
+  console.log("GEERNATING MUTATION TABLE ", obj)
   var mutations = [];
 
   // Check for a list of samples
@@ -1373,6 +1379,7 @@ function serialize_branch(parent, edgelist) {
     // terminal node, emit string
     // TODO: add count information (number of samples per variant)
     coldate = branch[0].x1.toISOString().split('T')[0];
+    console.log("coldate=",coldate);
     return branch[0].child+'|'+coldate+':'+branch[0].dist;  // node name : branch length
   }
   else {

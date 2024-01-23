@@ -219,12 +219,59 @@ if __name__ == "__main__":
     # calling commit immediately after db transactions
     conn.commit()
 
-    # reconstruct time-scaled tree relating lineages
-    timetree, residuals = build_timetree(by_lineage, args, cb.callback)
+    # separate XBB and other recombinant lineages
+    aliases = parse_alias(args.alias)
+    designation = {}
+    for prefix, truename in aliases.items():
+        if type(truename) is list:
+            designation.update({prefix: {
+                'type': 'XBB' if prefix == 'XBB' else 'recombinant',
+                'fullname': '/'.join(truename)
+            }})
+        else:
+            designation.update({prefix: {
+                'type': 'XBB' if truename.startswith("XBB") else 'non-recombinant',
+                'fullname': truename
+            }})
+
+    # use results to partition by_lineage database
+    non_recomb = {}
+    xbb = {}
+    other_recomb = {}
+    for lineage, ldata in by_lineage.items():
+        # Put unassigned lineages in non-recombinant category
+        if lineage.lower() == "unassigned":
+            non_recomb.update({lineage: ldata})
+            continue
+
+        prefix = lineage.split('.')[0]
+        category = designation[prefix]['type']
+        if category == 'non-recombinant':
+            non_recomb.update({lineage: ldata})
+        elif category == 'XBB':
+            xbb.update({lineage: ldata})
+        else:
+            other_recomb.update({lineage: ldata})
+    
+    if len(xbb) < 2:
+        other_recomb.update(xbb)
+        xbb = None  # no point in building a tree
+
+
+    # reconstruct time-scaled trees 
+    timetree, residuals = build_timetree(non_recomb, args, cb.callback)
     timestamp = datetime.now().isoformat().split('.')[0]
     nwk_file = os.path.join(args.outdir, 'timetree.{}.nwk'.format(timestamp))
     with open(nwk_file, 'w') as handle:
         Phylo.write(timetree, file=handle, format='newick')
+
+    xbb_file = os.path.join(args.outdir, 'xbbtree.{}.nwk'.format(timestamp))
+    with open(xbb_file, 'w') as handle:
+        if xbb is not None:
+            timetree_xbb, residuals_xbb = build_timetree(xbb, args, cb.callback)
+            residuals.update(residuals_xbb)
+            Phylo.write(timetree_xbb, file=handle, format='newick')
+        # else empty file
 
     # clustering analysis of lineages
     result, infection_prediction = make_beadplots(by_lineage, args, cb.callback, t0=cb.t0.timestamp())
@@ -242,9 +289,7 @@ if __name__ == "__main__":
     # write data stats
     dbstat_file = os.path.join(args.outdir, 'dbstats.{}.json'.format(timestamp))
 
-    alias = parse_alias(args.alias)
-
-    with open(dbstat_file, 'w') as handle:
+    with (open(dbstat_file, 'w') as handle):
         # total number of sequences
         nseqs = 0
         for records in by_lineage.values():
@@ -257,7 +302,14 @@ if __name__ == "__main__":
         }
         for lineage, records in by_lineage.items():
             prefix = lineage.split('.')[0]
-            lname = lineage.replace(prefix, alias[prefix]) if lineage.lower() not in ['unclassifiable', 'unassigned'] and not prefix.startswith('X') and alias[prefix] != '' else lineage
+
+            # resolve PANGO prefix aliases 
+            lname = lineage
+            if (lineage.lower() not in ['unclassifiable', 'unassigned'] 
+                    and not prefix.startswith('X') 
+                    and aliases[prefix] != ''):
+                lname = lineage.replace(prefix, aliases[prefix])
+
             samples = unpack_records(records)
             ndiffs = [len(x['diffs']) for x in samples]
             val['lineages'][lineage] = {
@@ -276,6 +328,7 @@ if __name__ == "__main__":
     if not args.dry_run:
         server_root = 'filogeneti.ca:/var/www/html/covizu/data'
         subprocess.check_call(['scp', nwk_file, '{}/timetree.nwk'.format(server_root)])
+        subprocess.check_call(['scp', xbb_file, '{}/xbbtree.nwk'.format(server_root)])
         subprocess.check_call(['scp', clust_file, '{}/clusters.json'.format(server_root)])
         subprocess.check_call(['scp', dbstat_file, '{}/dbstats.json'.format(server_root)])
 

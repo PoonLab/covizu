@@ -2,22 +2,25 @@ import clusters from '../../data_test/clusters.json'
 
 describe('Beadplot components', () => {
     it('Edge Labels', ()=> {
-        cy.get('.beadplot-content>svg>g>text').should(($text) => {
-            expect($text).to.have.length(3)
-            expect($text.eq(0)).to.contain('unsampled0')
-            expect($text.eq(1)).to.contain('Scotland/GCVR-16F930')
-            expect($text.eq(2)).to.contain('Scotland/GCVR-170556')
-        }) 
+        cy.window().then((win) => {
+            win.reset_tree(true);
+            const tip_id = win.display_id.non_recombinants.last - 2;
+            cy.get(`[id=id-${tip_id}]`).trigger('click');
+            cy.get('.beadplot-content>svg>g>text').should(($text) => {
+                expect($text).to.have.length(14)
+                expect($text.eq(0)).to.contain('USA/AZ-CDC-LC0932884')
+                expect($text.eq(1)).to.contain('USA/AZ-CDC-STM-TNFPTQHEE')
+                expect($text.eq(2)).to.contain('USA/AZ-CDC-LC0951048')
+            }); 
+        });
     })
     it('Samples', () => {
         cy.get('.beadplot-content>svg>g>circle').then(($circ) => {
-            expect($circ).to.have.length(4)
-            for (let i = 0; i < 3; i++) {
-                cy.get($circ.eq(i)).should('have.attr', 'cy', 45)
+            expect($circ).to.have.length(23)
+            for (let i = 0; i < 8; i++) {
+                cy.get($circ.eq(i)).should('have.attr', 'cy', 20)
             }
-            cy.get($circ.eq(3)).should('have.attr', 'cy', 70)
-        }) 
-
+        })
     })
 })
 
@@ -29,19 +32,15 @@ describe('Tables', () => {
     })
     it('Country details: gentable', () => {
         cy.get('#tabs').contains('Countries').click()
-        var tips = {'allregions': {'North America': 13}, 'country': {'Canada': 8, 'USA': 5}}
+        var tips = {'allregions': {'North America': 23}, 'country': {'USA': 23}}
 
         cy.window().then((win) => {
             win.gentable(tips)
         })
-        cy.get('table:visible>tbody>tr').should('have.length', 2)
+        cy.get('table:visible>tbody>tr').should('have.length', 1)
         cy.get('table:visible>tbody>tr').eq(0).contains('North America')
-        cy.get('table:visible>tbody>tr').eq(0).contains('Canada')
-        cy.get('table:visible>tbody>tr').eq(0).contains('8')
-
-        cy.get('table:visible>tbody>tr').eq(1).contains('North America')
-        cy.get('table:visible>tbody>tr').eq(1).contains('USA')
-        cy.get('table:visible>tbody>tr').eq(1).contains('5')
+        cy.get('table:visible>tbody>tr').eq(0).contains('USA')
+        cy.get('table:visible>tbody>tr').eq(0).contains('23')
     })
 })
 
@@ -60,7 +59,7 @@ describe('Edge slider', () => {
 
         // https://stackoverflow.com/questions/64855669/moving-slider-with-cypress
 
-        let targetValue = 12
+        let targetValue = 5.01
         let currentValue = 2
         let increment = 0.01
         steps = (targetValue - currentValue) / increment + 1
@@ -74,28 +73,23 @@ describe('Edge slider', () => {
         cy.get('#custom-handle').should('contain', targetValue)
     })
     it('All edges are visible on max slider value ', () => {
-        cy.get('[stroke="#bbd"]').should('have.length', 2)
-    })
-    it('No edges are visible on slider value of 11.99 ', () => {
-        cy.get('#left-arrow').click()
-        cy.get('#custom-handle').should('contain', 11.99)
-        cy.get('[stroke="#bbd"]').should('not.exist')
+        cy.get('[stroke="#bbd"]').should('have.length', 12)
     })
 })
 
 describe('Tooltips', () => {
     it('Horizontal Edge', () => {
-        cy.get('#Scotland-GCVR-16F930').first().trigger('mouseover')
-        cy.get('.tooltip').contains('Parent: unsampled0')
-        cy.get('.tooltip').contains('Europe: 3')
-        cy.get('.tooltip').contains('Unique collection dates: 3')
-        cy.get('.tooltip').contains('2020-03-19 / 2020-03-27')
+        cy.get('#USA-AZ-CDC-LC0956766').first().trigger('mouseover')
+        cy.get('.tooltip').contains('Parent: USA/AZ-CDC-LC0932884')
+        cy.get('.tooltip').contains('North America: 2')
+        cy.get('.tooltip').contains('Unique collection dates: 2')
+        cy.get('.tooltip').contains('2022-12-05 / 2022-12-12')
     })
     it('Bead', () => {
-        cy.get('circle:visible').first().trigger('mouseover')
-        cy.get('.tooltip').contains('Parent: unsampled0')
-        cy.get('.tooltip').contains('Genomic distance: 12')
-        cy.get('.tooltip').contains('Europe: 1')
-        cy.get('.tooltip').contains('Collection date: 2020-03-19')
+        cy.get('#EPI_ISL_1048746').first().trigger('mouseover')
+        cy.get('.tooltip').contains('Parent: USA/AZ-CDC-LC0932884')
+        cy.get('.tooltip').contains('Genomic distance: 4.06')
+        cy.get('.tooltip').contains('North America: 1')
+        cy.get('.tooltip').contains('Collection date: 2022-12-05')
     })
 })

@@ -170,11 +170,37 @@ async function main_search(all_bead_data, text_query, start_date, end_date) {
     return a - b;
   });
 
-  // Keeps track of the clicked cluster
-  var curr_cluster = d3.selectAll(".clicked").nodes()[0].attributes.id.nodeValue;
-  var selected_cidx = id_to_cidx[closest_match(curr_cluster, hit_id)];
+  await reset_tree(partial_redraw=true);
+  d3.selectAll("rect[class='clicked']").attr("class", "default")
 
-  var selections = d3.selectAll("#svg-timetree > svg > rect:not(.clickedH), #svg-recombinants > svg > rect:not(.clickedH)")
+  // Keeps track of the clicked cluster
+  var selected_cidx,
+      curr_cluster = d3.selectAll(".clicked").nodes()[0].attributes.id.nodeValue;
+
+  switch($("#display-tree").val()) {
+    case "Other Recombinants":
+      selected_cidx = closest_display_match(curr_cluster, hit_id, display_id.other_recombinants.first, display_id.other_recombinants.last);
+      break;
+    case "XBB Lineages":
+      selected_cidx = closest_display_match(curr_cluster, hit_id, display_id.xbb.first, display_id.xbb.last);
+      break;
+    default:
+      selected_cidx = closest_display_match(curr_cluster, hit_id, display_id.non_recombinants.first, display_id.non_recombinants.last);
+  }
+
+  if (selected_cidx === null) {
+    // If null, then there isn't a match in the selected display. Figure out which display has the closest idx
+    selected_cidx = closest_match(curr_cluster, hit_id);
+
+    var display = await getdata(`/api/display/${id_to_cidx[selected_cidx].substring(5)}`);
+    await $("#display-tree").val(display[0])
+    await changeDisplay();
+    await reset_tree(partial_redraw=true);
+  }
+
+  selected_cidx = id_to_cidx[selected_cidx];
+
+  var selections = d3.selectAll("#svg-timetree > svg > rect:not(.clickedH)")
     .filter(function() {
       return hit_id.includes(parseInt(this.id.substring(3)))
     });
@@ -236,6 +262,16 @@ async function lineage_search(text_query) {
     return;
   }
 
+  // Get the lineage to determine if the tree needs to be redrawn
+  var display = await getdata(`/api/display/${cidx}`);
+
+  if (!($("#display-tree").val() === display[0])) {
+    await $("#display-tree").val(display[0])
+    await changeDisplay();
+  }
+
+  await reset_tree(partial_redraw=true);
+
   var cluster = select_cluster("cidx-"+cidx);
 
   // Reduces the opacity of all clusters
@@ -267,6 +303,16 @@ async function accession_search(text_query) {
     $('#error_message').text(`No matches. Please try again.`);
     return;
   }
+
+  // Get the lineage to determine if the tree needs to be redrawn
+  var display = await getdata(`/api/display/${cidx}`);
+
+  if (!($("#display-tree").val() === display[0])) {
+    await $("#display-tree").val(display[0])
+    await changeDisplay();
+  }
+
+  await reset_tree(partial_redraw=true);
 
   var cluster = select_cluster("cidx-"+cidx);
 
@@ -355,6 +401,33 @@ async function select_next_prev_bead(bead_id_to_accession, curr_bead) {
   await fetch(`/api/cid/${bead_id_to_accession[curr_bead]}`)
   .then(response => response.text())
   .then(data => curr_cid = data);
+
+  // Get the lineage to determine if the tree needs to be redrawn
+  var display = await getdata(`/api/display/${curr_cid}`);
+
+  if (!($("#display-tree").val() === display[0])) {
+    await $("#display-tree").val(display[0])
+    await changeDisplay();
+    await reset_tree(partial_redraw=true);
+
+    // Change opacity of clusters with results
+    var hits = search_results.get().hit_ids;
+
+    var selections = d3.selectAll("#svg-timetree > svg > rect:not(.clickedH)")
+        .filter(function() {
+          return hits.includes(parseInt(this.id.substring(3)))
+        });
+
+    // Reduces the opacity of all clusters
+    d3.select("#svg-timetree")
+        .selectAll("rect:not(.clicked):not(.clickedH)")
+        .attr("class","not_SelectedCluster");
+
+    // Increases the opacity for only the clusters with hits
+    for (const node of selections.nodes()){
+      d3.select(node).attr("class", "SelectedCluster");
+    }
+  }
 
   var next_cluster = d3.selectAll('rect[cidx="cidx-'+curr_cid+'"]');
   d3.selectAll("rect.clickedH").remove();
@@ -577,38 +650,68 @@ function select_bead_by_accession(accn, reset_clusters_tree = true) {
   }
 }
 
-function find_beads_points(beadsdata){
-  return beadsdata.map(bead => bead.points).flat()
-}
-
 /**
  * This function searches for the closest cluster with a search hit (Binary search)
  * @param non_hit_cluster_index: cidx value
  * @param hit_ids: Sorted list of ids (not cidx) of clusters with a hit for the search query
  */
-function closest_match(non_hit_cluster_index, hit_ids) {
-  const target_index = map_cidx_to_id[non_hit_cluster_index];
+function closest_display_match(non_hit_cluster_index, hit_ids, minRange, maxRange) {
+  const current_index = map_cidx_to_id[non_hit_cluster_index];
 
-  if (target_index <= hit_ids[0])
+  var i = 0, j = hit_ids.length, mid = 0, currentValue = null, closestValue = null;
+  while (i < j) {
+    mid = Math.floor((i + j)/2);
+    currentValue = hit_ids[mid];
+
+    if (hit_ids[mid] === current_index)
+      return hit_ids[mid];
+
+    if (minRange <= currentValue && currentValue <= maxRange) {
+      if (closestValue === null || Math.abs(currentValue - current_index) < Math.abs(closestValue - current_index))
+        closestValue = currentValue;
+
+      if (currentValue < current_index)
+        i = mid + 1;
+      else
+        j = mid - 1;
+    }
+    else if (currentValue < minRange)
+      i = mid + 1;
+    else
+      j = mid - 1;
+  }
+  return closestValue;
+}
+
+/**
+ * Find the closest id from a sorted list
+ * @param non_hit_cluster_index
+ * @param hit_ids
+ * @returns {*}
+ */
+function closest_match(non_hit_cluster_index, hit_ids) {
+  const current_index = map_cidx_to_id[non_hit_cluster_index];
+
+  if (current_index <= hit_ids[0])
     return hit_ids[0];
-  
-  if (target_index >= hit_ids[hit_ids.length - 1])
+
+  if (current_index >= hit_ids[hit_ids.length - 1])
     return hit_ids[hit_ids.length - 1];
 
   var i = 0, j = hit_ids.length, mid = 0;
   while (i < j) {
     mid = Math.floor((i + j)/2);
-    if (hit_ids[mid] == target_index)
+    if (hit_ids[mid] == current_index)
       return hit_ids[mid];
 
-    if (target_index < hit_ids[mid]) {
-      if (mid > 0 && target_index > hit_ids[mid - 1])
-        return getClosest(hit_ids[mid-1], hit_ids[mid], target_index);
+    if (current_index < hit_ids[mid]) {
+      if (mid > 0 && current_index > hit_ids[mid - 1])
+        return getClosest(hit_ids[mid-1], hit_ids[mid], current_index);
       j = mid;
     }
     else {
-      if (mid < hit_ids.length - 1 && target_index < hit_ids[mid+1])
-        return getClosest(hit_ids[mid], hit_ids[mid+1], target_index)
+      if (mid < hit_ids.length - 1 && current_index < hit_ids[mid+1])
+        return getClosest(hit_ids[mid], hit_ids[mid+1], current_index)
       i = mid + 1;
     }
   }
