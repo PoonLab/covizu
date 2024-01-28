@@ -102,11 +102,12 @@ def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None,
                  "         {nonhuman} non-human genomes".format(**rejects))
 
 
-def batch_fasta(gen, cur, size=100):
+def batch_fasta(gen, cur=None, size=100):
     """
     Concatenate sequence records in stream into FASTA-formatted text in batches of
     <size> records.
     :param gen:  generator, return value of load_gisaid()
+    :param cur: cursor for the PostgreSQL
     :param size:  int, number of records per batch
     :yield:  str, list; FASTA-format string and list of records (dict) in batch
     """
@@ -117,8 +118,11 @@ def batch_fasta(gen, cur, size=100):
         qname = record['covv_virus_name']
         sequence = record.pop('sequence')
         
-        cur.execute("SELECT * FROM SEQUENCES WHERE qname = '%s'"%qname)
-        result = cur.fetchone()
+        result = None
+        if cur:
+            cur.execute("SELECT * FROM SEQUENCES WHERE qname = '%s'"%qname)
+            result = cur.fetchone()
+        
         if result:
             # reading old records from database
             # and handling list to tuple conversion
@@ -138,13 +142,14 @@ def batch_fasta(gen, cur, size=100):
         yield stdin, batch
 
 
-def extract_features(batcher, ref_file, cur, binpath='minimap2', nthread=3, minlen=29000):
+def extract_features(batcher, ref_file, cur=None, binpath='minimap2', nthread=3, minlen=29000):
     """
     Stream output from JSON.xz file via load_gisaid() into minimap2
     via subprocess.
 
     :param batcher:  generator, returned by batch_fasta()
     :param ref_file:  str, path to reference genome (FASTA format)
+    :param cur: cursor for the PostgreSQL
     :param binpath:  str, path to minimap2 binary executable
     :param nthread:  int, number of threads to run minimap2
     :param minlen:  int, minimum genome length
@@ -174,9 +179,10 @@ def extract_features(batcher, ref_file, cur, binpath='minimap2', nthread=3, minl
             record = new_records[qname]
             record.update({'diffs': diffs, 'missing': missing})
 
-            # inserting diffs and missing as json strings
-            cur.execute("INSERT INTO SEQUENCES VALUES(%s, %s, %s, %s, %s, %s, %s)",
-                        [json.dumps(v) if k in ['diffs', 'missing'] else v for k, v in record.items()])
+            if cur:
+                # inserting diffs and missing as json strings
+                cur.execute("INSERT INTO SEQUENCES VALUES(%s, %s, %s, %s, %s, %s, %s)",
+                            [json.dumps(v) if k in ['diffs', 'missing'] else v for k, v in record.items()])
             yield record
 
 

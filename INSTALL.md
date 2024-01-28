@@ -42,7 +42,7 @@ git clone https://github.com/PoonLab/covizu
 sudo python3 setup.py install  # omit `sudo` if you don't have superuser privileges
 ```
 
-* Install PostgreSQL - [Database for Extracted Features](https://github.com/PoonLab/covizu/issues/485)
+* [Optional] Install PostgreSQL - [Database for Extracted Features](https://github.com/PoonLab/covizu/issues/485)
   * [Download](https://www.postgresql.org/download/) and install PostgreSQL based on your operating system or pull the latest [docker image](https://hub.docker.com/_/postgres)
   * The following environment variables must be defined:
     * `POSTGRES_USER` - User name set up during installation of PostgreSQL

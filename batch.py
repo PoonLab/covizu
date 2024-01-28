@@ -10,10 +10,6 @@ from covizu.utils.progress_utils import Callback
 from covizu.utils.batch_utils import *
 from covizu.utils.seq_utils import SC2Locator
 from tempfile import NamedTemporaryFile
-import psycopg2
-import psycopg2.extras
-from psycopg2 import sql
-from psycopg2.errors import DuplicateDatabase
 
 def parse_args():
     parser = argparse.ArgumentParser(description="CoVizu analysis pipeline automation")
@@ -99,6 +95,8 @@ def parse_args():
                         help="Bootstrap cutoff for consensus tree (default 0.5). "
                              "Only used if --cons is specified.")
     
+    parser.add_argument('--use-db', action="store_true",
+                        help="Use a database to store and retrieve features for sequences")
     parser.add_argument('--dbname', type=str, default=os.environ.get("POSTGRES_DB", "gisaid_db"),
                         help="Postgresql database name")
     parser.add_argument('--dbhost', type=str, default=os.environ.get("POSTGRES_HOST", "localhost"),
@@ -155,36 +153,41 @@ if __name__ == "__main__":
     args = parse_args()
     cb = Callback()
 
-    # Check if database exists
-    connection_parameters = {
-        "host": args.dbhost,
-        "port": args.dbport,
-        "user": args.dbuser,
-        "password": args.dbpswd,
-    }
+    cur = None
+    if args.use_db:
+        import psycopg2
+        import psycopg2.extras
+        from psycopg2 import sql
+        from psycopg2.errors import DuplicateDatabase
 
-    connection = None
-    try:
-        connection = psycopg2.connect(**connection_parameters)
-        connection.autocommit = True
+        # Check if database exists
+        connection_parameters = {
+            "host": args.dbhost,
+            "port": args.dbport,
+            "user": args.dbuser,
+            "password": args.dbpswd,
+        }
 
-        cursor = connection.cursor()
-        cursor.execute(sql.SQL('CREATE DATABASE {}').format(sql.Identifier(args.dbname)))
-        cb.callback("Database {} created successfully.".format(args.dbname))
+        connection = None
+        try:
+            connection = psycopg2.connect(**connection_parameters)
+            connection.autocommit = True
 
+            cursor = connection.cursor()
+            cursor.execute(sql.SQL('CREATE DATABASE {}').format(sql.Identifier(args.dbname)))
+            cb.callback("Database {} created successfully.".format(args.dbname))
+        except DuplicateDatabase:
+            cb.callback("Database {} already exists.".format(args.dbname))
+        except psycopg2.Error as e:
+            cb.callback("Error initiating connection to database: {}".format(e))
+            sys.exit()
+        finally:
+            if connection is not None:
+                cursor.close()
+                connection.close()
 
-    except DuplicateDatabase:
-        cb.callback("Database {} already exists.".format(args.dbname))
-    except psycopg2.Error as e:
-        cb.callback("Error initiating connection to database: {}".format(e))
-        sys.exit()
-    finally:
-        if connection is not None:
-            cursor.close()
-            connection.close()
-
-    connection_parameters['dbname'] = args.dbname
-    cur, conn = open_connection(connection_parameters)
+        connection_parameters['dbname'] = args.dbname
+        cur, conn = open_connection(connection_parameters)
 
     # check that user has loaded openmpi module
     try:
@@ -216,8 +219,9 @@ if __name__ == "__main__":
     # filter data, align genomes, extract features, sort by lineage
     by_lineage = process_feed(args, cur, cb.callback)
 
-    # calling commit immediately after db transactions
-    conn.commit()
+    if args.use_db:
+        # calling commit immediately after db transactions
+        conn.commit()
 
     # separate XBB and other recombinant lineages
     aliases = parse_alias(args.alias)
