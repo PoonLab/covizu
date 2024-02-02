@@ -1,6 +1,7 @@
 const { MongoClient } = require("mongodb");
 const readline = require("readline");
 const fs = require('fs');
+const { $NODE_ENV } = require("../config/config")
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -251,4 +252,10 @@ const userConfirmationCallback = function (answer) {
   }
 }
 
-rl.question(question_warning, userConfirmationCallback)
+if ($NODE_ENV == 'PROD' || $NODE_ENV == 'DEV') {
+  rl.close()
+  updateDatabase();
+}
+else {
+  rl.question(question_warning, userConfirmationCallback)
+}

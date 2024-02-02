@@ -20,3 +20,5 @@ cypress/fixtures/
 cypress/plugins/
 *.pyc
 *.yml
+!docker-compose.yml
+!docker_scripts/backend/*
