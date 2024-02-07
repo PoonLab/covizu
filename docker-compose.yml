@@ -1,4 +1,4 @@
-version: "1.0"
+version: "3.5"
 services:
   mongodb:
     image: mongo:5.0
@@ -30,3 +30,18 @@ services:
     container_name: epicov
     ports:
       - 8003:8003
+
+  postgres:
+    container_name: postgres
+    image: postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA: /data/postgres
+    volumes:
+       - postgres:/data/postgres
+    ports:
+      - 5432:5432
+
+volumes:
+  postgres:

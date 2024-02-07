@@ -52,6 +52,15 @@ sudo python3 setup.py install  # omit `sudo` if you don't have superuser privile
     * `POSTGRES_HOST` - The host name where PostgreSQL is running on. The default host is `localhost`
     * `POSTGRES_PORT` - The port used by PostgreSQL. The default port number is `5432`
 
+* [Optional] Using Docker
+  * In the root directory, run `docker compose -up postgres` to build and start PostgreSQL. This will create a default network called `covizu_default`
+  * In a `.env` file, include the following:
+    * `POSTGRES_HOST=postgres`
+    * `POSTGRES_USER=`
+    * `POSTGRES_PASSWORD=`
+  * Build the docker image from the `Dockerfile.backend` Dockerfile using the following command: `docker build --platform=linux/amd64 -t covizu-backend -f Dockerfile.backend .`
+  * Create a container named `backend` from the `covizu-backend` image using the following command: `docker run --name backend --volume ${PWD}:/root/covizu --network covizu_default --env-file .env -itd covizu-backend`
+
 ### Setup Front-End
 
 If you're running the server (front-end) for the first time, obtain the following data files from our main server at 
