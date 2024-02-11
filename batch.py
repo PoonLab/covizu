@@ -132,6 +132,36 @@ def open_connection(connection_parameters):
 
     cur.execute('''CREATE INDEX IF NOT EXISTS qname_index ON SEQUENCES (qname)''')
 
+    cluster_table = '''
+    CREATE TABLE IF NOT EXISTS CLUSTERS (
+        lineage VARCHAR(255) PRIMARY KEY, 
+        cluster_data JSONB
+    );
+    '''
+    cur.execute(cluster_table)
+    cur.execute('''CREATE INDEX IF NOT EXISTS lineage_index on CLUSTERS (lineage)''')
+
+    updated_lineages = '''
+    CREATE TABLE IF NOT EXISTS NEW_RECORDS (
+        qname VARCHAR(255),
+        lineage VARCHAR(255)
+    );
+    '''
+    cur.execute(updated_lineages)
+
+    clear_updated_lineages = '''
+    DELETE FROM NEW_RECORDS
+    '''
+    cur.execute(clear_updated_lineages)
+
+    dbstats_table = '''
+    CREATE TABLE IF NOT EXISTS DBSTATS (
+        lineage VARCHAR(255) PRIMARY KEY,
+        dbstats_data JSONB
+    );
+    '''
+    cur.execute(dbstats_table)
+
     conn.commit()
     return cur, conn
 
@@ -219,10 +249,6 @@ if __name__ == "__main__":
     # filter data, align genomes, extract features, sort by lineage
     by_lineage = process_feed(args, cur, cb.callback)
 
-    if args.use_db:
-        # calling commit immediately after db transactions
-        conn.commit()
-
     # separate XBB and other recombinant lineages
     aliases = parse_alias(args.alias)
     designation = {}
@@ -277,9 +303,37 @@ if __name__ == "__main__":
             Phylo.write(timetree_xbb, file=handle, format='newick')
         # else empty file
 
+    updated_lineages = None
+    if args.use_db:
+        updated_lineages_query = '''
+        SELECT DISTINCT LINEAGE FROM NEW_RECORDS;
+        '''
+        cur.execute(updated_lineages_query)
+        updated_lineages = [row['lineage'] for row in cur.fetchall()]
+
     # clustering analysis of lineages
-    result, infection_prediction = make_beadplots(by_lineage, args, cb.callback, t0=cb.t0.timestamp())
+    result, infection_prediction = make_beadplots(by_lineage, args, cb.callback, t0=cb.t0.timestamp(), updated_lineages=updated_lineages)
     clust_file = os.path.join(args.outdir, 'clusters.{}.json'.format(timestamp))
+    if args.use_db:
+        # Insert all updated records into the database
+        for record in result:
+            cur.execute('''
+            INSERT INTO CLUSTERS 
+            VALUES (%s, %s)
+            ON CONFLICT (lineage) DO UPDATE
+            SET cluster_data = %s
+            ''', [record['lineage'], json.dumps(record), json.dumps(record)])
+        
+        # Retrieve cluster data for other lineages from the database
+        for lineage, _ in by_lineage.items():
+            if lineage not in updated_lineages:
+                cur.execute("SELECT cluster_data FROM CLUSTERS WHERE lineage = '%s'"%lineage)
+                cluster_info = cur.fetchone()
+                if cluster_info is None:
+                    cb.callback("Missing CLUSTERS record for lineage {}".format(lineage), level='ERROR')
+                    sys.exit()
+                result.append(cluster_info['cluster_data'])
+
     with open(clust_file, 'w') as handle:
         json.dump(result, fp=handle)
 
@@ -305,6 +359,16 @@ if __name__ == "__main__":
             'lineages': {}
         }
         for lineage, records in by_lineage.items():
+            # Check if stats for the lineage are in the database
+            if args.use_db and (lineage not in updated_lineages):
+                cur.execute("SELECT dbstats_data FROM DBSTATS WHERE lineage = '%s'"%lineage)
+                lineage_stats = cur.fetchone()
+                if lineage_stats is None:
+                    cb.callback("Missing DBSTATS record for lineage {}".format(lineage), level='ERROR')
+                    sys.exit()
+                val['lineages'][lineage] = lineage_stats['dbstats_data']
+                continue
+
             prefix = lineage.split('.')[0]
 
             # resolve PANGO prefix aliases 
@@ -326,7 +390,20 @@ if __name__ == "__main__":
                 'infections': infection_prediction[lineage],
                 'raw_lineage': lname
             }
+            
+            if args.use_db:
+                cur.execute('''
+                INSERT INTO DBSTATS 
+                VALUES (%s, %s)
+                ON CONFLICT (lineage) DO UPDATE
+                SET dbstats_data = %s
+                ''', [lineage, json.dumps(val['lineages'][lineage]), json.dumps(val['lineages'][lineage])])
+
         json.dump(val, handle)
+
+    if args.use_db:
+        conn.commit()
+        conn.close()
 
     # upload output files to webserver, requires SSH key credentials
     if not args.dry_run:
