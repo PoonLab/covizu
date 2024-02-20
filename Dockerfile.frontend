@@ -5,13 +5,13 @@ RUN mkdir -p /opt/app
 WORKDIR /opt/app
 COPY $basepath/package.json $basepath/package-lock.json .
 RUN npm install
-COPY $basepath/config/* config/
-COPY $basepath/js/* js/
-COPY $basepath/server/* server/
-COPY $basepath/data/* data/ 
-COPY $basepath/img/* img/ 
-COPY $basepath/css/* css/ 
-COPY $basepath/mongodb_scripts/* mongodb_scripts/
+COPY $basepath/config/ config/
+COPY $basepath/js/ js/
+COPY $basepath/server/ server/
+COPY $basepath/data/ data/ 
+COPY $basepath/img/ img/ 
+COPY $basepath/css/ css/ 
+COPY $basepath/mongodb_scripts/ mongodb_scripts/
 COPY $basepath/*.html $basepath/*.js .
 COPY .env* .
 EXPOSE $port
