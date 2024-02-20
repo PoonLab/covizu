@@ -183,6 +183,8 @@ def extract_features(batcher, ref_file, cur=None, binpath='minimap2', nthread=3,
                 # inserting diffs and missing as json strings
                 cur.execute("INSERT INTO SEQUENCES VALUES(%s, %s, %s, %s, %s, %s, %s)",
                             [json.dumps(v) if k in ['diffs', 'missing'] else v for k, v in record.items()])
+                cur.execute("INSERT INTO NEW_RECORDS VALUES(%s, %s)",
+                            [qname, record['covv_lineage']])
             yield record
 
 

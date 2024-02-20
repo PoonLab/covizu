@@ -286,7 +286,7 @@ def parse_alias(alias_file):
     return alias
 
 
-def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_lineages.txt',
+def make_beadplots(by_lineage, args, callback=None, t0=None, updated_lineages=None, txtfile='minor_lineages.txt',
                    recode_file="recoded.json"):
     """
     Wrapper for beadplot_serial - divert to clustering.py in MPI mode if
@@ -306,6 +306,8 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
         callback("Recoding features, compressing variants..")
     recoded = {}
     for lineage, records in by_lineage.items():
+        if updated_lineages is not None and lineage not in updated_lineages:
+            continue
         union, labels, indexed = clustering.recode_features(records, limit=args.max_variants)
 
         # serialize tuple keys (features of union), #335
@@ -319,7 +321,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
 
     # partition lineages into major and minor categories
     intermed = [(len(features), lineage) for lineage, features in by_lineage.items()
-                if len(features) < args.mincount]
+                if len(features) < args.mincount and (updated_lineages is None or lineage in updated_lineages)]
     intermed.sort(reverse=True)  # descending order
     minor = dict([(lineage, None) for _, lineage in intermed if lineage is not None])
 
@@ -345,7 +347,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
 
     # process major lineages
     for lineage, features in by_lineage.items():
-        if lineage in minor:
+        if lineage in minor or (updated_lineages is not None and lineage not in updated_lineages):
             continue
 
         if callback:
