@@ -1,0 +1,32 @@
+version: "1.0"
+services:
+  mongodb:
+    image: mongo:5.0
+    container_name: mongodb
+    restart: unless-stopped
+    ports:
+      - 27017:27017
+
+  covizu:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        basepath: .
+        port: 8001
+    container_name: covizu
+    ports:
+      - 8001:8001
+    depends_on:
+      - mongodb
+
+  epicov:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        basepath: .
+        port: 8003
+    container_name: epicov
+    ports:
+      - 8003:8003
