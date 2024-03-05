@@ -114,7 +114,7 @@ var country_pal = {
 };
 
 // load time-scaled phylogeny from server
-var nwk, df, countries, region_map;
+var nwk, df, df_xbb, countries, region_map;
 $.ajax({
   url: "data/timetree.nwk",
   success: function(data) {
@@ -122,10 +122,10 @@ $.ajax({
   }
 });
 
-var clusters, tips,
+var clusters, tips, recombinant_tips,
     accn_to_cid, cindex, lineage_to_cid, lineage;
 var edgelist = [], points = [], variants = []
-var map_cidx_to_id = [], id_to_cidx = [];
+var map_cidx_to_id = [], id_to_cidx = [], display_id = {};
 
 req = $.when(
   $.getJSON("/epicov_api/tips", function(data) {
@@ -137,9 +137,27 @@ req = $.when(
       x.mcoldate = new Date(x.mcoldate)
     });
   }),
+  $.getJSON("/epicov_api/recombtips", function(data) {
+    recombinant_tips = data;
+    recombinant_tips.forEach(x => {
+      x.first_date = new Date(x.first_date)
+      x.last_date = new Date(x.last_date)
+      x.coldate = new Date(x.coldate)
+      x.mcoldate = new Date(x.mcoldate)
+    });
+  }),
   $.getJSON("/epicov_api/df", function(data) {
     df = data;
     df.forEach(x => {
+      x.first_date = x.first_date ? new Date(x.first_date) : undefined
+      x.last_date = x.last_date ? new Date(x.last_date) : undefined
+      x.coldate = x.coldate ? new Date(x.coldate) : undefined
+      x.mcoldate = x.coldate ? new Date(x.mcoldate) : undefined
+    });
+  }),
+  $.getJSON("/epicov_api/xbb", function(data) {
+    df_xbb = data;
+    df_xbb.forEach(x => {
       x.first_date = x.first_date ? new Date(x.first_date) : undefined
       x.last_date = x.last_date ? new Date(x.last_date) : undefined
       x.coldate = x.coldate ? new Date(x.coldate) : undefined
@@ -158,6 +176,17 @@ req.done( async function() {
 
   drawtree(df);
   draw_clusters(tips);
+  // switch($("#display-tree").val()) {
+  //   case "XBB Lineages":
+  //     drawtree(df_xbb);
+  //     draw_clusters(tips);
+  //     break;
+  //   case "Other Recombinants":
+  //   default:
+  //     drawtree(df);
+  //     draw_clusters(tips);
+  // }
+
 
   var rect = d3.selectAll("#svg-timetree > svg > rect"),
       node = rect.nodes()[rect.size()-1];
@@ -217,6 +246,31 @@ req.done( async function() {
 	  key = d3.select(rect[i]).attr("cidx");
 	  map_cidx_to_id[key] = parseInt(d3.select(rect[i]).attr("id").substring(3));
   }
+
+  // Maps id to a cidx
+  const reverse_recombinant_tips = [...recombinant_tips].reverse()
+  var i = 0, first, last;
+  first = i;
+  for (const index in reverse_recombinant_tips) {
+    id_to_cidx[i++] = 'cidx-' + reverse_recombinant_tips[index].cluster_idx;
+  }
+  last = i - 1;
+  display_id["other_recombinants"] = {"first": first, "last": last};
+
+  first = i;
+  var xbb_tips = df_xbb.filter(x=>x.isTip);
+  for (const index in xbb_tips) {
+    id_to_cidx[i++] = 'cidx-' + xbb_tips[index].cluster_idx;
+  }
+  last = i - 1;
+  display_id["xbb"] = {"first": first, "last": last};
+
+  first = i;
+  for (const index in tips) {
+    id_to_cidx[i++] = 'cidx-' + tips[index].cluster_idx;
+  }
+  last = i - 1;
+  display_id["non_recombinants"] = {"first": first, "last": last};
 
   // Maps id to a cidx
   const reverseMapping = o => Object.keys(o).reduce((r, k) => Object.assign(r, { [o[k]]: (r[o[k]] || []).concat(k) }), {})

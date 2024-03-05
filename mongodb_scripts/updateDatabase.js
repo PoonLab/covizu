@@ -147,9 +147,9 @@ async function updateDatabase() {
       global.df_xbb = readTree(global.xbbtree);
 
       console.log("Preparing tips, recombinant_tips from df,clusters")
-      const tips = map_clusters_to_tips(global.df, global.df_xbb, global.clusters);
+      const {tips, recombinant_tips} = map_clusters_to_tips(global.df, global.df_xbb, global.clusters);
       global.tips = tips;
-      // global.recombinant_tips = recombinant_tips;
+      global.recombinant_tips = recombinant_tips;
 
       console.log("Preparing accn_to_cid from clusters")
       global.accn_to_cid = index_accessions(global.clusters)
@@ -187,11 +187,11 @@ async function updateDatabase() {
       console.log(`Created ${res.insertedCount} documents in ${$ACTIVE_DATABASE}.${$COLLECTION__TIPS}`);
       delete global.tips;
 
-      // if (global.recombinant_tips.length > 0) {
-      //   res = await db.collection($COLLECTION__RECOMBINANT_TIPS).insertMany(global.recombinant_tips);
-      //   console.log(`Created ${res.insertedCount} documents in ${$ACTIVE_DATABASE}.${$COLLECTION__RECOMBINANT_TIPS}`);
-      //   delete global.recombinant_tips;
-      // }
+      if (global.recombinant_tips.length > 0) {
+        res = await db.collection($COLLECTION__RECOMBINANT_TIPS).insertMany(global.recombinant_tips);
+        console.log(`Created ${res.insertedCount} documents in ${$ACTIVE_DATABASE}.${$COLLECTION__RECOMBINANT_TIPS}`);
+        delete global.recombinant_tips;
+      }
       
       /** MongoDB has a size-limit of ~17MB per record. So accn_to_cid needs to be broken down into an array of objects*/
       res = await db.collection($COLLECTION__ACCN_TO_CID).insertMany(Object.entries(global.accn_to_cid).map(el => { j = {}; j[el[0]] = el[1]; return j }));
@@ -211,9 +211,9 @@ async function updateDatabase() {
       console.log(`Created ${res.insertedCount} documents in ${$ACTIVE_DATABASE}.${$COLLECTION__DF_TREE}`);
       delete global.df;
 
-      // res = await db.collection($COLLECTION__XBB_TREE).insertMany(global.df_xbb);
-      // console.log(`Created ${res.insertedCount} documents in ${$ACTIVE_DATABASE}.${$COLLECTION__DF_TREE}`);
-      // delete global.df_xbb;
+      res = await db.collection($COLLECTION__XBB_TREE).insertMany(global.df_xbb);
+      console.log(`Created ${res.insertedCount} documents in ${$ACTIVE_DATABASE}.${$COLLECTION__DF_TREE}`);
+      delete global.df_xbb;
 
       res = await db.collection($COLLECTION__AUTOCOMPLETE_DATA).insertMany(global.autocomplete_data.map(subArray => {return {'norm': subArray[0],'accn': subArray[1]};}))
       console.log(`Created ${res.insertedCount} documents in ${$ACTIVE_DATABASE}.${$COLLECTION__AUTOCOMPLETE_DATA}`);
