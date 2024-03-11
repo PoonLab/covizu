@@ -464,7 +464,7 @@ function map_clusters_to_tips(df, df_xbb, clusters) {
       for (var i=0; i<labels.length; i++) {
         label = labels[i];
         variant = cluster['nodes'][label];
-        coldates = coldates.concat(variant.map(x => x[0]));
+        coldates = coldates.concat(variant.map(x => x[3]));
       }
       coldates.sort();  // in place, ascending order
   
@@ -525,6 +525,35 @@ function map_clusters_to_tips(df, df_xbb, clusters) {
   
     for (const cidx in recombinant_tips) {
       recombinant_tips[cidx].y = cidx
+    }
+
+    // XBB Tree
+    var tips_xbb = df_xbb.filter(x => x.children.length===0)
+    tip_labels = tips_xbb.map(x => x.thisLabel)  // accessions
+
+    for (const [_, xbb_cidx] of Object.entries(xbb)) {
+        cluster = clusters[xbb_cidx];
+        if (cluster["nodes"].length === 1) {
+            continue
+        }
+
+        // find variant in cluster that matches a tip label
+        labels = Object.keys(cluster["nodes"])
+        root = tip_labels.filter(value => value === cluster['lineage'])[0];
+
+        if (root === undefined) {
+            console.log("Failed to match cluster of index ", xbb_cidx , " to a tip in the tree");
+            continue;
+        }
+
+        tips_xbb = map_tips(xbb_cidx, labels, root, tips_xbb, tip_labels, cluster)
+    }
+
+    for (var tip of tips_xbb) {
+        mapped_x = date_to_xaxis(tips_xbb, tip.first_date);
+        if (mapped_x > tip.x) {
+            tip.x = mapped_x
+        }
     }
 
     return {tips, recombinant_tips};

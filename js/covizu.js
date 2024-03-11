@@ -122,7 +122,7 @@ $.ajax({
   }
 });
 
-var clusters, tips, recombinant_tips,
+var clusters, tips, recombinant_tips, xbb_tips,
     accn_to_cid, cindex, lineage_to_cid, lineage;
 var edgelist = [], points = [], variants = []
 var map_cidx_to_id = [], id_to_cidx = [], display_id = {};
@@ -174,19 +174,45 @@ req.done( async function() {
   $("#splash-button").button("enable");
   $("#splash-extra").html("");  // remove loading animation
 
-  drawtree(df);
-  draw_clusters(tips);
-  // switch($("#display-tree").val()) {
-  //   case "XBB Lineages":
-  //     drawtree(df_xbb);
-  //     draw_clusters(tips);
-  //     break;
-  //   case "Other Recombinants":
-  //   default:
-  //     drawtree(df);
-  //     draw_clusters(tips);
-  // }
+  // Maps id to a cidx
+  const reverse_recombinant_tips = [...recombinant_tips].reverse()
+  var i = 0, first, last;
+  first = i;
+  for (const index in reverse_recombinant_tips) {
+    id_to_cidx[i++] = 'cidx-' + reverse_recombinant_tips[index].cluster_idx;
+  }
+  last = i - 1;
+  display_id["other_recombinants"] = {"first": first, "last": last};
 
+  first = i;
+  xbb_tips = df_xbb.filter(x=>x.isTip);
+  for (const index in xbb_tips) {
+    id_to_cidx[i++] = 'cidx-' + xbb_tips[index].cluster_idx;
+  }
+  last = i - 1;
+  display_id["xbb"] = {"first": first, "last": last};
+
+  first = i;
+  for (const index in tips) {
+    id_to_cidx[i++] = 'cidx-' + tips[index].cluster_idx;
+  }
+  last = i - 1;
+  display_id["non_recombinants"] = {"first": first, "last": last};
+
+  // Maps cidx to an idx
+  const reverseMapping = o => Object.keys(o).reduce((r, k) => Object.assign(r, { [o[k]]: (r[o[k]] || parseInt(k)) }), {})
+  map_cidx_to_id = reverseMapping(id_to_cidx)
+
+  switch($("#display-tree").val()) {
+    case "XBB Lineages":
+      drawtree(df_xbb);
+      draw_clusters(tips);
+      break;
+    case "Other Recombinants":
+    default:
+      drawtree(df);
+      draw_clusters(tips);
+  }
 
   var rect = d3.selectAll("#svg-timetree > svg > rect"),
       node = rect.nodes()[rect.size()-1];
@@ -237,44 +263,6 @@ req.done( async function() {
         //search(accn);
     }
   });
-
-
-  // Maps cidx to an id
-  var key;
-  var rect = d3.selectAll('#svg-timetree > svg > rect:not(.clickedH)').nodes();
-  for (var i = 0; i < rect.length; i++) {
-	  key = d3.select(rect[i]).attr("cidx");
-	  map_cidx_to_id[key] = parseInt(d3.select(rect[i]).attr("id").substring(3));
-  }
-
-  // Maps id to a cidx
-  const reverse_recombinant_tips = [...recombinant_tips].reverse()
-  var i = 0, first, last;
-  first = i;
-  for (const index in reverse_recombinant_tips) {
-    id_to_cidx[i++] = 'cidx-' + reverse_recombinant_tips[index].cluster_idx;
-  }
-  last = i - 1;
-  display_id["other_recombinants"] = {"first": first, "last": last};
-
-  first = i;
-  var xbb_tips = df_xbb.filter(x=>x.isTip);
-  for (const index in xbb_tips) {
-    id_to_cidx[i++] = 'cidx-' + xbb_tips[index].cluster_idx;
-  }
-  last = i - 1;
-  display_id["xbb"] = {"first": first, "last": last};
-
-  first = i;
-  for (const index in tips) {
-    id_to_cidx[i++] = 'cidx-' + tips[index].cluster_idx;
-  }
-  last = i - 1;
-  display_id["non_recombinants"] = {"first": first, "last": last};
-
-  // Maps id to a cidx
-  const reverseMapping = o => Object.keys(o).reduce((r, k) => Object.assign(r, { [o[k]]: (r[o[k]] || []).concat(k) }), {})
-  id_to_cidx = reverseMapping(map_cidx_to_id);
 
 
   /***********************  SEARCH INTERFACE ***********************/
