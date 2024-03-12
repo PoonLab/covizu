@@ -161,8 +161,30 @@ async function main_search(text_query, start_date, end_date) {
   });
 
   // Keeps track of the clicked cluster
-  var curr_cluster = d3.selectAll(".clicked").nodes()[0].attributes.cidx.nodeValue;
-  var selected_cidx = id_to_cidx[closest_match(curr_cluster, hit_id)];
+  var selected_cidx,
+      curr_cluster = d3.selectAll(".clicked").nodes()[0].attributes.id.nodeValue;
+
+  switch($("#display-tree").val()) {
+    case "Other Recombinants":
+      selected_cidx = closest_display_match(curr_cluster, hit_id, display_id.other_recombinants.first, display_id.other_recombinants.last);
+      break;
+    case "XBB Lineages":
+      selected_cidx = closest_display_match(curr_cluster, hit_id, display_id.xbb.first, display_id.xbb.last);
+      break;
+    default:
+      selected_cidx = closest_display_match(curr_cluster, hit_id, display_id.non_recombinants.first, display_id.non_recombinants.last);
+  }
+
+  if (selected_cidx === null) {
+    // If null, then there isn't a match in the selected display. Figure out which display has the closest idx
+    selected_cidx = closest_match(curr_cluster, hit_id);
+
+    var display = await getdata(`/epicov_api/display/${id_to_cidx[selected_cidx].substring(5)}`);
+    await $("#display-tree").val(display[0])
+    await changeDisplay();
+  }
+
+  selected_cidx = id_to_cidx[selected_cidx];
 
   var selections = d3.selectAll("#svg-timetree > svg > rect:not(.clickedH)")
     .filter(function() {
@@ -224,6 +246,14 @@ async function lineage_search(text_query) {
     return;
   }
 
+  // Get the lineage to determine if the tree needs to be redrawn
+  var display = await getdata(`/epicov_api/display/${cidx}`);
+
+  if (!($("#display-tree").val() === display[0])) {
+    await $("#display-tree").val(display[0])
+    await changeDisplay();
+  }
+
   var cluster = select_cluster("cidx-"+cidx);
 
   // Reduces the opacity of all clusters
@@ -251,6 +281,14 @@ async function accession_search(text_query) {
   if (cidx === undefined) {
     $('#error_message').text(`No matches. Please try again.`);
     return;
+  }
+
+  // Get the lineage to determine if the tree needs to be redrawn
+  var display = await getdata(`/epicov_api/display/${cidx}`);
+
+  if (!($("#display-tree").val() === display[0])) {
+    await $("#display-tree").val(display[0])
+    await changeDisplay();
   }
 
   var cluster = select_cluster("cidx-"+cidx);
@@ -338,6 +376,32 @@ async function select_next_prev_bead(bead_id_to_accession, curr_bead) {
   await fetch(`/epicov_api/cid/${bead_id_to_accession[curr_bead]}`)
   .then(response => response.text())
   .then(data => curr_cid = data);
+
+  // Get the lineage to determine if the tree needs to be redrawn
+  var display = await getdata(`/epicov_api/display/${curr_cid}`);
+
+  if (!($("#display-tree").val() === display[0])) {
+    await $("#display-tree").val(display[0])
+    await changeDisplay();
+
+    // Change opacity of clusters with results
+    var hits = search_results.get().hit_ids;
+
+    var selections = d3.selectAll("#svg-timetree > svg > rect:not(.clickedH)")
+        .filter(function() {
+          return hits.includes(parseInt(this.id.substring(3)))
+        });
+
+    // Reduces the opacity of all clusters
+    d3.select("#svg-timetree")
+        .selectAll("rect:not(.clicked):not(.clickedH)")
+        .attr("class","not_SelectedCluster");
+
+    // Increases the opacity for only the clusters with hits
+    for (const node of selections.nodes()){
+      d3.select(node).attr("class", "SelectedCluster");
+    }
+  }
 
   var next_cluster = d3.selectAll('rect[cidx="cidx-'+curr_cid+'"]');
   d3.selectAll("rect.clickedH").remove();
@@ -592,6 +656,34 @@ function closest_match(non_hit_cluster_index, hit_ids) {
       i = mid + 1;
     }
   }
+}
+
+function closest_display_match(non_hit_cluster_index, hit_ids, minRange, maxRange) {
+  const current_index = map_cidx_to_id[non_hit_cluster_index];
+
+  var i = 0, j = hit_ids.length, mid = 0, currentValue = null, closestValue = null;
+  while (i < j) {
+    mid = Math.floor((i + j)/2);
+    currentValue = hit_ids[mid];
+
+    if (hit_ids[mid] === current_index)
+      return hit_ids[mid];
+
+    if (minRange <= currentValue && currentValue <= maxRange) {
+      if (closestValue === null || Math.abs(currentValue - current_index) < Math.abs(closestValue - current_index))
+        closestValue = currentValue;
+
+      if (currentValue < current_index)
+        i = mid + 1;
+      else
+        j = mid - 1;
+    }
+    else if (currentValue < minRange)
+      i = mid + 1;
+    else
+      j = mid - 1;
+  }
+  return closestValue;
 }
 
 function getClosest(key1, key2, target) {
