@@ -1,10 +1,10 @@
 // regular expression to remove redundant sequence name components
 const pat = /^hCoV-19\/(.+\/.+)\/20[0-9]{2}$/gi;
 const { unique, mode, tabulate, merge_tables, utcDate } = require('./utils')
-const { $DATA_FOLDER } = require("../config")
+const { $DATA_FOLDER } = require("../config/config")
 const dbstats = require(`../${$DATA_FOLDER}/dbstats.json`)
 const d3 = require('../js/d3')
-var region_map = {} // map country to region
+require("../globalVariables")
 
 /**
  * Parse nodes that belong to the same variant.
@@ -75,8 +75,8 @@ function parse_variant(variant, y, cidx, accn, mindate, maxdate) {
         for (let i = 0; i < country.length; i++) {
             let this_country = country[i],
                 this_region = region[i];
-            if (region_map[this_country] === undefined) {
-                region_map[this_country] = this_region;
+            if (global.region_map[this_country] === undefined) {
+                global.region_map[this_country] = this_region;
             }
         }
 
@@ -328,7 +328,75 @@ function date_to_xaxis(reftip, coldate) {
     var numDays = d3.timeDay.count(reftip.first_date, coldate)
     return (numDays/365.25) + reftip.x;
   }
+/**
+ * Converts Date to x-coordinate of the tree scale
+ * 
+ * @param {Date} coldate
+ * @returns {float} x-coordinate value 
+ */
+// function date_to_xaxis(tips_obj, coldate) {
+//     var numDays, earliest, latest, interval;
+//     numDays = d3.timeDay.count(tips_obj[0].first_date, coldate);
+//     earliest = d3.min(tips_obj, function(d) {return d.first_date});
+//     latest = d3.max(tips_obj, function(d) {return d.last_date});
+//     interval = d3.timeDay.count(earliest, latest)/3;
+//     return (numDays/interval) + tips_obj[0].x;
+// }
   
+
+const map_tips = (cidx, labels, root, tips, tip_labels, cluster) => {
+    var root_idx = tip_labels.indexOf(root),  // row index in data frame
+    root_xcoord = tips[root_idx].x;  // left side of cluster starts at end of tip
+
+    // find most recent sample collection date
+    var coldates = Array(),
+        label, variant;
+
+    for (var i = 0; i < labels.length; i++) {
+        label = labels[i];
+        variant = cluster['nodes'][label];
+        coldates = coldates.concat(variant.map(x => x[3]));
+    }
+    coldates.sort();  // in place, ascending order
+
+    var first_date = utcDate(coldates[0]),
+        last_date = utcDate(coldates[coldates.length - 1]);
+
+    // augment data frame with cluster data
+    tips[root_idx].cluster_idx = cidx;
+    tips[root_idx].region1 = cluster.region1;
+    tips[root_idx].region = cluster.region;
+    tips[root_idx].country = cluster.country;
+    tips[root_idx].searchtext = cluster.searchtext;
+    tips[root_idx].label1 = cluster["lineage"];
+    tips[root_idx].count = coldates.length;
+    tips[root_idx].varcount = cluster["sampled_variants"]; // Number for sampled variants
+    tips[root_idx].sampled_varcount = labels.filter(x => x.substring(0, 9) !== "unsampled").length;
+    tips[root_idx].first_date = first_date;
+    tips[root_idx].last_date = last_date;
+    tips[root_idx].pdist = cluster.pdist;
+    tips[root_idx].rdist = cluster.rdist;
+
+    tips[root_idx].coldate = last_date;
+    tips[root_idx].x1 = root_xcoord - ((last_date - first_date) / 3.154e10);
+    tips[root_idx].x2 = root_xcoord;
+
+    // map dbstats for lineage to tip
+    tip_stats = dbstats["lineages"][cluster["lineage"]];
+    tips[root_idx].max_ndiffs = tip_stats.max_ndiffs;
+    tips[root_idx].mean_ndiffs = tip_stats.mean_ndiffs;
+    tips[root_idx].nsamples = tip_stats.nsamples;
+
+    // calculate residual from mean differences and mean collection date - fixes #241
+    let times = coldates.map(x => utcDate(x).getTime()),
+        origin = 18231,  // days between 2019-12-01 and UNIX epoch (1970-01-01)
+        mean_time = times.reduce((x, y) => x + y) / times.length / 8.64e7 - origin,
+        rate = 0.0655342,  // subs per genome per day
+        exp_diffs = rate * mean_time;  // expected number of differences
+    tips[root_idx].residual = tip_stats.mean_ndiffs - exp_diffs;  // tip_stats.residual;
+
+    return tips;
+}
 
 
 /**
@@ -337,7 +405,8 @@ function date_to_xaxis(reftip, coldate) {
  * @param {Array} clusters: data from clusters JSON
  * @returns {Array} subset of data frame annotated with cluster data
  */
-function map_clusters_to_tips(df, clusters) {
+function map_clusters_to_tips(df, df_xbb, clusters) {
+    let recombinants = [], xbb = [];
     // extract accession numbers from phylogeny data frame
     var tips = df.filter(x => x.children.length === 0),
         tip_labels = tips.map(x => x.thisLabel),  // accessions
@@ -349,65 +418,145 @@ function map_clusters_to_tips(df, clusters) {
             continue
         }
 
+        if (dbstats["lineages"][cluster["lineage"]]["raw_lineage"].startsWith("XBB")) {
+            xbb.push(cidx);
+            continue;
+        }
+          
+        if (dbstats["lineages"][cluster["lineage"]]["raw_lineage"].startsWith("X")) {
+            recombinants.push(cidx)
+            continue;
+        }
+
         // find variant in cluster that matches a tip label
         var labels = Object.keys(cluster["nodes"]),
             root = tip_labels.filter(value => value === cluster['lineage'])[0];
+
         if (root === undefined) {
             console.log("Failed to match cluster of index ", cidx, " to a tip in the tree");
             continue;
         }
 
-        var root_idx = tip_labels.indexOf(root),  // row index in data frame
-            root_xcoord = tips[root_idx].x;  // left side of cluster starts at end of tip
-
-        // find most recent sample collection date
-        var coldates = Array(),
-            label, variant;
-
-        for (var i = 0; i < labels.length; i++) {
-            label = labels[i];
-            variant = cluster['nodes'][label];
-            coldates = coldates.concat(variant.map(x => x[3]));
-        }
-        coldates.sort();  // in place, ascending order
-
-        var first_date = utcDate(coldates[0]),
-            last_date = utcDate(coldates[coldates.length - 1]);
-
-        // augment data frame with cluster data
-        tips[root_idx].cluster_idx = cidx;
-        tips[root_idx].region1 = cluster.region1;
-        tips[root_idx].region = cluster.region;
-        tips[root_idx].country = cluster.country;
-        tips[root_idx].searchtext = cluster.searchtext;
-        tips[root_idx].label1 = cluster["lineage"];
-        tips[root_idx].count = coldates.length;
-        tips[root_idx].varcount = cluster["sampled_variants"]; // Number for sampled variants
-        tips[root_idx].sampled_varcount = labels.filter(x => x.substring(0, 9) !== "unsampled").length;
-        tips[root_idx].first_date = first_date;
-        tips[root_idx].last_date = last_date;
-        tips[root_idx].pdist = cluster.pdist;
-        tips[root_idx].rdist = cluster.rdist;
-
-        tips[root_idx].coldate = last_date;
-        tips[root_idx].x1 = root_xcoord - ((last_date - first_date) / 3.154e10);
-        tips[root_idx].x2 = root_xcoord;
-
-        // map dbstats for lineage to tip
-        tip_stats = dbstats["lineages"][cluster["lineage"]];
-        tips[root_idx].max_ndiffs = tip_stats.max_ndiffs;
-        tips[root_idx].mean_ndiffs = tip_stats.mean_ndiffs;
-        tips[root_idx].nsamples = tip_stats.nsamples;
-
-        // calculate residual from mean differences and mean collection date - fixes #241
-        let times = coldates.map(x => utcDate(x).getTime()),
-            origin = 18231,  // days between 2019-12-01 and UNIX epoch (1970-01-01)
-            mean_time = times.reduce((x, y) => x + y) / times.length / 8.64e7 - origin,
-            rate = 0.0655342,  // subs per genome per day
-            exp_diffs = rate * mean_time;  // expected number of differences
-        tips[root_idx].residual = tip_stats.mean_ndiffs - exp_diffs;  // tip_stats.residual;
+        tips = map_tips(cidx, labels, root, tips, tip_labels, cluster)
     }
-    return tips;
+    for (var tip of tips) {
+        mapped_x = date_to_xaxis(tips[0], tip.first_date);
+        if (mapped_x > tip.x) { 
+          tip.x = mapped_x
+        }
+    }
+
+    var recombinant_tips = []
+    for (const cidx in recombinants) {
+      var cluster = clusters[recombinants[cidx]];
+      if (cluster["nodes"].length === 1) {
+        continue
+      }
+  
+      // find variant in cluster that matches a tip label
+      var labels = Object.keys(cluster["nodes"]);
+      var root_idx = cidx;  // row index in data frame
+  
+      // find most recent sample collection date
+      var coldates = Array(),
+          label, variant;
+  
+      for (var i=0; i<labels.length; i++) {
+        label = labels[i];
+        variant = cluster['nodes'][label];
+        coldates = coldates.concat(variant.map(x => x[3]));
+      }
+      coldates.sort();  // in place, ascending order
+  
+      var first_date = utcDate(coldates[0]),
+          last_date = utcDate(coldates[coldates.length-1]);
+      
+      // Calculate the mean collection date
+      let date_diffs = coldates.map(x => (utcDate(x)-first_date) / (1000 * 3600 * 24)
+              // d3.timeDay.count(first_date, utcDate(x))
+          ),
+          mean_date = Math.round(date_diffs.reduce((a, b) => a + b, 0) / date_diffs.length);
+  
+  
+      // calculate residual from mean differences and mean collection date - fixes #241
+      let times = coldates.map(x => utcDate(x).getTime()),
+          origin = 18231,  // days between 2019-12-01 and UNIX epoch (1970-01-01)
+          mean_time = times.reduce((x, y)=>x+y) / times.length / 8.64e7 - origin,
+          rate = 0.0655342,  // subs per genome per day
+          exp_diffs = rate * mean_time;  // expected number of differences
+  
+      tip_stats = dbstats["lineages"][cluster["lineage"]];
+  
+      // recombinant_tips[root_idx].mcoldate = first_date.addDays(mean_date);
+      recombinant_tips.push({
+        cluster_idx: recombinants[cidx],
+        allregions: cluster.allregions,
+        region: cluster.region,
+        country: cluster.country,
+        searchtext: cluster.searchtext,
+        label1: cluster["lineage"],
+        count: coldates.length,
+        varcount: cluster["sampled_variants"], // Number for sampled variants
+        sampled_varcount: labels.filter(x => x.substring(0,9) !== "unsampled").length,
+        first_date: first_date,
+        last_date: last_date,
+        pdist: cluster.pdist,
+        rdist: cluster.rdist,
+    
+        coldate: last_date,
+        x: 0,
+        x1: 0,
+        x2: 0,
+        y: cidx,
+        
+        // map dbstats for lineage to tip
+        max_ndiffs: tip_stats.max_ndiffs,
+        mean_ndiffs: tip_stats.mean_ndiffs,
+        nsamples: tip_stats.nsamples,
+        mutations: tip_stats.mutations,
+        residual: tip_stats.mean_ndiffs - exp_diffs,  // tip_stats.residual;
+        infections: tip_stats.infections
+      })
+    }
+  
+    recombinant_tips = recombinant_tips.sort(function(a, b) {
+      return a.first_date - b.first_date;
+    })
+  
+    for (const cidx in recombinant_tips) {
+      recombinant_tips[cidx].y = cidx
+    }
+
+    // XBB Tree
+    var tips_xbb = df_xbb.filter(x => x.children.length===0)
+    tip_labels = tips_xbb.map(x => x.thisLabel)  // accessions
+
+    for (const [_, xbb_cidx] of Object.entries(xbb)) {
+        cluster = clusters[xbb_cidx];
+        if (cluster["nodes"].length === 1) {
+            continue
+        }
+
+        // find variant in cluster that matches a tip label
+        labels = Object.keys(cluster["nodes"])
+        root = tip_labels.filter(value => value === cluster['lineage'])[0];
+
+        if (root === undefined) {
+            console.log("Failed to match cluster of index ", xbb_cidx , " to a tip in the tree");
+            continue;
+        }
+
+        tips_xbb = map_tips(xbb_cidx, labels, root, tips_xbb, tip_labels, cluster)
+    }
+
+    for (var tip of tips_xbb) {
+        mapped_x = date_to_xaxis(tips_xbb, tip.first_date);
+        if (mapped_x > tip.x) {
+            tip.x = mapped_x
+        }
+    }
+
+    return {tips, recombinant_tips};
 }
 
 
@@ -442,15 +591,10 @@ function index_lineage(clusters) {
     return index;
 }
 
-function get_region_map() {
-    return region_map;
-}
-
 
 module.exports = {
     parse_clusters,
     map_clusters_to_tips,
     index_accessions,
-    index_lineage,
-    get_region_map
+    index_lineage
 };
