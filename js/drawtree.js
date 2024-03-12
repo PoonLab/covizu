@@ -474,8 +474,11 @@ function changeTreeColour() {
             return(coldate_pal(d.last_date));
           }
           else {  // Divergence
-            $("div#svg-diverge-legend").show();
-            return(diverge_pal(d.residual));
+            if ($("#display-tree").val() !== "Other Recombinants") {
+              $("div#svg-diverge-legend").show();
+              return (diverge_pal(d.residual));
+            }
+            return '#949391';
           }
         }
       })

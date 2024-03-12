@@ -568,8 +568,16 @@ $( "#dialog" ).dialog({ autoOpen: false });
 // implement save buttons
 var blob;
 function save_timetree() {
-  blob = new Blob([nwk], {type: "text/plain;charset=utf-8"});
-  saveAs(blob, "timetree.nwk");
+  var filename = $("#display-tree").val() === "XBB Lineages" ? "xbbtree.nwk" : "timetree.nwk"
+
+  $.ajax({
+    url: `data/${filename}`,
+    success: function(data) {
+      nwk = data;
+      blob = new Blob([nwk], {type: "text/plain;charset=utf-8"});
+      saveAs(blob, filename);
+    }
+  });
 }
 
 function save_beadplot() {
