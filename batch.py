@@ -415,6 +415,7 @@ if __name__ == "__main__":
 
         # upload files to EpiCoV server
         server_epicov = 'filogeneti.ca:/var/www/html/epicov/data'
+        subprocess.check_call(['scp', xbb_file, '{}/xbbtree.nwk'.format(server_epicov)])
         subprocess.check_call(['scp', nwk_file, '{}/timetree.nwk'.format(server_epicov)])
         subprocess.check_call(['scp', dbstat_file, '{}/dbstats.json'.format(server_epicov)])
 
