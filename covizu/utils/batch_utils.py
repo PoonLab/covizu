@@ -13,6 +13,118 @@ from rpy2.robjects.packages import importr
 import covizu
 import math
 
+
+class HUNePi:
+    """ A persistent object to store and communicate with an R instance """
+    def __init__(
+            self,
+            incmods=os.path.join(covizu.__path__[0], "hunepi/infections_increasing_model_comparisons.rds"),
+            infmods=os.path.join(covizu.__path__[0], "hunepi/num_infections_model_comparisons.rds")
+    ):
+        # Load required R packages
+        self.ape = importr('ape')
+        self.phytools = importr('phytools')
+        self.LambdaSkyline = importr('LambdaSkyline')
+        self.tidyquant = importr('tidyquant')
+        self.matrixStats = importr('matrixStats')
+
+        # Read Models
+        robjects.r(f'increasing_mods <- readRDS("{incmods}")')
+        robjects.r(f'infections_mods <- readRDS("{infmods}")')
+
+        # Function to make estimates from each model
+        robjects.r('''
+        estimate_vals <- function(models, predict_dat, exp = FALSE){
+            prediction_df <- data.frame(sapply(models, predict, newdata = predict_dat, type = "response"))
+            if (exp) {
+                prediction_df <- exp(prediction_df)
+            }
+            return(prediction_df)
+        }
+        ''')
+
+    def find_Ne(self, tree, labels_filename):
+        """Run beta skyline estimation implemented into R"""
+
+        # Make a temporary file containing the tree
+        tree_filename = NamedTemporaryFile('w', delete=False)
+        Phylo.write(tree, tree_filename.name, "nexus")
+        tree_filename.close()
+
+        robjects.r.assign("tree_filename", tree_filename.name)
+        robjects.r.assign("sequence_labels_file", labels_filename)
+
+        try:
+            robjects.r('''
+            set.seed(123456)
+
+            tree = read.nexus(tree_filename)
+            sequence_labels = read.csv(sequence_labels_file)
+            colnames(sequence_labels) = c("index", "value")
+
+            #Adjust tree to include branches of length 0 on identical sequences
+            tip_count = table(sequence_labels$index)
+            add_tip_count = data.frame(tip_count - 1)
+
+            for (tip_place_in_table in 1:nrow(add_tip_count)){
+                tip_name = add_tip_count[tip_place_in_table,1]
+                freq = add_tip_count[tip_place_in_table,2]
+                if(freq != 0){
+                    for (counter in 1:freq){
+                    tree <- bind.tip(tree, paste0(tip_name,"_", counter), edge.length = 0, 
+                                        where=which(tree$tip.label == tip_name))
+                    }
+                }
+            }
+
+            #Run skyline estimation
+            alpha = betacoal.maxlik(tree)
+            skyline = (skyline.multi.phylo(tree, alpha$p1))
+
+            #Output skyline estimation
+            pop_sizes <- head(skyline$population.size, n = 5)
+            mean_pop_size <- mean(pop_sizes, na.rm = TRUE)
+            ''')
+            Ne = list(robjects.r('mean_pop_size'))[0]
+        except:
+            Ne = ''
+
+        os.remove(tree_filename.name)  # Remove the temporary files
+        return Ne
+
+    def predict(self, summary_stats):
+        sum_stat_dat = robjects.vectors.DataFrame(summary_stats)
+        robjects.r.assign('sum_stat_dat', sum_stat_dat)
+
+        robjects.r('''
+        sum_stat_dat$Ne <- as.numeric(sum_stat_dat$Ne)
+        increasing_predict_prob <- estimate_vals(increasing_mods, sum_stat_dat)
+
+        if(!is.nan(sum_stat_dat$Ne)) {
+            pred_prob <- increasing_predict_prob[which(rownames(increasing_predict_prob) == "HUNePi.1"), ]
+        } else {
+            pred_prob <- increasing_predict_prob[which(rownames(increasing_predict_prob) == "HUPi.1"), ]
+        }
+
+        predicted_increase <- pred_prob > 0.5
+
+        if(predicted_increase){
+            infections_predictions <- 
+                estimate_vals(infections_mods, sum_stat_dat, exp = T)
+            if(!is.nan(sum_stat_dat$Ne)) {
+                predicted_infections <- infections_predictions[which(rownames(infections_predictions) == "HUNePi.1"), ]
+            } else {
+                predicted_infections <- infections_predictions[which(rownames(infections_predictions) == "HUPi.1"), ]
+            }
+        } else {
+            predicted_infections <- -1
+        }
+        ''')
+
+        predicted_infections = list(robjects.r('predicted_infections'))[0]
+        return predicted_infections
+
+
 def unpack_records(records):
     """
     by_lineage is a nested dict with the inner dicts keyed by serialized
@@ -195,63 +307,6 @@ def get_tree_summary_stats(tree, Ne, label_dict):
     return summary_stats
 
 
-def find_Ne(tree, labels_filename):
-    """Run beta skyline estimation implemented into R"""
-    
-    #Make a temporary file containing the tree
-    tree_filename = NamedTemporaryFile('w', delete=False)
-    Phylo.write(tree, tree_filename.name, "nexus")
-    tree_filename.close()
-    
-    # Load required R packages
-    ape = importr('ape')
-    phytools = importr('phytools')
-    LambdaSkyline = importr('LambdaSkyline')
-  
-    robjects.r.assign("tree_filename", tree_filename.name)
-    robjects.r.assign("sequence_labels_file", labels_filename)
-    
-    try:
-        robjects.r('''
-        set.seed(123456)
-
-        tree = read.nexus(tree_filename)
-        sequence_labels = read.csv(sequence_labels_file)
-        colnames(sequence_labels) = c("index", "value")
-
-        #Adjust tree to include branches of length 0 on identical sequences
-        tip_count = table(sequence_labels$index)
-        add_tip_count = data.frame(tip_count - 1)
-
-        for (tip_place_in_table in 1:nrow(add_tip_count)){
-            tip_name = add_tip_count[tip_place_in_table,1]
-            freq = add_tip_count[tip_place_in_table,2]
-            if(freq != 0){
-                for (counter in 1:freq){
-                tree <- bind.tip(tree, paste0(tip_name,"_", counter), edge.length = 0, 
-                                    where=which(tree$tip.label == tip_name))
-                }
-            }
-        }
-
-        #Run skyline estimation
-        alpha = betacoal.maxlik(tree)
-        skyline = (skyline.multi.phylo(tree, alpha$p1))
-
-        #Output skyline estimation
-        pop_sizes <- head(skyline$population.size, n = 5)
-        mean_pop_size <- mean(pop_sizes, na.rm = TRUE)
-        ''')
-        Ne = list(robjects.r('mean_pop_size'))[0]
-    except:
-        Ne = ''    
-
-    #Remove the temporary file
-    os.remove(tree_filename.name)
-    
-    return Ne
-
-
 def get_diversity(indexed, labels):
     """
     Calculate an analogue to the nucleotide diversity (the expected number of
@@ -300,6 +355,8 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, updated_lineages=No
 
     :return:  list, beadplot data by lineage
     """
+
+    hunepi = HUNePi()
 
     # recode data into variants and serialize
     if callback:
@@ -373,31 +430,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, updated_lineages=No
     result = []
     inf_predict = {}
 
-    # Load required R packages
-    tidyquant = importr('tidyquant')
-    matrixStats = importr('matrixStats')
-
-    # Read Models
-    robjects.r('increasing_mods <- readRDS("{}")'.format(os.path.join(covizu.__path__[0], "hunepi/infections_increasing_model_comparisons.rds")))
-    robjects.r('infections_mods <- readRDS("{}")'.format(os.path.join(covizu.__path__[0], "hunepi/num_infections_model_comparisons.rds")))
-
-    # Function to make estimates from each model
-    robjects.r('''
-    estimate_vals <- function(models, predict_dat, exp = FALSE){
-        prediction_df <- data.frame(sapply(models, predict, newdata = predict_dat, type = "response"))
-        if (exp) {
-            prediction_df <- exp(prediction_df)
-        }
-        return(prediction_df)
-    }
-    ''')
-
     for lineage in recoded:
-        # import trees
-        lineage_name = lineage.replace('/', '_')  # issue #297
-        outfile = open('{}/{}.nwk'.format(args.outdir, lineage_name))
-        trees = Phylo.parse(outfile, 'newick')  # note this returns a generator
-
         label_dict = recoded[lineage]['labels']
 
         if len(label_dict) == 1:
@@ -416,9 +449,11 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, updated_lineages=No
             
             inf_predict.update({lineage: 0})
         else:
-            # generate beadplot data
-            ctree = clustering.consensus(trees, cutoff=args.boot_cutoff, callback=callback)
-            outfile.close()  # done with Phylo.parse generator
+            # import trees and generate consensus
+            lineage_name = lineage.replace('/', '_')  # issue #297
+            with open(f'{args.outdir}/{lineage_name}.nwk') as outfile:
+                trees = Phylo.parse(outfile, 'newick')  # note this returns a generator
+                ctree = clustering.consensus(trees, cutoff=args.boot_cutoff, callback=callback)
 
             # incorporate hunipie
             clabel_dict = manage_collapsed_nodes(label_dict, ctree)
@@ -431,9 +466,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, updated_lineages=No
                 writer.writerow([key, value])
             labels_filename.close()
 
-            cne = find_Ne(ctree, labels_filename.name)
-
-            # Remove temporary file with labels
+            cne = hunepi.find_Ne(ctree, labels_filename.name)
             os.remove(labels_filename.name)
 
             # Collapse tree and manage the collapsed nodes
@@ -449,41 +482,12 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, updated_lineages=No
             if cne == '':
                 summary_stats['Ne'] = 'NaN'
 
-            sum_stat_dat = robjects.vectors.DataFrame(summary_stats)
-            robjects.r.assign('sum_stat_dat', sum_stat_dat)
-          
-            robjects.r('''
-            sum_stat_dat$Ne <- as.numeric(sum_stat_dat$Ne)
-            increasing_predict_prob <- estimate_vals(increasing_mods, sum_stat_dat)
-            
-            if(!is.nan(sum_stat_dat$Ne)) {
-                pred_prob <- increasing_predict_prob[which(rownames(increasing_predict_prob) == "HUNePi.1"), ]
-            } else {
-                pred_prob <- increasing_predict_prob[which(rownames(increasing_predict_prob) == "HUPi.1"), ]
-            }
-
-            predicted_increase <- pred_prob > 0.5
-
-            if(predicted_increase){
-                infections_predictions <- 
-                    estimate_vals(infections_mods, sum_stat_dat, exp = T)
-                if(!is.nan(sum_stat_dat$Ne)) {
-                    predicted_infections <- infections_predictions[which(rownames(infections_predictions) == "HUNePi.1"), ]
-                } else {
-                    predicted_infections <- infections_predictions[which(rownames(infections_predictions) == "HUPi.1"), ]
-                }
-            } else {
-                predicted_infections <- -1
-            }
-            ''')
-
-            predicted_infections = list(robjects.r('predicted_infections'))[0]
+            predicted_infections = hunepi.predict(summary_stats)
             inf_predict.update({lineage: predicted_infections})
 
             ctree = beadplot.annotate_tree(ctree, label_dict)
             beaddict = beadplot.serialize_tree(ctree)
-        
-        outfile.close()  # done with Phylo.parse generator
+
         beaddict.update({'sampled_variants': len(label_dict)})
         beaddict.update({'lineage': lineage})
 
