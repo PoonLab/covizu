@@ -191,7 +191,7 @@ function xaxis_to_date(x) {
     case "Other Recombinants":
       earliest = display_info['other_recombinants'].first;
   }
-  coldate = d3.timeDay.offset(earliest, Math.ceil(x * YEAR));
+  coldate = d3.timeDay.offset(earliest, x * YEAR);
   return (coldate.toISOString().split('T')[0]);
 }
 

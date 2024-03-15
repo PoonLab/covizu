@@ -331,8 +331,13 @@ req.done(async function() {
 
   // Store earliest and latest dates for each display type
   display_info["other_recombinants"] = {"first": d3.min(recombinant_tips, function(d) {return d.first_date}), "last": d3.max(recombinant_tips, function(d) {return d.last_date})};
-  display_info["non_recombinants"] = {"first": d3.timeDay.offset(tips[0].first_date, -1 * YEAR * tips[0].x), "last": d3.max(tips, function(d) {return d.last_date})};
-  display_info["xbb"] = {"first": d3.timeDay.offset(xbb_tips[0].first_date, -1 * YEAR * xbb_tips[0].x), "last": d3.max(xbb_tips, function(d) {return d.last_date})};
+
+  var min_tip;
+  min_tip = tips.filter(x => x.x === d3.min(tips, function(d) {return d.x}))[0]
+  display_info["non_recombinants"] = {"first": d3.timeDay.offset(min_tip.first_date, -1 * YEAR * min_tip.x), "last": d3.max(tips, function(d) {return d.last_date})};
+
+  min_tip = xbb_tips.filter(x => x.x === d3.min(xbb_tips, function(d) {return d.x}))[0]
+  display_info["xbb"] = {"first": d3.timeDay.offset(min_tip.first_date, -1 * YEAR * min_tip.x), "last": d3.max(xbb_tips, function(d) {return d.last_date})};
 
   // Maps cidx to an id
   const reverseMapping = o => Object.keys(o).reduce((r, k) => Object.assign(r, { [o[k]]: (r[o[k]] || parseInt(k)) }), {})
