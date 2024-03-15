@@ -237,7 +237,9 @@ var nwk, df, df_xbb, countries, mut_annotations, region_map;
 var clusters, beaddata, tips, recombinant_tips,
     accn_to_cid, cindex, lineage_to_cid, lineage;
 var edgelist = [], points = [], variants = []
-var map_cidx_to_id = [], id_to_cidx = [], display_id = {};
+var map_cidx_to_id = [], id_to_cidx = [], display_id = {}, display_info = {};
+
+const YEAR = 365.25; // Average number of days in a year
 
 req = $.when(
   
@@ -299,6 +301,7 @@ req.done(async function() {
   mutations = parse_mutation_annotations(mut_annotations);
   //spinner.stop();
   var curr_date = new Date();
+  curr_date.setHours(24,0,0,0);
   curr_date.setFullYear(curr_date.getFullYear() - 1);
 
   // Maps id to a cidx
@@ -325,6 +328,16 @@ req.done(async function() {
   }
   last = i - 1;
   display_id["non_recombinants"] = {"first": first, "last": last};
+
+  // Store earliest and latest dates for each display type
+  display_info["other_recombinants"] = {"first": d3.min(recombinant_tips, function(d) {return d.first_date}), "last": d3.max(recombinant_tips, function(d) {return d.last_date})};
+
+  var min_tip;
+  min_tip = tips.filter(x => x.x === d3.min(tips, function(d) {return d.x}))[0]
+  display_info["non_recombinants"] = {"first": d3.timeDay.offset(min_tip.first_date, -1 * YEAR * min_tip.x), "last": d3.max(tips, function(d) {return d.last_date})};
+
+  min_tip = xbb_tips.filter(x => x.x === d3.min(xbb_tips, function(d) {return d.x}))[0]
+  display_info["xbb"] = {"first": d3.timeDay.offset(min_tip.first_date, -1 * YEAR * min_tip.x), "last": d3.max(xbb_tips, function(d) {return d.last_date})};
 
   // Maps cidx to an id
   const reverseMapping = o => Object.keys(o).reduce((r, k) => Object.assign(r, { [o[k]]: (r[o[k]] || parseInt(k)) }), {})
@@ -670,20 +683,20 @@ req.done(async function() {
     var tree_cutoff = $("#tree-cutoff");
 
     const tree_multiplier = 100000; // Slider value needs to be an integer
-    var min = (d3.min(df, xValue)-0.05) * tree_multiplier;
+    var min = 0;
     var max = date_to_xaxis(d3.max(df, function(d) {return d.last_date})) * tree_multiplier;
     var start_value = date_to_xaxis(curr_date) * tree_multiplier;
 
     $("#tree-slider").slider({
       create: function( event, ui ) {
-        cutoff_date.text(xaxis_to_date($( this ).slider( "value" )/tree_multiplier, df[0], d3.min(df, function(d) {return d.first_date}), d3.max(df, function(d) {return d.last_date})));
+        cutoff_date.text(xaxis_to_date($( this ).slider( "value" )/tree_multiplier));
         var cutoff_pos = handle.position().left;
         tree_cutoff.css('left', cutoff_pos);
       },
       slide: async function( event, ui ) {
         move_arrow();
         
-        cutoff_date.text(xaxis_to_date(ui.value/tree_multiplier, df[0], d3.min(df, function(d) {return d.first_date}), d3.max(df, function(d) {return d.last_date})));
+        cutoff_date.text(xaxis_to_date(ui.value/tree_multiplier));
         await handle.change()
           
         cutoff_line.css('visibility', 'visible');
