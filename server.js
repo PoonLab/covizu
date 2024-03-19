@@ -27,9 +27,6 @@ if ($NODE_ENV == 'DEV' || $NODE_ENV == 'PROD') {
   dbManager.set_dbUrl($COVIZU_CONNECTION_URI)
   dbManager.set_dbName($ACTIVE_DATABASE)
   dbManager.start()
-    .then(() => {
-      dbManager.load_globalData();
-    })
 }
 
 app.get('/api/edgeList/:cindex', (req, res) => {
