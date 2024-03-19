@@ -11,7 +11,8 @@ import covizu.treetime
 import rpy2.robjects as robjects
 from rpy2.robjects.packages import importr
 import covizu
-import math
+from datetime import datetime
+
 
 def unpack_records(records):
     """
@@ -45,16 +46,22 @@ def unpack_records(records):
     return unpacked
 
 
-def build_timetree(by_lineage, args, callback=None):
-    """ Generate time-scaled tree of Pangolin lineages """
-
+def build_timetree(by_lineage, args, outgroup=None, callback=None, debug=False):
+    """
+    Generate time-scaled tree of Pangolin lineages
+    @param by_lineage:  dict, lists of records keyed by feature sets, keyed by lineage
+    @param args:  argparse.Namespace, arguments from CLI
+    @param outgroup:  str, optionally specify path to FASTA file containing outgroup sequence
+    @param debug:  bool, if True, write out FASTA of sequences from retrieve_genomes
+    @return str, Newick tree string produced by parse_nexus
+    """
     if callback:
         callback("Parsing Pango lineage designations")
     handle = open(args.lineages)
     header = next(handle)
     if header != 'taxon,lineage\n':
         if callback:
-            callback("Error: {} does not contain expected header row 'taxon,lineage'".format(args.lineages))
+            callback(f"Error: {args.lineages} does not contain expected header row 'taxon,lineage'")
         sys.exit()
     lineages = {}
     for line in handle:
@@ -72,7 +79,11 @@ def build_timetree(by_lineage, args, callback=None):
     if callback:
         callback("Identifying lineage representative genomes")
     fasta = covizu.treetime.retrieve_genomes(by_lineage, known_seqs=lineages, ref_file=args.ref,
-                                      earliest=True)
+                                      outgroup=outgroup, earliest=True)
+    if debug:
+        with open(f"build_timetree_dump.{datetime.now().isoformat()}.fasta", 'w') as outfile:
+            for h, s in fasta.items():
+                outfile.write(f">{h}\n{s}\n")
 
     if callback:
         callback("Reconstructing tree with {}".format(args.ft2bin))

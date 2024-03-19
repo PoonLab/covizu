@@ -68,9 +68,9 @@ def parse_args():
                         help="optional, path to CSV file containing Pango lineage designations.")
     parser.add_argument('--ttbin', default='treetime',
                         help='option, path to treetime binary executable')
-    parser.add_argument('--clock', type=float, default=8e-4,
+    parser.add_argument('--clock', type=float,
                         help='option, specify molecular clock rate for '
-                             'constraining Treetime analysis (default 8e-4).')
+                             'constraining Treetime analysis.')
     parser.add_argument('--earliest', action='store_true', 
                         help='option, use earliest sample per lineage for time-scaled '
                              'tree; otherwise defaults to most recent samples.')
@@ -287,18 +287,21 @@ if __name__ == "__main__":
         other_recomb.update(xbb)
         xbb = None  # no point in building a tree
 
-
     # reconstruct time-scaled trees 
-    timetree, residuals = build_timetree(non_recomb, args, cb.callback)
+    timetree, residuals = build_timetree(non_recomb, args, callback=cb.callback)
     timestamp = datetime.now().isoformat().split('.')[0]
     nwk_file = os.path.join(args.outdir, 'timetree.{}.nwk'.format(timestamp))
     with open(nwk_file, 'w') as handle:
         Phylo.write(timetree, file=handle, format='newick')
 
     xbb_file = os.path.join(args.outdir, 'xbbtree.{}.nwk'.format(timestamp))
+    # xbb_outgrp.fa is GISAID-derived data and should NOT be committed to repo
+    outgrp_file = os.path.join(covizu.__path__[0], "data/xbb_outgrp.fa")
     with open(xbb_file, 'w') as handle:
         if xbb is not None:
-            timetree_xbb, residuals_xbb = build_timetree(xbb, args, cb.callback)
+            timetree_xbb, residuals_xbb = build_timetree(
+                xbb, args, outgroup=outgrp_file, callback=cb.callback
+            )
             residuals.update(residuals_xbb)
             Phylo.write(timetree_xbb, file=handle, format='newick')
         # else empty file

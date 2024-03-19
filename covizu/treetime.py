@@ -178,7 +178,8 @@ def parse_nexus(nexus_file, fasta, callback=None):
     return phy, residuals
 
 
-def retrieve_genomes(by_lineage, known_seqs, ref_file, earliest=True, callback=None):
+def retrieve_genomes(by_lineage, known_seqs, ref_file, outgroup=None, earliest=True,
+                     callback=None):
     """
     Identify most recent sampled genome sequence for each Pangolin lineage.
     Export as FASTA for TreeTime analysis, including reference genome.
@@ -186,6 +187,8 @@ def retrieve_genomes(by_lineage, known_seqs, ref_file, earliest=True, callback=N
     :param by_lineage:  dict, return value from gisaid_utils::sort_by_lineage
     :param known_seqs:  dict, sequences used in Pango lineage designations
     :param ref_file:  str, path to FASTA file containing reference genome
+    :param outgroup:  str, path to FASTA containing outgroup sequence (optional).
+                      Defaults to None, where reference is used as outgroup.
     :param earliest:  bool, if False then use most recent genome as lineage representative
     :param callback:  optional, callback function
 
@@ -194,11 +197,17 @@ def retrieve_genomes(by_lineage, known_seqs, ref_file, earliest=True, callback=N
     # load and parse reference genome
     with open(ref_file) as handle:
         _, refseq = convert_fasta(handle)[0]
+        outseq = refseq
+
+    # optionally load outgroup sequence
+    if outgroup:
+        with open(outgroup) as handle:
+            _, outseq = convert_fasta(handle)[0]
 
     # allocate lists
     coldates = [None]
     lineages = ['reference']
-    seqs = [refseq]
+    seqs = [outseq]  # used by fasttree to root the tree
 
     # retrieve unaligned genomes from database
     for lineage, records in by_lineage.items():
