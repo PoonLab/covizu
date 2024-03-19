@@ -242,8 +242,10 @@ class DBManager {
                 { labels: { $regex: regexTerm } },
                 { accessions: { $regex: regexTerm } }
             ],
-            start_date: { $gt: new Date(start_date) },
-            end_date: { $lt: new Date(end_date) }
+            $and: [
+                { x: { $gt: new Date(start_date) } },
+                { x: { $lt: new Date(end_date) } }
+            ]
         }
         return this.db_.collection($COLLECTION__FLAT_DATA).find(query).toArray()
         .then((docs,err)=>{
@@ -277,7 +279,7 @@ class DBManager {
                 return this.db_.collection($COLLECTION__AUTOCOMPLETE_DATA).find().limit(global.MIN_RESULTS).toArray()
                 .then((docs,err)=>{return this.get_hits_callback(docs,err,term)})
             } else {
-                return([]);
+                return Promise.resolve([])
             }
         } else {
             const query = { "norm": { $regex: term, $options: "i" } };
