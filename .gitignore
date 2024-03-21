@@ -22,3 +22,9 @@ cypress/plugins/
 *.yml
 !docker-compose.yml
 !docker_scripts/backend/*
+*.json
+*.xz
+working/*
+scripts/*
+covizu/data/xbb_outgrp.fasta
+

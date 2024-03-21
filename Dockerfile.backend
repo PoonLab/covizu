@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -10,7 +10,7 @@ ENV OMPI_ALLOW_RUN_AS_ROOT=1 OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
 ADD https://bootstrap.pypa.io/get-pip.py /tmp/get-pip.py
 
 RUN python3.10 /tmp/get-pip.py
-RUN /usr/local/bin/pip install biopython mpi4py rpy2
+RUN /usr/local/bin/pip install biopython mpi4py rpy2 psycopg2-binary
 
 RUN R -e "install.packages('tidyquant',dependencies=TRUE, repos='http://cran.rstudio.com/')"
 RUN R -e "install.packages('matrixStats',dependencies=TRUE, repos='http://cran.rstudio.com/')"
@@ -32,7 +32,3 @@ RUN git clone --depth=1 https://github.com/neherlab/treetime.git /root/treetime 
 RUN git clone --depth=1 https://github.com/somme89/rapidNJ.git /root/rapidnj && \
     make -C /root/rapidnj && \
     cp /root/rapidnj/bin/rapidnj /usr/local/bin
-
-RUN git clone https://github.com/PoonLab/covizu.git /root/covizu && \
-    git -C /root/covizu submodule init && \
-    git -C /root/covizu submodule update
