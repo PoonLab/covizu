@@ -115,12 +115,13 @@ def batch_fasta(gen, cur=None, size=100):
     batch = []
 
     for i, record in enumerate(gen, 1):
-        qname = record['covv_virus_name']
+        accession = record['covv_accession_id']
+        qname ='{}__accession__{}'.format(record['covv_virus_name'].replace("'","''").replace(" ","_"), accession)
         sequence = record.pop('sequence')
         
         result = None
         if cur:
-            cur.execute("SELECT * FROM SEQUENCES WHERE qname = '%s'"%qname)
+            cur.execute("SELECT * FROM SEQUENCES WHERE accession = '%s'"%accession)
             result = cur.fetchone()
         
         if result:
@@ -160,16 +161,18 @@ def extract_features(batcher, ref_file, cur=None, binpath='minimap2', nthread=3,
         reflen = len(convert_fasta(handle)[0][1])
 
     for fasta, batch in batcher:
+        # If fasta is empty, no need to run minimap2
+        if len(fasta) == 0: 
+            continue
+
         new_records = {}
         for record in batch:
             if 'diffs' in record:
                 yield record
             else:
-                new_records[record['covv_virus_name']] = record
-
-        # If fasta is empty, no need to run minimap2
-        if len(fasta) == 0:
-            continue
+                record_id = '{}__accession__{}'.format(record['covv_virus_name'].replace("'","''").replace(" ","_"),
+                                                       record['covv_accession_id'])
+                new_records[record_id] = record
 
         mm2 = minimap2.minimap2(fasta, ref_file, stream=True, path=binpath, nthread=nthread,
                        minlen=minlen)
@@ -179,12 +182,14 @@ def extract_features(batcher, ref_file, cur=None, binpath='minimap2', nthread=3,
             record = new_records[qname]
             record.update({'diffs': diffs, 'missing': missing})
 
+            _, accession = qname.split("__accession__")
+
             if cur:
                 # inserting diffs and missing as json strings
                 cur.execute("INSERT INTO SEQUENCES VALUES(%s, %s, %s, %s, %s, %s, %s)",
                             [json.dumps(v) if k in ['diffs', 'missing'] else v for k, v in record.items()])
                 cur.execute("INSERT INTO NEW_RECORDS VALUES(%s, %s)",
-                            [qname, record['covv_lineage']])
+                            [accession, record['covv_lineage']])
             yield record
 
 

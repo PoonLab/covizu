@@ -130,7 +130,7 @@ def open_connection(connection_parameters):
                     diffs VARCHAR, missing VARCHAR)'''
     cur.execute(seqs_table)
 
-    cur.execute('''CREATE INDEX IF NOT EXISTS qname_index ON SEQUENCES (qname)''')
+    cur.execute('''CREATE INDEX IF NOT EXISTS accession_index ON SEQUENCES (accession)''')
 
     cluster_table = '''
     CREATE TABLE IF NOT EXISTS CLUSTERS (
@@ -143,7 +143,7 @@ def open_connection(connection_parameters):
 
     updated_lineages = '''
     CREATE TABLE IF NOT EXISTS NEW_RECORDS (
-        qname VARCHAR(255),
+        accession VARCHAR(255),
         lineage VARCHAR(255)
     );
     '''
