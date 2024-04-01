@@ -35,7 +35,6 @@
     "express": "^4.17.2",
     "fs": "^0.0.1-security",
     "http": "^0.0.1-security",
-    "https": "^1.0.0",
     "mongodb": "^5.8.0"
   },
   "devDependencies": {
