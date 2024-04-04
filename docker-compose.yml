@@ -4,8 +4,6 @@ services:
     image: mongo:5.0
     container_name: mongodb
     restart: unless-stopped
-    ports:
-      - 27017:27017
 
   covizu:
     build:
@@ -40,8 +38,6 @@ services:
       PGDATA: /data/postgres
     volumes:
        - postgres:/data/postgres
-    ports:
-      - 5432:5432
 
 volumes:
   postgres:

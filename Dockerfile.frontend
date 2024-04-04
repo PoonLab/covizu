@@ -14,5 +14,4 @@ COPY $basepath/css/ css/
 COPY $basepath/mongodb_scripts/ mongodb_scripts/
 COPY $basepath/*.html $basepath/*.js .
 COPY .env* .
-EXPOSE $port
 CMD ["sh", "-c", "npm run delete-users && npm run create-users && npm run update-db1 && npm run start-db1"]
