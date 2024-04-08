@@ -161,10 +161,6 @@ def extract_features(batcher, ref_file, cur=None, binpath='minimap2', nthread=3,
         reflen = len(convert_fasta(handle)[0][1])
 
     for fasta, batch in batcher:
-        # If fasta is empty, no need to run minimap2
-        if len(fasta) == 0: 
-            continue
-
         new_records = {}
         for record in batch:
             if 'diffs' in record:
@@ -173,6 +169,10 @@ def extract_features(batcher, ref_file, cur=None, binpath='minimap2', nthread=3,
                 record_id = '{}__accession__{}'.format(record['covv_virus_name'].replace("'","''").replace(" ","_"),
                                                        record['covv_accession_id'])
                 new_records[record_id] = record
+
+        # If fasta is empty, no need to run minimap2
+        if len(fasta) == 0:
+            continue
 
         mm2 = minimap2.minimap2(fasta, ref_file, stream=True, path=binpath, nthread=nthread,
                        minlen=minlen)
