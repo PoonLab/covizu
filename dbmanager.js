@@ -117,13 +117,17 @@ class DBManager {
                 console.log(`dbmanager::get_display error`,err);
                 return ;
             }
-            var rawLineage = doc["raw_lineage"];
-            if (rawLineage.startsWith("XBB"))
-                return ["XBB Lineages"];
-            else if (rawLineage.startsWith("X"))
-                return ["Other Recombinants"];
-            else
-                return ["Non-Recombinants"];
+            if (doc) {
+                var rawLineage = doc["raw_lineage"];
+                if (rawLineage.startsWith("XBB"))
+                    return ["XBB Lineages"];
+                else if (rawLineage.startsWith("X"))
+                    return ["Other Recombinants"];
+                else
+                    return ["Non-Recombinants"];
+            }
+            console.log(`dbmanager::get_display found no records for lineage=${lineage}`);
+            return [];
         })
     }
 

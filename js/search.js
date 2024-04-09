@@ -102,6 +102,8 @@ async function wrap_search() {
   // Prevent search when the query is just a space
   if (query === ' ') return;
 
+  query = query.trim();
+
   if (isAccn(query)) 
     await accession_search(query);
   else if (isLineage(query))
@@ -193,6 +195,12 @@ async function main_search(all_bead_data, text_query, start_date, end_date) {
     selected_cidx = closest_match(curr_cluster, hit_id);
 
     var display = await getdata(`/api/display/${id_to_cidx[selected_cidx].substring(5)}`);
+    
+    if (display.length === 0) {
+      $('#error_message').text(`No matches. Please try again.`);
+      return;
+    }
+
     await $("#display-tree").val(display[0])
     await changeDisplay();
     await reset_tree(partial_redraw=true);
@@ -265,6 +273,11 @@ async function lineage_search(text_query) {
   // Get the lineage to determine if the tree needs to be redrawn
   var display = await getdata(`/api/display/${cidx}`);
 
+  if (display.length === 0) {
+    $('#error_message').text(`No matches. Please try again.`);
+    return;
+  }
+
   if (!($("#display-tree").val() === display[0])) {
     await $("#display-tree").val(display[0])
     await changeDisplay();
@@ -306,6 +319,11 @@ async function accession_search(text_query) {
 
   // Get the lineage to determine if the tree needs to be redrawn
   var display = await getdata(`/api/display/${cidx}`);
+
+  if (display.length === 0) {
+    $('#error_message').text(`No matches. Please try again.`);
+    return;
+  }
 
   if (!($("#display-tree").val() === display[0])) {
     await $("#display-tree").val(display[0])
@@ -404,6 +422,11 @@ async function select_next_prev_bead(bead_id_to_accession, curr_bead) {
 
   // Get the lineage to determine if the tree needs to be redrawn
   var display = await getdata(`/api/display/${curr_cid}`);
+
+  if (display.length === 0) {
+    $('#error_message').text(`No matches. Please try again.`);
+    return;
+  }
 
   if (!($("#display-tree").val() === display[0])) {
     await $("#display-tree").val(display[0])
