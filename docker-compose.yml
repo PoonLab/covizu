@@ -1,11 +1,9 @@
-version: "1.0"
+version: "3.5"
 services:
   mongodb:
     image: mongo:5.0
     container_name: mongodb
     restart: unless-stopped
-    ports:
-      - 27017:27017
 
   covizu:
     build:
@@ -30,3 +28,16 @@ services:
     container_name: epicov
     ports:
       - 8003:8003
+
+  postgres:
+    container_name: postgres
+    image: postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA: /data/postgres
+    volumes:
+       - postgres:/data/postgres
+
+volumes:
+  postgres:

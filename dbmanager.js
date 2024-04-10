@@ -117,13 +117,17 @@ class DBManager {
                 console.log(`dbmanager::get_display error`,err);
                 return ;
             }
-            var rawLineage = doc["raw_lineage"];
-            if (rawLineage.startsWith("XBB"))
-                return ["XBB Lineages"];
-            else if (rawLineage.startsWith("X"))
-                return ["Other Recombinants"];
-            else
-                return ["Non-Recombinants"];
+            if (doc) {
+                var rawLineage = doc["raw_lineage"];
+                if (rawLineage.startsWith("XBB"))
+                    return ["XBB Lineages"];
+                else if (rawLineage.startsWith("X"))
+                    return ["Other Recombinants"];
+                else
+                    return ["Non-Recombinants"];
+            }
+            console.log(`dbmanager::get_display found no records for lineage=${lineage}`);
+            return [];
         })
     }
 
@@ -221,20 +225,6 @@ class DBManager {
         // return global.recombinant_tips
     }
 
-    // get_searchHits(start_date, end_date, query) {
-    //     // Flatten the json data to an array with bead data only
-    //     let flat_data = global.beaddata.map(bead => bead.points).flat();
-
-    //     //Find all the beads that are a hit. Convert text_query to lower case and checks to see if there is a match
-    //     let search_hits = flat_data.filter(function (bead) {
-    //         let temp = (bead.accessions.some(accession => (accession.toLowerCase()).includes(query)) ||
-    //             bead.labels.some(label => (label.toLowerCase()).includes(query))) &&
-    //             (bead.x >= start_date && bead.x <= end_date);
-    //         return temp;
-    //     });
-    //     return search_hits;
-    // }
-
     get_searchHits(start_date,end_date,term){
         const regexTerm = new RegExp(term,'i');
         const query = {
@@ -242,8 +232,10 @@ class DBManager {
                 { labels: { $regex: regexTerm } },
                 { accessions: { $regex: regexTerm } }
             ],
-            start_date: { $gt: new Date(start_date) },
-            end_date: { $lt: new Date(end_date) }
+            $and: [
+                { x: { $gt: new Date(start_date) } },
+                { x: { $lt: new Date(end_date) } }
+            ]
         }
         return this.db_.collection($COLLECTION__FLAT_DATA).find(query).toArray()
         .then((docs,err)=>{
@@ -277,78 +269,13 @@ class DBManager {
                 return this.db_.collection($COLLECTION__AUTOCOMPLETE_DATA).find().limit(global.MIN_RESULTS).toArray()
                 .then((docs,err)=>{return this.get_hits_callback(docs,err,term)})
             } else {
-                return([]);
+                return Promise.resolve([])
             }
         } else {
             const query = { "norm": { $regex: term, $options: "i" } };
             return this.db_.collection($COLLECTION__AUTOCOMPLETE_DATA).find(query).limit(global.MIN_RESULTS).toArray()
             .then((docs,err)=>{return this.get_hits_callback(docs,err,term)})
         }
-    }
-
-    async load_globalData() {
-        // console.log("Loading clusters")
-        // this.db_.collection($COLLECTION__CLUSTERS).find().toArray().then(docs=>{
-        //     global.clusters = docs;
-        //     console.log("Loading beaddata")
-        //     this.db_.collection($COLLECTION__BEADDATA).find().toArray().then(docs=>{
-        //         global.beaddata = docs;
-        //         console.log("Loading tips")
-        //         this.db_.collection($COLLECTION__TIPS).find().toArray().then(docs=>{
-        //             global.tips =  docs;
-        //             console.log("Loading recombinant_tips");
-        //             this.db_.collection($COLLECTION__RECOMBINANT_TIPS).find().toArray().then(docs=>{
-        //                 global.recombinant_tips = docs;
-        //                 console.log("Loading accn_to_cid")
-        //                 this.db_.collection($COLLECTION__ACCN_TO_CID).find().toArray().then(docs=>{
-        //                     global.accn_to_cid = docs;
-        //                     console.log("Loading lineage_to_cid")
-        //                     this.db_.collection($COLLECTION__LINEAGE_TO_CID).find().toArray().then(docs=>{
-        //                         global.lineage_to_cid = docs;
-        //                         console.log("Preparing global.autocomplete_data")
-        //                         global.autocomplete_data = Object.keys(global.accn_to_cid).sort().concat(Object.keys(global.lineage_to_cid).sort()).map(accn => [
-        //                             global.normalize(accn), accn
-        //                         ]);
-        //                     })
-        //                 })
-        //             })
-        //         });
-        //     })
-        // });
-        
-
-        // console.log("Loading clusters")
-        // global.clusters = await this.db_.collection($COLLECTION__CLUSTERS).find().toArray();
-
-        // console.log("Loading beaddata")
-        // global.beaddata = await this.db_.collection($COLLECTION__BEADDATA).find().toArray();
-        
-        // console.log("Loading tips")
-        // global.tips = await this.db_.collection($COLLECTION__TIPS).find().toArray();
-
-        // console.log("Loading recombinant_tips")
-        // global.recombinant_tips = await this.db_.collection($COLLECTION__RECOMBINANT_TIPS).find().toArray();
-
-        // console.log("Loading accn_to_cid")
-        // global.accn_to_cid = await this.db_.collection($COLLECTION__ACCN_TO_CID).find().toArray();
-
-        // console.log("Loading lineage_to_cid")
-        // global.lineage_to_cid = await this.db_.collection($COLLECTION__LINEAGE_TO_CID).find().toArray();
-
-        // await this.collClusters_.find().toArray()
-        //     .then((docs) => {
-        //         global.clusters = docs;
-        //         global.beaddata = parse_clusters(docs);
-        //     })
-
-        // const { tips, recombinant_tips } = map_clusters_to_tips(global.df, global.clusters);
-        // global.tips = tips;
-        // global.recombinant_tips = recombinant_tips;
-        // global.accn_to_cid = index_accessions(global.clusters);
-        // global.lineage_to_cid = index_lineage(global.clusters);
-        // global.autocomplete_data = Object.keys(global.accn_to_cid).sort().concat(Object.keys(global.lineage_to_cid).sort()).map(accn => [
-        //     global.normalize(accn), accn
-        // ]);
     }
 
     async start() {

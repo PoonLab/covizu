@@ -942,7 +942,6 @@ function region_to_string(my_regions) {
  */
 
 function gen_mut_table(obj) {
-  console.log("GEERNATING MUTATION TABLE ", obj)
   var mutations = [];
 
   // Check for a list of samples
@@ -1138,7 +1137,6 @@ function gen_details_table(obj) {
       .enter()
       .append('tr')
       .on("mouseover", function (x) {
-        //console.log(x);
         let circle = d3.select("circle#"+x[3]).attr("stroke-width", 2);
         circle.attr("r", 4*Math.sqrt(circle.datum().count)+3);
 

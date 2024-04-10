@@ -1,4 +1,4 @@
-const { $HTTP_PORT, $HTTPS_PORT, $SSL_CREDENTIALS, $NODE_ENV } = require("./config/config")
+const { $HTTP_PORT, $NODE_ENV } = require("./config/config")
 const {
   $COVIZU_CONNECTION_URI, $ACTIVE_DATABASE, $COLLECTION__CLUSTERS
 } = require('./config/dbconfig')
@@ -10,7 +10,6 @@ const app = express();
 const { utcDate } = require('./server/utils')
 
 var http = require('http');
-var https = require('https');
 
 app.use(compression());
 app.use(express.static('.'));
@@ -27,9 +26,6 @@ if ($NODE_ENV == 'DEV' || $NODE_ENV == 'PROD') {
   dbManager.set_dbUrl($COVIZU_CONNECTION_URI)
   dbManager.set_dbName($ACTIVE_DATABASE)
   dbManager.start()
-    .then(() => {
-      dbManager.load_globalData();
-    })
 }
 
 app.get('/api/edgeList/:cindex', (req, res) => {
@@ -134,12 +130,6 @@ app.get('/api/getHits/:query', (req, res) => {
   })
   // res.send(dbManager.get_hits(term));
 });
-
-// For the prod environment, need to create a https server
-if ($NODE_ENV=='PROD') {
-  var httpsServer = https.createServer($SSL_CREDENTIALS, app);
-  httpsServer.listen($HTTPS_PORT, () => console.log(`Listening on Port ${$HTTPS_PORT}...`))
-}
 
 var httpServer = http.createServer(app);
 httpServer.listen($HTTP_PORT, () => console.log(`Listening on Port ${$HTTP_PORT}...`));

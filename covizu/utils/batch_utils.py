@@ -11,7 +11,8 @@ import covizu.treetime
 import rpy2.robjects as robjects
 from rpy2.robjects.packages import importr
 import covizu
-import math
+from datetime import datetime
+
 
 def unpack_records(records):
     """
@@ -45,16 +46,22 @@ def unpack_records(records):
     return unpacked
 
 
-def build_timetree(by_lineage, args, callback=None):
-    """ Generate time-scaled tree of Pangolin lineages """
-
+def build_timetree(by_lineage, args, outgroup=None, callback=None, debug=False):
+    """
+    Generate time-scaled tree of Pangolin lineages
+    @param by_lineage:  dict, lists of records keyed by feature sets, keyed by lineage
+    @param args:  argparse.Namespace, arguments from CLI
+    @param outgroup:  str, optionally specify path to FASTA file containing outgroup sequence
+    @param debug:  bool, if True, write out FASTA of sequences from retrieve_genomes
+    @return str, Newick tree string produced by parse_nexus
+    """
     if callback:
         callback("Parsing Pango lineage designations")
     handle = open(args.lineages)
     header = next(handle)
     if header != 'taxon,lineage\n':
         if callback:
-            callback("Error: {} does not contain expected header row 'taxon,lineage'".format(args.lineages))
+            callback(f"Error: {args.lineages} does not contain expected header row 'taxon,lineage'")
         sys.exit()
     lineages = {}
     for line in handle:
@@ -72,7 +79,11 @@ def build_timetree(by_lineage, args, callback=None):
     if callback:
         callback("Identifying lineage representative genomes")
     fasta = covizu.treetime.retrieve_genomes(by_lineage, known_seqs=lineages, ref_file=args.ref,
-                                      earliest=True)
+                                      outgroup=outgroup, earliest=True)
+    if debug:
+        with open(f"build_timetree_dump.{datetime.now().isoformat()}.fasta", 'w') as outfile:
+            for h, s in fasta.items():
+                outfile.write(f">{h}\n{s}\n")
 
     if callback:
         callback("Reconstructing tree with {}".format(args.ft2bin))
@@ -84,7 +95,7 @@ def build_timetree(by_lineage, args, callback=None):
                                    clock=args.clock, verbosity=0)
 
     # writes output to treetime.nwk at `nexus_file` path
-    return covizu.treetime.parse_nexus(nexus_file, fasta)
+    return covizu.treetime.parse_nexus(nexus_file, fasta, callback)
 
 
 def beadplot_serial(lineage, features, args, callback=None): # pragma: no cover
@@ -286,7 +297,7 @@ def parse_alias(alias_file):
     return alias
 
 
-def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_lineages.txt',
+def make_beadplots(by_lineage, args, callback=None, t0=None, updated_lineages=None, txtfile='minor_lineages.txt',
                    recode_file="recoded.json"):
     """
     Wrapper for beadplot_serial - divert to clustering.py in MPI mode if
@@ -306,6 +317,8 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
         callback("Recoding features, compressing variants..")
     recoded = {}
     for lineage, records in by_lineage.items():
+        if updated_lineages is not None and lineage not in updated_lineages:
+            continue
         union, labels, indexed = clustering.recode_features(records, limit=args.max_variants)
 
         # serialize tuple keys (features of union), #335
@@ -319,7 +332,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
 
     # partition lineages into major and minor categories
     intermed = [(len(features), lineage) for lineage, features in by_lineage.items()
-                if len(features) < args.mincount]
+                if len(features) < args.mincount and (updated_lineages is None or lineage in updated_lineages)]
     intermed.sort(reverse=True)  # descending order
     minor = dict([(lineage, None) for _, lineage in intermed if lineage is not None])
 
@@ -345,7 +358,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
 
     # process major lineages
     for lineage, features in by_lineage.items():
-        if lineage in minor:
+        if lineage in minor or (updated_lineages is not None and lineage not in updated_lineages):
             continue
 
         if callback:
@@ -393,7 +406,7 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, txtfile='minor_line
     for lineage in recoded:
         # import trees
         lineage_name = lineage.replace('/', '_')  # issue #297
-        outfile = open('data/{}.nwk'.format(lineage_name))
+        outfile = open('{}/{}.nwk'.format(args.outdir, lineage_name))
         trees = Phylo.parse(outfile, 'newick')  # note this returns a generator
 
         label_dict = recoded[lineage]['labels']

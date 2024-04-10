@@ -11,7 +11,6 @@ from covizu.utils.batch_utils import *
 from covizu.utils.seq_utils import SC2Locator
 from tempfile import NamedTemporaryFile
 
-
 def parse_args():
     parser = argparse.ArgumentParser(description="CoVizu analysis pipeline automation")
 
@@ -69,9 +68,9 @@ def parse_args():
                         help="optional, path to CSV file containing Pango lineage designations.")
     parser.add_argument('--ttbin', default='treetime',
                         help='option, path to treetime binary executable')
-    parser.add_argument('--clock', type=float, default=8e-4,
+    parser.add_argument('--clock', type=float,
                         help='option, specify molecular clock rate for '
-                             'constraining Treetime analysis (default 8e-4).')
+                             'constraining Treetime analysis.')
     parser.add_argument('--earliest', action='store_true', 
                         help='option, use earliest sample per lineage for time-scaled '
                              'tree; otherwise defaults to most recent samples.')
@@ -95,6 +94,20 @@ def parse_args():
     parser.add_argument("--boot-cutoff", type=float, default=0.5,
                         help="Bootstrap cutoff for consensus tree (default 0.5). "
                              "Only used if --cons is specified.")
+    
+    parser.add_argument('--use-db', action="store_true",
+                        help="Use a database to store and retrieve features for sequences")
+    parser.add_argument('--dbname', type=str, default=os.environ.get("POSTGRES_DB", "gisaid_db"),
+                        help="Postgresql database name")
+    parser.add_argument('--dbhost', type=str, default=os.environ.get("POSTGRES_HOST", "localhost"),
+                        help="Postgresql database host address")
+    parser.add_argument('--dbport', type=str, default=os.environ.get("POSTGRES_PORT", "5432"),
+                        help="Connection to port number")
+    parser.add_argument('--dbuser', type=str, default=os.environ.get("POSTGRES_USER", None),
+                        help="Postgresl user")
+    parser.add_argument('--dbpswd', type=str, default=os.environ.get("POSTGRES_PASSWORD", None),
+                        help="Postgresl password")
+    
 
     parser.add_argument("--dry-run", action="store_true",
                         help="Do not upload output files to webserver.")
@@ -102,13 +115,64 @@ def parse_args():
     return parser.parse_args()
 
 
-def process_feed(args, callback=None):
+def open_connection(connection_parameters):
+    """ open connection to database, initialize tables if they don't exist
+        :out:
+            :cursor: interactive sql object containing tables
+    """
+    conn = psycopg2.connect(**connection_parameters)
+    cur = conn.cursor(cursor_factory = psycopg2.extras.RealDictCursor)
+
+    # create tables if they don't exist
+    seqs_table = '''CREATE TABLE IF NOT EXISTS SEQUENCES (accession VARCHAR(255)
+                    PRIMARY KEY, qname VARCHAR(255), lineage VARCHAR(255),
+                    date VARCHAR(255), location VARCHAR(255),
+                    diffs VARCHAR, missing VARCHAR)'''
+    cur.execute(seqs_table)
+
+    cur.execute('''CREATE INDEX IF NOT EXISTS accession_index ON SEQUENCES (accession)''')
+
+    cluster_table = '''
+    CREATE TABLE IF NOT EXISTS CLUSTERS (
+        lineage VARCHAR(255) PRIMARY KEY, 
+        cluster_data JSONB
+    );
+    '''
+    cur.execute(cluster_table)
+    cur.execute('''CREATE INDEX IF NOT EXISTS lineage_index on CLUSTERS (lineage)''')
+
+    updated_lineages = '''
+    CREATE TABLE IF NOT EXISTS NEW_RECORDS (
+        accession VARCHAR(255),
+        lineage VARCHAR(255)
+    );
+    '''
+    cur.execute(updated_lineages)
+
+    clear_updated_lineages = '''
+    DELETE FROM NEW_RECORDS
+    '''
+    cur.execute(clear_updated_lineages)
+
+    dbstats_table = '''
+    CREATE TABLE IF NOT EXISTS DBSTATS (
+        lineage VARCHAR(255) PRIMARY KEY,
+        dbstats_data JSONB
+    );
+    '''
+    cur.execute(dbstats_table)
+
+    conn.commit()
+    return cur, conn
+
+
+def process_feed(args, cur, callback=None):
     """ Process feed data """
     if callback:
         callback("Processing GISAID feed data")
     loader = gisaid_utils.load_gisaid(args.infile, minlen=args.minlen, mindate=args.mindate)
-    batcher = gisaid_utils.batch_fasta(loader, size=args.batchsize)
-    aligned = gisaid_utils.extract_features(batcher, ref_file=args.ref, binpath=args.mmbin,
+    batcher = gisaid_utils.batch_fasta(loader, cur, size=args.batchsize)
+    aligned = gisaid_utils.extract_features(batcher, ref_file=args.ref, cur=cur, binpath=args.mmbin,
                                             nthread=args.mmthreads, minlen=args.minlen)
     filtered = gisaid_utils.filter_problematic(aligned, vcf_file=args.vcf, cutoff=args.poisson_cutoff,
                                                callback=callback)
@@ -118,6 +182,42 @@ def process_feed(args, callback=None):
 if __name__ == "__main__":
     args = parse_args()
     cb = Callback()
+
+    cur = None
+    if args.use_db:
+        import psycopg2
+        import psycopg2.extras
+        from psycopg2 import sql
+        from psycopg2.errors import DuplicateDatabase
+
+        # Check if database exists
+        connection_parameters = {
+            "host": args.dbhost,
+            "port": args.dbport,
+            "user": args.dbuser,
+            "password": args.dbpswd,
+        }
+
+        connection = None
+        try:
+            connection = psycopg2.connect(**connection_parameters)
+            connection.autocommit = True
+
+            cursor = connection.cursor()
+            cursor.execute(sql.SQL('CREATE DATABASE {}').format(sql.Identifier(args.dbname)))
+            cb.callback("Database {} created successfully.".format(args.dbname))
+        except DuplicateDatabase:
+            cb.callback("Database {} already exists.".format(args.dbname))
+        except psycopg2.Error as e:
+            cb.callback("Error initiating connection to database: {}".format(e))
+            sys.exit()
+        finally:
+            if connection is not None:
+                cursor.close()
+                connection.close()
+
+        connection_parameters['dbname'] = args.dbname
+        cur, conn = open_connection(connection_parameters)
 
     # check that user has loaded openmpi module
     try:
@@ -147,7 +247,7 @@ if __name__ == "__main__":
         args.infile = gisaid_utils.download_feed(args.url, args.user, args.password)
 
     # filter data, align genomes, extract features, sort by lineage
-    by_lineage = process_feed(args, cb.callback)
+    by_lineage = process_feed(args, cur, cb.callback)
 
     # separate XBB and other recombinant lineages
     aliases = parse_alias(args.alias)
@@ -187,25 +287,56 @@ if __name__ == "__main__":
         other_recomb.update(xbb)
         xbb = None  # no point in building a tree
 
-
     # reconstruct time-scaled trees 
-    timetree, residuals = build_timetree(non_recomb, args, cb.callback)
+    timetree, residuals = build_timetree(non_recomb, args, callback=cb.callback)
     timestamp = datetime.now().isoformat().split('.')[0]
     nwk_file = os.path.join(args.outdir, 'timetree.{}.nwk'.format(timestamp))
     with open(nwk_file, 'w') as handle:
         Phylo.write(timetree, file=handle, format='newick')
 
     xbb_file = os.path.join(args.outdir, 'xbbtree.{}.nwk'.format(timestamp))
+    # xbb_outgrp.fa is GISAID-derived data and should NOT be committed to repo
+    outgrp_file = os.path.join(covizu.__path__[0], "data/xbb_outgrp.fa")
     with open(xbb_file, 'w') as handle:
         if xbb is not None:
-            timetree_xbb, residuals_xbb = build_timetree(xbb, args, cb.callback)
+            timetree_xbb, residuals_xbb = build_timetree(
+                xbb, args, outgroup=outgrp_file, callback=cb.callback
+            )
             residuals.update(residuals_xbb)
             Phylo.write(timetree_xbb, file=handle, format='newick')
         # else empty file
 
+    updated_lineages = None
+    if args.use_db:
+        updated_lineages_query = '''
+        SELECT DISTINCT LINEAGE FROM NEW_RECORDS;
+        '''
+        cur.execute(updated_lineages_query)
+        updated_lineages = [row['lineage'] for row in cur.fetchall()]
+
     # clustering analysis of lineages
-    result, infection_prediction = make_beadplots(by_lineage, args, cb.callback, t0=cb.t0.timestamp())
+    result, infection_prediction = make_beadplots(by_lineage, args, cb.callback, t0=cb.t0.timestamp(), updated_lineages=updated_lineages)
     clust_file = os.path.join(args.outdir, 'clusters.{}.json'.format(timestamp))
+    if args.use_db:
+        # Insert all updated records into the database
+        for record in result:
+            cur.execute('''
+            INSERT INTO CLUSTERS 
+            VALUES (%s, %s)
+            ON CONFLICT (lineage) DO UPDATE
+            SET cluster_data = %s
+            ''', [record['lineage'], json.dumps(record), json.dumps(record)])
+        
+        # Retrieve cluster data for other lineages from the database
+        for lineage, _ in by_lineage.items():
+            if lineage not in updated_lineages:
+                cur.execute("SELECT cluster_data FROM CLUSTERS WHERE lineage = '%s'"%lineage)
+                cluster_info = cur.fetchone()
+                if cluster_info is None:
+                    cb.callback("Missing CLUSTERS record for lineage {}".format(lineage), level='ERROR')
+                    sys.exit()
+                result.append(cluster_info['cluster_data'])
+
     with open(clust_file, 'w') as handle:
         json.dump(result, fp=handle)
 
@@ -231,6 +362,16 @@ if __name__ == "__main__":
             'lineages': {}
         }
         for lineage, records in by_lineage.items():
+            # Check if stats for the lineage are in the database
+            if args.use_db and (lineage not in updated_lineages):
+                cur.execute("SELECT dbstats_data FROM DBSTATS WHERE lineage = '%s'"%lineage)
+                lineage_stats = cur.fetchone()
+                if lineage_stats is None:
+                    cb.callback("Missing DBSTATS record for lineage {}".format(lineage), level='ERROR')
+                    sys.exit()
+                val['lineages'][lineage] = lineage_stats['dbstats_data']
+                continue
+
             prefix = lineage.split('.')[0]
 
             # resolve PANGO prefix aliases 
@@ -252,7 +393,20 @@ if __name__ == "__main__":
                 'infections': infection_prediction[lineage],
                 'raw_lineage': lname
             }
+            
+            if args.use_db:
+                cur.execute('''
+                INSERT INTO DBSTATS 
+                VALUES (%s, %s)
+                ON CONFLICT (lineage) DO UPDATE
+                SET dbstats_data = %s
+                ''', [lineage, json.dumps(val['lineages'][lineage]), json.dumps(val['lineages'][lineage])])
+
         json.dump(val, handle)
+
+    if args.use_db:
+        conn.commit()
+        conn.close()
 
     # upload output files to webserver, requires SSH key credentials
     if not args.dry_run:
@@ -264,6 +418,7 @@ if __name__ == "__main__":
 
         # upload files to EpiCoV server
         server_epicov = 'filogeneti.ca:/var/www/html/epicov/data'
+        subprocess.check_call(['scp', xbb_file, '{}/xbbtree.nwk'.format(server_epicov)])
         subprocess.check_call(['scp', nwk_file, '{}/timetree.nwk'.format(server_epicov)])
         subprocess.check_call(['scp', dbstat_file, '{}/dbstats.json'.format(server_epicov)])
 

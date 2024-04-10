@@ -428,15 +428,6 @@ const map_clusters_to_tips = (df, df_xbb, clusters) => {
     tips = map_tips(cidx, labels, root, tips, tip_labels, cluster)
   }
 
-  var mapped_x;
-
-  for (var tip of tips) {
-    mapped_x = date_to_xaxis(tips, tip.first_date);
-    if (mapped_x > tip.x) { 
-      tip.x = mapped_x
-    }
-  }
-
   var recombinant_tips = []
   for (const cidx in recombinants) {
     var cluster = clusters[recombinants[cidx]];
@@ -539,13 +530,6 @@ const map_clusters_to_tips = (df, df_xbb, clusters) => {
     }
 
     tips_xbb = map_tips(xbb_cidx, labels, root, tips_xbb, tip_labels, cluster)
-  }
-
-  for (var tip of tips_xbb) {
-    mapped_x = date_to_xaxis(tips_xbb, tip.first_date);
-    if (mapped_x > tip.x) { 
-      tip.x = mapped_x
-    }
   }
 
   return { tips, tips_xbb, recombinant_tips };

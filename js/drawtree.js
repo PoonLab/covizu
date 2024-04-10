@@ -37,8 +37,6 @@ var axis = d3.select("div#svg-timetreeaxis")
   .append("g");
 
 var timetree_axis,
-    axis_padding = -0.05,
-    axis_padding_trees = 0.05,
     cluster_box_padding = 2,
     numTicks = 3;
 
@@ -121,20 +119,22 @@ function drawtree(df, org_df, redraw=true) {
 
   // adjust d3 scales to data frame
   if(!redraw) {
-    switch($("#display-tree").val()) {
+    var latest;
+    switch ($("#display-tree").val()) {
+      case "XBB Lineages":
+        latest = display_info['xbb'].last;
+        break;
+      case "Non-Recombinants":
+        latest = display_info['non_recombinants'].last;
+        break;
       case "Other Recombinants":
-        xScale.domain([
-          axis_padding,
-          date_to_xaxis(d3.max(recombinant_tips, function(d) {return d.last_date}))
-        ]);
-        break;
-      default:
-        xScale.domain([
-          d3.min(org_df, xValue)-axis_padding_trees, 
-          date_to_xaxis(d3.max(org_df, function(d) {return d.last_date})) 
-        ]);
-        break;
+        latest = display_info['other_recombinants'].last;
     }
+
+    xScale.domain([
+      0, 
+      date_to_xaxis(latest) 
+    ]);
   }
 
   switch($("#display-tree").val()) {
@@ -179,16 +179,19 @@ function drawtree(df, org_df, redraw=true) {
  * @param tip:  Object, representing a reference tip in the tree
  * @returns {string}  new date in ISO format (yyyy-mm-dd)
  */
-function xaxis_to_date(x, tip, earliest, latest) {
-  var coldate = new Date(tip.first_date);  // collection date of reference tip
-  var interval = d3.timeDay.count(earliest, latest)/numTicks
-  switch($("#display-tree").val()) {
-    case "Other Recombinants":
-      coldate = d3.timeDay.offset(coldate, interval*x);
+function xaxis_to_date(x) {
+  var earliest, coldate;
+  switch ($("#display-tree").val()) {
+    case "XBB Lineages":
+      earliest = display_info['xbb'].first;
       break;
-    default:
-      coldate = d3.timeDay.offset(coldate, interval*(x - tip.x));
+    case "Non-Recombinants":
+      earliest = display_info['non_recombinants'].first;
+      break;
+    case "Other Recombinants":
+      earliest = display_info['other_recombinants'].first;
   }
+  coldate = d3.timeDay.offset(earliest, x * YEAR);
   return (coldate.toISOString().split('T')[0]);
 }
 
@@ -200,23 +203,19 @@ function xaxis_to_date(x, tip, earliest, latest) {
  * @returns {float} x-coordinate value 
  */
 function date_to_xaxis(coldate) {
-  var numDays, earliest, latest, interval, tip_obj;
+  var numDays, earliest;
   switch ($("#display-tree").val()) {
     case "XBB Lineages":
-      tip_obj = df_xbb;
+      earliest = display_info['xbb'].first;
       break;
     case "Non-Recombinants":
-      tip_obj = df;
+      earliest = display_info['non_recombinants'].first;
       break;
     case "Other Recombinants":
-      tip_obj = recombinant_tips;
+      earliest = display_info['other_recombinants'].first;
   }
-
-  numDays = d3.timeDay.count(tip_obj[0].first_date, coldate);
-  earliest = d3.min(tip_obj, function(d) {return d.first_date});
-  latest = d3.max(tip_obj, function(d) {return d.last_date});
-  interval = d3.timeDay.count(earliest, latest)/numTicks;
-  return (numDays/interval) + tip_obj[0].x;
+  numDays = d3.timeDay.count(earliest, coldate);
+  return numDays/YEAR;
 }
 
 
@@ -249,21 +248,16 @@ function sort_mutations(mutations) {
  */
 function draw_clusters(tips, filtered_recombinant_tips, redraw=false) {
 
-  var tickVals = [], minVal, maxVal, interval, tip_obj;
+  var tickVals = [], minVal = 0, maxVal, interval, tip_obj;
   switch ($("#display-tree").val()) {
     case "XBB Lineages":
-      minVal = d3.min(df_xbb, xValue)-axis_padding_trees;
-      maxVal = date_to_xaxis(d3.max(df_xbb, function(d) {return d.last_date}));
+      maxVal = date_to_xaxis(display_info['xbb'].last);
       break;
     case "Non-Recombinants":
-      minVal = d3.min(df, xValue)-axis_padding_trees;
-      maxVal = date_to_xaxis(d3.max(df, function(d) {return d.last_date}));
+      maxVal = date_to_xaxis(display_info['non_recombinants'].last);
       break;
     case "Other Recombinants":
-      console.log(d3.min(recombinant_tips, function(d) {return d.first_date}))
-      minVal = axis_padding;
-      maxVal = date_to_xaxis(d3.max(recombinant_tips, function(d) {return d.last_date}));
-      break;
+      maxVal = date_to_xaxis(display_info['other_recombinants'].last);
   }
 
   interval = (maxVal - minVal)/3;
@@ -285,14 +279,7 @@ function draw_clusters(tips, filtered_recombinant_tips, redraw=false) {
       .ticks(numTicks)
       .tickValues(tickVals)
       .tickFormat(function(d) {
-        switch($("#display-tree").val()) {
-          case "Other Recombinants":
-            return xaxis_to_date(d, recombinant_tips[0], d3.min(recombinant_tips, function(d) {return d.first_date}), d3.max(recombinant_tips, function(d) {return d.last_date}))
-          case "XBB Lineages":
-            return xaxis_to_date(d, df_xbb[0], d3.min(df_xbb, function(d) {return d.first_date}), d3.max(df_xbb, function(d) {return d.last_date}))
-          default:
-            return xaxis_to_date(d, df[0], d3.min(df, function(d) {return d.first_date}), d3.max(df, function(d) {return d.last_date}))
-        }
+        return xaxis_to_date(d)
       })
     );
   }
@@ -344,7 +331,7 @@ function draw_clusters(tips, filtered_recombinant_tips, redraw=false) {
       .attr("x", xMap)
       .attr("y", yMap)
       .attr("width", function(d) {
-        var rectWidth = xScale(date_to_xaxis(d.last_date) - d.x) + axis_padding_trees;
+        var rectWidth = xScale(date_to_xaxis(d.last_date) - d.x);
         if (rectWidth < minRectWidth)
           return minRectWidth;
         return rectWidth;
@@ -452,7 +439,7 @@ function draw_clusters(tips, filtered_recombinant_tips, redraw=false) {
         .attr("cursor", "default")
         .attr("id", function(d) { return "cidx-" + d.cluster_idx; })
         .attr("x", function(d) {
-          var rectWidth = xScale(date_to_xaxis(d.last_date) - d.x) + axis_padding_trees + 4;
+          var rectWidth = xScale(date_to_xaxis(d.last_date) - d.x) + 4;
           if (rectWidth < minRectWidth)
             return xScale(d.x) + minRectWidth + cluster_box_padding;
           return xScale(d.x) + rectWidth + cluster_box_padding;
@@ -581,19 +568,19 @@ async function changeDisplay() {
   }
 
   const tree_multiplier = 100000; // Slider value needs to be an integer
-  var min = (d3.min(tips_obj, xValue)-0.05) * tree_multiplier;
+  var min = 0;
   var max = date_to_xaxis(d3.max(tips_obj, function(d) {return d.last_date})) * tree_multiplier;
   var start_value = date_to_xaxis(curr_date) * tree_multiplier;
 
   $("#tree-slider").slider("option", "min", min);
   $("#tree-slider").slider("option", "max", max);
-  $("#tree-slider").slider("option", "value",  (start_value > min && start_value < max) ? start_value : min);
+  $("#tree-slider").slider("option", "value",  (start_value > min && start_value <= max) ? start_value : min);
 
-  $("#cutoff-date").text(xaxis_to_date($("#tree-slider").slider("option", "value")/tree_multiplier, tips_obj[0], d3.min(tips_obj, function(d) {return d.first_date}), d3.max(tips_obj, function(d) {return d.last_date})));
+  $("#cutoff-date").text(xaxis_to_date($("#tree-slider").slider("option", "value")/tree_multiplier));
   $("#tree-cutoff").css('left',  $("#tree-slider-handle").position().left);
 
   $("#tree-slider").slider("option", "slide", async function( event, ui ) {
-    cutoff_date.text(xaxis_to_date(ui.value/tree_multiplier, tips_obj[0], d3.min(tips_obj, function(d) {return d.first_date}), d3.max(tips_obj, function(d) {return d.last_date})));
+    cutoff_date.text(xaxis_to_date(ui.value/tree_multiplier));
     await handle.change()
     cutoff_line.css('visibility', 'visible');
     var cutoff_pos = handle.position().left;

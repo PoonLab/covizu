@@ -102,20 +102,37 @@ def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None,
                  "         {nonhuman} non-human genomes".format(**rejects))
 
 
-def batch_fasta(gen, size=100):
+def batch_fasta(gen, cur=None, size=100):
     """
     Concatenate sequence records in stream into FASTA-formatted text in batches of
     <size> records.
     :param gen:  generator, return value of load_gisaid()
+    :param cur: cursor for the PostgreSQL
     :param size:  int, number of records per batch
     :yield:  str, list; FASTA-format string and list of records (dict) in batch
     """
     stdin = ''
     batch = []
+
     for i, record in enumerate(gen, 1):
-        qname = record['covv_virus_name']
+        accession = record['covv_accession_id']
+        qname ='{}__accession__{}'.format(record['covv_virus_name'].replace("'","''").replace(" ","_"), accession)
         sequence = record.pop('sequence')
-        stdin += '>{}\n{}\n'.format(qname, sequence)
+        
+        result = None
+        if cur:
+            cur.execute("SELECT * FROM SEQUENCES WHERE accession = '%s'"%accession)
+            result = cur.fetchone()
+        
+        if result:
+            # reading old records from database
+            # and handling list to tuple conversion
+            record.update({
+                'diffs': list(map(tuple, json.loads(result["diffs"]))),
+                'missing': list(map(tuple, json.loads(result["missing"])))
+            })
+        else:
+            stdin += '>{}\n{}\n'.format(qname, sequence)
         batch.append(record)
         if i > 0 and i % size == 0:
             yield stdin, batch
@@ -126,13 +143,14 @@ def batch_fasta(gen, size=100):
         yield stdin, batch
 
 
-def extract_features(batcher, ref_file, binpath='minimap2', nthread=3, minlen=29000):
+def extract_features(batcher, ref_file, cur=None, binpath='minimap2', nthread=3, minlen=29000):
     """
     Stream output from JSON.xz file via load_gisaid() into minimap2
     via subprocess.
 
     :param batcher:  generator, returned by batch_fasta()
     :param ref_file:  str, path to reference genome (FASTA format)
+    :param cur: cursor for the PostgreSQL
     :param binpath:  str, path to minimap2 binary executable
     :param nthread:  int, number of threads to run minimap2
     :param minlen:  int, minimum genome length
@@ -143,13 +161,35 @@ def extract_features(batcher, ref_file, binpath='minimap2', nthread=3, minlen=29
         reflen = len(convert_fasta(handle)[0][1])
 
     for fasta, batch in batcher:
+        new_records = {}
+        for record in batch:
+            if 'diffs' in record:
+                yield record
+            else:
+                record_id = '{}__accession__{}'.format(record['covv_virus_name'].replace("'","''").replace(" ","_"),
+                                                       record['covv_accession_id'])
+                new_records[record_id] = record
+
+        # If fasta is empty, no need to run minimap2
+        if len(fasta) == 0:
+            continue
+
         mm2 = minimap2.minimap2(fasta, ref_file, stream=True, path=binpath, nthread=nthread,
                        minlen=minlen)
         result = list(minimap2.encode_diffs(mm2, reflen=reflen))
-        for row, record in zip(result, batch):
+        for qname, diffs, missing in result:
             # reconcile minimap2 output with GISAID record
-            qname, diffs, missing = row
+            record = new_records[qname]
             record.update({'diffs': diffs, 'missing': missing})
+
+            _, accession = qname.split("__accession__")
+
+            if cur:
+                # inserting diffs and missing as json strings
+                cur.execute("INSERT INTO SEQUENCES VALUES(%s, %s, %s, %s, %s, %s, %s)",
+                            [json.dumps(v) if k in ['diffs', 'missing'] else v for k, v in record.items()])
+                cur.execute("INSERT INTO NEW_RECORDS VALUES(%s, %s)",
+                            [accession, record['covv_lineage']])
             yield record
 
 
@@ -238,6 +278,7 @@ def sort_by_lineage(records, callback=None, interval=10000):
     :return:  dict, lists of records keyed by lineage
     """
     result = {}
+
     for i, record in enumerate(records):
         if callback and i % interval == 0:
             callback('aligned {} records'.format(i))
