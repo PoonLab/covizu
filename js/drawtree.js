@@ -574,7 +574,7 @@ async function changeDisplay() {
 
   $("#tree-slider").slider("option", "min", min);
   $("#tree-slider").slider("option", "max", max);
-  $("#tree-slider").slider("option", "value",  (start_value > min && start_value < max) ? start_value : min);
+  $("#tree-slider").slider("option", "value",  (start_value > min && start_value <= max) ? start_value : min);
 
   $("#cutoff-date").text(xaxis_to_date($("#tree-slider").slider("option", "value")/tree_multiplier));
   $("#tree-cutoff").css('left',  $("#tree-slider-handle").position().left);

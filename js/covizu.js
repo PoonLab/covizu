@@ -720,7 +720,7 @@ req.done(async function() {
       },
       min: min,
       max: max,
-      value: (start_value > min && start_value < max) ? start_value : min
+      value: (start_value > min && start_value <= max) ? start_value : min
     });
 
     // Prevents the default action when keydown event is detected
