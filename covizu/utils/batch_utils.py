@@ -8,8 +8,6 @@ import json
 import csv
 from tempfile import NamedTemporaryFile
 import covizu.treetime
-import rpy2.robjects as robjects
-from rpy2.robjects.packages import importr
 import covizu
 import math
 
@@ -21,7 +19,12 @@ class HUNePi:
             incmods=os.path.join(covizu.__path__[0], "hunepi/infections_increasing_model_comparisons.rds"),
             infmods=os.path.join(covizu.__path__[0], "hunepi/num_infections_model_comparisons.rds")
     ):
+        # an instance of R is started upon loading the module
+        import rpy2.robjects as robjects
+        self.r = robjects.r
+
         # Load required R packages
+        from rpy2.robjects.packages import importr
         self.ape = importr('ape')
         self.phytools = importr('phytools')
         self.LambdaSkyline = importr('LambdaSkyline')
@@ -29,11 +32,11 @@ class HUNePi:
         self.matrixStats = importr('matrixStats')
 
         # Read Models
-        robjects.r(f'increasing_mods <- readRDS("{incmods}")')
-        robjects.r(f'infections_mods <- readRDS("{infmods}")')
+        self.r(f'increasing_mods <- readRDS("{incmods}")')
+        self.r(f'infections_mods <- readRDS("{infmods}")')
 
         # Function to make estimates from each model
-        robjects.r('''
+        self.r('''
         estimate_vals <- function(models, predict_dat, exp = FALSE){
             prediction_df <- data.frame(sapply(models, predict, newdata = predict_dat, type = "response"))
             if (exp) {
@@ -51,11 +54,11 @@ class HUNePi:
         Phylo.write(tree, tree_filename.name, "nexus")
         tree_filename.close()
 
-        robjects.r.assign("tree_filename", tree_filename.name)
-        robjects.r.assign("sequence_labels_file", labels_filename)
+        self.r.assign("tree_filename", tree_filename.name)
+        self.r.assign("sequence_labels_file", labels_filename)
 
         try:
-            robjects.r('''
+            self.r('''
             set.seed(123456)
 
             tree = read.nexus(tree_filename)
@@ -85,7 +88,7 @@ class HUNePi:
             pop_sizes <- head(skyline$population.size, n = 5)
             mean_pop_size <- mean(pop_sizes, na.rm = TRUE)
             ''')
-            Ne = list(robjects.r('mean_pop_size'))[0]
+            Ne = list(self.r('mean_pop_size'))[0]
         except:
             Ne = ''
 
@@ -93,10 +96,10 @@ class HUNePi:
         return Ne
 
     def predict(self, summary_stats):
-        sum_stat_dat = robjects.vectors.DataFrame(summary_stats)
-        robjects.r.assign('sum_stat_dat', sum_stat_dat)
+        sum_stat_dat = self.vectors.DataFrame(summary_stats)
+        self.r.assign('sum_stat_dat', sum_stat_dat)
 
-        robjects.r('''
+        self.r('''
         sum_stat_dat$Ne <- as.numeric(sum_stat_dat$Ne)
         increasing_predict_prob <- estimate_vals(increasing_mods, sum_stat_dat)
 
@@ -121,7 +124,7 @@ class HUNePi:
         }
         ''')
 
-        predicted_infections = list(robjects.r('predicted_infections'))[0]
+        predicted_infections = list(self.r('predicted_infections'))[0]
         return predicted_infections
 
 
