@@ -128,6 +128,46 @@ class HUNePi:
         return predicted_infections
 
 
+def run_hunepi(tree, clabel_dict, summary_stats):
+    tree_filename = NamedTemporaryFile('w', delete=False)
+    Phylo.write(tree, tree_filename.name, "nexus")
+    tree_filename.close()
+
+    labels_filename = NamedTemporaryFile('w', delete=False)
+
+    # Write labels to file for Ne estimation
+    writer = csv.writer(labels_filename)
+    for key, value in clabel_dict.items():
+        writer.writerow([key, value])
+    labels_filename.close()
+
+    summary_stats_filename = NamedTemporaryFile('w', delete=False)
+    with open(summary_stats_filename.name, 'w') as handle:
+        json.dump(summary_stats, handle)
+    summary_stats_filename.close()
+
+    prediction_filename = NamedTemporaryFile('w', delete=False)
+    prediction_filename.close()
+
+    cmd = ["Rscript", os.path.join(covizu.__path__[0], "hunepi/infection_prediction.R"), tree_filename.name, labels_filename, summary_stats_filename.name, prediction_filename.name]
+
+    # Run the R script
+    try:
+        subprocess.check_call(cmd)
+    except subprocess.CalledProcessError as e:
+        sys.exit()
+        
+    with open(prediction_filename.name, 'r') as handle:
+        predicted_infections = handle.read()
+    
+    os.remove(tree_filename.name)
+    os.remove(labels_filename.name)
+    os.remove(summary_stats_filename.name)
+    os.remove(prediction_filename.name)
+
+    return predicted_infections
+
+
 def unpack_records(records):
     """
     by_lineage is a nested dict with the inner dicts keyed by serialized
@@ -359,8 +399,6 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, updated_lineages=No
     :return:  list, beadplot data by lineage
     """
 
-    hunepi = HUNePi()
-
     # recode data into variants and serialize
     if callback:
         callback("Recoding features, compressing variants..")
@@ -461,17 +499,6 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, updated_lineages=No
             # incorporate hunipie
             clabel_dict = manage_collapsed_nodes(label_dict, ctree)
 
-            labels_filename = NamedTemporaryFile('w', delete=False)
-
-            # Write labels to file for Ne estimation
-            writer = csv.writer(labels_filename)
-            for key, value in clabel_dict.items():
-                writer.writerow([key, value])
-            labels_filename.close()
-
-            cne = hunepi.find_Ne(ctree, labels_filename.name)
-            os.remove(labels_filename.name)
-
             # Collapse tree and manage the collapsed nodes
             tree = beadplot.collapse_polytomies(ctree)
             clabel_dict = manage_collapsed_nodes(label_dict, tree)
@@ -482,10 +509,8 @@ def make_beadplots(by_lineage, args, callback=None, t0=None, updated_lineages=No
             summary_stats['pi'] = pi
             summary_stats['sample_size'] = len(by_lineage[lineage])
 
-            if cne == '':
-                summary_stats['Ne'] = 'NaN'
-
-            predicted_infections = hunepi.predict(summary_stats)
+            # Run HUNePi
+            predicted_infections = run_hunepi(tree, clabel_dict, summary_stats)
             inf_predict.update({lineage: predicted_infections})
 
             ctree = beadplot.annotate_tree(ctree, label_dict)
