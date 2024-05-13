@@ -7,8 +7,8 @@ import sys
 import json
 from datetime import datetime
 from tempfile import NamedTemporaryFile
-from Bio import Phylo
 import subprocess
+from Bio import Phylo
 
 import covizu
 from covizu.utils import gisaid_utils
