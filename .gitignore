@@ -25,6 +25,6 @@ cypress/plugins/
 *.json
 *.xz
 working/*
-scripts/*
 covizu/data/xbb_outgrp.fasta
+scripts/*.db
 
