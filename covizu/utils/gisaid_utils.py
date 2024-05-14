@@ -10,7 +10,7 @@ import getpass
 
 import covizu
 from covizu import minimap2
-#from covizu.minimap2 import minimap2, encode_diffs
+# from covizu.minimap2 import minimap2, encode_diffs
 from covizu.utils.seq_utils import *
 from covizu.utils.progress_utils import Callback
 
@@ -34,8 +34,9 @@ def download_feed(url, user, password):
     if password is None:
         password = getpass.getpass()
     timestamp = datetime.now().isoformat().split('.')[0]
-    outfile = "data/provision.{}.json.xz".format(timestamp)
-    subprocess.check_call(["wget", "--user", user, "--password", password, "-O", outfile, url])
+    outfile = f"data/provision.{timestamp}.json.xz"
+    subprocess.check_call(
+        ["wget", "--user", user, "--password", password, "-O", outfile, url])
     return outfile
 
 
@@ -43,7 +44,7 @@ def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None,
                 fields=("covv_accession_id", "covv_virus_name", "covv_lineage",
                         "covv_collection_date", "covv_location", "sequence"),
                 debug=None
-):
+                ):
     """
     Read in GISAID feed as xz compressed JSON, applying some basic filters
 
@@ -67,7 +68,8 @@ def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None,
             # remove unused data
             record = dict([(k, record[k]) for k in fields])
 
-            qname = record['covv_virus_name'].strip().replace(',', '_').replace('|', '_')  # issue #206,#464
+            qname = record['covv_virus_name'].strip().replace(
+                ',', '_').replace('|', '_')  # issue #206,#464
             country = qname.split('/')[1]
             if country == '' or country[0].islower():
                 # reject mangled labels and non-human isolates
@@ -116,14 +118,18 @@ def batch_fasta(gen, cur=None, size=100):
 
     for i, record in enumerate(gen, 1):
         accession = record['covv_accession_id']
-        qname ='{}__accession__{}'.format(record['covv_virus_name'].replace("'","''").replace(" ","_"), accession)
+        qname = '{}__accession__{}'.format(
+            record['covv_virus_name'].replace(
+                "'", "''").replace(
+                " ", "_"), accession)
         sequence = record.pop('sequence')
-        
+
         result = None
         if cur:
-            cur.execute("SELECT * FROM SEQUENCES WHERE accession = '%s'"%accession)
+            cur.execute(
+                f"SELECT * FROM SEQUENCES WHERE accession = '{accession}'")
             result = cur.fetchone()
-        
+
         if result:
             # reading old records from database
             # and handling list to tuple conversion
@@ -132,7 +138,7 @@ def batch_fasta(gen, cur=None, size=100):
                 'missing': list(map(tuple, json.loads(result["missing"])))
             })
         else:
-            stdin += '>{}\n{}\n'.format(qname, sequence)
+            stdin += f'>{qname}\n{sequence}\n'
         batch.append(record)
         if i > 0 and i % size == 0:
             yield stdin, batch
@@ -143,7 +149,13 @@ def batch_fasta(gen, cur=None, size=100):
         yield stdin, batch
 
 
-def extract_features(batcher, ref_file, cur=None, binpath='minimap2', nthread=3, minlen=29000):
+def extract_features(
+        batcher,
+        ref_file,
+        cur=None,
+        binpath='minimap2',
+        nthread=3,
+        minlen=29000):
     """
     Stream output from JSON.xz file via load_gisaid() into minimap2
     via subprocess.
@@ -166,16 +178,23 @@ def extract_features(batcher, ref_file, cur=None, binpath='minimap2', nthread=3,
             if 'diffs' in record:
                 yield record
             else:
-                record_id = '{}__accession__{}'.format(record['covv_virus_name'].replace("'","''").replace(" ","_"),
-                                                       record['covv_accession_id'])
+                record_id = '{}__accession__{}'.format(
+                    record['covv_virus_name'].replace(
+                        "'", "''").replace(
+                        " ", "_"), record['covv_accession_id'])
                 new_records[record_id] = record
 
         # If fasta is empty, no need to run minimap2
         if len(fasta) == 0:
             continue
 
-        mm2 = minimap2.minimap2(fasta, ref_file, stream=True, path=binpath, nthread=nthread,
-                       minlen=minlen)
+        mm2 = minimap2.minimap2(
+            fasta,
+            ref_file,
+            stream=True,
+            path=binpath,
+            nthread=nthread,
+            minlen=minlen)
         result = list(minimap2.encode_diffs(mm2, reflen=reflen))
         for qname, diffs, missing in result:
             # reconcile minimap2 output with GISAID record
@@ -186,17 +205,23 @@ def extract_features(batcher, ref_file, cur=None, binpath='minimap2', nthread=3,
 
             if cur:
                 # inserting diffs and missing as json strings
-                cur.execute("INSERT INTO SEQUENCES VALUES(%s, %s, %s, %s, %s, %s, %s)",
-                            [json.dumps(v) if k in ['diffs', 'missing'] else v for k, v in record.items()])
+                cur.execute("INSERT INTO SEQUENCES VALUES(%s, %s, %s, %s, %s, %s, %s)", [
+                            json.dumps(v) if k in ['diffs', 'missing'] else v for k, v in record.items()])
                 cur.execute("INSERT INTO NEW_RECORDS VALUES(%s, %s)",
                             [accession, record['covv_lineage']])
             yield record
 
 
-def filter_problematic(records, origin='2019-12-01', rate=0.0655, cutoff=0.005,
-                       maxtime=1e3, vcf_file='data/ProblematicSites_SARS-CoV2/problematic_sites_sarsCov2.vcf',
-                       encoded=False,
-                       misstol=300, callback=None):
+def filter_problematic(
+        records,
+        origin='2019-12-01',
+        rate=0.0655,
+        cutoff=0.005,
+        maxtime=1e3,
+        vcf_file='data/ProblematicSites_SARS-CoV2/problematic_sites_sarsCov2.vcf',
+        encoded=False,
+        misstol=300,
+        callback=None):
     """
     Apply problematic sites annotation from de Maio et al.,
     https://virological.org/t/issues-with-sars-cov-2-sequencing-data/473
@@ -210,20 +235,20 @@ def filter_problematic(records, origin='2019-12-01', rate=0.0655, cutoff=0.005,
                     distribution, defaults to 0.005
     :param maxtime:  int, maximum number of days to cache Poisson quantiles
     :param vcf_file:  str, path to VCF file
-    :param encoded: bool, flag to indicate if records are from encode_diffs() 
+    :param encoded: bool, flag to indicate if records are from encode_diffs()
     :param misstol:  int, maximum tolerated number of uncalled bases
     :param callback:  function, option to print messages to console
     :yield:  generator, revised records
     """
     # load resources
     mask = load_vcf(vcf_file)
-    qp = QPois(quantile=1-cutoff, rate=rate, maxtime=maxtime, origin=origin)
+    qp = QPois(quantile=1 - cutoff, rate=rate, maxtime=maxtime, origin=origin)
 
     n_sites = 0
     n_outlier = 0
     n_ambig = 0
     for record in records:
-        if type(record) is not dict:
+        if not isinstance(record, dict):
             qname, diffs, missing = record  # unpack tuple
         else:
             diffs = record['diffs']
@@ -256,15 +281,15 @@ def filter_problematic(records, origin='2019-12-01', rate=0.0655, cutoff=0.005,
                 continue
             yield record
         else:
-            if type(record) is dict:
+            if isinstance(record, dict):
                 qname, missing = record['qname'], record['missing']
 
             yield [qname, filtered, missing]
 
     if callback:
-        callback("filtered {} problematic features".format(n_sites))
-        callback("         {} genomes with excess missing sites".format(n_ambig))
-        callback("         {} genomes with excess divergence".format(n_outlier))
+        callback(f"filtered {n_sites} problematic features")
+        callback(f"         {n_ambig} genomes with excess missing sites")
+        callback(f"         {n_outlier} genomes with excess divergence")
 
 
 def sort_by_lineage(records, callback=None, interval=10000):
@@ -281,7 +306,7 @@ def sort_by_lineage(records, callback=None, interval=10000):
 
     for i, record in enumerate(records):
         if callback and i % interval == 0:
-            callback('aligned {} records'.format(i))
+            callback(f'aligned {i} records')
 
         lineage = record['covv_lineage']
         diffs = record.pop('diffs')  # REMOVE entry from record!
@@ -331,9 +356,10 @@ def convert_json(infile, provision):
             for coldate, accn, location, name in samples:
                 md = metadata.get(accn, None)
                 if md is None:
-                    print("Failed to retrieve metadata for accession {}".format(accn))
+                    print(f"Failed to retrieve metadata for accession {accn}")
                     sys.exit()
-                revised.append([name, accn, location, coldate, md['gender'], md['age'], md['status']])
+                revised.append([name, accn, location, coldate,
+                               md['gender'], md['age'], md['status']])
 
             # replace list of samples
             cluster['nodes'][variant] = revised
@@ -344,39 +370,73 @@ def convert_json(infile, provision):
 def parse_args():
     """ Command line help text"""
     parser = argparse.ArgumentParser("")
-    parser.add_argument('outfile', type=argparse.FileType('w'), help="output, path to write JSON")
+    parser.add_argument(
+        'outfile',
+        type=argparse.FileType('w'),
+        help="output, path to write JSON")
 
     parser.add_argument('--infile', type=str, default=None,
                         help="input, path to xz-compressed JSON")
-    parser.add_argument('--url', type=str, 
-                        help="URL to download provision file, defaults to environment variable.")
-    parser.add_argument('--user', type=str, 
-                        help="GISAID username, defaults to environment variable.")
-    parser.add_argument('--password', type=str, 
-                        help="GISAID password, defaults to environment variable.")
+    parser.add_argument(
+        '--url',
+        type=str,
+        help="URL to download provision file, defaults to environment variable.")
+    parser.add_argument(
+        '--user',
+        type=str,
+        help="GISAID username, defaults to environment variable.")
+    parser.add_argument(
+        '--password',
+        type=str,
+        help="GISAID password, defaults to environment variable.")
 
-    parser.add_argument('--minlen', type=int, default=29000, help='option, minimum genome length')
-    parser.add_argument('--mindate', type=str, default='2019-12-01',
-                        help='option, earliest possible sample collection date (ISO format, default '
-                             '2019-12-01)')
+    parser.add_argument(
+        '--minlen',
+        type=int,
+        default=29000,
+        help='option, minimum genome length')
+    parser.add_argument(
+        '--mindate',
+        type=str,
+        default='2019-12-01',
+        help='option, earliest possible sample collection date (ISO format, default '
+        '2019-12-01)')
 
-    parser.add_argument('--batchsize', type=int, default=500,
-                        help='option, number of records to batch process with minimap2; limited by '
-                             'buffer size for stdin redirection')
+    parser.add_argument(
+        '--batchsize',
+        type=int,
+        default=500,
+        help='option, number of records to batch process with minimap2; limited by '
+        'buffer size for stdin redirection')
 
-    parser.add_argument('--ref', type=str, help="option, path to reference genome (FASTA)",
-                        default=os.path.join(covizu.__path__[0], "data/NC_045512.fa"))
+    parser.add_argument(
+        '--ref',
+        type=str,
+        help="option, path to reference genome (FASTA)",
+        default=os.path.join(
+            covizu.__path__[0],
+            "data/NC_045512.fa"))
     parser.add_argument('--binpath', type=str, default='minimap2',
                         help="option, path to minimap2 binary executable file")
-    parser.add_argument('--mmthreads', type=int, default=8,
-                        help='option, number of threads to run minimap2. Defaults to 8.')
+    parser.add_argument(
+        '--mmthreads',
+        type=int,
+        default=8,
+        help='option, number of threads to run minimap2. Defaults to 8.')
 
-    parser.add_argument("--vcf_file", type=str,
-                        default=os.path.join(covizu.__path__[0], "data/ProblematicSites_SARS-CoV2/problematic_sites_sarsCov2.vcf"),
-                        help="Path to VCF file of problematic sites in SARS-COV-2 genome. "
-                             "Source: https://github.com/W-L/ProblematicSites_SARS-CoV2")
+    parser.add_argument(
+        "--vcf_file",
+        type=str,
+        default=os.path.join(
+            covizu.__path__[0],
+            "data/ProblematicSites_SARS-CoV2/problematic_sites_sarsCov2.vcf"),
+        help="Path to VCF file of problematic sites in SARS-COV-2 genome. "
+        "Source: https://github.com/W-L/ProblematicSites_SARS-CoV2")
 
-    parser.add_argument("--debug", type=int, help="int, limit number of rows of input xz file to parse for debugging")
+    parser.add_argument(
+        "--debug",
+        type=int,
+        help="int, limit number of rows of input xz file to parse for debugging")
 
     args = parser.parse_args()
 
@@ -386,10 +446,10 @@ def parse_args():
         args.user = os.environ["GISAID_USER"]
         # otherwise download_feed() will prompt for username
     if args.password is None and "GISAID_PSWD" in os.environ:
-        args.password = os.environ["GISAID_PSWD"]    
+        args.password = os.environ["GISAID_PSWD"]
         # otherwise download_feed() will prompt for password
-    
-    return args 
+
+    return args
 
 
 if __name__ == '__main__':
@@ -405,9 +465,16 @@ if __name__ == '__main__':
     loader = load_gisaid(args.infile, minlen=args.minlen, mindate=args.mindate,
                          debug=args.debug)
     batcher = batch_fasta(loader, size=args.batchsize)
-    aligned = extract_features(batcher, ref_file=args.ref, binpath=args.binpath,
-                               nthread=args.mmthreads, minlen=args.minlen)
-    filtered = filter_problematic(aligned, vcf_file=args.vcf_file, callback=cb.callback)
+    aligned = extract_features(
+        batcher,
+        ref_file=args.ref,
+        binpath=args.binpath,
+        nthread=args.mmthreads,
+        minlen=args.minlen)
+    filtered = filter_problematic(
+        aligned,
+        vcf_file=args.vcf_file,
+        callback=cb.callback)
     by_lineage = sort_by_lineage(filtered, callback=cb.callback)
 
     # serialize to JSON file

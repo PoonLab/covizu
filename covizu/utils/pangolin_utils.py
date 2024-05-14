@@ -23,7 +23,8 @@ class Pangolin:
     def classify(self, seq):
         """ Assign genome to one or more lineages """
         # convert sequence into list
-        seqlist = [nt if nt in 'ACGT-' else 'N' for i, nt in enumerate(seq) if i in self.indices]
+        seqlist = [nt if nt in 'ACGT-' else 'N' for i,
+                   nt in enumerate(seq) if i in self.indices]
         df = pd.DataFrame([seqlist], columns=self.indices)
 
         # add extra rows to ensure all categories are represented
@@ -32,7 +33,8 @@ class Pangolin:
 
         df = pd.get_dummies(df, columns=self.indices)  # one-hot encoding
 
-        df.drop(df.tail(len(self.categories)).index, inplace=True)  # remove fake data
+        df.drop(df.tail(len(self.categories)).index,
+                inplace=True)  # remove fake data
 
         predictions = self.model.predict_proba(df)
         return predictions
@@ -48,7 +50,13 @@ class Pangolin:
         :yield:  tuple, header and lineage
         """
         reflen = len(seq_utils.convert_fasta(open(ref_file))[0][1])
-        mm2 = minimap2(handle, ref_file, stream=False, path=binpath, nthread=nthread, minlen=minlen)
+        mm2 = minimap2(
+            handle,
+            ref_file,
+            stream=False,
+            path=binpath,
+            nthread=nthread,
+            minlen=minlen)
         for header, aligned in stream_fasta(mm2, reflen=reflen):
             lineage = self.classify(aligned)
             yield header, lineage
@@ -56,20 +64,23 @@ class Pangolin:
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='Run Pangolin SARS-CoV-2 lineage classifier on FASTA inputs'
-    )
+        description='Run Pangolin SARS-CoV-2 lineage classifier on FASTA inputs')
 
-    parser.add_argument("fasta", type=argparse.FileType("r"),
-                        help="input, path to FASTA file with genomes to process")
+    parser.add_argument("fasta", type=argparse.FileType(
+        "r"), help="input, path to FASTA file with genomes to process")
     parser.add_argument("outfile", type=argparse.FileType('w'),
                         help="output, path to write CSV output")
 
     # minimap2 arguments
     parser.add_argument('--mm2bin', type=str, default='minimap2',
                         help='str, path to minimap2 binary executable')
-    parser.add_argument('--ref', type=str,
-                        help="<input> path to target FASTA (reference)",
-                        default=os.path.join(covizu.__path__[0], "data/NC_045512.fa"))
+    parser.add_argument(
+        '--ref',
+        type=str,
+        help="<input> path to target FASTA (reference)",
+        default=os.path.join(
+            covizu.__path__[0],
+            "data/NC_045512.fa"))
     parser.add_argument('--minlen', help="<option> minimum sequence length, "
                                          "defaults to 29000nt.",
                         type=int, default=29000)
@@ -77,12 +88,20 @@ def parse_args():
                         help="<option> number of threads")
 
     # allow user to specify custom file locations
-    parser.add_argument("--model_file", type=str,
-                        default=pkg_resources.resource_filename('pangoLEARN', 'data/decisionTree_v1.joblib'),
-                        help='str, path to PangoLEARN decisionTree_V1.joblib file')
-    parser.add_argument("--header_file", type=str,
-                        default=pkg_resources.resource_filename('pangoLEARN', 'data/decisionTreeHeaders_v1.joblib'),
-                        help='str, path to PangoLEARN decisionTreeHeaders_v1.joblib file')
+    parser.add_argument(
+        "--model_file",
+        type=str,
+        default=pkg_resources.resource_filename(
+            'pangoLEARN',
+            'data/decisionTree_v1.joblib'),
+        help='str, path to PangoLEARN decisionTree_V1.joblib file')
+    parser.add_argument(
+        "--header_file",
+        type=str,
+        default=pkg_resources.resource_filename(
+            'pangoLEARN',
+            'data/decisionTreeHeaders_v1.joblib'),
+        help='str, path to PangoLEARN decisionTreeHeaders_v1.joblib file')
 
     return parser.parse_args()
 

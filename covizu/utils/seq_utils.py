@@ -35,7 +35,7 @@ def parse_label(label):
         return country, date(year, month, day)
     except ValueError:
         return country, None
-    except:
+    except BaseException:
         raise
 
 
@@ -82,13 +82,13 @@ def convert_fasta(handle):
 def total_missing(row):
     """ Calculate the total number of missing sites from closed-open interval annotations """
     res = 0
-    if type(row) is dict:
+    if isinstance(row, dict):
         missing = row['missing']
     else:
         _, _, missing = row
 
     for left, right in missing:
-        res += right-left
+        res += right - left
     return res
 
 
@@ -101,18 +101,18 @@ def apply_features(diffs, missing, refseq):
     :param refseq:  str, reference genome
     :return:  str, aligned genome
     """
-    result = refseq  
+    result = refseq
 
     # apply missing intervals
     for left, right in missing:
-        result = '%s%s%s'%(result[:left], 'N'*(right - left), result[right:])
+        result = f"{result[:left]}{'N' * (right - left)}{result[right:]}"
 
     # apply substitutions and deletions (skip insertions)
     for dtype, pos, diff in diffs:
         if dtype == '~':
-            result = '%s%s%s'%(result[:pos], diff, result[pos + 1:])
+            result = f'{result[:pos]}{diff}{result[pos + 1:]}'
         elif dtype == '-':
-            result = '%s%s%s'%(result[:pos], '-'*(diff), result[pos + diff:])
+            result = f"{result[:pos]}{'-' * diff}{result[pos + diff:]}"
 
     return result
 
@@ -129,8 +129,9 @@ def fromisoformat(dt):
 class QPois:
     """
     Cache the quantile transition points for Poisson distribution for a given
-    rate <L> and varying time <t>, s.t. \exp(-Lt)\sum_{i=0}^{k} (Lt)^i/i! = Q.
+    rate <L> and varying time <t>, s.t. \\exp(-Lt)\\sum_{i=0}^{k} (Lt)^i/i! = Q.
     """
+
     def __init__(self, quantile, rate, maxtime, origin='2019-12-01'):
         """
         :param quantile:  float, cut distribution at q and 1-q
@@ -140,8 +141,8 @@ class QPois:
         """
         if quantile <= 0 or quantile >= 1:
             print("ERROR: QPois quantile argument must be on closed interval (0,1).")
-        self.upperq = quantile if quantile > 0.5 else (1-quantile)
-        self.lowerq = 1-self.upperq  # TODO: store timepoints for lower quantiles
+        self.upperq = quantile if quantile > 0.5 else (1 - quantile)
+        self.lowerq = 1 - self.upperq  # TODO: store timepoints for lower quantiles
         self.rate = rate
         self.maxtime = maxtime
         self.origin = fromisoformat(origin)
@@ -150,7 +151,7 @@ class QPois:
 
     def objfunc(self, x, k, q):
         """ Use root-finding to find transition point for Poisson CDF """
-        return q - poisson.cdf(k=k, mu=self.rate*x)
+        return q - poisson.cdf(k=k, mu=self.rate * x)
 
     def compute_timepoints(self, maxk=100):
         """ Store transition points until time exceeds maxtime """
@@ -162,12 +163,14 @@ class QPois:
             res_upper = root(self.objfunc, x0=tu, args=(k, self.upperq, ))
             res_lower = root(self.objfunc, x0=tl, args=(k, self.lowerq, ))
             if not res_upper.success:
-                print("Error in QPois: failed to locate root, q={} k={} rate={}".format(
-                    self.upperq, k, self.rate))
+                print(
+                    "Error in QPois: failed to locate root, q={} k={} rate={}".format(
+                        self.upperq, k, self.rate))
                 break
             if not res_lower.success:
-                print("Error in QPois: failed to locate root, q={} k={} rate={}".format(
-                    self.lowerq, k, self.rate))
+                print(
+                    "Error in QPois: failed to locate root, q={} k={} rate={}".format(
+                        self.lowerq, k, self.rate))
                 break
             tu = res_upper.x[0]
             tl = res_lower.x[0]
@@ -185,7 +188,7 @@ class QPois:
         return bisect.bisect(timepoints, time)
 
     def is_outlier(self, coldate, ndiffs):
-        if type(coldate) is str:
+        if isinstance(coldate, str):
             coldate = fromisoformat(coldate)
         dt = (coldate - self.origin).days
         qmax = self.lookup(dt, self.timepoints_upper)
@@ -195,7 +198,12 @@ class QPois:
         return False
 
 
-def filter_outliers(iter, origin='2019-12-01', rate=0.0655, cutoff=0.005, maxtime=1e3):
+def filter_outliers(
+        iter,
+        origin='2019-12-01',
+        rate=0.0655,
+        cutoff=0.005,
+        maxtime=1e3):
     """
     Exclude genomes that contain an excessive number of genetic differences
     from the reference, assuming that the mean number of differences increases
@@ -211,7 +219,7 @@ def filter_outliers(iter, origin='2019-12-01', rate=0.0655, cutoff=0.005, maxtim
     :param maxtime:  int, maximum number of days to cache Poisson quantiles
     :yield:  tuples from generator that pass filter
     """
-    qp = QPois(quantile=1-cutoff, rate=rate, maxtime=maxtime, origin=origin)
+    qp = QPois(quantile=1 - cutoff, rate=rate, maxtime=maxtime, origin=origin)
     for qname, diffs, missing in iter:
         coldate = qname.split('|')[-1]
         if coldate.count('-') != 2:
@@ -223,7 +231,8 @@ def filter_outliers(iter, origin='2019-12-01', rate=0.0655, cutoff=0.005, maxtim
         yield qname, diffs, missing
 
 
-def load_vcf(vcf_file="data/ProblematicSites_SARS-CoV2/problematic_sites_sarsCov2.vcf"):
+def load_vcf(
+        vcf_file="data/ProblematicSites_SARS-CoV2/problematic_sites_sarsCov2.vcf"):
     """
     Load VCF of problematic sites curated by Nick Goldman lab
     NOTE: The curators of this VCF used MN908947.3, which is identical to NC_045512.
@@ -243,14 +252,18 @@ def load_vcf(vcf_file="data/ProblematicSites_SARS-CoV2/problematic_sites_sarsCov
         except ValueError:
             raise
         if filt == 'mask':
-            mask.update({int(pos)-1: {  # convert to 0-index
+            mask.update({int(pos) - 1: {  # convert to 0-index
                 'ref': ref, 'alt': alt, 'info': info}
             })
     return mask
 
 
 class SC2Locator:
-    def __init__(self, ref_file=pkg_resources.resource_filename('covizu', 'data/NC_045512.fa')):
+    def __init__(
+        self,
+        ref_file=pkg_resources.resource_filename(
+            'covizu',
+            'data/NC_045512.fa')):
         self.gcode = {
             'TTT': 'F', 'TTC': 'F', 'TTA': 'L', 'TTG': 'L',
             'TCT': 'S', 'TCC': 'S', 'TCA': 'S', 'TCG': 'S',
@@ -313,10 +326,11 @@ class SC2Locator:
             # does the mutation change an amino acid?
             if this_orf:
                 # retrieve codons
-                codon_left = 3 * ((pos-this_left)//3)
-                codon_pos = (pos-this_left) % 3
+                codon_left = 3 * ((pos - this_left) // 3)
+                codon_pos = (pos - this_left) % 3
 
-                rcodon = self.refseq[this_left:this_right][codon_left:(codon_left+3)]
+                rcodon = self.refseq[this_left:this_right][codon_left:(
+                    codon_left + 3)]
                 ramino = self.gcode[rcodon]
 
                 qcodon = list(rcodon)
@@ -325,15 +339,13 @@ class SC2Locator:
                 qamino = self.gcode[qcodon]
 
                 if ramino != qamino:
-                    return 'aa:{}:{}{:0.0f}{}'.format(this_orf, ramino, 1+codon_left/3, qamino)
+                    return f'aa:{this_orf}:{ramino}{1 + codon_left / 3:0.0f}{qamino}'
 
         elif typ == '+':
-            return 'ins:{}:{}'.format(pos+1, len(alt))
+            return f'ins:{pos + 1}:{len(alt)}'
 
         elif typ == '-':
-            return 'del:{}:{}'.format(pos+1, alt)
+            return f'del:{pos + 1}:{alt}'
 
         # otherwise
         return None
-
-
