@@ -1,17 +1,16 @@
+"""batch utils docstring"""
 import os
 import subprocess
-from Bio import Phylo
 import math
-from covizu import clustering, beadplot
 import sys
 import json
 import csv
 from tempfile import NamedTemporaryFile
-import covizu.treetime
-import rpy2.robjects as robjects
-from rpy2.robjects.packages import importr
-import covizu
 from datetime import datetime
+from Bio import Phylo
+from covizu import clustering, beadplot
+from rpy2 import robjects
+import covizu
 
 
 def unpack_records(records):
@@ -45,6 +44,33 @@ def unpack_records(records):
             unpacked.append(sample)
     return unpacked
 
+def parse_lineages(in_args, in_callback):
+    """parse lineages from build_timetree"""
+    with open(in_args.lineages, encoding='uft-8') as handle:
+        header = next(handle)
+        if header != 'taxon,lineage\n':
+            if in_callback:
+                in_callback(
+                    f"Error: {in_args.lineages} "
+                    f"does not contain expected header row 'taxon,lineage'")
+            sys.exit()
+        lineages = {}
+        for line in handle:
+            try:
+                taxon, lineage = line.strip().split(',')
+                if taxon and lineage:
+                    lineages.update({taxon: lineage})
+                else:
+                    if in_callback:
+                        in_callback(
+                            f"Warning '{line}': taxon or lineage is missing",
+                            level='WARN')
+            except ValueError:
+                if in_callback:
+                    in_callback(
+                        f"Warning: There is an issue with the line '{line}' in lineages.csv",
+                        level='WARN')
+        return lineages
 
 def build_timetree(
         by_lineage,
@@ -62,29 +88,7 @@ def build_timetree(
     """
     if callback:
         callback("Parsing Pango lineage designations")
-    handle = open(args.lineages)
-    header = next(handle)
-    if header != 'taxon,lineage\n':
-        if callback:
-            callback(
-                f"Error: {args.lineages} does not contain expected header row 'taxon,lineage'")
-        sys.exit()
-    lineages = {}
-    for line in handle:
-        try:
-            taxon, lineage = line.strip().split(',')
-            if taxon and lineage:
-                lineages.update({taxon: lineage})
-            else:
-                if callback:
-                    callback(
-                        f"Warning '{line}': taxon or lineage is missing",
-                        level='WARN')
-        except BaseException:
-            if callback:
-                callback(
-                    f"Warning: There is an issue with the line '{line}' in lineages.csv",
-                    level='WARN')
+    lineages = parse_lineages(args, callback)
 
     if callback:
         callback("Identifying lineage representative genomes")
@@ -95,9 +99,10 @@ def build_timetree(
         outgroup=outgroup,
         earliest=True)
     if debug:
-        with open(f"build_timetree_dump.{datetime.now().isoformat()}.fasta", 'w') as outfile:
-            for h, s in fasta.items():
-                outfile.write(f">{h}\n{s}\n")
+        with open(f"build_timetree_dump.{datetime.now().isoformat()}.fasta", 'w',
+                  encoding='utf-8') as outfile:
+            for header, sequence in fasta.items():
+                outfile.write(f">{header}\n{sequence}\n")
 
     if callback:
         callback(f"Reconstructing tree with {args.ft2bin}")
@@ -113,7 +118,7 @@ def build_timetree(
         clock=args.clock,
         verbosity=0)
 
-    # writes output to treetime.nwk at `nexus_file` path
+        # writes output to treetime.nwk at `nexus_file` path
     return covizu.treetime.parse_nexus(nexus_file, fasta, callback)
 
 
@@ -131,7 +136,7 @@ def beadplot_serial(lineage, features, args, callback=None):  # pragma: no cover
         beaddict.update({'sampled_variants': len(labels)})
         beaddict['nodes'].update({variant: []})
 
-        for coldate, accn, location, label1 in intermed:
+        for coldate, accn, _, label1 in intermed:
             beaddict['nodes'][variant].append([coldate, accn, label1])
         return beaddict
 
@@ -139,7 +144,7 @@ def beadplot_serial(lineage, features, args, callback=None):  # pragma: no cover
     ctree = clustering.consensus(iter(trees), cutoff=args.boot_cutoff)
 
     # collapse polytomies and label internal nodes
-    label_dict = dict([(str(idx), lst) for idx, lst in enumerate(labels)])
+    label_dict = {str(idx):lst for idx, lst in enumerate(labels)}
     ctree = beadplot.annotate_tree(ctree, label_dict, callback=callback)
 
     # convert to JSON format
@@ -173,15 +178,14 @@ def get_shannons(n_seqs_in_nodes):
     """Find shannon's diversity from the seuqences in the tips"""
     sample_size = sum(n_seqs_in_nodes)
     shannons = 0
-    simpsons = 0
 
     for n_seq in n_seqs_in_nodes:
-        proportion = (n_seq / sample_size)
+        proportion = n_seq / sample_size
         shannons += proportion * math.log(proportion)
 
     shannons = -shannons
 
-    return (shannons)
+    return shannons
 
 
 def manage_collapsed_nodes(labels, tree):
@@ -191,7 +195,7 @@ def manage_collapsed_nodes(labels, tree):
         name = clade.name
         if name is None:
             continue
-        elif '|' in name:
+        if '|' in name:
             combined_list = []
             for title in name.split('|'):
                 combined_list = combined_list + labels[title]
@@ -199,14 +203,14 @@ def manage_collapsed_nodes(labels, tree):
     return new_labels
 
 
-def get_tree_summary_stats(tree, Ne, label_dict):
+def get_tree_summary_stats(tree, in_ne, label_dict):
     """Write out file of summary stats including number of unsampled lineages,
     diversity metrics and root to tip regression"""
     internal_nodes = tree.get_nonterminals()
     terminal_nodes = tree.get_terminals()
 
     # Unsampled nodes are nodes with no sequence ID associated with them
-    num_terminal_nodes = len(terminal_nodes)
+
     seqs_in_term_nodes = [len(label_dict[node.name])
                           for node in terminal_nodes]
     seqs_in_internal_nodes = []
@@ -216,30 +220,30 @@ def get_tree_summary_stats(tree, Ne, label_dict):
                 [len(label_dict[node.name])]
 
     # Calculate unsampled lineages and shannon's diversity
-    unsampled_count = sum([node.name is None for node in internal_nodes])
+    unsampled_count = sum(node.name is None for node in internal_nodes)
 
     diversity = get_shannons(seqs_in_term_nodes)
 
     # Create dictionary of summary stats
     summary_stats = {'unsampled_lineage_count': unsampled_count,
                      'shannons_diversity': diversity,
-                     'Ne': Ne
+                     'Ne': in_ne
                      }
     return summary_stats
 
 
-def find_Ne(tree, labels_filename):
+def find_ne(tree, labels_filename):
     """Run beta skyline estimation implemented into R"""
 
     # Make a temporary file containing the tree
-    tree_filename = NamedTemporaryFile('w', delete=False)
-    Phylo.write(tree, tree_filename.name, "nexus")
-    tree_filename.close()
+    with NamedTemporaryFile('w', delete=False) as tree_filename:
+        Phylo.write(tree, tree_filename.name, "nexus")
+
 
     # Load required R packages
-    ape = importr('ape')
-    phytools = importr('phytools')
-    LambdaSkyline = importr('LambdaSkyline')
+    # ape = importr('ape')
+    # phytools = importr('phytools')
+    # LambdaSkyline = importr('LambdaSkyline')
 
     robjects.r.assign("tree_filename", tree_filename.name)
     robjects.r.assign("sequence_labels_file", labels_filename)
@@ -275,14 +279,15 @@ def find_Ne(tree, labels_filename):
         pop_sizes <- head(skyline$population.size, n = 5)
         mean_pop_size <- mean(pop_sizes, na.rm = TRUE)
         ''')
-        Ne = list(robjects.r('mean_pop_size'))[0]
-    except BaseException:
-        Ne = ''
+        ne_out = list(robjects.r('mean_pop_size'))[0]
+    except Exception as error:
+        print(f'Error in finding Ne, {error}')
+        ne_out = ''
 
     # Remove the temporary file
     os.remove(tree_filename.name)
 
-    return Ne
+    return ne_out
 
 
 def get_diversity(indexed, labels):
@@ -297,11 +302,11 @@ def get_diversity(indexed, labels):
     total = sum(counts)
     result = 0
     for i in range(0, nvar - 1):
-        fi = counts[i] / total  # frequency of i-th variant
+        freq_i = counts[i] / total  # frequency of i-th variant
         for j in range(i + 1, nvar):
-            fj = counts[j] / total
+            freq_j = counts[j] / total
             ndiff = len(indexed[i] ^ indexed[j])  # symmetric difference
-            result += 2 * ndiff * fi * fj
+            result += 2 * ndiff * freq_i * freq_j
     return (result * (total / (total - 1)))
 
 
@@ -311,19 +316,18 @@ def parse_alias(alias_file):
     :param alias_file:  str, path to JSON file
     """
     alias = {}
-    with open(alias_file, 'r') as handle:
+    with open(alias_file, 'r', encoding='utf-8') as handle:
         alias = json.loads(handle.read())
-        for k, v in alias.items():
-            if v != '':
-                alias.update({k: v})
+        for key, value in alias.items():
+            if value != '':
+                alias.update({key: value})
     return alias
-
 
 def make_beadplots(
         by_lineage,
         args,
         callback=None,
-        t0=None,
+        initial_time=None,
         updated_lineages=None,
         txtfile='minor_lineages.txt',
         recode_file="recoded.json"):
@@ -351,25 +355,28 @@ def make_beadplots(
             records, limit=args.max_variants)
 
         # serialize tuple keys (features of union), #335
-        union = dict([("{0}|{1}|{2}".format(*feat), idx)
-                     for feat, idx in union.items()])
+        union = {f"{feat[0]}|{feat[1]}|{feat[2]}": idx for feat, idx in union.items()}
+
         # sets cannot be serialized to JSON, #335
         indexed = [list(s) for s in indexed]
         recoded.update({lineage: {'union': union, 'labels': labels,
                                   'indexed': indexed}})
 
-    with open(recode_file, 'w') as handle:
+
+    with open(recode_file, 'w', encoding='utf-8') as handle:
         json.dump(recoded, handle)
 
     # partition lineages into major and minor categories
-    intermed = [(len(features), lineage) for lineage, features in by_lineage.items() if len(
-        features) < args.mincount and (updated_lineages is None or lineage in updated_lineages)]
+    intermed = {lineage: len(features) for lineage, features in by_lineage.items()
+                if len(features) < args.mincount and
+                (updated_lineages is None or lineage in updated_lineages)}
     intermed.sort(reverse=True)  # descending order
-    minor = dict([(lineage, None)
-                 for _, lineage in intermed if lineage is not None])
+    minor = {lineage: None for _, lineage in intermed if lineage is not None}
+
+
 
     # export minor lineages to text file
-    with open(txtfile, 'w') as handle:
+    with open(txtfile, 'w', encoding='utf-8') as handle:
         for lineage in minor:
             handle.write(f'{lineage}\n')
 
@@ -384,8 +391,8 @@ def make_beadplots(
            "--outdir", args.outdir,
            "--binpath", args.binpath  # RapidNJ
            ]
-    if t0:
-        cmd.extend(["--timestamp", str(t0)])
+    if initial_time:
+        cmd.extend(["--timestamp", str(initial_time)])
     subprocess.check_call(cmd)
 
     # process major lineages
@@ -406,8 +413,8 @@ def make_beadplots(
             "--outdir", args.outdir,
             "--binpath", args.binpath
         ]
-        if t0:
-            cmd.extend(["--timestamp", str(t0)])
+        if initial_time:
+            cmd.extend(["--timestamp", str(initial_time)])
         subprocess.check_call(cmd)
 
     # parse output files
@@ -417,15 +424,20 @@ def make_beadplots(
     result = []
     inf_predict = {}
 
-    # Load required R packages
-    tidyquant = importr('tidyquant')
-    matrixStats = importr('matrixStats')
 
+    # Load required R packages
+    # tidyquant = importr('tidyquant')
+    # matrixStats = importr('matrixStats')
+
+    path_1 = os.path.join(covizu.__path__[0], 'hunepi/infections_increasing_model_comparisons.rds')
+    path_2 = os.path.join(covizu.__path__[0], 'hunepi/num_infections_model_comparisons.rds')
     # Read Models
     robjects.r(
-        f"increasing_mods <- readRDS(\"{os.path.join(covizu.__path__[0], 'hunepi/infections_increasing_model_comparisons.rds')}\")")
+        f"increasing_mods <- readRDS(\"{path_1}\")")
     robjects.r(
-        f"infections_mods <- readRDS(\"{os.path.join(covizu.__path__[0], 'hunepi/num_infections_model_comparisons.rds')}\")")
+        f"infections_mods <- readRDS(\"{path_2}\")")
+
+
 
     # Function to make estimates from each model
     robjects.r('''
@@ -438,100 +450,98 @@ def make_beadplots(
     }
     ''')
 
-    for lineage in recoded:
+    for lineage, value in recoded.items():
         # import trees
         lineage_name = lineage.replace('/', '_')  # issue #297
-        outfile = open(f'{args.outdir}/{lineage_name}.nwk')
-        trees = Phylo.parse(outfile, 'newick')  # note this returns a generator
+        with open(f'{args.outdir}/{lineage_name}.nwk', encoding='utf-8') as outfile:
+            trees = Phylo.parse(outfile, 'newick', encoding='utf-8')  # returns a generator
 
-        label_dict = recoded[lineage]['labels']
+            label_dict = recoded[lineage]['labels']
 
-        if len(label_dict) == 1:
-            # handle case of only one variant
-            # lineage only has one variant, no meaningful tree
-            beaddict = {'nodes': {}, 'edges': []}
+            if len(label_dict) == 1:
+                # handle case of only one variant
+                # lineage only has one variant, no meaningful tree
+                beaddict = {'nodes': {}, 'edges': []}
 
-            # use earliest sample as variant label
-            intermed = sorted([label.split('|')[::-1]
-                              for label in label_dict['0']])
-            variant = intermed[0][1]
-            beaddict['nodes'].update({variant: []})
+                # use earliest sample as variant label
+                intermed = sorted([label.split('|')[::-1]
+                                for label in label_dict['0']])
+                variant = intermed[0][1]
+                beaddict['nodes'].update({variant: []})
 
-            for coldate, accn, location, label1 in intermed:
-                beaddict['nodes'][variant].append(
-                    [coldate, accn, location, label1])
+                for coldate, accn, location, label1 in intermed:
+                    beaddict['nodes'][variant].append(
+                        [coldate, accn, location, label1])
 
-            inf_predict.update({lineage: 0})
-        else:
-            # generate beadplot data
-            ctree = clustering.consensus(
-                trees, cutoff=args.boot_cutoff, callback=callback)
-            outfile.close()  # done with Phylo.parse generator
+                inf_predict.update({lineage: 0})
+            else:
+                # generate beadplot data
+                ctree = clustering.consensus(
+                    trees, cutoff=args.boot_cutoff, callback=callback)
+                outfile.close()  # done with Phylo.parse generator
 
-            # incorporate hunipie
-            clabel_dict = manage_collapsed_nodes(label_dict, ctree)
+                # incorporate hunipie
+                clabel_dict = manage_collapsed_nodes(label_dict, ctree)
 
-            labels_filename = NamedTemporaryFile('w', delete=False)
+                with NamedTemporaryFile('w', delete=False) as labels_filename:
 
-            # Write labels to file for Ne estimation
-            writer = csv.writer(labels_filename)
-            for key, value in clabel_dict.items():
-                writer.writerow([key, value])
-            labels_filename.close()
+                    # Write labels to file for Ne estimation
+                    writer = csv.writer(labels_filename)
+                    for key, value in clabel_dict.items():
+                        writer.writerow([key, value])
 
-            cne = find_Ne(ctree, labels_filename.name)
+                cne = find_ne(ctree, labels_filename.name)
 
-            # Remove temporary file with labels
-            os.remove(labels_filename.name)
+                # Remove temporary file with labels
+                os.remove(labels_filename.name)
 
-            # Collapse tree and manage the collapsed nodes
-            tree = beadplot.collapse_polytomies(ctree)
-            clabel_dict = manage_collapsed_nodes(label_dict, tree)
-            summary_stats = get_tree_summary_stats(tree, cne, clabel_dict)
+                # Collapse tree and manage the collapsed nodes
+                tree = beadplot.collapse_polytomies(ctree)
+                clabel_dict = manage_collapsed_nodes(label_dict, tree)
+                summary_stats = get_tree_summary_stats(tree, cne, clabel_dict)
 
-            indexed = [set(l) for l in recoded[lineage]['indexed']]
-            pi = get_diversity(indexed, label_dict)
-            summary_stats['pi'] = pi
-            summary_stats['sample_size'] = len(by_lineage[lineage])
+                indexed = [set(l) for l in recoded[lineage]['indexed']]
+                p_i = get_diversity(indexed, label_dict)
+                summary_stats['pi'] = p_i
+                summary_stats['sample_size'] = len(by_lineage[lineage])
 
-            if cne == '':
-                summary_stats['Ne'] = 'NaN'
+                if cne == '':
+                    summary_stats['Ne'] = 'NaN'
 
-            sum_stat_dat = robjects.vectors.DataFrame(summary_stats)
-            robjects.r.assign('sum_stat_dat', sum_stat_dat)
+                sum_stat_dat = robjects.vectors.DataFrame(summary_stats)
+                robjects.r.assign('sum_stat_dat', sum_stat_dat)
 
-            robjects.r('''
-            sum_stat_dat$Ne <- as.numeric(sum_stat_dat$Ne)
-            increasing_predict_prob <- estimate_vals(increasing_mods, sum_stat_dat)
+                robjects.r('''
+                sum_stat_dat$Ne <- as.numeric(sum_stat_dat$Ne)
+                increasing_predict_prob <- estimate_vals(increasing_mods, sum_stat_dat)
 
-            if(!is.nan(sum_stat_dat$Ne)) {
-                pred_prob <- increasing_predict_prob[which(rownames(increasing_predict_prob) == "HUNePi.1"), ]
-            } else {
-                pred_prob <- increasing_predict_prob[which(rownames(increasing_predict_prob) == "HUPi.1"), ]
-            }
-
-            predicted_increase <- pred_prob > 0.5
-
-            if(predicted_increase){
-                infections_predictions <-
-                    estimate_vals(infections_mods, sum_stat_dat, exp = T)
                 if(!is.nan(sum_stat_dat$Ne)) {
-                    predicted_infections <- infections_predictions[which(rownames(infections_predictions) == "HUNePi.1"), ]
+                    pred_prob <- increasing_predict_prob[which(rownames(increasing_predict_prob) == "HUNePi.1"), ]
                 } else {
-                    predicted_infections <- infections_predictions[which(rownames(infections_predictions) == "HUPi.1"), ]
+                    pred_prob <- increasing_predict_prob[which(rownames(increasing_predict_prob) == "HUPi.1"), ]
                 }
-            } else {
-                predicted_infections <- -1
-            }
-            ''')
 
-            predicted_infections = list(robjects.r('predicted_infections'))[0]
-            inf_predict.update({lineage: predicted_infections})
+                predicted_increase <- pred_prob > 0.5
 
-            ctree = beadplot.annotate_tree(ctree, label_dict)
-            beaddict = beadplot.serialize_tree(ctree)
+                if(predicted_increase){
+                    infections_predictions <-
+                        estimate_vals(infections_mods, sum_stat_dat, exp = T)
+                    if(!is.nan(sum_stat_dat$Ne)) {
+                        predicted_infections <- infections_predictions[which(rownames(infections_predictions) == "HUNePi.1"), ]
+                    } else {
+                        predicted_infections <- infections_predictions[which(rownames(infections_predictions) == "HUPi.1"), ]
+                    }
+                } else {
+                    predicted_infections <- -1
+                }
+                ''')
 
-        outfile.close()  # done with Phylo.parse generator
+                predicted_infections = list(robjects.r('predicted_infections'))[0]
+                inf_predict.update({lineage: predicted_infections})
+
+                ctree = beadplot.annotate_tree(ctree, label_dict)
+                beaddict = beadplot.serialize_tree(ctree)
+
         beaddict.update({'sampled_variants': len(label_dict)})
         beaddict.update({'lineage': lineage})
 
@@ -560,8 +570,8 @@ def get_mutations(by_lineage):
                 counts[feat] += 1
 
         # filter for mutations that occur in at least half of samples
-        common = dict([(feat, count / len(samples)) for feat,
-                      count in counts.items() if count / len(samples) >= 0.5])
+        common = {feat: count / len(samples) for feat,
+                  count in counts.items() if count / len(samples) >= 0.5}
         result.update({lineage: common})
 
     return result
