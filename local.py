@@ -306,7 +306,7 @@ if __name__ == "__main__":
 
     # generate beadplots and serialize to file
     result, infection_prediction = make_beadplots(
-        by_lineage, args, cb.callback, t0=cb.t0.timestamp())
+        by_lineage, args, cb.callback, initial_time=cb.t0.timestamp())
     outfile = os.path.join(args.outdir, f'clusters.{timestamp}.json')
     with open(outfile, 'w', encoding='utf-8') as handle:  # serialize results to JSON
         json.dump(result, fp=handle)

@@ -1,20 +1,18 @@
+"""util functions for gisaid.py"""
 import lzma
 import json
-from datetime import date
+from datetime import date, datetime
 import argparse
 import os
 import sys
 import subprocess
-from datetime import datetime
 import getpass
 
 import covizu
 from covizu import minimap2
 # from covizu.minimap2 import minimap2, encode_diffs
-from covizu.utils.seq_utils import *
+from covizu.utils.seq_utils import fromisoformat, convert_fasta, QPois, load_vcf, total_missing
 from covizu.utils.progress_utils import Callback
-
-import gc
 
 
 def download_feed(url, user, password):
@@ -60,13 +58,13 @@ def load_gisaid(path, minlen=29000, mindate='2019-12-01', callback=None,
     mindate = fromisoformat(mindate)
     rejects = {'short': 0, 'baddate': 0, 'nonhuman': 0, 'nolineage': 0}
     with lzma.open(path, 'rb') as handle:
-        for ln, line in enumerate(handle):
-            if debug and ln > debug:
+        for line_num, line in enumerate(handle):
+            if debug and line_num > debug:
                 break
             record = json.loads(line)
 
             # remove unused data
-            record = dict([(k, record[k]) for k in fields])
+            record = {k: record[k] for k in fields}
 
             qname = record['covv_virus_name'].strip().replace(
                 ',', '_').replace('|', '_')  # issue #206,#464
@@ -118,10 +116,9 @@ def batch_fasta(gen, cur=None, size=100):
 
     for i, record in enumerate(gen, 1):
         accession = record['covv_accession_id']
-        qname = '{}__accession__{}'.format(
-            record['covv_virus_name'].replace(
-                "'", "''").replace(
-                " ", "_"), accession)
+
+        qname = record['covv_virus_name'].replace("'","''").replace(" ","_")
+        qname = f'{qname}__accession__{accession}'
         sequence = record.pop('sequence')
 
         result = None
@@ -150,7 +147,7 @@ def batch_fasta(gen, cur=None, size=100):
 
 
 def extract_features(
-        batcher,
+        in_batcher,
         ref_file,
         cur=None,
         binpath='minimap2',
@@ -169,19 +166,18 @@ def extract_features(
 
     :yield:  dict, record augmented with genetic differences and missing sites;
     """
-    with open(ref_file) as handle:
+    with open(ref_file, encoding='utf-8') as handle:
         reflen = len(convert_fasta(handle)[0][1])
 
-    for fasta, batch in batcher:
+    for fasta, batch in in_batcher:
         new_records = {}
         for record in batch:
             if 'diffs' in record:
                 yield record
             else:
-                record_id = '{}__accession__{}'.format(
-                    record['covv_virus_name'].replace(
-                        "'", "''").replace(
-                        " ", "_"), record['covv_accession_id'])
+                record_id = record['covv_virus_name'].replace("'", "''").replace(' ', '_')
+                record_id = f"{record_id}__accession__{record['covv_accession_id']}"
+
                 new_records[record_id] = record
 
         # If fasta is empty, no need to run minimap2
@@ -205,12 +201,11 @@ def extract_features(
 
             if cur:
                 # inserting diffs and missing as json strings
-                cur.execute("INSERT INTO SEQUENCES VALUES(%s, %s, %s, %s, %s, %s, %s)", [
-                            json.dumps(v) if k in ['diffs', 'missing'] else v for k, v in record.items()])
+                cur.execute("INSERT INTO SEQUENCES VALUES(%s, %s, %s, %s, %s, %s, %s)",
+                    [json.dumps(v) if k in ['diffs', 'missing'] else v for k, v in record.items()])
                 cur.execute("INSERT INTO NEW_RECORDS VALUES(%s, %s)",
-                            [accession, record['covv_lineage']])
+                    [accession, record['covv_lineage']])
             yield record
-
 
 def filter_problematic(
         records,
@@ -242,7 +237,7 @@ def filter_problematic(
     """
     # load resources
     mask = load_vcf(vcf_file)
-    qp = QPois(quantile=1 - cutoff, rate=rate, maxtime=maxtime, origin=origin)
+    poisson = QPois(quantile=1 - cutoff, rate=rate, maxtime=maxtime, origin=origin)
 
     n_sites = 0
     n_outlier = 0
@@ -254,24 +249,24 @@ def filter_problematic(
             diffs = record['diffs']
 
         # exclude problematic sites
-        filtered = []
+        filter = []
         for typ, pos, alt in diffs:
             if typ == '~' and int(pos) in mask and alt in mask[pos]['alt']:
                 continue
             if typ != '-' and 'N' in alt:
                 # drop substitutions and insertions with uncalled bases
                 continue
-            filtered.append(tuple([typ, pos, alt]))
+            filter.append(tuple([typ, pos, alt]))
 
-        ndiffs = len(filtered)
+        ndiffs = len(filter)
         n_sites += len(diffs) - ndiffs
 
         if not encoded:
-            record['diffs'] = filtered
+            record['diffs'] = filter
 
             # exclude genomes with excessive divergence from reference
             coldate = record['covv_collection_date']
-            if qp.is_outlier(coldate, ndiffs):
+            if poisson.is_outlier(coldate, ndiffs):
                 n_outlier += 1
                 continue
 
@@ -284,7 +279,7 @@ def filter_problematic(
             if isinstance(record, dict):
                 qname, missing = record['qname'], record['missing']
 
-            yield [qname, filtered, missing]
+            yield [qname, filter, missing]
 
     if callback:
         callback(f"filtered {n_sites} problematic features")
@@ -353,13 +348,13 @@ def convert_json(infile, provision):
     for cluster in clusters:
         for variant, samples in cluster['nodes'].items():
             revised = []
-            for coldate, accn, location, name in samples:
-                md = metadata.get(accn, None)
-                if md is None:
-                    print(f"Failed to retrieve metadata for accession {accn}")
+            for sample in samples: # coldate, accn, location, name
+                meta_data = metadata.get(sample[1], None)
+                if meta_data is None:
+                    print(f"Failed to retrieve metadata for accession {sample[1]}")
                     sys.exit()
-                revised.append([name, accn, location, coldate,
-                               md['gender'], md['age'], md['status']])
+                revised.append(sample +
+                               [meta_data['gender'], meta_data['age'], meta_data['status']])
 
             # replace list of samples
             cluster['nodes'][variant] = revised
@@ -438,18 +433,18 @@ def parse_args():
         type=int,
         help="int, limit number of rows of input xz file to parse for debugging")
 
-    args = parser.parse_args()
+    arguments = parser.parse_args()
 
-    if args.url is None and "GISAID_URL" in os.environ:
-        args.url = os.environ["GISAID_URL"]
-    if args.user is None and "GISAID_USER" in os.environ:
-        args.user = os.environ["GISAID_USER"]
+    if arguments.url is None and "GISAID_URL" in os.environ:
+        arguments.url = os.environ["GISAID_URL"]
+    if arguments.user is None and "GISAID_USER" in os.environ:
+        arguments.user = os.environ["GISAID_USER"]
         # otherwise download_feed() will prompt for username
-    if args.password is None and "GISAID_PSWD" in os.environ:
-        args.password = os.environ["GISAID_PSWD"]
+    if arguments.password is None and "GISAID_PSWD" in os.environ:
+        arguments.password = os.environ["GISAID_PSWD"]
         # otherwise download_feed() will prompt for password
 
-    return args
+    return arguments
 
 
 if __name__ == '__main__':
