@@ -102,7 +102,7 @@ def bootstrap(input_union, idxed, binpath='rapidnj', callback=None, callfreq=100
         temp_out.flush()
 
         # call RapidNJ on temp file
-        
+
         stdout = subprocess.check_output([
             binpath, temp_out.name, '-i', 'pd', '--no-negative-length'],
             stderr=subprocess.DEVNULL)

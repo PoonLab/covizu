@@ -439,7 +439,7 @@ if __name__ == "__main__":
 
     # clustering analysis of lineages
     result, infection_prediction = make_beadplots(
-        by_lineage, args, cb.callback, t0=cb.t0.timestamp(), updated_lineages=UPDATED_LINEAGES)
+        by_lineage, args, cb.callback, initial_time=cb.intial_time.timestamp(), updated_lineages=UPDATED_LINEAGES)
     clust_file = os.path.join(args.outdir, f'clusters.{timestamp}.json')
     if args.use_db:
         # Insert all updated records into the database
