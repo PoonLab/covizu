@@ -1018,11 +1018,22 @@ function export_csv() {
   var all_tips = [...tips, ...recombinant_tips, ...df_xbb];
 
   // write lineage-level information to CSV file for download
-  var csvFile = 'lineage,mean.diffs,clock.residual,num.cases,num.variants,min.coldate,max.coldate,mean.coldate';
+  var csvFile = 'lineage,mean.diffs,clock.residual,num.cases,num.variants,min.coldate,max.coldate,' +
+      'mean.coldate,pred.cases';
   var lineage_info = []
   for (tip of all_tips) {
     if (tip.isTip === undefined || tip.isTip)
-      lineage_info.push([`${tip.thisLabel === undefined ? tip.label1 : tip.thisLabel},${Math.round(100*tip.mean_ndiffs)/100.},${Math.round(100*tip.residual)/100.},${tip.nsamples},${tip.varcount},${formatDate(tip.first_date)},${formatDate(tip.last_date)},${formatDate(tip.mcoldate)}`]);
+      lineage_info.push([
+        tip.thisLabel === undefined ? tip.label1 : tip.thisLabel,
+        Math.round(100*tip.mean_ndiffs)/100.,
+        Math.round(100*tip.residual)/100.,
+        tip.nsamples,
+        tip.varcount,
+        formatDate(tip.first_date),
+        formatDate(tip.last_date),
+        formatDate(tip.mcoldate),
+        Math.round(tip.infections)
+       ]);
   }
   csvFile = csvFile + "\n" + lineage_info.join("\n");
   blob = new Blob([csvFile], {type: "text/csv"});

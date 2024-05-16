@@ -418,7 +418,7 @@ function draw_clusters(tips, filtered_recombinant_tips, redraw=false) {
   diverge_pal = d3.scaleSequential(d3.interpolatePlasma)
       .domain(d3.extent(tip_obj, function(d) { return d.residual; }));
   infections_pal = d3.scaleSequential(d3.interpolateViridis)
-      .domain([0, d3.max(tip_obj, function(d) { return d.infections; })]);
+      .domain([0, d3.max(tip_obj, function(d) { return Math.log10(d.infections); })]);
 
   generate_legends();
   changeTreeColour();
@@ -521,7 +521,7 @@ function changeTreeColour() {
           }
           else if (opt === "Infections") {
             $("div#svg-infections-legend").show();
-            if (d.infections > 0) return infections_pal(d.infections);
+            if (d.infections > 0) return infections_pal(Math.log10(d.infections));
             else if (d.infections == 0) return null_infections_colour;
             else return dsc_infections_colour;
           }
