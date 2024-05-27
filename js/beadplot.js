@@ -1168,7 +1168,7 @@ function gen_details_table(obj) {
 
             let tooltipText = "";
             if (Object.keys(gd).length === 0) {
-              tooltipText = `No data was retrieved from querying the GISAID API for this accession number.`;
+              tooltipText = `GISAID API call did not return data for this accession number`;
             } else {
               tooltipText = `<b>${i18n_text.sample_orig_lab}:</b> ${gd.covv_orig_lab}<br/>`;
               tooltipText += `<b>${i18n_text.sample_subm_lab}:</b> ${gd.covv_subm_lab}<br/>`;
