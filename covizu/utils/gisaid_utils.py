@@ -228,6 +228,10 @@ def filter_problematic(records, origin='2019-12-01', rate=0.0655, cutoff=0.005,
         else:
             diffs = record['diffs']
 
+        # Exclude sequences with no mutations. See issue #530
+        if len(diffs) == 0:
+            continue
+
         # exclude problematic sites
         filtered = []
         for typ, pos, alt in diffs:
