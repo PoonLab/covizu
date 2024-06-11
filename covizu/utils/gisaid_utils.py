@@ -228,10 +228,6 @@ def filter_problematic(records, origin='2019-12-01', rate=0.0655, cutoff=0.005,
         else:
             diffs = record['diffs']
 
-        # Exclude sequences with no mutations. See issue #530
-        if len(diffs) == 0:
-            continue
-
         # exclude problematic sites
         filtered = []
         for typ, pos, alt in diffs:
@@ -247,6 +243,10 @@ def filter_problematic(records, origin='2019-12-01', rate=0.0655, cutoff=0.005,
 
         if not encoded:
             record['diffs'] = filtered
+
+            # Exclude sequences with no mutations. See issue #530
+            if len(record['diffs']) == 0:
+                continue
 
             # exclude genomes with excessive divergence from reference
             coldate = record['covv_collection_date']
