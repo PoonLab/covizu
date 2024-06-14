@@ -86,7 +86,7 @@ app.get('/api/regionmap', (req, res) => {
 })
 
 app.get('/api/cid/:accession', (req, res) => {
-  dbManager.get_accession(req.params.accession).then(result=>{
+  dbManager.get_accession(req.params.accession.toUpperCase()).then(result=>{
     res.send(result);
   })
 });

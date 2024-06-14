@@ -244,6 +244,10 @@ def filter_problematic(records, origin='2019-12-01', rate=0.0655, cutoff=0.005,
         if not encoded:
             record['diffs'] = filtered
 
+            # Exclude sequences with no mutations. See issue #530
+            if len(record['diffs']) == 0:
+                continue
+
             # exclude genomes with excessive divergence from reference
             coldate = record['covv_collection_date']
             if qp.is_outlier(coldate, ndiffs):
@@ -332,8 +336,9 @@ def convert_json(infile, provision):
                 md = metadata.get(accn, None)
                 if md is None:
                     print("Failed to retrieve metadata for accession {}".format(accn))
-                    sys.exit()
-                revised.append([name, accn, location, coldate, md['gender'], md['age'], md['status']])
+                    revised.append([name, accn, location, coldate, 'N/A', 'N/A', 'N/A'])
+                else:
+                    revised.append([name, accn, location, coldate, md['gender'], md['age'], md['status']])
 
             # replace list of samples
             cluster['nodes'][variant] = revised

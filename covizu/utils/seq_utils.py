@@ -185,6 +185,10 @@ class QPois:
         return bisect.bisect(timepoints, time)
 
     def is_outlier(self, coldate, ndiffs):
+        # Return False if cutoff = 0
+        if self.lowerq == 0:
+            return False
+        
         if type(coldate) is str:
             coldate = fromisoformat(coldate)
         dt = (coldate - self.origin).days

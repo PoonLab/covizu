@@ -31,7 +31,7 @@ def parse_args():
     parser.add_argument('--mindate', type=str, default='2019-12-01', 
                         help='option, earliest possible sample collection date (ISO format, default '
                               '2019-12-01')
-    parser.add_argument('--poisson-cutoff', type=float, default=0.001,
+    parser.add_argument('--poisson-cutoff', type=float, default=0,
                         help='option, filtering outlying genomes whose distance exceeds the upper '
                              'quantile of Poisson distribution (molecular clock).  Default 0.001 '
                              'corresponds to 99.9%% cutoff.')
