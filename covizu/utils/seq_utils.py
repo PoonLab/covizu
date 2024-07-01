@@ -190,6 +190,9 @@ class QPois:
 
     def is_outlier(self, coldate, ndiffs):
         """check if number of differences is an outlier"""
+        if self.lowerq == 0:
+            return False
+
         if isinstance(coldate, str):
             coldate = fromisoformat(coldate)
         date_time = (coldate - self.origin).days

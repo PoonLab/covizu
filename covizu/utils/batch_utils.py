@@ -34,7 +34,11 @@ def unpack_records(records):
         # reconstitute the mutations defining this variant
         diffs = []
         for mutation in key.split(','):
-            typ, pos, alt = mutation.split('|')
+            try:
+                typ, pos, alt = mutation.split('|')
+            except ValueError:
+                # Handle case when there are no diffs
+                continue
             if typ == '-':
                 alt = int(alt)  # number of nucleotides in indel
             diffs.append(tuple([typ, int(pos), alt]))

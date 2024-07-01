@@ -159,7 +159,10 @@ var gisaid = gisaid || (function () {
 				  .then(ackData => {
 					  this.ackCache[ackLink] = ackData ;
 					  cb(ackData);
-				});
+				  })
+				  .catch(e => {
+					  cb({});
+				  });
 			} else {
 				cb(this.ackCache[ackLink]);
 			}

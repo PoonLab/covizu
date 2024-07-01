@@ -1167,9 +1167,13 @@ function gen_details_table(obj) {
                 .style("opacity", 0.9);
 
             let tooltipText = "";
-            tooltipText = `<b>${i18n_text.sample_orig_lab}:</b> ${gd.covv_orig_lab}<br/>`;
-            tooltipText += `<b>${i18n_text.sample_subm_lab}:</b> ${gd.covv_subm_lab}<br/>`;
-            tooltipText += `<b>${i18n_text.sample_authors}:</b> ${gd.covv_authors}`;
+            if (Object.keys(gd).length === 0) {
+              tooltipText = `GISAID API call did not return data for this accession number`;
+            } else {
+              tooltipText = `<b>${i18n_text.sample_orig_lab}:</b> ${gd.covv_orig_lab}<br/>`;
+              tooltipText += `<b>${i18n_text.sample_subm_lab}:</b> ${gd.covv_subm_lab}<br/>`;
+              tooltipText += `<b>${i18n_text.sample_authors}:</b> ${gd.covv_authors}`;
+            }
 
             // Tooltip appears 10 pixels left of the cursor
             cTooltip.html(tooltipText)

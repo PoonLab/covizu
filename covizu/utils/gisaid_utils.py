@@ -264,6 +264,10 @@ def filter_problematic(
         if not encoded:
             record['diffs'] = filter
 
+            # Exclude sequences with no mutations. See issue #530
+            if len(record['diffs']) == 0:
+                continue
+
             # exclude genomes with excessive divergence from reference
             coldate = record['covv_collection_date']
             if poisson.is_outlier(coldate, ndiffs):
