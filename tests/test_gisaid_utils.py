@@ -2,8 +2,8 @@ import unittest
 from covizu.utils.gisaid_utils import load_gisaid, batch_fasta, extract_features, sort_by_lineage
 
 
-def callback(stuff):
-    print(stuff)
+def callback(message):
+    print(message)
 
 
 class TestLoadGISAID(unittest.TestCase):

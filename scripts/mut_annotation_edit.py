@@ -174,7 +174,9 @@ def pokay_mut_annotations():
                     constellations_to_categories)
                 text_file.close()
         except FileNotFoundError as err:
-            sys.exit(f"Cannot open {qualified_txt_file} for reading: {err}")
+            sys.exit(f"Cannot find {qualified_txt_file} for reading: {err}")
+        except PermissionError as err:
+            sys.exit(f"Couldn't open {qualified_txt_file} for reading: {err}")
         print(f"Processing {qualified_txt_file}")
 
     # write to JSON object
