@@ -1,3 +1,4 @@
+"""utils for seq"""
 from datetime import date
 import bisect
 import pkg_resources
@@ -28,15 +29,15 @@ def parse_label(label):
     :param label:  str, GISAID sequence label
     :return: (country, date)
     """
-    info, epi_id, ymd = label.split('|')
+    info, _, ymd = label.split('|')
     country = info.split('/')[1]
     try:
         year, month, day = list(map(int, ymd.split('-')))
         return country, date(year, month, day)
     except ValueError:
         return country, None
-    except:
-        raise
+    except BaseException as error:
+        raise error
 
 
 def iter_fasta(handle):
@@ -47,16 +48,16 @@ def iter_fasta(handle):
     :param handle:  open stream to FASTA file in read mode
     :yield tuples, (header, sequence)
     """
-    h, sequence = None, ''
+    header, sequence = None, ''
     for line in handle:
         if line.startswith('>'):
             if len(sequence) > 0:
-                yield h, sequence
+                yield header, sequence
                 sequence = ''
-            h = line.lstrip('>').rstrip()
+            header = line.lstrip('>').rstrip()
         else:
             sequence += line.strip().upper()
-    yield h, sequence
+    yield header, sequence
 
 
 def convert_fasta(handle):
@@ -66,29 +67,29 @@ def convert_fasta(handle):
     :return:  List of [header, sequence] records
     """
     result = []
-    h, sequence = None, ''
+    header, sequence = None, ''
     for line in handle:
         if line.startswith('>') or line.startswith('#'):
             if len(sequence) > 0:
-                result.append([h, sequence])
+                result.append([header, sequence])
                 sequence = ''
-            h = line.lstrip('>').rstrip()
+            header = line.lstrip('>').rstrip()
         else:
             sequence += line.strip().upper()
-    result.append([h, sequence])  # handle last entry
+    result.append([header, sequence])  # handle last entry
     return result
 
 
 def total_missing(row):
     """ Calculate the total number of missing sites from closed-open interval annotations """
     res = 0
-    if type(row) is dict:
+    if isinstance(row, dict):
         missing = row['missing']
     else:
         _, _, missing = row
 
     for left, right in missing:
-        res += right-left
+        res += right - left
     return res
 
 
@@ -101,26 +102,26 @@ def apply_features(diffs, missing, refseq):
     :param refseq:  str, reference genome
     :return:  str, aligned genome
     """
-    result = refseq  
+    result = refseq
 
     # apply missing intervals
     for left, right in missing:
-        result = '%s%s%s'%(result[:left], 'N'*(right - left), result[right:])
+        result = f"{result[:left]}{'N' * (right - left)}{result[right:]}"
 
     # apply substitutions and deletions (skip insertions)
     for dtype, pos, diff in diffs:
         if dtype == '~':
-            result = '%s%s%s'%(result[:pos], diff, result[pos + 1:])
+            result = f'{result[:pos]}{diff}{result[pos + 1:]}'
         elif dtype == '-':
-            result = '%s%s%s'%(result[:pos], '-'*(diff), result[pos + diff:])
+            result = f"{result[:pos]}{'-' * diff}{result[pos + diff:]}"
 
     return result
 
 
-def fromisoformat(dt):
+def fromisoformat(date_time):
     """ Convert ISO date to Python datetime.date object to support Python <3.7 """
     try:
-        year, month, day = map(int, dt.split('-'))
+        year, month, day = map(int, date_time.split('-'))
     except ValueError:
         return None
     return date(year, month, day)
@@ -129,8 +130,9 @@ def fromisoformat(dt):
 class QPois:
     """
     Cache the quantile transition points for Poisson distribution for a given
-    rate <L> and varying time <t>, s.t. \exp(-Lt)\sum_{i=0}^{k} (Lt)^i/i! = Q.
+    rate <L> and varying time <t>, s.t. \\exp(-Lt)\\sum_{i=0}^{k} (Lt)^i/i! = Q.
     """
+
     def __init__(self, quantile, rate, maxtime, origin='2019-12-01'):
         """
         :param quantile:  float, cut distribution at q and 1-q
@@ -140,44 +142,46 @@ class QPois:
         """
         if quantile <= 0 or quantile >= 1:
             print("ERROR: QPois quantile argument must be on closed interval (0,1).")
-        self.upperq = quantile if quantile > 0.5 else (1-quantile)
-        self.lowerq = 1-self.upperq  # TODO: store timepoints for lower quantiles
+        self.upperq = quantile if quantile > 0.5 else (1 - quantile)
+        self.lowerq = 1 - self.upperq  # TODO: store timepoints for lower quantiles
         self.rate = rate
         self.maxtime = maxtime
         self.origin = fromisoformat(origin)
 
         self.timepoints_upper, self.timepoints_lower = self.compute_timepoints()
 
-    def objfunc(self, x, k, q):
+    def objfunc(self, in_x, in_k, in_q):
         """ Use root-finding to find transition point for Poisson CDF """
-        return q - poisson.cdf(k=k, mu=self.rate*x)
+        return in_q - poisson.cdf(k=in_k, mu=self.rate * in_x)
 
     def compute_timepoints(self, maxk=100):
         """ Store transition points until time exceeds maxtime """
         timepoints_upper = []
         timepoints_lower = []
-        tu = 0
-        tl = 0
+        t_u = 0
+        t_l = 0
         for k in range(maxk):
-            res_upper = root(self.objfunc, x0=tu, args=(k, self.upperq, ))
-            res_lower = root(self.objfunc, x0=tl, args=(k, self.lowerq, ))
+            res_upper = root(self.objfunc, x0=t_u, args=(k, self.upperq, ))
+            res_lower = root(self.objfunc, x0=t_l, args=(k, self.lowerq, ))
             if not res_upper.success:
-                print("Error in QPois: failed to locate root, q={} k={} rate={}".format(
-                    self.upperq, k, self.rate))
+                print(
+                    f"Error in QPois: failed to locate root, "
+                    f"q={self.lowerq} k={k} rate={self.rate}")
                 break
             if not res_lower.success:
-                print("Error in QPois: failed to locate root, q={} k={} rate={}".format(
-                    self.lowerq, k, self.rate))
+                print(
+                    f"Error in QPois: failed to locate root, "
+                    f"q={self.lowerq} k={k} rate={self.rate}")
                 break
-            tu = res_upper.x[0]
-            tl = res_lower.x[0]
-            if tu > self.maxtime:
+            t_u = res_upper.x[0]
+            t_l = res_lower.x[0]
+            if t_u > self.maxtime:
                 break
-            timepoints_upper.append(tu)
-            if tl < 0:
+            timepoints_upper.append(t_u)
+            if t_l < 0:
                 break
-            if tl <= self.maxtime:
-                timepoints_lower.append(tl)
+            if t_l <= self.maxtime:
+                timepoints_lower.append(t_l)
         return timepoints_upper, timepoints_lower
 
     def lookup(self, time, timepoints):
@@ -185,21 +189,26 @@ class QPois:
         return bisect.bisect(timepoints, time)
 
     def is_outlier(self, coldate, ndiffs):
-        # Return False if cutoff = 0
+        """check if number of differences is an outlier"""
         if self.lowerq == 0:
             return False
-        
-        if type(coldate) is str:
+
+        if isinstance(coldate, str):
             coldate = fromisoformat(coldate)
-        dt = (coldate - self.origin).days
-        qmax = self.lookup(dt, self.timepoints_upper)
-        qmin = self.lookup(dt, self.timepoints_lower)
+        date_time = (coldate - self.origin).days
+        qmax = self.lookup(date_time, self.timepoints_upper)
+        qmin = self.lookup(date_time, self.timepoints_lower)
         if ndiffs > qmax or ndiffs <= qmin:
             return True
         return False
 
 
-def filter_outliers(iter, origin='2019-12-01', rate=0.0655, cutoff=0.005, maxtime=1e3):
+def filter_outliers(
+        iterable,
+        origin='2019-12-01',
+        rate=0.0655,
+        cutoff=0.005,
+        maxtime=1e3):
     """
     Exclude genomes that contain an excessive number of genetic differences
     from the reference, assuming that the mean number of differences increases
@@ -215,19 +224,20 @@ def filter_outliers(iter, origin='2019-12-01', rate=0.0655, cutoff=0.005, maxtim
     :param maxtime:  int, maximum number of days to cache Poisson quantiles
     :yield:  tuples from generator that pass filter
     """
-    qp = QPois(quantile=1-cutoff, rate=rate, maxtime=maxtime, origin=origin)
-    for qname, diffs, missing in iter:
+    poisson_product = QPois(quantile=1 - cutoff, rate=rate, maxtime=maxtime, origin=origin)
+    for qname, diffs, missing in iterable:
         coldate = qname.split('|')[-1]
         if coldate.count('-') != 2:
             continue
         ndiffs = len(diffs)
-        if qp.is_outlier(coldate, ndiffs):
+        if poisson_product.is_outlier(coldate, ndiffs):
             # reject genome with too many differences given date
             continue
         yield qname, diffs, missing
 
 
-def load_vcf(vcf_file="data/ProblematicSites_SARS-CoV2/problematic_sites_sarsCov2.vcf"):
+def load_vcf(
+        vcf_file="data/ProblematicSites_SARS-CoV2/problematic_sites_sarsCov2.vcf"):
     """
     Load VCF of problematic sites curated by Nick Goldman lab
     NOTE: The curators of this VCF used MN908947.3, which is identical to NC_045512.
@@ -237,24 +247,29 @@ def load_vcf(vcf_file="data/ProblematicSites_SARS-CoV2/problematic_sites_sarsCov
     :param vcf_file:  str, path to VCF file
     :return:  dict, tuples keyed by reference coordinate
     """
-    vcf = open(vcf_file)
-    mask = {}
-    for line in vcf.readlines():
-        if line.startswith('#'):
-            continue
-        try:
-            _, pos, _, ref, alt, _, filt, info = line.strip().split('\t')
-        except ValueError:
-            raise
-        if filt == 'mask':
-            mask.update({int(pos)-1: {  # convert to 0-index
-                'ref': ref, 'alt': alt, 'info': info}
-            })
+    with open(vcf_file, encoding='utf-8') as vcf:
+        mask = {}
+        for line in vcf.readlines():
+            if line.startswith('#'):
+                continue
+            try:
+                _, pos, _, ref, alt, _, filt, info = line.strip().split('\t')
+            except ValueError as error:
+                raise error
+            if filt == 'mask':
+                mask.update({int(pos) - 1: {  # convert to 0-index
+                    'ref': ref, 'alt': alt, 'info': info}
+                })
     return mask
 
 
 class SC2Locator:
-    def __init__(self, ref_file=pkg_resources.resource_filename('covizu', 'data/NC_045512.fa')):
+    """SC2locator docstring"""
+    def __init__(
+        self,
+        ref_file=pkg_resources.resource_filename(
+            'covizu',
+            'data/NC_045512.fa')):
         self.gcode = {
             'TTT': 'F', 'TTC': 'F', 'TTA': 'L', 'TTG': 'L',
             'TCT': 'S', 'TCC': 'S', 'TCA': 'S', 'TCG': 'S',
@@ -290,7 +305,7 @@ class SC2Locator:
         }
 
         # load reference genome
-        with open(ref_file) as handle:
+        with open(ref_file, encoding='utf-8') as handle:
             fasta = convert_fasta(handle)
             self.refseq = fasta[0][1]
 
@@ -317,10 +332,11 @@ class SC2Locator:
             # does the mutation change an amino acid?
             if this_orf:
                 # retrieve codons
-                codon_left = 3 * ((pos-this_left)//3)
-                codon_pos = (pos-this_left) % 3
+                codon_left = 3 * ((pos - this_left) // 3)
+                codon_pos = (pos - this_left) % 3
 
-                rcodon = self.refseq[this_left:this_right][codon_left:(codon_left+3)]
+                rcodon = self.refseq[this_left:this_right][codon_left:(
+                    codon_left + 3)]
                 ramino = self.gcode[rcodon]
 
                 qcodon = list(rcodon)
@@ -329,15 +345,13 @@ class SC2Locator:
                 qamino = self.gcode[qcodon]
 
                 if ramino != qamino:
-                    return 'aa:{}:{}{:0.0f}{}'.format(this_orf, ramino, 1+codon_left/3, qamino)
+                    return f'aa:{this_orf}:{ramino}{1 + codon_left / 3:0.0f}{qamino}'
 
         elif typ == '+':
-            return 'ins:{}:{}'.format(pos+1, len(alt))
+            return f'ins:{pos + 1}:{len(alt)}'
 
         elif typ == '-':
-            return 'del:{}:{}'.format(pos+1, alt)
+            return f'del:{pos + 1}:{alt}'
 
         # otherwise
         return None
-
-

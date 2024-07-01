@@ -1,6 +1,6 @@
 import unittest
-from covizu.utils.seq_utils import *
 from io import StringIO
+from covizu.utils.seq_utils import iter_fasta, convert_fasta, total_missing, QPois, apply_features
 
 
 class TestIterFasta(unittest.TestCase):
@@ -8,28 +8,40 @@ class TestIterFasta(unittest.TestCase):
         self.expected = \
             [
                 ('hCoV-19/Canada/Qc-L00240569/2020|EPI_ISL_465679|2020-03-27',
-                    'GGTTTATACCTTCCCAGGTAACAAACCAACCAACTTTCGATCTCTTGTAGATCTGTTCTCTAAACGAACTTTAAAATCTGTGTGGCTGTCACTCGGCTGCATGCTTAGTGCACTCACGCAGTATAATTAATAACTAATTACTGTCGTTGACAGGACACGA'
+                    ('GGTTTATACCTTCCCAGGTAACAAACCAACCAACTTTCGATCTCTTGTAGATCTG'
+                    'TTCTCTAAACGAACTTTAAAATCTGTGTGGCTGTCACTCGGCTGCATGCTTAGTG'
+                    'CACTCACGCAGTATAATTAATAACTAATTACTGTCGTTGACAGGACACGA')
                  ),
                 ('hCoV-19/HongKong/HKPU6_2101/2020|EPI_ISL_417178|2020-01-25',
-                    "CATCTACAGATACTTGTTTTGCTAACAAACATGCTGATTTTGACACATGGTTTAGCCAGCGTGGTGGTAGTTATACTAATTACAGGTTCGCGACGTGCTCGTACGTGGCTTTGGAGACTCCGTGGAGGAGGTCTTATCAGAGGCACGTCAACATCTTAAA"
+                    ('CATCTACAGATACTTGTTTTGCTAACAAACATGCTGATTTTGACACATGGTTTAG'
+                    'CCAGCGTGGTGGTAGTTATACTAATTACAGGTTCGCGACGTGCTCGTACGTGGCT'
+                    'TTGGAGACTCCGTGGAGGAGGTCTTATCAGAGGCACGTCAACATCTTAAA')
                  ),
                 ('hCoV-19/HongKong/HKU-200723-093/2020|EPI_ISL_497860|2020-01-25',
-                    "GTAACTCGTCTATCTTCTGCAGGCTGCTTACGGTTTCGTCCGTGTTGCAGCCGATCATCAGCACATCTAGGTTTTGTCCGGGTGTGACCGAAAGGTAAGATGGAGAGCCTTGTCCCTGGTTTCAACGAGAAAACACACGTCCAACTCAGTTTGCCTGTTT"
+                    ('GTAACTCGTCTATCTTCTGCAGGCTGCTTACGGTTTCGTCCGTGTTGCAGCCGATCATC'
+                    'AGCACATCTAGGTTTTGTCCGGGTGTGACCGAAAGGTAAGATGGAGAGCCTTGTCCCTG'
+                    'GTTTCAACGAGAAAACACACGTCCAACTCAGTTTGCCTGTTT')
                  )
             ]
 
-    def testIterFasta(self):
+    def test_iter_fasta(self):
         handle = StringIO()
         handle.write(
             ">hCoV-19/Canada/Qc-L00240569/2020|EPI_ISL_465679|2020-03-27\n"
-            "GGTTTATACCTTCCCAGGTAACAAACCAACCAACTTTCGATCTCTTGTAGATCTGTTCTCTAAACGAACTTTAAAATCTG\n"
-            "TGTGGCTGTCACTCGGCTGCATGCTTAGTGCACTCACGCAGTATAATTAATAACTAATTACTGTCGTTGACAGGACACGA\n"
+            "GGTTTATACCTTCCCAGGTAACAAACCAACCAACTTTCGATCTCTTGTAGATCTGTTCTCTA"
+            "AACGAACTTTAAAATCTG\n"
+            "TGTGGCTGTCACTCGGCTGCATGCTTAGTGCACTCACGCAGTATAATTAATAACTAATTACTG"
+            "TCGTTGACAGGACACGA\n"
             ">hCoV-19/HongKong/HKPU6_2101/2020|EPI_ISL_417178|2020-01-25\n"
-            "CATCTACAGATACTTGTTTTGCTAACAAACATGCTGATTTTGACACATGGTTTAGCCAGCGTGGTGGTAGTTATACTAAT\n"
-            "TACAGGTTCGCGACGTGCTCGTACGTGGCTTTGGAGACTCCGTGGAGGAGGTCTTATCAGAGGCACGTCAACATCTTAAA\n"
+            "CATCTACAGATACTTGTTTTGCTAACAAACATGCTGATTTTGACACATGGTTTAGCCAGCGTG"
+            "GTGGTAGTTATACTAAT\n"
+            "TACAGGTTCGCGACGTGCTCGTACGTGGCTTTGGAGACTCCGTGGAGGAGGTCTTATCAGAGG"
+            "CACGTCAACATCTTAAA\n"
             ">hCoV-19/HongKong/HKU-200723-093/2020|EPI_ISL_497860|2020-01-25\n"
-            "GTAACTCGTCTATCTTCTGCAGGCTGCTTACGGTTTCGTCCGTGTTGCAGCCGATCATCAGCACATCTAGGTTTTGTCCG\n"
-            "GGTGTGACCGAAAGGTAAGATGGAGAGCCTTGTCCCTGGTTTCAACGAGAAAACACACGTCCAACTCAGTTTGCCTGTTT\n"
+            "GTAACTCGTCTATCTTCTGCAGGCTGCTTACGGTTTCGTCCGTGTTGCAGCCGATCATCAGCA"
+            "CATCTAGGTTTTGTCCG\n"
+            "GGTGTGACCGAAAGGTAAGATGGAGAGCCTTGTCCCTGGTTTCAACGAGAAAACACACGTCCA"
+            "ACTCAGTTTGCCTGTTT\n"
         )
         handle.seek(0)
         result = list(iter_fasta(handle))
@@ -41,14 +53,16 @@ class TestConvertFasta(unittest.TestCase):
         self.expected = \
             [
                 ['NC_045512.2, Complete genome',
-                 'ATTAAAGGTTTATACCTTCCCAGGTAACAAACCAACCAACTTTCGATCTCTTGTAGATCTGTTCTCTAAACGAACTTTAAAATCTGTGTGGCTGTCACTCGGCTGCATGCTTAGTGCACTCACGCAGTATAATTAATAAC'
+                 'ATTAAAGGTTTATACCTTCCCAGGTAACAAACCAACCAACTTTCGATCTCTTGTAGATCTGTTC'
+                 'TCTAAACGAACTTTAAAATCTGTGTGGCTGTCACTCGGCTGCATGCTTAGTGCACTCACGCAGTATAATTAATAAC'
                 ],
                 ['NC_045512.3, Test genome',
-                 "CTTGGTACACGGAACGTTCTGAAAAGAGCTATGAATTGCAGACACCTTTTGAAATTAAATTGGCAAAGAAATTTGACACCTTCAATGGGGAATGTCCAAATTTTGTATTTCCCTTAAATTCCATAATCAAGACTATTCAA"
+                 "CTTGGTACACGGAACGTTCTGAAAAGAGCTATGAATTGCAGACACCTTTTGAAATTAAATTGGC"
+                 "AAAGAAATTTGACACCTTCAATGGGGAATGTCCAAATTTTGTATTTCCCTTAAATTCCATAATCAAGACTATTCAA"
                 ]
             ]
 
-    def testConvertFasta(self):
+    def test_convert_fasta(self):
         handle = StringIO()
         handle.write(
             ">NC_045512.2, Complete genome\n"
@@ -66,14 +80,14 @@ class TestConvertFasta(unittest.TestCase):
 
 class TestTotalMissing(unittest.TestCase):
 
-    def testMissing(self):
+    def test_missing(self):
         row = {
             'missing': [(0,6), (5203,5222), (29844,29903)]
         }
         res = total_missing(row)
         self.assertEqual(84, res)
 
-    def testListRowMissing(self):
+    def test_list_row_missing(self):
         row = [["test"], ["test"], [(0,6), (5203,5222), (29844,29903)]]
         res = total_missing(row)
         self.assertEqual(84, res)
@@ -83,8 +97,9 @@ class TestApplyFeatures(unittest.TestCase):
     def setUp(self):
         self.expected = 'NNNNNTGTTTNTNNCCTTCCCAGGTTNTNTAGCAAACAAC'
 
-    def testApplyFeatures(self):
-        diffs = [('~', 5, 'T'), ('~', 7, 'T'), ('~', 9, 'T'), ('~', 11, 'T'), ('~', 25, 'T'), ('~', 27, 'T'), ('~', 29, 'T'), ('~', 31, 'G'), ('~', 35, 'A')]
+    def test_apply_features(self):
+        diffs = [('~', 5, 'T'), ('~', 7, 'T'), ('~', 9, 'T'), ('~', 11, 'T'), ('~', 25, 'T'),
+                 ('~', 27, 'T'), ('~', 29, 'T'), ('~', 31, 'G'), ('~', 35, 'A')]
         missing = [(0, 6), (10, 14), (25, 29)]
         refseq = "ATTAAAGGTTTATACCTTCCCAGGTAACAAACCAACCAAC"
         result = apply_features(diffs, missing, refseq)
@@ -93,24 +108,24 @@ class TestApplyFeatures(unittest.TestCase):
 
 class TestQPois(unittest.TestCase):
     def setUp(self):
-        self.qp = QPois(quantile=1-0.005, rate=0.0655, maxtime=1e3, origin='2019-12-01')
+        self.poisson_expected = QPois(quantile=1-0.005, rate=0.0655, maxtime=1e3, origin='2019-12-01')
 
-    def testIsOutlier(self):
+    def test_is_outlier(self):
         coldate = '2021-01-18'
         ndiffs = 30
-        result = self.qp.is_outlier(coldate, ndiffs)
+        result = self.poisson_expected.is_outlier(coldate, ndiffs)
         self.assertEqual(result, False)
 
-    def testIsOutlierManyDiff(self):
+    def test_is_outlier_many_diffs(self):
         coldate = '2021-01-18'
         ndiffs = 42
-        result = self.qp.is_outlier(coldate, ndiffs)
+        result = self.poisson_expected.is_outlier(coldate, ndiffs)
         self.assertEqual(result, True)
 
-    def testIsOutlierFewDiff(self):
+    def test_is_outlier_few_diffs(self):
         coldate = '2021-01-18'
         ndiffs = 14
-        result = self.qp.is_outlier(coldate, ndiffs)
+        result = self.poisson_expected.is_outlier(coldate, ndiffs)
         self.assertEqual(result, True)
 
 # Load VCF

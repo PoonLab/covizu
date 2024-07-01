@@ -1,3 +1,6 @@
+"""
+script to convert JSON from main brnach to epicov format
+"""
 import argparse
 import json
 from covizu.utils.gisaid_utils import convert_json

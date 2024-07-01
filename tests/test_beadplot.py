@@ -1,6 +1,6 @@
 import unittest
-from covizu import beadplot
 from io import StringIO
+from covizu import beadplot
 from Bio import Phylo
 
 
@@ -43,7 +43,7 @@ class TestParseLabels(unittest.TestCase):
             ]
         }
 
-    def testParse(self):
+    def test_parse(self):
         handle = StringIO()
         handle.write(
             "name,index\n"
@@ -56,7 +56,7 @@ class TestParseLabels(unittest.TestCase):
         result = beadplot.parse_labels(handle)
         self.assertEqual(self.expected, result)
 
-    def testBadParse(self):
+    def test_bad_parse(self):
         handle = StringIO()
         handle.write(
             "label,index\n"
@@ -67,7 +67,7 @@ class TestParseLabels(unittest.TestCase):
         with self.assertRaises(KeyError):
             beadplot.parse_labels(handle)
 
-    def testReverse(self):
+    def test_reverse(self):
         handle = StringIO()
         handle.write(
             "index,name\n"
@@ -82,7 +82,7 @@ class TestParseLabels(unittest.TestCase):
 
 
 class TestGetParents(unittest.TestCase):
-    def testGetParents(self):
+    def test_get_parents(self):
         tree = phylo_from_str("((A,B)D,C)E;\n")
         result = beadplot.get_parents(tree)
 
@@ -96,7 +96,7 @@ class TestGetParents(unittest.TestCase):
 
 
 class TestCollapsePolytomies(unittest.TestCase):
-    def testSimple(self):
+    def test_simple(self):
         tree = phylo_from_str("((A:1,B:1):0,C:1):0;")
         result = beadplot.collapse_polytomies(tree)
         expected = phylo_from_str("(A:1,B:1,C:1):0;")
@@ -107,7 +107,7 @@ class TestCollapsePolytomies(unittest.TestCase):
         expected = phylo_from_str("(A:1,B:1,(C:1,D:1):1):0;")
         self.assertTrue(compare_phylo(expected, result))
 
-    def testLabeling(self):
+    def test_labeling(self):
         tree3 = phylo_from_str("((A:1,B:1):1,C:0):0;")
         result = beadplot.collapse_polytomies(tree3)
         expected = phylo_from_str("(((A:1,B:1):1)C:0);")
@@ -120,7 +120,7 @@ class TestCollapsePolytomies(unittest.TestCase):
 
 
 class TestIssues(unittest.TestCase):
-    def testIssue150(self):
+    def test_issue150(self):
         # consensus of B.13 bootstrap trees
         tree = phylo_from_str(
             "(0:0.00000,(((1:0.00000,8:1.86735)0.71:1.54286,3:0.00000)"
