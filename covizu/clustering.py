@@ -50,18 +50,20 @@ def recode_features(records, callback=None, limit=10000):
     if callback:
         callback(
             f"Reduced to {len(fvecs)} variants; generating feature set union")
-    intermed_out = [{}, {}, []] # [{union}, {labels}, [idx]]
+    union = {}
+    labels = {}
+    indexed = []
     for count, item in enumerate(intermed):
         fvec = item[1]
-        intermed_out[1].update({str(count): fvecs[fvec]})
+        labels.update({str(count): fvecs[fvec]})
         if count < limit:
             for feat in fvec:
-                if feat not in intermed_out[0]:
-                    intermed_out[0].update({feat: len(intermed_out[0])})
+                if feat not in union:
+                    union.update({feat: len(union)})
             # recode feature vectors as integers (0-index)
-            intermed_out[2].append(set(intermed_out[0][feat] for feat in fvec))
+            indexed.append(set(union[feat] for feat in fvec))
 
-    return intermed_out
+    return union, labels, indexed
 
 
 def bootstrap(input_union, idxed, binpath='rapidnj', callback=None, callfreq=1000):
