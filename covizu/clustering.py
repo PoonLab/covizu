@@ -1,3 +1,4 @@
+"""what clustering does"""
 import random
 import json
 import argparse
@@ -31,21 +32,24 @@ def recode_features(records, callback=None, limit=10000):
     # compress genomes with identical feature vectors
     fvecs = {}
     for muts, variant in records.items():
-        key = tuple([tuple(x.split('|')) for x in muts.split(',')])
+        key = tuple(tuple(x.split('|')) for x in muts.split(','))
         if key not in fvecs:
             fvecs.update({key: []})
         for sample in variant:
-            label = "{covv_virus_name}|{covv_location}|{covv_accession_id}|{covv_collection_date}".format(**sample)
+            label = (f"{sample['covv_virus_name']}|{sample['covv_location']}|"
+                    f"{sample['covv_accession_id']}|{sample['covv_collection_date']}")
+
             fvecs[key].append(label)
 
     # limit to N most recently-sampled feature vectors
-    intermed = [(max([label.split('|')[-1] for label in labels]), key)
+    intermed = [(max(label.split('|')[-1] for label in labels), key)
                 for key, labels in fvecs.items()]
     intermed.sort(reverse=True)
 
     # generate union of all features
     if callback:
-        callback("Reduced to {} variants; generating feature set union".format(len(fvecs)))
+        callback(
+            f"Reduced to {len(fvecs)} variants; generating feature set union")
     union = {}
     labels = {}
     indexed = []
@@ -62,7 +66,7 @@ def recode_features(records, callback=None, limit=10000):
     return union, labels, indexed
 
 
-def bootstrap(union, indexed, binpath='rapidnj', callback=None, callfreq=1000):
+def bootstrap(input_union, idxed, binpath='rapidnj', callback=None, callfreq=1000):
     """
     Sample features from set union at random with replacement.  We use the
     result to weight the symmetric differences when calculating pairwise
@@ -77,34 +81,37 @@ def bootstrap(union, indexed, binpath='rapidnj', callback=None, callfreq=1000):
 
     :return:  Bio.Phylo.BaseTree object
     """
-    sample = [int(len(union) * random.random()) for _ in range(len(union))]
-    weights = dict([(y, sample.count(y)) for y in sample])
-    n = len(indexed)
+    sample = [int(len(input_union) * random.random()) for _ in range(len(input_union))]
+    weights = {y: sample.count(y) for y in sample}
+    num_vec = len(idxed)
 
-    # TODO: this is the slowest step - port to C? cache results to traverse half matrix?
-    outfile = tempfile.NamedTemporaryFile('w', prefix="cvz_boot_")
-    outfile.write('{0:>5}\n'.format(n))
-    for i in range(n):
-        if callback and i % callfreq == 0:
-            callback("  row {} of {}".format(i, n), level='DEBUG')
-        outfile.write('{}'.format(i))
-        for j in range(n):
-            if i == j:
-                outfile.write(' {0:>2}'.format(0))
-            else:
-                sd = indexed[i] ^ indexed[j]  # symmetric difference
-                d = sum(weights.get(y, 0) for y in sd)
-                outfile.write(' {0:>2}'.format(d))
-        outfile.write('\n')
-    outfile.flush()
+    # TODO: this is the slowest step - port to C? cache results to traverse
+    # half matrix?
+    with tempfile.NamedTemporaryFile('w', prefix="cvz_boot_") as temp_out:
+        temp_out.write(f'{num_vec:>5}\n')
+        for i in range(num_vec):
+            if callback and i % callfreq == 0:
+                callback(f"  row {i} of {num_vec}", level='DEBUG')
+            temp_out.write(f'{i}')
+            for j in range(num_vec):
+                if i == j:
+                    temp_out.write(f' {0:>2}')
+                else:
+                    sym_diff = idxed[i] ^ idxed[j]  # symmetric difference
+                    difference = sum(weights.get(y, 0) for y in sym_diff)
+                    temp_out.write(f' {difference:>2}')
+            temp_out.write('\n')
+        temp_out.flush()
 
-    # call RapidNJ on temp file
-    cmd = [binpath, outfile.name, '-i', 'pd', '--no-negative-length']
-    stdout = subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
-    handle = StringIO(stdout.decode('utf-8'))
-    outfile.close()
+        # call RapidNJ on temp file
 
-    return Phylo.read(handle, 'newick')
+        stdout = subprocess.check_output([
+            binpath, temp_out.name, '-i', 'pd', '--no-negative-length'],
+            stderr=subprocess.DEVNULL)
+        out_handle = StringIO(stdout.decode('utf-8'))
+
+
+    return Phylo.read(out_handle, 'newick')
 
 
 def label_nodes(tree, tip_index):
@@ -127,7 +134,7 @@ def label_nodes(tree, tip_index):
     return tree
 
 
-def consensus(trees, cutoff=0.5, callback=None):
+def consensus(input_trees, cutoff=0.5, callback=None):
     """
     Generate a consensus tree by counting splits and using the splits with
     frequencies above the cutoff to resolve a star tree.
@@ -137,18 +144,18 @@ def consensus(trees, cutoff=0.5, callback=None):
     :return:  Phylo.BaseTree
     """
     ntrees = 1
-    tree = next(trees)
+    tree = next(input_trees)
 
     # store terminal labels and branch lengths
     tip_index = {}
     for i, tip in enumerate(tree.get_terminals()):
         tip_index.update({tip.name: i})
-    ntips = len(tip_index)
+
 
     if callback:
         callback("Recording splits and branch lengths", level='DEBUG')
     splits = {}
-    terminals = dict([(tn, 0) for tn in tip_index.keys()])
+    terminals = {tn: 0 for tn in tip_index}
 
     while True:
         # record terminal branch lengths
@@ -167,9 +174,9 @@ def consensus(trees, cutoff=0.5, callback=None):
                 splits[key]['sum'] += node.branch_length
             splits[key]['count'] += 1
         try:
-            tree = next(trees)
+            tree = next(input_trees)
             if callback:
-                callback(".. {} completed ".format(ntrees), level="DEBUG")
+                callback(f".. {ntrees} completed ", level="DEBUG")
             ntrees += 1
         except StopIteration:
             if callback:
@@ -177,37 +184,41 @@ def consensus(trees, cutoff=0.5, callback=None):
             break
 
     # filter splits by frequency (support) threshold
-    intermed = [(k.count(',')+1, k, v) for k, v in splits.items() if v['count']/ntrees >= cutoff]
-    intermed.sort()  # sort by level (tips to root)
+    intermed = sorted([(k.count(',') + 1, k, v)
+                      for k, v in splits.items() if v['count'] / ntrees >= cutoff])
     del splits  # free some memory
 
     # construct consensus tree
     if callback:
         callback("Building consensus tree", level='DEBUG')
-    orphans = dict([
-        (tip_index[tname], Clade(name=tname, branch_length=totlen/ntrees))
+    orphans = {
+        tip_index[tname]: Clade(name=tname, branch_length=totlen / ntrees)
         for tname, totlen in terminals.items()
-    ])
+    }
 
-    for _, key, val in intermed:
+    parse_intermed(intermed, ntrees, tip_index, orphans)
+
+    return orphans.popitem()[1]
+
+def parse_intermed(input_intermed, num_trees, tip_ind, in_orphans):
+    """make pep8 compliant for consensus"""
+    for _, key, val in input_intermed:
         # average branch lengths across relevant trees
-        bl = val['sum'] / val['count']
-        support = val['count'] / ntrees
-        node = Clade(branch_length=bl, confidence=support)
+        len_branch = val['sum'] / val['count']
+        support = val['count'] / num_trees
+        node = Clade(branch_length=len_branch, confidence=support)
 
         for child in map(int, key.split(',')):
-            branch = orphans.pop(child, None)
+            branch = in_orphans.pop(child, None)
             if branch:
                 node.clades.append(branch)
 
         # use a single tip name to label ancestral node
-        newkey = tip_index[node.get_terminals()[0].name]
-        orphans.update({newkey: node})
-
-    return orphans.popitem()[1]
+        newkey = tip_ind[node.get_terminals()[0].name]
+        in_orphans.update({newkey: node})
 
 
-def build_trees(records, args, callback=None):
+def build_trees(records, input_args, callback=None):
     """
     Serial mode, called from batch.py
 
@@ -215,14 +226,13 @@ def build_trees(records, args, callback=None):
     :param args:  Namespace, from argparse.ArgumentParser
     :param callback:  function, optional for progress monitoring
     """
-    union, labels, indexed = recode_features(records, callback=callback)
-    if len(indexed) == 1:
+    recode_union, recode_labels, idxed = recode_features(records, callback=callback)
+    if len(idxed) == 1:
         # only one variant, no meaningful tree
-        return None, labels
-    else:
-        trees = [bootstrap(union, indexed, args.binpath, callback=callback)
-                 for _ in range(args.nboot)]
-    return trees, labels
+        return None, recode_labels
+    out_trees = [bootstrap(recode_union, idxed, input_args.binpath, callback=callback)
+            for _ in range(input_args.nboot)]
+    return out_trees, recode_labels
 
 
 def parse_args():
@@ -233,47 +243,59 @@ def parse_args():
     )
     parser.add_argument("json", type=str,
                         help="input, JSON file")
-    parser.add_argument("lineage", type=str,
-                        help="input, name of lineage to process ('deep' mode) or path to "
-                             "text file of minor lineage names ('flat' mode)")
+    parser.add_argument(
+        "lineage",
+        type=str,
+        help="input, name of lineage to process ('deep' mode) or path to "
+        "text file of minor lineage names ('flat' mode)")
 
-    parser.add_argument("--mode", type=str, default='deep',
-                        help="'flat' mode distributes many lineages across MPI nodes, whereas"
-                             "'deep' mode distributes bootstrap replicates for a single lineage "
-                             "across MPI nodes.  Defaults to 'deep'.")
+    parser.add_argument(
+        "--mode",
+        type=str,
+        default='deep',
+        help="'flat' mode distributes many lineages across MPI nodes, whereas"
+        "'deep' mode distributes bootstrap replicates for a single lineage "
+        "across MPI nodes.  Defaults to 'deep'.")
 
-    parser.add_argument("-o", "--outdir", type=str, default=os.getcwd(),
-                        help="output, directory to export trees (one file per lineage). "
-                             "Defaults to current working directory.")
+    parser.add_argument(
+        "-o",
+        "--outdir",
+        type=str,
+        default=os.getcwd(),
+        help="output, directory to export trees (one file per lineage). "
+        "Defaults to current working directory.")
     parser.add_argument("-n", "--nboot", type=int, default=100,
                         help="Number of bootstrap samples, default 100.")
     parser.add_argument("--binpath", type=str, default='rapidnj',
                         help="Path to RapidNJ binary executable.")
     parser.add_argument("--timestamp", type=float, default=None,
                         help="option, timestamp to set callback function")
-    parser.add_argument("--max-variants", type=int, default=10000,
-                        help="option, limit number of variants per lineage, prioritizing the "
-                             "most recently sampled variants")
+    parser.add_argument(
+        "--max-variants",
+        type=int,
+        default=10000,
+        help="option, limit number of variants per lineage, prioritizing the "
+        "most recently sampled variants")
 
     return parser.parse_args()
 
 
-def unpack_recoded(recoded, lineage, callback=None):
+def unpack_recoded(input_recoded, input_lineage, callback=None):
     """
     Recover dictionary from JSON.
     :param recoded:  dict, directly returned from json.load
     :param lineage:  str, PANGO lineage specifier
     :param callback:  optional callback function
     """
-    rdata = recoded.get(lineage, None)
+    rdata = input_recoded.get(input_lineage, None)
     if rdata is None:
         if callback:
-            callback("ERROR: JSON did not contain lineage {}".format(args.lineage))
+            callback(f"ERROR: JSON did not contain lineage {args.lineage}")
         sys.exit()
 
-    union = rdata['union']  # unpack JSON data
+    union1 = rdata['union']  # unpack JSON data
     union2 = {}
-    for feat, idx in union.items():
+    for feat, idx in union1.items():
         typ, pos, length = feat.split('|')
         if typ == '-':
             # length of deletion is an integer
@@ -282,15 +304,12 @@ def unpack_recoded(recoded, lineage, callback=None):
             key = tuple([typ, int(pos), length])
         union2.update({key: idx})
 
-    indexed = [set(l) for l in rdata['indexed']]  # see #335
-    return union2, rdata['labels'], indexed
+    recoded_indexed = [set(l) for l in rdata['indexed']]  # see #335
+    return union2, rdata['labels'], recoded_indexed
 
-
+#   Called by batch.py via subprocess to handle lineages with excessive
+#   numbers of genomes, to process via MPI
 if __name__ == "__main__":
-    """
-    Called by batch.py via subprocess to handle lineages with excessive
-    numbers of genomes, to process via MPI
-    """
     try:
         from mpi4py import MPI
     except ModuleNotFoundError:
@@ -306,60 +325,68 @@ if __name__ == "__main__":
     cb = Callback(t0=args.timestamp, my_rank=my_rank, nprocs=nprocs)
 
     # import lineage data from file
-    with open(args.json) as handle:
+    with open(args.json, encoding='utf-8') as handle:
         recoded = json.load(handle)
 
     if args.mode == 'deep':
-        union, labels, indexed = unpack_recoded(recoded, args.lineage, callback=cb.callback)
+        union, labels, indexed = unpack_recoded(
+            recoded, args.lineage, callback=cb.callback)
 
         # export map of sequence labels to tip indices
         lineage_name = args.lineage.replace('/', '_')  # issue #297
 
-        outfile = os.path.join(args.outdir, '{}.nwk'.format(lineage_name))
+        outfile = os.path.join(args.outdir, f'{lineage_name}.nwk')
         if len(indexed) == 1:
             # lineage only has one variant, no meaningful tree
             if my_rank == 0:
-                with open(outfile, 'w') as handle:
-                    handle.write('({}:0);\n'.format(labels['0'][0]))
+                with open(outfile, 'w', encoding='utf-8') as handle:
+                    handle.write(f"({labels['0'][0]}:0);\n")
         else:
             # MPI processing
             trees = []
             for bn in range(args.nboot):
                 if bn % nprocs == my_rank:
-                    phy = bootstrap(union, indexed, args.binpath, callback=cb.callback)
+                    phy = bootstrap(
+                        union, indexed, args.binpath, callback=cb.callback)
                     trees.append(phy)
             comm.Barrier()  # wait for other processes to finish
             result = comm.gather(trees, root=0)
 
             # only head node exports trees
             if my_rank == 0:
-                trees = [phy for batch in result for phy in batch]  # flatten nested lists
+                # flatten nested lists
+                trees = [phy for batch in result for phy in batch]
                 Phylo.write(trees, file=outfile, format='newick')
 
     elif args.mode == 'flat':
         # load list of lineages from text file
         minor_lineages = []
-        with open(args.lineage) as handle:
+        with open(args.lineage, encoding='utf-8') as handle:
             for line in handle:
                 minor_lineages.append(line.strip())
 
         for li, lineage in enumerate(minor_lineages):
             if li % nprocs != my_rank:
                 continue
-            cb.callback("starting {}".format(lineage))
-            union, labels, indexed = unpack_recoded(recoded, lineage, callback=cb.callback)
+            cb.callback(f"starting {lineage}")
+            union, labels, indexed = unpack_recoded(
+                recoded, lineage, callback=cb.callback)
 
             lineage_name = lineage.replace('/', '_')  # issue #297
-            outfile = os.path.join(args.outdir, '{}.nwk'.format(lineage_name))
+            outfile = os.path.join(args.outdir, f'{lineage_name}.nwk')
             if len(indexed) == 1:
                 # lineage only has one variant, no meaningful tree
-                with open(outfile, 'w') as handle:
-                    handle.write('({}:0);\n'.format(labels['0'][0]))
+                with open(outfile, 'w', encoding='utf-8') as handle:
+                    handle.write(f"({labels['0'][0]}:0);\n")
             else:
-                trees = [bootstrap(union, indexed, args.binpath, callback=cb.callback)
-                         for _ in range(args.nboot)]
+                trees = [
+                    bootstrap(
+                        union,
+                        indexed,
+                        args.binpath,
+                        callback=cb.callback) for _ in range(
+                        args.nboot)]
                 Phylo.write(trees, file=outfile, format='newick')
     else:
-        cb.callback("Unexpected mode argument {} in clustering.py".format(args.mode))
+        cb.callback(f"Unexpected mode argument {args.mode} in clustering.py")
         sys.exit()
-
