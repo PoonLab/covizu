@@ -435,7 +435,17 @@ if __name__ == "__main__":
         SELECT DISTINCT LINEAGE FROM NEW_RECORDS;
         '''
         CUR.execute(UPDATED_LINEAGES_QUERY)
-        UPDATED_LINEAGES = [row['lineage'] for row in CUR.fetchall()]
+        new_records_lineages = [row['lineage'] for row in CUR.fetchall()]
+        
+        by_lineage_list = list(by_lineage.keys())
+        clusters_lineages_query = '''
+        SELECT DISTINCT LINEAGE FROM CLUSTERS;
+        '''
+        CUR.execute(clusters_lineages_query)
+        clusters_lineages = [row['lineage'] for row in CUR.fetchall()]
+        unique_by_lineage = list(set(by_lineage_list) - set(clusters_lineages))
+
+        UPDATED_LINEAGES = list(set(new_records_lineages).union(set(unique_by_lineage)))
 
     # clustering analysis of lineages
     result, infection_prediction = make_beadplots(
