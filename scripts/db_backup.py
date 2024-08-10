@@ -43,7 +43,7 @@ def dump_psql_data(db_name, username, file_path, docker_container_name):
     backup_file_path = os.path.join(file_path, backup_file_name)
 
     try:
-        dump_command = f"docker exec -it {docker_container_name} pg_dump -U {username} -d {db_name} > {backup_file_path}"
+        dump_command = f"docker exec {docker_container_name} pg_dump -U {username} -d {db_name} > {backup_file_path}"
         process = subprocess.Popen(dump_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         _, error = process.communicate()
 
