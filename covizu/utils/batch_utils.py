@@ -50,7 +50,7 @@ def unpack_records(records):
 
 def parse_lineages(in_args, in_callback):
     """parse lineages from build_timetree"""
-    with open(in_args.lineages, encoding='uft-8') as handle:
+    with open(in_args.lineages, encoding='utf-8') as handle:
         header = next(handle)
         if header != 'taxon,lineage\n':
             if in_callback:
