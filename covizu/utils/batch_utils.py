@@ -8,7 +8,7 @@ import csv
 from tempfile import NamedTemporaryFile
 from datetime import datetime
 from Bio import Phylo
-from covizu import clustering, beadplot
+from covizu import clustering, beadplot, treetime
 from rpy2 import robjects
 import covizu
 
