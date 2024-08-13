@@ -138,7 +138,7 @@ def consensus(input_trees, cutoff=0.5, callback=None):
     """
     Generate a consensus tree by counting splits and using the splits with
     frequencies above the cutoff to resolve a star tree.
-    :param trees:  iterable containing Phylo.BaseTree objects
+    :param input_trees:  iterable containing Phylo.BaseTree objects
     :param cutoff:  float, bootstrap threshold (default 0.5)
     :param callback:  function, optional callback
     :return:  Phylo.BaseTree
@@ -322,7 +322,7 @@ if __name__ == "__main__":
 
     # command-line execution
     args = parse_args()
-    cb = Callback(t0=args.timestamp, my_rank=my_rank, nprocs=nprocs)
+    cb = Callback(initial_time=args.timestamp, my_rank=my_rank, nprocs=nprocs)
 
     # import lineage data from file
     with open(args.json, encoding='utf-8') as handle:

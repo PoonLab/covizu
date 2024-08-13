@@ -134,9 +134,9 @@ def parse_nexus(in_nexus_file, in_fasta, callback=None):
 
     phy = prune_nexus(in_nexus_file, to_rem)
 
-    normalize_residule(result, callback)
+    residuals = normalize_residual(result, callback)
 
-    return edit_py_node(phy), result
+    return edit_py_node(phy), residuals
 
 def extract_nexus(in_nexus_file, coldates):
     """extract comment fields and store date estimates"""
@@ -162,8 +162,8 @@ def prune_nexus(in_nex_file, remove):
     pat = re.compile('\\[&U\\]|\\[&mutations="[^"]*",date=[0-9]+\\.[0-9]+\\]')
     nex = ''
 
-    with open(in_nex_file, encoding='utf-8') as nex:
-        for segment in nex:
+    with open(in_nex_file, encoding='utf-8') as nex_file:
+        for segment in nex_file:
             nex += pat.sub('', segment)
 
     # read in tree to prune problematic tips
@@ -173,18 +173,19 @@ def prune_nexus(in_nex_file, remove):
 
     return phy
 
-def normalize_residule(in_res, in_call):
+def normalize_residual(in_res, callback):
     """normalize residuals and append to tip labels"""
     rvals = in_res.values()
     try:
         rmean = statistics.mean(rvals)
         rstdev = statistics.stdev(rvals)
     except statistics.StatisticsError:
-        in_call("Provided records are already stored.")
+        callback("Provided records are already stored.")
 
     for tip, resid in in_res.items():
         in_res[tip] = (resid - rmean) / rstdev
 
+    return in_res
 def edit_py_node(phy_in):
     """edit node to hep pep8 compliant"""
     for node in phy_in.get_terminals():
@@ -195,7 +196,7 @@ def edit_py_node(phy_in):
             node.name = node.confidence
             node.confidence = None
         node.comment = None
-
+    return phy_in
 def retrieve_genomes(
         by_lineage_in,
         known_seqs,

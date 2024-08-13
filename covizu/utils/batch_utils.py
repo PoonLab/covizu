@@ -10,6 +10,7 @@ from datetime import datetime
 from Bio import Phylo
 from covizu import clustering, beadplot, treetime
 from rpy2 import robjects
+from rpy2.robjects.packages import importr
 import covizu
 
 
@@ -245,9 +246,9 @@ def find_ne(tree, labels_filename):
 
 
     # Load required R packages
-    # ape = importr('ape')
-    # phytools = importr('phytools')
-    # LambdaSkyline = importr('LambdaSkyline')
+    ape = importr('ape')
+    phytools = importr('phytools')
+    LambdaSkyline = importr('LambdaSkyline')
 
     robjects.r.assign("tree_filename", tree_filename.name)
     robjects.r.assign("sequence_labels_file", labels_filename)
@@ -371,9 +372,9 @@ def make_beadplots(
         json.dump(recoded, handle)
 
     # partition lineages into major and minor categories
-    intermed = {lineage: len(features) for lineage, features in by_lineage.items()
+    intermed = [(len(features), lineage) for lineage, features in by_lineage.items()
                 if len(features) < args.mincount and
-                (updated_lineages is None or lineage in updated_lineages)}
+                (updated_lineages is None or lineage in updated_lineages)]
     intermed.sort(reverse=True)  # descending order
     minor = {lineage: None for _, lineage in intermed if lineage is not None}
 
@@ -430,8 +431,8 @@ def make_beadplots(
 
 
     # Load required R packages
-    # tidyquant = importr('tidyquant')
-    # matrixStats = importr('matrixStats')
+    tidyquant = importr('tidyquant')
+    matrixStats = importr('matrixStats')
 
     path_1 = os.path.join(covizu.__path__[0], 'hunepi/infections_increasing_model_comparisons.rds')
     path_2 = os.path.join(covizu.__path__[0], 'hunepi/num_infections_model_comparisons.rds')
@@ -458,7 +459,7 @@ def make_beadplots(
         # import trees
         lineage_name = lineage.replace('/', '_')  # issue #297
         with open(f'{args.outdir}/{lineage_name}.nwk', encoding='utf-8') as outfile:
-            trees = Phylo.parse(outfile, 'newick', encoding='utf-8')  # returns a generator
+            trees = Phylo.parse(outfile, 'newick')  # returns a generator
 
             label_dict = recoded[lineage]['labels']
 
