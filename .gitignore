@@ -1,4 +1,5 @@
 .*
+!.pylintrc
 !.github
 data/*
 data_test/*
@@ -21,6 +22,7 @@ cypress/plugins/
 *.pyc
 *.yml
 !docker-compose.yml
+!pylint.yml
 !docker_scripts/backend/*
 *.json
 *.xz
