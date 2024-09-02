@@ -70,7 +70,7 @@ def parse_args():
     parser.add_argument(
         '--poisson-cutoff',
         type=float,
-        default=0.001,
+        default=0,
         help='option, filtering outlying genomes whose distance exceeds the upper '
         'quantile of Poisson distribution (molecular clock).  Default 0.001 '
         'corresponds to 99.9%% cutoff.')
