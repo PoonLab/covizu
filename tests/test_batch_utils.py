@@ -1,35 +1,35 @@
 import unittest
 from argparse import Namespace
-from covizu.utils.batch_utils import beadplot_serial, import_labels, make_beadplots, get_mutations
+from covizu.utils.batch_utils import beadplot_serial, get_mutations
 
 # Build TimeTree - Tests in test_timetree.py
 
 
 class TestBeadplotSerial(unittest.TestCase):
     def setUp(self):
-        self.expected = {
-            'lineage': 'B.1.1.171',
-            'nodes': {
-                'EPI_ISL_465679': [['2020-03-27', 'EPI_ISL_465679', 'North America / Canada / London', 'hCoV-19/Canada/Qc-L00240569/2020']]
-            },
-            'edges': [],
-            'sampled_variants': 1
-        }
+        self.expected = {'lineage': 'B.1.1.171',
+                         'nodes': {'EPI_ISL_465679': [['2020-03-27',
+                                                       'EPI_ISL_465679',
+                                   'North America / Canada / London',
+                                                       'hCoV-19/Canada/Qc-L00240569/2020']]},
+                         'edges': [],
+                         'sampled_variants': 1}
 
     @unittest.skip("beadplot_serial has been deprecated")
-    def testBeadplotSerial(self):
+    def test_beadplot_serial(self):
         # Lineage with only one variant
 
         lineage = 'B.1.1.171'
         features = {
-            '~|240|T,~|1436|T,~|3036|T,~|3713|T,~|5883|T,~|14407|T,~|20543|T,~|23402|G,~|28880|A,~|28881|A,~|28882|C': [
+            ('~|240|T,~|1436|T,~|3036|T,~|3713|T,~|5883|T,~|14407|T,'
+             '~|20543|T,~|23402|G,~|28880|A,~|28881|A,~|28882|C'): [
                 {
                     'covv_virus_name': 'hCoV-19/Canada/Qc-L00240569/2020',
                     'covv_accession_id': 'EPI_ISL_465679',
                     'covv_collection_date': '2020-03-27',
                     'covv_lineage': 'B.1.1.171',
                     'covv_location': 'North America / Canada / London',
-                    'diffs' : [
+                    'diffs': [
                         tuple(['~', 240, 'T']),
                         tuple(['~', 1436, 'T']),
                         tuple(['~', 3036, 'T']),
@@ -42,7 +42,7 @@ class TestBeadplotSerial(unittest.TestCase):
                         tuple(['~', 28881, 'A']),
                         tuple(['~', 28882, 'C'])
                     ],
-                    'missing' : [
+                    'missing': [
                         tuple([0, 6]),
                         tuple([5203, 5222]),
                         tuple([29844, 29903])
@@ -63,47 +63,47 @@ class TestGetMutations(unittest.TestCase):
             'B.1.265': {('~', 240, 'T'): 1.0, ('~', 1436, 'T'): 1.0}
         }
 
-    def testGetMutations(self):
+    def test_get_mutations(self):
         by_lineage = \
-        {'B.1.1.171':
-            {'~|240|T,~|1436|T':
-                [{'covv_virus_name' : '',
-                  'covv_accession_id' : '',
+            {'B.1.1.171':
+             {'~|240|T,~|1436|T':
+              [{'covv_virus_name': '',
+                  'covv_accession_id': '',
                   'covv_collection_date': '',
-                  'covv_lineage' : 'B.1.1.171',
-                  'diffs' : [
+                  'covv_lineage': 'B.1.1.171',
+                  'diffs': [
                       tuple(['~', 240, 'T']),
                       tuple(['~', 1436, 'T']),
                   ],
-                  'missing' : []
+                  'missing': []
                 }]
-            },
-         'B.1.265':
-            {'~|240|T,~|1436|T':
-                [{'covv_virus_name' : '',
-                  'covv_accession_id' : '',
+              },
+             'B.1.265':
+             {'~|240|T,~|1436|T':
+              [{'covv_virus_name': '',
+                  'covv_accession_id': '',
                   'covv_collection_date': '',
-                  'covv_lineage' : 'B.1.265',
-                  'diffs' : [
+                  'covv_lineage': 'B.1.265',
+                  'diffs': [
                       tuple(['~', 240, 'T']),
                       tuple(['~', 240, 'T']),
                       tuple(['~', 240, 'T']),
                       tuple(['~', 1436, 'T']),
                   ],
-                  'missing' : []
-                 },
-                 {'covv_virus_name' : '',
-                  'covv_accession_id' : '',
+                  'missing': []
+                },
+               {'covv_virus_name': '',
+                  'covv_accession_id': '',
                   'covv_collection_date': '',
-                  'covv_lineage' : 'B.1.1.171',
-                  'diffs' : [
+                  'covv_lineage': 'B.1.1.171',
+                  'diffs': [
                       tuple(['~', 240, 'T']),
                       tuple(['~', 1436, 'T']),
                   ],
-                  'missing' : []
+                  'missing': []
                 }]
-            }
-        }
+              }
+             }
 
         results = get_mutations(by_lineage)
         self.assertEqual(self.expected, results)
