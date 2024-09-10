@@ -284,6 +284,7 @@ req = $.when(
   }),
   $.getJSON("/api/regionmap", function(data) {
     region_map = data;
+    delete region_map._id;
   })
 );
 
