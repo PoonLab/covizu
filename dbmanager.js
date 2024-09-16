@@ -101,7 +101,7 @@ class DBManager {
     }
 
     get_regionMap() {
-        return this.db_.collection($COLLECTION__REGION_MAP).find().toArray().then((docs,err)=>{
+        return this.db_.collection($COLLECTION__REGION_MAP).find({}, { projection: { _id: 0 } }).toArray().then((docs,err)=>{
             if(err){
                 console.log(`dbmanager::get_regionMap error`,err);
                 return ;
