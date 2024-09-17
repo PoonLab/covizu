@@ -1,0 +1,23 @@
+#### Front-end checks to do prior to merging pull request:
+- [ ] Search
+    - [ ] Search by accession number
+    - [ ] Search by lineage
+    - [ ] Search by country
+    - [ ] Search by country (with date filter)
+- [ ] Tree filtering
+- [ ] Download Time-scaled tree (nwk)
+- [ ] Download Time-scaled tree (csv)
+- [ ] Download Beadplot (svg)
+- [ ] Download Beadplot (nwk)
+- [ ] Download mutation list (csv)
+- [ ] Beadplot cutoff slider
+- [ ] Expanding Beadplot
+- [ ] Translated pages
+- [ ] Changing the colour of the tree based on divergence, collection date, etc.
+- [ ] View different displays (Non-Recombinants, Recombinants, etc.) 
+- [ ] Left/Right arrow key to move between beads
+- [ ] Ensure Tooltips get rendered
+- [ ] Hover over accession number in the "Samples" tab to ensure that the acknowledgement tooltips get generated
+- [ ] Countries/Samples/Mutations tabs are populating the correct information
+- [ ] Build front-end database without issues
+- [ ] Port front-end change to `epicov` branch
