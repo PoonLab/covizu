@@ -5,7 +5,7 @@
   * [mpi4py](https://pypi.org/project/mpi4py/)
   * [SciPy](https://www.scipy.org/) version 1.5+
   * [rpy2](https://rpy2.github.io/doc/latest/html/index.html) version 3.5.13+
-  * [psycopg2](https://pypi.org/project/psycopg2/) version 2.9.6+
+  * [psycopg2](https://pypi.org/project/psycopg2/) version 2.9.6+ (requires `postgresql-devel`/`libpq5`)
 * [minimap2](https://github.com/lh3/minimap2) version 2.1+ 
 * [FastTree2](http://www.microbesonline.org/fasttree/) version 2.1.10+, compiled for [double precision](http://www.microbesonline.org/fasttree/#BranchLen)
 * [TreeTime](https://github.com/neherlab/treetime) version 0.7.5+
