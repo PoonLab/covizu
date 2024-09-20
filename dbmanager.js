@@ -89,19 +89,19 @@ class DBManager {
     }
 
     get_tips() {
-        return this.db_.collection($COLLECTION__TIPS).find().toArray()
+        return this.db_.collection($COLLECTION__TIPS).find({}, { projection: { _id: 0 } }).toArray()
     }
 
     get_df() {
-        return this.db_.collection($COLLECTION__DF_TREE).find().toArray();
+        return this.db_.collection($COLLECTION__DF_TREE).find({}, { projection: { _id: 0 } }).toArray();
     }
 
     get_xbb_df() {
-        return this.db_.collection($COLLECTION__XBB_TREE).find().toArray();
+        return this.db_.collection($COLLECTION__XBB_TREE).find({}, { projection: { _id: 0 } }).toArray();
     }
 
     get_regionMap() {
-        return this.db_.collection($COLLECTION__REGION_MAP).find().toArray().then((docs,err)=>{
+        return this.db_.collection($COLLECTION__REGION_MAP).find({}, { projection: { _id: 0 } }).toArray().then((docs,err)=>{
             if(err){
                 console.log(`dbmanager::get_regionMap error`,err);
                 return ;
@@ -214,7 +214,7 @@ class DBManager {
     }
 
     get_recombinantTips() {
-        return this.db_.collection($COLLECTION__RECOMBINANT_TIPS).find().toArray().then((docs,err)=>{
+        return this.db_.collection($COLLECTION__RECOMBINANT_TIPS).find({}, { projection: { _id: 0 } }).toArray().then((docs,err)=>{
             if(err){
                 console.log(`dbmanager::get_recombinantTips error`,err)
                 return;
