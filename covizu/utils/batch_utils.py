@@ -194,12 +194,15 @@ def get_shannons(n_seqs_in_nodes):
 
 
 def manage_collapsed_nodes(labels, tree):
-    """Add collapsed node keys to the labels dictionary"""
+    """
+    Add collapsed node keys to the labels dictionary
+    :param labels:  dict of form {idx: [lab1, lab2, ...]}
+    """
     new_labels = labels
     for clade in tree.get_terminals() + tree.get_nonterminals():
         name = clade.name
         if name is None:
-            continue
+            continue  # next test would fail because None is not iterable
         if '|' in name:
             combined_list = []
             for title in name.split('|'):
@@ -209,8 +212,10 @@ def manage_collapsed_nodes(labels, tree):
 
 
 def get_tree_summary_stats(tree, in_ne, label_dict):
-    """Write out file of summary stats including number of unsampled lineages,
-    diversity metrics and root to tip regression"""
+    """
+    Write out file of summary stats including number of unsampled lineages,
+    diversity metrics and root to tip regression
+    """
     internal_nodes = tree.get_nonterminals()
     terminal_nodes = tree.get_terminals()
 
@@ -237,61 +242,47 @@ def get_tree_summary_stats(tree, in_ne, label_dict):
     return summary_stats
 
 
-def find_ne(tree, labels_filename):
-    """Run beta skyline estimation implemented into R"""
-
+def find_ne(tree, labels):
+    """
+    Run beta skyline (tree with polytomies) estimation implemented in R
+    :param tree:  Bio.Phylo.BaseTree object
+    :param labels:  dict, lists of labels keyed by integer indices
+    :return:  float, mean effective population size of last five time points
+    """
+    
+    # add terminal branches of length 0 for all labels associated with tips
+    for tip in tree.get_terminals():
+        count = len(labels[tip.name])
+        if count < 2:
+            continue
+        tip.name += '_'  # add delimiter
+        tip.split(n=count, branch_length=0.)
+        tip.name = None  # remove internal label
+    
     # Make a temporary file containing the tree
     with NamedTemporaryFile('w', delete=False) as tree_filename:
-        Phylo.write(tree, tree_filename.name, "nexus")
-
+        Phylo.write(tree, tree_filename.name, "newick")
 
     # Load required R packages
     ape = importr('ape')
-    phytools = importr('phytools')
     LambdaSkyline = importr('LambdaSkyline')
 
     robjects.r.assign("tree_filename", tree_filename.name)
-    robjects.r.assign("sequence_labels_file", labels_filename)
-
     try:
         robjects.r('''
         set.seed(123456)
-
-        tree = read.nexus(tree_filename)
-        sequence_labels = read.csv(sequence_labels_file)
-        colnames(sequence_labels) = c("index", "value")
-
-        #Adjust tree to include branches of length 0 on identical sequences
-        tip_count = table(sequence_labels$index)
-        add_tip_count = data.frame(tip_count - 1)
-
-        for (tip_place_in_table in 1:nrow(add_tip_count)){
-            tip_name = add_tip_count[tip_place_in_table,1]
-            freq = add_tip_count[tip_place_in_table,2]
-            if(freq != 0){
-                for (counter in 1:freq){
-                tree <- bind.tip(tree, paste0(tip_name,"_", counter), edge.length = 0,
-                                    where=which(tree$tip.label == tip_name))
-                }
-            }
-        }
-
-        #Run skyline estimation
-        alpha = betacoal.maxlik(tree)
-        skyline = (skyline.multi.phylo(tree, alpha$p1))
-
-        #Output skyline estimation
-        pop_sizes <- head(skyline$population.size, n = 5)
-        mean_pop_size <- mean(pop_sizes, na.rm = TRUE)
+        tree <- read.tree(tree_filename)
+        alpha <- betacoal.maxlik(tree)
+        sky <- skyline.multi.phylo(tree, alpha$p1)
+        pop_sizes <- head(sky$population.size, n=5)
+        mean_pop_size <- mean(pop_sizes, na.rm=TRUE)
         ''')
         ne_out = list(robjects.r('mean_pop_size'))[0]
     except Exception as error:
         print(f'Error in finding Ne, {error}')
         ne_out = ''
 
-    # Remove the temporary file
-    os.remove(tree_filename.name)
-
+    os.remove(tree_filename.name)  # Remove the temporary file
     return ne_out
 
 
@@ -327,6 +318,7 @@ def parse_alias(alias_file):
             if value != '':
                 alias.update({key: value})
     return alias
+
 
 def make_beadplots(
         by_lineage,
@@ -485,20 +477,11 @@ def make_beadplots(
                     trees, cutoff=args.boot_cutoff, callback=callback)
                 outfile.close()  # done with Phylo.parse generator
 
-                # incorporate hunipie
+                # calculate HUNePI statistics
+                
+                # estimate Ne before collapsing polytomies
                 clabel_dict = manage_collapsed_nodes(label_dict, ctree)
-
-                with NamedTemporaryFile('w', delete=False) as labels_filename:
-
-                    # Write labels to file for Ne estimation
-                    writer = csv.writer(labels_filename)
-                    for key, value in clabel_dict.items():
-                        writer.writerow([key, value])
-
-                cne = find_ne(ctree, labels_filename.name)
-
-                # Remove temporary file with labels
-                os.remove(labels_filename.name)
+                cne = find_ne(ctree, clabel_dict)
 
                 # Collapse tree and manage the collapsed nodes
                 tree = beadplot.collapse_polytomies(ctree)
