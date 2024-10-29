@@ -272,6 +272,7 @@ def find_ne(tree, labels):
         robjects.r('''
         set.seed(123456)
         tree <- read.tree(tree_filename)
+        tree <- collapse.singles(tree)
         alpha <- betacoal.maxlik(tree)
         sky <- skyline.multi.phylo(tree, alpha$p1)
         pop_sizes <- head(sky$population.size, n=5)
