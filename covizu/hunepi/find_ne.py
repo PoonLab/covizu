@@ -5,10 +5,16 @@ import rpy2.robjects.vectors as rvectors
 from rpy2.rinterface_lib.sexp import NALogicalType
 import glob
 import os
-import re
 import csv
+import argparse
 
-nwk_files = glob.glob('ctree/*.nwk')
+
+parser = argparse.ArgumentParser(description='Find Ne')
+parser.add_argument('tree', type=str, help='Path to tree directory')
+parser.add_argument('outfile', type=str, help='Path to write Ne results')
+args = parser.parse_args()
+
+nwk_files = glob.glob(f'{args.tree}/*.nwk')
 nwk_files_abs = [os.path.abspath(file) for file in nwk_files]
 lineages = [os.path.basename(file).split('.nwk')[0] for file in nwk_files]
 
@@ -43,7 +49,7 @@ r_named_results = robjects.r['setNames'](r_results, r_lineages)
 results_dict = dict(zip(lineages, r_named_results))
 res = {k: 'NA' if isinstance(v[0], NALogicalType) else float(v[0]) for k, v in results_dict.items()}
 
-with open("hunepi_ne.csv", "w", newline='') as csv_file:
+with open(args.outfile, "w", newline='') as csv_file:
     writer = csv.writer(csv_file)
     writer.writerow(['Lineage', 'Ne'])
     for lineage, ne in res.items():

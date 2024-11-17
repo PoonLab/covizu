@@ -7,62 +7,99 @@ from covizu.utils.progress_utils import Callback
 from covizu.utils.batch_utils import manage_collapsed_nodes
 import json
 import csv
+import argparse
 
 
-cb = Callback()
+def parse_args():
+    parser = argparse.ArgumentParser(description='Prune tree')
+    parser.add_argument('recoded', type=str, help='Path to recoded JSON')
+    parser.add_argument('--prune', type=str, help='Path to write pruned trees', default=None)
+    parser.add_argument('--ctree', type=str, help='Path to consensus tree', default=None)
+    parser.add_argument('--bootstrap', type=str, help='Path to bootstrap trees', default=None)
+    parser.add_argument('--write-ctree', type=str, help='Path to write consensus tree', default=None)
+    parser.add_argument('--write-labels',  type=str, help='Path to write labels', default=None)
+    return parser.parse_args()
 
-with open('2024-08-13/recode.json', 'r') as f:
-    recoded = json.load(f)
 
-# Bootstrap trees
-nwk_trees = glob.glob('2024-08-13/*.nwk')
+def prune_tree(tree, callback, lineage):
+    all_tips = tree.get_terminals()
+    callback(f"Lineage {lineage} has {len(all_tips)} tips")
 
-# Consensus trees
-# nwk_trees = glob.glob('ctree/*.nwk')
+    if len(all_tips) > 500:
+        selected_tips = set(random.sample(all_tips, 500))
+        
+        tips_to_remove = [tip for tip in all_tips if tip not in selected_tips]
+        
+        for tip in tips_to_remove:
+            tree.prune(tip)
 
-for f in nwk_trees:
-    lineage = os.path.basename(f).split('.nwk')[0]
-    label_dict = recoded[lineage]['labels']
-    if (len(label_dict) == 1):
-        cb.callback(f"Skipping {lineage}")
-        continue
+    return tree
 
-    trees = None
-    with open(f, encoding='utf-8') as outfile:
-        trees = Phylo.parse(outfile, "newick")
 
-        tree = clustering.consensus(trees, cutoff=0.5)
+def write_labels(outpath, clabel_dict, lineage):
+    # Write labels CSV
+    with open(f'{outpath}/labels.{lineage}.csv', 'w') as csvfile:
+        writer = csv.writer(csvfile)
+        for key, value in clabel_dict.items():
+            writer.writerow([key, value])
 
-        clabel_dict = manage_collapsed_nodes(label_dict, tree)
 
-        # Write labels CSV
-        # with open(f'labels.{lineage}.csv', 'w') as csvfile:
-        #     writer = csv.writer(csvfile)
-        #     for key, value in clabel_dict.items():
-        #         writer.writerow([key, value])
+if __name__ == '__main__':
+    args = parse_args()
+    cb = Callback()
 
-        all_tips = tree.get_terminals()
+    with open(args.recoded, 'r') as f:
+        recoded = json.load(f)
 
-        if os.path.exists("pruned/{}.n500.nwk".format(lineage)):
+    if (args.bootstrap):
+        nwk_trees = glob.glob(args.bootstrap + '/*.nwk')
+    elif (args.ctree):
+        nwk_trees = glob.glob(args.ctree + '/*.nwk')
+    else:
+        cb.callback("No trees provided")
+        exit(-1)
+
+    for f in nwk_trees:
+        lineage = os.path.basename(f).split('.nwk')[0]
+        label_dict = recoded[lineage]['labels']
+        if (len(label_dict) == 1):
+            cb.callback(f"Skipping {lineage}")
             continue
 
-        cb.callback(f"Lineage {lineage} has {len(all_tips)} tips")
-        if len(all_tips) > 500:
-            selected_tips = set(random.sample(all_tips, 500))
-            
-            tips_to_remove = [tip for tip in all_tips if tip not in selected_tips]
-            
-            for tip in tips_to_remove:
-                tree.prune(tip)
+        trees = None
+        with open(f, encoding='utf-8') as nwk_file:
+            if args.ctree:
+                tree = Phylo.read(nwk_file, 'newick')
+            else:
+                trees = Phylo.parse(nwk_file, "newick")
+                tree = clustering.consensus(trees, cutoff=0.5)
 
-        for tip in tree.get_terminals():
-            if tip.name not in clabel_dict:
-                continue
-            count = len(clabel_dict[tip.name])
-            if count < 2:
-                continue
-            tip.name += '_' 
-            tip.split(n=count, branch_length=0.)
-            tip.name = None  # remove internal label
+            clabel_dict = manage_collapsed_nodes(label_dict, tree)
 
-        Phylo.write(tree, "pruned/{}.n500.nwk".format(lineage), "newick")
+            if args.prune:
+                if os.path.exists(f"{args.prune}/{lineage}.n500.nwk"):
+                    continue
+             
+                tree = prune_tree(tree=tree, callback=cb.callback, lineage=lineage)
+
+
+            for tip in tree.get_terminals():
+                if tip.name not in clabel_dict:
+                    continue
+                count = len(clabel_dict[tip.name])
+                if count < 2:
+                    continue
+                tip.name += '_' 
+                tip.split(n=count, branch_length=0.)
+                tip.name = None  # remove internal label
+
+
+            if args.write_ctree:
+                # Write consensus tree
+                Phylo.write(tree, f'{args.write_ctree}/{lineage}.nwk', 'newick')
+            
+            if args.write_labels:
+                write_labels(args.write_labels, clabel_dict, lineage)
+            
+            if args.prune:
+                Phylo.write(tree, f'{args.prune}/{lineage}.n500.nwk', 'newick')
