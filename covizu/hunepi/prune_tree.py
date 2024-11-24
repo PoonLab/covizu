@@ -9,6 +9,7 @@ import json
 import csv
 import argparse
 from Bioplus import prunetree
+import copy
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Prune tree')
@@ -59,6 +60,22 @@ if __name__ == '__main__':
                 trees = Phylo.parse(nwk_file, "newick")
                 tree = clustering.consensus(trees, cutoff=0.5)
 
+                if args.write_ctree:
+                    ctree = copy.deepcopy(tree)
+                    for tip in ctree.get_terminals():
+                        if tip.name not in clabel_dict:
+                            continue
+                        count = len(clabel_dict[tip.name])
+                        if count < 2:
+                            continue
+                        tip.name += '_' 
+                        tip.split(n=count, branch_length=0.)
+                        tip.name = None  # remove internal label
+
+                    # Write consensus tree
+                    Phylo.write(ctree, f'{args.write_ctree}/{lineage}.nwk', 'newick')
+            
+
             clabel_dict = manage_collapsed_nodes(label_dict, tree)
 
             if args.prune:
@@ -77,11 +94,6 @@ if __name__ == '__main__':
                 tip.split(n=count, branch_length=0.)
                 tip.name = None  # remove internal label
 
-
-            if args.write_ctree:
-                # Write consensus tree
-                Phylo.write(tree, f'{args.write_ctree}/{lineage}.nwk', 'newick')
-            
             if args.write_labels:
                 write_labels(args.write_labels, clabel_dict, lineage)
             
