@@ -8,7 +8,7 @@ from covizu.utils.batch_utils import manage_collapsed_nodes
 import json
 import csv
 import argparse
-
+from Bioplus import prunetree
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Prune tree')
@@ -19,21 +19,6 @@ def parse_args():
     parser.add_argument('--write-ctree', type=str, help='Path to write consensus tree', default=None)
     parser.add_argument('--write-labels',  type=str, help='Path to write labels', default=None)
     return parser.parse_args()
-
-
-def prune_tree(tree, callback, lineage):
-    all_tips = tree.get_terminals()
-    callback(f"Lineage {lineage} has {len(all_tips)} tips")
-
-    if len(all_tips) > 500:
-        selected_tips = set(random.sample(all_tips, 500))
-        
-        tips_to_remove = [tip for tip in all_tips if tip not in selected_tips]
-        
-        for tip in tips_to_remove:
-            tree.prune(tip)
-
-    return tree
 
 
 def write_labels(outpath, clabel_dict, lineage):
@@ -80,8 +65,7 @@ if __name__ == '__main__':
                 if os.path.exists(f"{args.prune}/{lineage}.n500.nwk"):
                     continue
              
-                tree = prune_tree(tree=tree, callback=cb.callback, lineage=lineage)
-
+                tree = prunetree.prune_tree(tree, 500)
 
             for tip in tree.get_terminals():
                 if tip.name not in clabel_dict:
