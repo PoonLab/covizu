@@ -81,7 +81,7 @@ if __name__ == '__main__':
                 if os.path.exists(f"{args.prune}/{lineage}.n500.nwk"):
                     continue
              
-                tree = prunetree.prune_tree(tree, 500)
+                tree = prunetree.prune_tips(tree, 500)
 
             for tip in tree.get_terminals():
                 if tip.name not in clabel_dict:
