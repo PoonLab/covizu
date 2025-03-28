@@ -1,6 +1,6 @@
 import random
 from Bio import Phylo
-import glob
+from glob import glob
 import os
 from covizu import clustering 
 from covizu.utils.progress_utils import Callback
@@ -11,58 +11,58 @@ import csv
 
 cb = Callback()
 
-with open('2024-08-13/recode.json', 'r') as f:
+with open('iss539/recode.json', 'r') as f:
     recoded = json.load(f)
 
-# Bootstrap trees
-nwk_trees = glob.glob('2024-08-13/*.nwk')
-
 # Consensus trees
-# nwk_trees = glob.glob('ctree/*.nwk')
-
-for f in nwk_trees:
+for f in glob('iss539/ctree/*.nwk'):
     lineage = os.path.basename(f).split('.nwk')[0]
     label_dict = recoded[lineage]['labels']
     if (len(label_dict) == 1):
         cb.callback(f"Skipping {lineage}")
         continue
 
-    trees = None
-    with open(f, encoding='utf-8') as outfile:
-        trees = Phylo.parse(outfile, "newick")
+    nwkfile = open(f, encoding='utf-8')
+    tree = Phylo.read(nwkfile, "newick")
+    #tree = clustering.consensus(trees, cutoff=0.5)
 
-        tree = clustering.consensus(trees, cutoff=0.5)
+    #clabel_dict = manage_collapsed_nodes(label_dict, tree)
 
-        clabel_dict = manage_collapsed_nodes(label_dict, tree)
+    # Write labels CSV
+    # with open(f'labels.{lineage}.csv', 'w') as csvfile:
+    #     writer = csv.writer(csvfile)
+    #     for key, value in clabel_dict.items():
+    #         writer.writerow([key, value])
 
-        # Write labels CSV
-        # with open(f'labels.{lineage}.csv', 'w') as csvfile:
-        #     writer = csv.writer(csvfile)
-        #     for key, value in clabel_dict.items():
-        #         writer.writerow([key, value])
+    all_tips = tree.get_terminals()
 
-        all_tips = tree.get_terminals()
+    if os.path.exists("iss539/pruned/{}.n500.nwk".format(lineage)):
+        continue
 
-        if os.path.exists("pruned/{}.n500.nwk".format(lineage)):
+    cb.callback(f"Lineage {lineage} has {len(all_tips)} tips")
+    
+    # expand tips with multiple samples
+    for tip in all_tips:
+        if tip.name not in label_dict:
             continue
-
-        cb.callback(f"Lineage {lineage} has {len(all_tips)} tips")
-        if len(all_tips) > 500:
-            selected_tips = set(random.sample(all_tips, 500))
-            
-            tips_to_remove = [tip for tip in all_tips if tip not in selected_tips]
-            
-            for tip in tips_to_remove:
-                tree.prune(tip)
-
-        for tip in tree.get_terminals():
-            if tip.name not in clabel_dict:
+        count = len(label_dict[tip.name])
+        if count < 2:
+            continue
+        tip.name += '_' 
+        tip.split(n=count, branch_length=0.)
+        tip.name = None  # remove internal label
+        cb.callback(count)
+    
+    all_tips = tree.get_terminals()
+    cb.callback(f"... expanded to {len(all_tips)} tips.")
+    
+    if len(all_tips) > 500:
+        # random sample without replacement
+        selected_tips = set(random.sample(all_tips, 500))
+        for tip in all_tips:
+            if tip in selected_tips:
                 continue
-            count = len(clabel_dict[tip.name])
-            if count < 2:
-                continue
-            tip.name += '_' 
-            tip.split(n=count, branch_length=0.)
-            tip.name = None  # remove internal label
+            tree.prune(tip)
 
-        Phylo.write(tree, "pruned/{}.n500.nwk".format(lineage), "newick")
+    Phylo.write(tree, "iss539/pruned/{}.n500.nwk".format(lineage), "newick")
+    break

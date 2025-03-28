@@ -26,6 +26,7 @@ r('''
 
         tryCatch({
             tree <- read.tree(file)
+            tree <- multi2di(tree)
             tree <- collapse.singles(tree)
             alpha <- betacoal.maxlik(tree)
             sky <- skyline.multi.phylo(tree, alpha$p1)
