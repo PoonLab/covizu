@@ -206,7 +206,7 @@ def manage_collapsed_nodes(labels, tree):
         if '|' in name:
             combined_list = []
             for title in name.split('|'):
-                combined_list = combined_list + labels[title]
+                combined_list = combined_list + labels[title.split('_')[0]]
             new_labels[name] = combined_list
     return new_labels
 
