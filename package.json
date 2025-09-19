@@ -9,14 +9,14 @@
   },
   "scripts": {
     "test": "NODE_ENV='TEST' HTTP_PORT='8001' DATA_FOLDER='data_test' node server.js",
-    "start": "node --max_old_space_size=8192 server.js",
+    "start": "node --max_old_space_size=16384 server.js",
     "start-db1": "DBNUMBER=1 node server.js",
     "start-db2": "DBNUMBER=2 node server.js",
     "dev": "nodemon server.js --ignore 'js/*.js'",
     "delete-users": "node mongodb_scripts/deleteUsers.js",
     "create-users": "node mongodb_scripts/createUsers.js",
-    "update-db1": "DBNUMBER=1 node --max_old_space_size=8192 mongodb_scripts/updateDatabase.js",
-    "update-db2": "DBNUMBER=2 node --max_old_space_size=8192 mongodb_scripts/updateDatabase.js"
+    "update-db1": "DBNUMBER=1 node --max_old_space_size=16384 mongodb_scripts/updateDatabase.js",
+    "update-db2": "DBNUMBER=2 node --max_old_space_size=16384 mongodb_scripts/updateDatabase.js"
   },
   "repository": {
     "type": "git",
@@ -35,7 +35,9 @@
     "express": "^4.21.1",
     "fs": "^0.0.1-security",
     "http": "^0.0.1-security",
-    "mongodb": "^5.8.0"
+    "mongodb": "^5.8.0",
+    "stream-chain": "^3.4.0",
+    "stream-json": "^1.9.1"
   },
   "devDependencies": {
     "cypress": "^13.6.2"

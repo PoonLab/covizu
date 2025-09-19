@@ -572,6 +572,7 @@ function index_lineage(clusters) {
 module.exports = {
   parse_clusters,
   map_clusters_to_tips,
+  map_tips,
   index_accessions,
   index_lineage,
 };
