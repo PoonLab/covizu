@@ -32,7 +32,7 @@
   "dependencies": {
     "compression": "^1.7.4",
     "dotenv": "^16.0.1",
-    "express": "^4.21.1",
+    "express": "^4.21.2",
     "fs": "^0.0.1-security",
     "http": "^0.0.1-security",
     "mongodb": "^5.8.0",
