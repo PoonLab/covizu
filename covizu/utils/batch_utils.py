@@ -277,8 +277,17 @@ def find_ne(tree, labels_filename):
         }
 
         #Run skyline estimation
-        alpha = betacoal.maxlik(tree)
-        skyline = (skyline.multi.phylo(tree, alpha$p1))
+        if (is.binary(tree)) {
+            alpha <- list(pi=1.999)
+        } else {
+            # alpha = betacoal.maxlik(tree)
+            Inter <- coalescent.intervals.multi(tree)
+            optimx::optimx(par = 1.5, fn = function(x) 
+              -skyline.multi.coalescentIntervals(Inter, x, epsilon)$logL, 
+              lower = 0.001, upper = 1.999, method = "L-BFGS-B")
+        }
+        
+        skyline <- skyline.multi.phylo(tree, alpha$p1)
 
         #Output skyline estimation
         pop_sizes <- head(skyline$population.size, n = 5)
