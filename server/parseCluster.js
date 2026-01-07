@@ -366,6 +366,7 @@ const map_tips = (cidx, labels, root, tips, tip_labels, cluster) => {
   tips[root_idx].nsamples = tip_stats.nsamples;
   tips[root_idx].mutations = tip_stats.mutations;
   tips[root_idx].infections = tip_stats.infections;
+  tips[root_idx].hunepi = tip_stats.hunepi;
 
   // calculate residual from mean differences and mean collection date - fixes #241
   let times = coldates.map(x => utcDate(x).getTime()),

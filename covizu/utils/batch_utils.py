@@ -277,8 +277,17 @@ def find_ne(tree, labels_filename):
         }
 
         #Run skyline estimation
-        alpha = betacoal.maxlik(tree)
-        skyline = (skyline.multi.phylo(tree, alpha$p1))
+        if (is.binary(tree)) {
+            alpha <- list(pi=1.999)
+        } else {
+            # alpha = betacoal.maxlik(tree)
+            Inter <- coalescent.intervals.multi(tree)
+            optimx::optimx(par = 1.5, fn = function(x) 
+              -skyline.multi.coalescentIntervals(Inter, x, epsilon=0)$logL, 
+              lower = 0.001, upper = 1.999, method = "L-BFGS-B")
+        }
+        
+        skyline <- skyline.multi.phylo(tree, alpha$p1)
 
         #Output skyline estimation
         pop_sizes <- head(skyline$population.size, n = 5)
@@ -478,7 +487,7 @@ def make_beadplots(
                     beaddict['nodes'][variant].append(
                         [coldate, accn, location, label1])
 
-                inf_predict.update({lineage: 0})
+                inf_predict.update({lineage: {'infections': 0}})
             else:
                 # generate beadplot data
                 ctree = clustering.consensus(
@@ -542,7 +551,12 @@ def make_beadplots(
                 ''')
 
                 predicted_infections = list(robjects.r('predicted_infections'))[0]
-                inf_predict.update({lineage: predicted_infections})
+                inf_predict.update({lineage: {'infections': predicted_infections, 
+                                              'hunepi': 
+                                                {'h': summary_stats['shannons_diversity'], 
+                                                 'u': summary_stats['unsampled_lineage_count'], 
+                                                 'ne': summary_stats['Ne'], 
+                                                 'pi': summary_stats['pi']}}})
 
                 ctree = beadplot.annotate_tree(ctree, label_dict)
                 beaddict = beadplot.serialize_tree(ctree)
