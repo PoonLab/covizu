@@ -283,7 +283,7 @@ def find_ne(tree, labels_filename):
             # alpha = betacoal.maxlik(tree)
             Inter <- coalescent.intervals.multi(tree)
             optimx::optimx(par = 1.5, fn = function(x) 
-              -skyline.multi.coalescentIntervals(Inter, x, epsilon)$logL, 
+              -skyline.multi.coalescentIntervals(Inter, x, epsilon=0)$logL, 
               lower = 0.001, upper = 1.999, method = "L-BFGS-B")
         }
         
